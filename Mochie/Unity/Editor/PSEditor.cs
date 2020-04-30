@@ -1,0 +1,331 @@
+﻿using UnityEditor;
+using UnityEngine;
+using System;
+using System.Linq;
+using System.Reflection;
+using System.Collections.Generic;
+
+public class PSEditor : ShaderGUI {
+
+    public enum BlendingModes {ALPHA, PREMULTIPLIED, ADDITIVE, SOFT_ADDITIVE, MULTIPLY, MULTIPLY_2x}
+
+    GUIContent texLabel = new GUIContent("Main Tex");
+   	GUIContent tex2Label = new GUIContent("Secondary Tex");
+    GUIContent normalLabel = new GUIContent("Normal Map");
+	GUIContent applyStreamsText = new GUIContent("Fix Vertex Streams", "Apply the vertex stream layout to all Particle Systems using this material");
+
+    static Dictionary<Material, Toggles> foldouts = new Dictionary<Material, Toggles>();
+    Toggles toggles = new Toggles(
+		new bool[] {true, true, false, false, false, false}, 
+		new string[] {"RENDERING", "BASE", "FILTERING", "DISTORTION", "PULSE", "FALLOFF"}
+	);
+    string header = "ParticleHeader_Pro";
+	string watermark = "Watermark_Pro";
+	string patIcon = "Patreon_Icon";
+
+    // Render Settings
+    MaterialProperty _BlendMode = null;
+    MaterialProperty _SrcBlend;
+    MaterialProperty _DstBlend = null;
+    MaterialProperty _Culling = null;
+    MaterialProperty _ZWrite = null;
+    MaterialProperty _ZTest = null;
+    MaterialProperty _ZT = null;
+    MaterialProperty _Falloff = null;
+    MaterialProperty _IsCutout = null;
+    MaterialProperty _Cutout = null;
+	MaterialProperty _FlipbookBlending = null;
+
+    // Color
+    MaterialProperty _MainTex = null;
+    MaterialProperty _SecondTex = null;
+    MaterialProperty _Layering = null;
+    MaterialProperty _TexBlendMode = null;
+    MaterialProperty _Color = null;
+    MaterialProperty _SecondColor = null;
+    MaterialProperty _Softening = null;
+    MaterialProperty _SoftenStr = null;
+	MaterialProperty _Brightness = null;
+	MaterialProperty _Opacity = null;
+
+    // Filtering
+    MaterialProperty _Filtering = null;
+    MaterialProperty _AutoShift = null;
+    MaterialProperty _AutoShiftSpeed = null;
+    MaterialProperty _Hue = null;
+    MaterialProperty _Saturation = null;
+    MaterialProperty _Luminance = null;
+    MaterialProperty _Contrast = null;
+    MaterialProperty _HDR = null;
+
+    // Distortion
+    MaterialProperty _Distortion = null;
+    MaterialProperty _NormalMap = null;
+    MaterialProperty _DistortionStr = null;
+    MaterialProperty _DistortionBlend = null;
+    MaterialProperty _DistortionSpeedX = null;
+    MaterialProperty _DistortionSpeedY = null;
+
+	// Pulse
+	MaterialProperty _Pulse = null;
+	MaterialProperty _Waveform = null;
+	MaterialProperty _PulseStr = null;
+	MaterialProperty _PulseSpeed = null;
+
+	// Falloff
+    MaterialProperty _MinRange = null;
+    MaterialProperty _MaxRange = null;
+    MaterialProperty _NearMinRange = null;
+    MaterialProperty _NearMaxRange = null;
+
+    BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+	List<ParticleSystemRenderer> m_RenderersUsingThisMaterial = new List<ParticleSystemRenderer>();
+    MaterialEditor m_MaterialEditor;
+	bool m_FirstTimeApply = true;
+
+    public override void OnGUI(MaterialEditor me, MaterialProperty[] props) {
+        if (!me.isVisible)
+            return;
+        foreach (var property in GetType().GetFields(bindingFlags)){
+            if (property.FieldType == typeof(MaterialProperty))
+                property.SetValue(this, FindProperty(property.Name, props));
+        }
+        if (_DstBlend.floatValue == 0) _DstBlend.floatValue = 10;
+        Material mat = (Material)me.target;
+        if (m_FirstTimeApply){
+			CacheRenderersUsingThisMaterial(mat);
+			m_FirstTimeApply = false;
+        }
+		bool isParticleX = MGUI.IsXVersion(mat);
+
+		if (isParticleX){
+			header = "ParticleHeaderX_Pro";
+			if (!EditorGUIUtility.isProSkin){
+				header = "ParticleHeaderX";
+				watermark = "Watermark";
+			}
+		}
+		else {
+			if (!EditorGUIUtility.isProSkin){
+				header = "ParticleHeader";
+				watermark = "Watermark";
+			}
+		}
+        Texture2D headerTex = (Texture2D)Resources.Load(header, typeof(Texture2D));
+		Texture2D watermarkTex = (Texture2D)Resources.Load(watermark, typeof(Texture2D));
+		Texture2D patIconTex = (Texture2D)Resources.Load(patIcon, typeof(Texture2D));
+        MGUI.CenteredTexture(headerTex, 0, 0);
+        
+        EditorGUI.BeginChangeCheck(); {
+            if (!foldouts.ContainsKey(mat))
+                foldouts.Add(mat, toggles);
+            bool canDistort = _BlendMode.floatValue < 4;
+
+            // -----------------
+            // Render Settings
+            // -----------------
+            if (MGUI.DoFoldout(foldouts, mat, me, "RENDERING")){
+
+                // Blending mode dropdown
+                MGUI.Space4();
+				MGUI.RenderQueueLabel(mat);
+                EditorGUI.showMixedValue = _BlendMode.hasMixedValue;
+                var mode = (BlendingModes)_BlendMode.floatValue;
+                EditorGUI.BeginChangeCheck();
+                mode = (BlendingModes)EditorGUILayout.Popup("Blending Mode", (int)mode, Enum.GetNames(typeof(BlendingModes)));
+                if (EditorGUI.EndChangeCheck()) {
+                    me.RegisterPropertyChangeUndo("Blending Mode");
+                    _BlendMode.floatValue = (float)mode;
+                    foreach (var obj in _BlendMode.targets){
+                        SetBlendMode((Material)obj, (BlendingModes)mode);
+                    }
+                    EditorGUI.showMixedValue = false;
+                }
+				me.ShaderProperty(_Culling, "Culling Mode");
+				me.ShaderProperty(_FlipbookBlending, "Flipbook Blending");
+				me.ShaderProperty(_ZWrite, "ZWrite");
+				me.ShaderProperty(_ZTest, "ZTest Always");
+				if (_ZTest.floatValue == 1) _ZT.floatValue = 6;
+				else _ZT.floatValue = 2;
+				
+				// Vertex Stream Helper
+				List<ParticleSystemVertexStream> streams = new List<ParticleSystemVertexStream>();
+				streams.Add(ParticleSystemVertexStream.Position);
+				streams.Add(ParticleSystemVertexStream.UV);
+				streams.Add(ParticleSystemVertexStream.AnimBlend);
+				streams.Add(ParticleSystemVertexStream.Speed);
+				streams.Add(ParticleSystemVertexStream.Color);
+
+				string warnings = "";
+				List<ParticleSystemVertexStream> rendererStreams = new List<ParticleSystemVertexStream>();
+				foreach (ParticleSystemRenderer renderer in m_RenderersUsingThisMaterial){
+					if (renderer != null){
+						renderer.GetActiveVertexStreams(rendererStreams);
+						bool streamsValid = rendererStreams.SequenceEqual(streams);
+						if (!streamsValid) warnings += "  " + renderer.name + "\n";
+					}
+				}
+				if (warnings != ""){
+					EditorGUILayout.HelpBox("Incorrect or missing vertex streams detected:\n" + warnings, MessageType.Warning, true);
+					if (GUILayout.Button(applyStreamsText, EditorStyles.miniButton)){
+						foreach (ParticleSystemRenderer renderer in m_RenderersUsingThisMaterial){
+							if (renderer != null){
+								if (renderer != null)
+									renderer.SetActiveVertexStreams(streams);
+							}
+						}
+					}
+				}
+				MGUI.Space8();
+			}
+            
+            // -----------------
+            // Base Settings
+            // -----------------
+            if (MGUI.DoFoldout(foldouts, mat, me, "BASE")){
+                MGUI.Space4();
+				if (isParticleX){
+					me.TexturePropertySingleLine(texLabel, _MainTex, _Color, _Layering);
+					MGUI.TexPropLabel("Layered", 110);
+					if (_Layering.floatValue == 1){
+						me.TexturePropertySingleLine(tex2Label, _SecondTex, _SecondColor, _TexBlendMode);
+						MGUI.TexPropLabel("Blending", 113);
+					}
+				}
+				else me.TexturePropertySingleLine(texLabel, _MainTex, _Color);
+				 
+                MGUI.Space4();
+				me.ShaderProperty(_Brightness, "Brightness");
+				me.ShaderProperty(_Opacity, "Opacity");
+                MGUI.ToggleSlider(me, "Cutout", _IsCutout, _Cutout);
+                MGUI.ToggleSlider(me, "Softening", _Softening, _SoftenStr);
+				MGUI.SetKeyword(mat, "_FADING_ON", _Softening.floatValue == 1.0);
+				MGUI.Space8();
+			}
+
+			if (isParticleX){
+				// Filtering
+				if (MGUI.DoFoldout(foldouts, mat, me, "FILTERING")){
+					MGUI.Space4();
+					me.ShaderProperty(_Filtering, "Enable");
+					MGUI.Space4();
+					MGUI.ToggleGroup(_Filtering.floatValue == 0);
+					me.ShaderProperty(_AutoShift, "Auto Shift");
+					if (_AutoShift.floatValue ==1)
+						me.ShaderProperty(_AutoShiftSpeed, "Speed");
+					else
+						me.ShaderProperty(_Hue, "Hue");
+					me.ShaderProperty(_Saturation, "Saturation");
+					me.ShaderProperty(_Luminance, "Luminance");
+					me.ShaderProperty(_HDR, "HDR");
+					me.ShaderProperty(_Contrast, "Contrast");
+					MGUI.ToggleGroupEnd();
+					MGUI.Space8();
+				}
+
+				// Distortion
+				if (canDistort){
+					if (MGUI.DoFoldout(foldouts, mat, me, "DISTORTION")){
+						MGUI.Space4();
+						me.ShaderProperty(_Distortion, "Enable");
+						MGUI.Space4();
+						MGUI.ToggleGroup(_Distortion.floatValue == 0);
+						me.TexturePropertySingleLine(normalLabel, _NormalMap);
+						me.ShaderProperty(_DistortionStr, "Strength");
+						me.ShaderProperty(_DistortionBlend, "Blend");
+						me.ShaderProperty(_DistortionSpeedX, "Speed X");
+						me.ShaderProperty(_DistortionSpeedY, "Speed Y");
+						MGUI.ToggleGroupEnd();
+						MGUI.Space8();
+					}
+					if (_Distortion.floatValue == 1) mat.EnableKeyword("EFFECT_BUMP");
+				}
+				else {
+					mat.DisableKeyword("EFFECT_BUMP");
+				}
+				mat.SetShaderPassEnabled("Always", _Distortion.floatValue == 1);
+			}
+			else mat.DisableKeyword("EFFECT_BUMP");
+
+			// Pulse
+			if (MGUI.DoFoldout(foldouts, mat, me, "PULSE")){
+				MGUI.Space4();
+				me.ShaderProperty(_Pulse, "Enable");
+				MGUI.Space4();
+				MGUI.ToggleGroup(_Pulse.floatValue == 0);
+				me.ShaderProperty(_Waveform, "Waveform");
+				me.ShaderProperty(_PulseStr, "Strength");
+				me.ShaderProperty(_PulseSpeed, "Speed");
+				MGUI.ToggleGroupEnd();
+				MGUI.Space8();
+			}
+
+			// Falloff
+			if (MGUI.DoFoldout(foldouts, mat, me, "FALLOFF")){
+				MGUI.Space4();
+				me.ShaderProperty(_Falloff, "Enable");
+				MGUI.Space4();
+				MGUI.ToggleGroup(_Falloff.floatValue == 0);
+				me.ShaderProperty(_MinRange, "Far Min Range");
+				me.ShaderProperty(_MaxRange, "Far Max Range");
+				MGUI.Space4();
+				me.ShaderProperty(_NearMinRange, "Near Min Range");
+				me.ShaderProperty(_NearMaxRange, "Near Max Range");
+				MGUI.ToggleGroupEnd();
+				MGUI.Space8();
+			}
+
+			GUILayout.Space(15);
+            MGUI.CenteredTexture(watermarkTex, 0, 0);
+			float buttonSize = 24.0f;
+			float xPos = 53.0f;
+			GUILayout.Space(-buttonSize);
+			if (MGUI.LinkButton(patIconTex, buttonSize, buttonSize, xPos)){
+				Application.OpenURL("https://www.patreon.com/mochieshaders");
+			}
+			GUILayout.Space(buttonSize);
+        }
+    }
+
+    // Set blending mode
+    public static void SetBlendMode(Material material, BlendingModes mode) {
+        EditorGUI.BeginChangeCheck();
+        switch (mode) {
+            case BlendingModes.ALPHA:
+                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                break;
+            case BlendingModes.PREMULTIPLIED:
+                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                break;
+            case BlendingModes.ADDITIVE:
+                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);
+                break;
+            case BlendingModes.SOFT_ADDITIVE:
+                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcColor);
+                break;
+            case BlendingModes.MULTIPLY:
+                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
+                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.SrcColor);
+                break;
+            case BlendingModes.MULTIPLY_2x:
+                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.DstColor);
+                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.SrcColor);
+                break;
+        }
+    }
+
+	void CacheRenderersUsingThisMaterial(Material material){
+		m_RenderersUsingThisMaterial.Clear();
+
+		ParticleSystemRenderer[] renderers = UnityEngine.Object.FindObjectsOfType(typeof(ParticleSystemRenderer)) as ParticleSystemRenderer[];
+		foreach (ParticleSystemRenderer renderer in renderers)
+		{
+			if (renderer.sharedMaterial == material)
+				m_RenderersUsingThisMaterial.Add(renderer);
+		}
+	}
+}

@@ -1,0 +1,13 @@
+fileFormatVersion: 2
+guid: 0d1d977ca72938b4bb8f3ed06b9a8645
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures:
+  - _ShakeNoiseTex: {fileID: 2800000, guid: b8d1261e60bcece48b7708cac8798bfc, type: 3}
+  - _NormalMap: {fileID: 2800000, guid: 89819f8cb0b9e5d418f6e90ca96ac9c3, type: 3}
+  - _ScreenTex: {instanceID: 0}
+  - _TPTexture: {fileID: 2800000, guid: c8a87249cd434b7449f48c64971ebc8e, type: 3}
+  - _TPNoiseTex: {fileID: 2800000, guid: 036bf865214e382409cd5c435bc2e994, type: 3}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
