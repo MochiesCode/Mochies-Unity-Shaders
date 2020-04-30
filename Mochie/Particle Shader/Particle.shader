@@ -1,4 +1,7 @@
-Shader "Mochie/Particles" {
+// BY MOCHIE
+// Version 1.2
+
+Shader "Mochie/Particle Shader" {
     Properties {
 
         [HideInInspector]_BlendMode("__mode", Int) = 1.0
@@ -6,7 +9,6 @@ Shader "Mochie/Particles" {
         [HideInInspector]_DstBlend("__dst", Int) = 10
         [HideInInspector]_ZT("", Int) = 2
         [Toggle(_)]_ZTest("", Int) = 0
-        [Toggle(_)]_ZWrite("", Int) = 0
         [Enum(OFF,0, FRONT,1, BACK,2)]_Culling("", Int) = 2
 		[Toggle(_)]_FlipbookBlending("", Int) = 0
 
@@ -35,6 +37,7 @@ Shader "Mochie/Particles" {
 
         [Toggle(EFFECT_BUMP)]_Distortion("", Int) = 0
         _NormalMap("", 2D) = "bump" {}
+		[Toggle(_)]_DistortMainTex("", Int) = 0
         _DistortionStr("", Range(0,1)) = 0
         _DistortionBlend("", Range(0,1)) = 1
         _DistortionSpeedX("", Range(-1,1)) = 0
@@ -53,14 +56,6 @@ Shader "Mochie/Particles" {
     }
     
     SubShader {
-		// Render queue options:
-		// Background 	- renders first, will show up behind all environment
-		// Geometry 	- standard opaque queue for solid objects
-		// AlphaTest	- most often used for cutout shading
-		// Transparent	- standard queue for transparent objects
-		// Overlay		- standard queue for post processing effects and menus
-		// Use + or - to go above or below the queue level (ie. Transparent+1)
-		// Change the following text seen below: "Queue"="____" to the desired value
         Tags { 
             "RenderType"="Transparent" 
             "Queue"="Transparent" 
@@ -69,9 +64,9 @@ Shader "Mochie/Particles" {
 			"LightMode"="ForwardBase"
         }
         Blend [_SrcBlend] [_DstBlend]
-        ZWrite [_ZWrite]
-        ZTest [_ZT]
         Cull [_Culling]
+		ZTest [_ZT]
+		ZWrite Off
         ColorMask RGB
 
         Pass {
@@ -79,7 +74,7 @@ Shader "Mochie/Particles" {
             #pragma vertex vert
             #pragma fragment frag
             #pragma target 5.0
-            #pragma multi_compile_fog
+			#pragma multi_compile_particles
 			#pragma shader_feature _FADING_ON
 			#include "PSDefines.cginc"
 
@@ -100,7 +95,6 @@ Shader "Mochie/Particles" {
 				o.color = v.color;
 				o.color.rgb *= _Brightness;
 				o.color.a *= _Opacity;
-                UNITY_TRANSFER_FOG(o,o.pos);
                 return o;
             }
 

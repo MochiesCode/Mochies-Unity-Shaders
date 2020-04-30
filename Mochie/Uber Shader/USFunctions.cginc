@@ -60,7 +60,7 @@ float3 GetRGBFilter(float3 albedo, float2 uv0){
 }
 
 //------------------------------------
-// Albedo/Diffuse/Emission/Dissolve/Rim
+// Albedo/Diffuse/Emission/Rim
 //------------------------------------
 float3 GetDetailAlbedo(g2f i, lighting l, masks m, float3 col){
     float3 detailAlbedo = UNITY_SAMPLE_TEX2D_SAMPLER(_DetailAlbedoMap, _MainTex, i.uv2.xy).rgb * unity_ColorSpaceDouble;
@@ -97,25 +97,9 @@ float4 GetAlbedo(g2f i, lighting l, masks m){
 		float3 vDir = Rotate(GetViewDir(i.worldPos), _CubeRotate0);
 		float4 albedo0 = UNITY_SAMPLE_TEX2D(_MainTex, i.uv.xy); 
 		float4 albedo1 = texCUBE(_MainTexCube0, vDir);
-		cubeMask = SampleCubeMask(_CubeBlendMask, i.uv.xy, _CubeBlend, _CubeBlendMaskChannel); 
 		albedo0.rgb *= _Color.rgb;
 		albedo1.rgb *= _CubeColor0.rgb;
-		albedo.rgb = BlendCubemap(albedo0, albedo1, cubeMask);
-	}
-	else if (_CubeMode == 3){
-		UNITY_BRANCH
-		if (_AutoRotate0)
-			_CubeRotate0 = _Time.y * _CubeRotate0;
-		UNITY_BRANCH
-		if (_AutoRotate1)
-			_CubeRotate1 = _Time.y * _CubeRotate1;
-		float3 vDir0 = Rotate(GetViewDir(i.worldPos), _CubeRotate0);
-		float3 vDir1 = Rotate(GetViewDir(i.worldPos), _CubeRotate1);
-		float4 albedo0 = texCUBE(_MainTexCube0, vDir0);
-		float4 albedo1 = texCUBE(_MainTexCube1, vDir1);
-		cubeMask = SampleCubeMask(_CubeBlendMask, i.uv.xy, _CubeBlend, _CubeBlendMaskChannel);
-		albedo0.rgb *= _CubeColor0.rgb;
-		albedo1.rgb *= _CubeColor1.rgb;
+		cubeMask = SampleCubeMask(_CubeBlendMask, i.uv.xy, _CubeBlend, _CubeBlendMaskChannel); 
 		albedo.rgb = BlendCubemap(albedo0, albedo1, cubeMask);
 	}
 
@@ -126,19 +110,18 @@ float4 GetAlbedo(g2f i, lighting l, masks m){
    	else if (_FilterModel == 2) albedo.rgb = GetHSLFilter(albedo.rgb, i.uv.xy);
 	else if (_FilterModel == 3) albedo.rgb = ApplyTeamColors(albedo.rgb, i.uv.xy);
 
-    #if defined(TRANSPARENT)
+    #if TRANSPARENT_DEFINED
         UNITY_BRANCH
-        if 		(_BlendMode == 0) albedo.a *= _Color.a;
-        else if (_BlendMode == 1) albedo.a = _Color.a;
+        if 		(_BlendMode == 2) albedo.a *= _Color.a;
+        else if (_BlendMode == 3) albedo.a = _Color.a;
     #endif
     return albedo;
 }
 
 float4 GetDiffuse(lighting l, float4 albedo, float atten){
     float4 diffuse;
-    float3 lightCol = atten * l.lightCol + l.indirectCol;
+    float3 lightCol = atten * l.directCol + l.indirectCol;
     diffuse.rgb = albedo.rgb;
-	cubeMask = _CubeMode == 3 ? 1 : cubeMask;
     diffuse.rgb *= lerp(lightCol, 1, cubeMask*_UnlitCube*_CubeMode > 0);
     diffuse.a = albedo.a;
     return diffuse;
@@ -174,7 +157,7 @@ float3 GetEmission(g2f i){
 }
 
 void ApplyCutout(float alpha){
-	#if defined(CUTOUT)
+	#if defined(_ALPHATEST_ON)
         UNITY_BRANCH
         if (_ATM != 1)
             clip(alpha - _Cutoff);
@@ -185,8 +168,8 @@ float3 ApplyRimLighting(g2f i, lighting l, masks m, float3 diffuse, float atten)
 	#if defined(UNITY_PASS_FORWARDBASE)
     UNITY_BRANCH
     if (_RenderMode != 0 && _RimLighting == 1){
-        float rimDot = abs(dot(l.viewDir, l.normal));
-        float rim = pow((1-rimDot), (1-_RimWidth) * 10);
+        float VdotL = abs(dot(l.viewDir, l.normal));
+        float rim = pow((1-VdotL), (1-_RimWidth) * 10);
         rim = smootherstep(_RimEdge, (1-_RimEdge), rim);
         rim *= m.rimMask;
         float3 rimCol = UNITY_SAMPLE_TEX2D_SAMPLER(_RimTex, _MainTex, i.uv2.zw).rgb * _RimCol.rgb;
@@ -213,9 +196,15 @@ float GetRoughness(float roughness){
 // Toon Workflow
 //----------------------------
 float3 GetToonWorkflow(g2f i, lighting l, masks m, float3 albedo, out float3 specularTint, out float smoothness, out float omr){
-	float metallic = tex2D(_MetallicGlossMap, i.uv.xy) * _Metallic;
+	float metallic = _Metallic;
+	#if defined(_METALLICGLOSSMAP)
+		metallic = UNITY_SAMPLE_TEX2D_SAMPLER(_MetallicGlossMap, _MainTex, i.uv.xy);
+	#endif
 	specularTint = lerp(unity_ColorSpaceDielectricSpec.rgb, albedo, metallic);
-	smoothness = tex2D(_SpecGlossMap, i.uv.xy) * _Glossiness;
+	smoothness = _Glossiness;
+	#if defined(_SPECGLOSSMAP)
+		smoothness = UNITY_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, _MainTex, i.uv.xy);
+	#endif
 	UNITY_BRANCH
 	if (_RoughnessAdjust == 1){
 		smoothness = saturate(lerp(0.5, smoothness, _RoughContrast));
@@ -235,11 +224,11 @@ void GetSpecularWorkflow(g2f i, float albedoAlpha, inout float4 spec, inout floa
     #if defined(_SPECGLOSSMAP)
         UNITY_BRANCH
         if (_SourceAlpha == 1){
-            spec.rgb = tex2D(_SpecGlossMap, i.uv.xy).rgb;
+            spec.rgb = UNITY_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, _MainTex, i.uv.xy).rgb;
             spec.a = albedoAlpha;
         }
         else 
-            spec = tex2D(_SpecGlossMap, i.uv.xy);
+            spec = UNITY_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, _MainTex, i.uv.xy);
         spec.a *= _GlossMapScale;
     #else
         spec.rgb = _SpecCol.rgb;
@@ -254,8 +243,14 @@ void GetSpecularWorkflow(g2f i, float albedoAlpha, inout float4 spec, inout floa
 }
 
 void GetMetallicWorkflow(g2f i, inout float metallic, inout float roughness, inout float smoothness){
-    metallic = tex2D(_MetallicGlossMap, i.uv.xy).r * _Metallic;
-    roughness = tex2D(_SpecGlossMap, i.uv.xy).r * _Glossiness;
+	metallic = _Metallic;
+	#if defined(_METALLICGLOSSMAP)
+		metallic = metallic = UNITY_SAMPLE_TEX2D_SAMPLER(_MetallicGlossMap, _MainTex, i.uv.xy).r;
+	#endif
+	roughness = _Glossiness;
+	#if defined(_SPECGLOSSMAP)
+    	roughness = UNITY_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, _MainTex, i.uv.xy).r;
+	#endif
 	UNITY_BRANCH
 	if (_RoughnessAdjust){
 		roughness = saturate(lerp(0.5, roughness, _RoughContrast));
@@ -268,16 +263,17 @@ void GetMetallicWorkflow(g2f i, inout float metallic, inout float roughness, ino
 
 void GetPackedWorkflow(g2f i, inout float metallic, inout float roughness, inout float smoothness){
 	float4 packedTex = tex2D(_PackedMap, i.uv.xy);
-	metallic = ChannelCheck(packedTex, metallic, _MetallicChannel) * _Metallic;
-	roughness = ChannelCheck(packedTex, roughness, _RoughnessChannel) * _Glossiness;
+	metallic = ChannelCheck(packedTex, metallic, _MetallicChannel);
+	roughness = ChannelCheck(packedTex, roughness, _RoughnessChannel);
 	UNITY_BRANCH
 	if (_RoughnessAdjust){
 		roughness = saturate(lerp(0.5, roughness, _RoughContrast));
 		roughness += saturate(roughness * _RoughIntensity);
 		roughness = saturate(roughness + _RoughLightness);
 	}
-	smoothness = 1-roughness;
+	
 	roughness = GetRoughness(roughness);
+	smoothness = 1-roughness;
 }
 
 //----------------------------
@@ -327,7 +323,7 @@ float2 GetParallaxOffset(g2f i){
 	UNITY_BRANCH
 	if (_RenderMode == 2 && _PBRWorkflow == 2) 
 		surfaceHeight = SampleParallaxMap(i, 0, _HeightChannel);
-	else surfaceHeight = tex2D(_ParallaxMap, i.uv.xy);
+	else surfaceHeight = UNITY_SAMPLE_TEX2D_SAMPLER(_ParallaxMap, _MainTex, i.uv.xy);
 	surfaceHeight = clamp(surfaceHeight, 0, 0.999);
 	float prevStepHeight = stepHeight;
 	float prevSurfaceHeight = surfaceHeight;
@@ -352,7 +348,7 @@ float2 GetParallaxOffset(g2f i){
 			prevSurfaceHeight = surfaceHeight;
 			uvOffset -= uvDelta;
 			stepHeight -= stepSize;
-			surfaceHeight = tex2D(_ParallaxMap, i.uv.xy+uvOffset);
+			surfaceHeight = UNITY_SAMPLE_TEX2D_SAMPLER(_ParallaxMap, _MainTex, i.uv.xy+uvOffset);
 		}
 	}
 
@@ -370,8 +366,8 @@ float3 GetTangentViewDir(g2f i){
     return i.tangentViewDir;
 }
 
+// Parallax Mapping
 void ApplyParallax(inout g2f i){
-    // Parallax Mapping
     #if defined(_PARALLAXMAP)
 		UNITY_BRANCH
 		if (_Parallax > 0){
@@ -385,4 +381,66 @@ void ApplyParallax(inout g2f i){
 			i.normal.xy += parallaxOffset;
 		}
     #endif
+}
+
+//----------------------------
+// Toon Mode Masking
+//----------------------------
+masks GetMasks(g2f i){
+	masks m = (masks)1;
+	#if !defined(OUTLINE)
+		UNITY_BRANCH
+		if (_MaskingToggle == 1){
+			UNITY_BRANCH
+			if (_MaskingMode == 0){
+				#if !defined(_GLOSSYREFLECTIONS_OFF)
+					m.reflectionMask = SampleMask(_ReflectionMask, i.uv.xy, _ReflectionMaskChannel, true);
+				#endif
+				#if !defined(_SPECULARHIGHLIGHTS_OFF)
+					m.specularMask = SampleMask(_SpecularMask, i.uv.xy, _SpecularMaskChannel, true);
+				#endif
+				m.detailMask = SampleMask(_DetailMask, i.uv.xy, _DetailMaskChannel, true);
+				m.shadowMask = SampleMask(_ShadowMask, i.uv.xy, _ShadowMaskChannel, _Shadows == 1);
+				m.rimMask = SampleMask(_RimMask, i.uv.xy, _RimMaskChannel, _RimLighting == 1);
+				m.ddMask = SampleMask(_DDMask, i.uv.xy, _DDMaskChannel, _DisneyDiffuse > 0);
+				m.anisoMask = 1-SampleMask(_InterpMask, i.uv.xy, _InterpMaskChannel, _SpecularStyle == 2);
+				m.smoothMask = SampleMask(_SmoothShadeMask, i.uv.xy, _SmoothShadeMaskChannel, _SHStr > 0);
+				m.matcapMask = SampleMask(_MatcapMask, i.uv.xy, _MatcapMaskChannel, _MatcapToggle == 1);
+			}
+			else if (_MaskingMode == 1){
+				float3 mask0 = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMask0, _MainTex, i.uv.xy).rgb;
+				float3 mask1 = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMask1, _MainTex, i.uv.xy).rgb;
+
+				m.reflectionMask = mask0.r;
+				m.specularMask = mask0.r;
+				m.matcapMask = mask0.g;
+				m.shadowMask = mask0.b;
+
+				m.rimMask = mask1.r;
+				m.detailMask = mask1.g;
+				m.ddMask = mask1.b;
+				m.smoothMask = mask1.b;
+			}
+			else {
+				float4 mask0 = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMask0, _MainTex, i.uv.xy);
+				float4 mask1 = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMask1, _MainTex, i.uv.xy);
+
+				m.reflectionMask = mask0.r;
+				m.specularMask = mask0.g;
+				m.matcapMask = mask0.b;
+				m.shadowMask = mask0.a;
+
+				m.rimMask = mask1.r;
+				m.detailMask = mask1.g;
+				m.ddMask = mask1.b;
+				m.smoothMask = mask1.a;
+			}
+		}
+		else {
+			m.detailMask = SampleMask(_DetailMask, i.uv.xy, _DetailMaskChannel, true);
+		}
+	#else
+		m.detailMask = SampleMask(_DetailMask, i.uv.xy, _DetailMaskChannel, true);
+	#endif
+	return m;
 }

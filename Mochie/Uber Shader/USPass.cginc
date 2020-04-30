@@ -1,7 +1,7 @@
 //----------------------------
 // FORWARD && ADD PASSES
 //----------------------------
-#if BASE_OR_ADD_DEFINED && !defined(OUTLINE)
+#if (BASE_OR_ADD_DEFINED) && !defined(OUTLINE)
 
 v2g vert (appdata v) {
     v2g o;
@@ -22,10 +22,11 @@ v2g vert (appdata v) {
 		o.worldPos = mul(unity_ObjectToWorld, v.vertex);
 		o.normal = UnityObjectToWorldNormal(v.normal);
 		o.tangent.xyz = UnityObjectToWorldDir(v.tangent.xyz);
+		o.screenPos = ComputeGrabScreenPos(o.pos);
 	#endif
 
 	o.tangent.w = v.tangent.w;
-    o.binormal = cross(o.normal, o.tangent.xyz) * (o.tangent.w * unity_WorldTransformParams.w);
+	o.binormal = GetBinormal(o.tangent, o.normal);
     v.tangent.xyz = normalize(v.tangent.xyz);
     v.normal = normalize(v.normal);
     float3x3 objectToTangent = float3x3(v.tangent.xyz, (cross(v.normal, v.tangent.xyz) * v.tangent.w), v.normal);
@@ -46,16 +47,17 @@ v2g vert (appdata v) {
 #endif
 
 float4 frag (g2f i) : SV_Target {
-
+	
 	#if defined(UBERX)
 		float falloff, falloffRim;
 		GetFalloff(i, falloff, falloffRim);
 		clip(falloff);
 	#endif
-
+	
+	i.screenPos = UNITY_PROJ_COORD(i.screenPos);
 	ApplyUVDistortion(i, uvOffset);
 	ApplyParallax(i);
-	UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos);
+	UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos.xyz);
 	atten = FadeShadows(i, atten);
 	masks m = GetMasks(i);
     lighting l = GetLighting(i, m, atten);
@@ -78,12 +80,12 @@ float4 frag (g2f i) : SV_Target {
 			#endif
 			break;
 		
-		// Toon Shading
+		// Toon PBR Shading
 		case 1: 
 			atten = GetRamp(i, l, m, atten);
 			diffuse.rgb = GetToonWorkflow(i, l, m, albedo.rgb, specularTint, smoothness, omr);
 			float3 reflCol = GetReflections(i, l, GetRoughness(1-smoothness)) * _ReflCol.rgb;
-			diffuse.rgb = GetToonBRDF(i, l, m, diffuse.rgb, specularTint, reflCol, omr, smoothness, atten);
+			diffuse.rgb = GetMochieBRDF(i, l, m, diffuse, albedo, specularTint, reflCol, omr, smoothness, atten);
 			break;
 		
 		// Standard PBR Shading
@@ -115,9 +117,9 @@ float4 frag (g2f i) : SV_Target {
 
 	// Emission, Rim Lighting, Dissolve Rim, Wireframe (if clone), and Fog
     diffuse.rgb = ApplyRimLighting(i, l, m, diffuse.rgb, atten);
-    diffuse.rgb = ApplyLREmission(l, diffuse.rgb, atten, emiss);
+    diffuse.rgb = ApplyLREmission(l, diffuse.rgb, emiss);
 	#if defined(UBERX)
-		diffuse.rgb = ApplyDissolveRim(i, l, diffuse.rgb); 
+		diffuse.rgb = ApplyDissolveRim(i, diffuse.rgb); 
 		diffuse.rgb = ApplyWireframe(i, diffuse.rgb);
 		diffuse.rgb = ApplyFalloffRim(i, diffuse.rgb, falloffRim);
 	#endif
@@ -164,13 +166,13 @@ float4 frag(g2f i) : SV_Target {
 		GetFalloff(i, falloff, falloffRim);
 		clip(falloff);
 	#endif
-    #if defined(CUTOUT)
+    #if defined(_ALPHATEST_ON)
         clip(UNITY_SAMPLE_TEX2D(_MainTex, i.uv.xy).a - _Cutoff);
     #endif
-	#if defined(UBERX) && CUT_OR_TRANS_DEFINED
-		lighting l;
-		UNITY_INITIALIZE_OUTPUT(lighting, l);
-		clip(GetDissolveValue(i, l) - _DissolveAmount);
+	#if defined(UBERX) && (CUT_OR_TRANS_DEFINED)
+		UNITY_BRANCH
+		if (_DissolveToggle == 1)
+			clip(GetDissolveValue(i) - _DissolveAmount);
 	#endif
 	SHADOW_CASTER_FRAGMENT(i)
 }
@@ -185,28 +187,31 @@ v2g vert (appdata v){
     v2g o;
 	UNITY_INITIALIZE_OUTPUT(v2g, o);
 
-	v.vertex.xyz += _OutlineThicc*v.normal*0.01;
-	o.objPos = mul(unity_ObjectToWorld, float4(0,0,0,1)).xyz;
-	o.cameraPos = _WorldSpaceCameraPos;
-	#if UNITY_SINGLE_PASS_STEREO
-		o.cameraPos = (unity_StereoWorldSpaceCameraPos[0] + unity_StereoWorldSpaceCameraPos[1])*0.5;
-	#endif
+	#if !(TRANSPARENT_DEFINED)
+		v.vertex.xyz += _OutlineThicc*v.normal*0.01;
+		o.objPos = mul(unity_ObjectToWorld, float4(0,0,0,1)).xyz;
+		o.cameraPos = _WorldSpaceCameraPos;
+		#if UNITY_SINGLE_PASS_STEREO
+			o.cameraPos = (unity_StereoWorldSpaceCameraPos[0] + unity_StereoWorldSpaceCameraPos[1])*0.5;
+		#endif
 
-	#if defined(UBERX)
-		VertX(o, v);
+		#if defined(UBERX)
+			VertX(o, v);
+		#else
+			o.pos = UnityObjectToClipPos(v.vertex);
+			o.worldPos = mul(unity_ObjectToWorld, v.vertex);
+		#endif
+
+		o.uv.xy = TRANSFORM_TEX(v.uv, _MainTex) + (_Time.y * _MainTexScroll);
+		o.uv.zw = TRANSFORM_TEX(v.uv, _EmissionMap) + (_Time.y * _EmissScroll);
+		o.uv2.xy = TRANSFORM_TEX(v.uv, _OutlineTex) + (_Time.y * _OutlineScroll);
+		o.color = _OutlineCol;
+		UNITY_TRANSFER_SHADOW(o, v.uv1);
+		UNITY_TRANSFER_FOG(o, o.pos);
 	#else
-		o.pos = UnityObjectToClipPos(v.vertex);
-		o.worldPos = mul(unity_ObjectToWorld, v.vertex);
+		o.pos = 0.0/_NaNxddddd; // NaN to kill the vert if using transparent blending
 	#endif
 
-	o.uv.xy = TRANSFORM_TEX(v.uv, _MainTex) + (_Time.y * _MainTexScroll);
-	o.uv.zw = TRANSFORM_TEX(v.uv, _EmissionMap) + (_Time.y * _EmissScroll);
-	o.uv2.xy = TRANSFORM_TEX(v.uv, _OutlineTex) + (_Time.y * _OutlineScroll);
-
-	o.color = _OutlineCol;
-	
-	UNITY_TRANSFER_SHADOW(o, v.uv1);
-    UNITY_TRANSFER_FOG(o, o.pos);
     return o;
 }
 
@@ -215,55 +220,81 @@ v2g vert (appdata v){
 #endif
 
 float4 frag(g2f i) : SV_Target {
+
+	#if TRANSPARENT_DEFINED
+		discard;
+	#endif
+
+	UNITY_BRANCH
 	if (_Outline == 0)
 		discard;
 
 	float objDist = distance(i.cameraPos, i.worldPos);
 	if (objDist < _OutlineRange)
 		discard;
+		
 	#if defined(UBERX)
 		float falloff, falloffRim;
 		GetFalloff(i, falloff, falloffRim);
 		clip(falloff);
 	#endif
 
-	float4 col = UNITY_SAMPLE_TEX2D(_MainTex, i.uv) * i.color;
+	UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos);
+	masks m = GetMasks(i);
+	lighting l = GetLighting(i, m, atten);
+	
+	float4 albedo = UNITY_SAMPLE_TEX2D(_MainTex, i.uv) * i.color;
+
+	#if defined(_ALPHATEST_ON)
+		clip(albedo.a - _Cutoff);
+	#endif
+	
+	#if defined(UBERX) && (CUT_OR_TRANS_DEFINED)
+		UNITY_BRANCH
+		if (_DissolveToggle == 1)
+			clip(GetDissolveValue(i) - _DissolveAmount);
+	#endif
+
+	[forcecase]
+	switch (_Outline){
+		case 1: albedo.rgb = i.color.rgb; break;
+		case 2: albedo = GetAlbedo(i, l, GetMasks(i)) * i.color; break;
+		case 3: albedo = UNITY_SAMPLE_TEX2D_SAMPLER(_OutlineTex, _MainTex, i.uv2) * i.color; break;
+		default: break; 
+	}
+
+	float4 diffuse = lerp(albedo, GetDiffuse(l, albedo, 1), _ApplyOutlineLighting);
+	diffuse.rgb = lerp(diffuse.rgb, clamp(diffuse.rgb, 0, albedo.rgb), _ColorPreservation);
 	float3 emiss = GetEmission(i);
 	float mask = -(1-SampleMask(_OutlineMask, i.uv, _OutlineMaskChannel, true));
 	clip(mask);
 
-	#if defined(CUTOUT)
-		clip(col.a - _Cutoff);
-	#endif
-
-	#if defined(UBERX) && CUT_OR_TRANS_DEFINED
-		lighting l;
-		UNITY_INITIALIZE_OUTPUT(lighting, l);
-		clip(GetDissolveValue(i, l) - _DissolveAmount);
-	#endif
-
-    UNITY_BRANCH
-    if (_Outline == 2){
-		i.color = col;
-		i.color.rgb += emiss;
-	}
-
-	UNITY_BRANCH
-	if (_Outline == 3)
-		i.color = UNITY_SAMPLE_TEX2D_SAMPLER(_OutlineTex, _MainTex, i.uv2) * i.color;
-
-	UNITY_BRANCH
-	if (_UnlitOutline == 0){
-		float3 lightCol = GetOutlineLightColor(float3(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w));
+	float interpolator = 1;
+	#if defined(_EMISSION)
 		UNITY_BRANCH
-		if (_ReactToggle == 1)
-			emiss *= AverageRGB(lightCol);
-		i.color.rgb *= lightCol;
-		i.color.rgb += emiss;
-	}
-	
+		if (_ApplyOutlineEmiss == 1){
+			interpolator = 0;
+			UNITY_BRANCH
+			if (_ReactToggle == 1){
+				UNITY_BRANCH
+				if (_CrossMode == 1){
+					float2 threshold = saturate(float2(_ReactThresh-_Crossfade, _ReactThresh+_Crossfade));
+					interpolator = smootherstep(threshold.x, threshold.y, l.worldBrightness); 
+				}
+				else {
+					interpolator = l.worldBrightness;
+				}
+			}
+		}
+	#endif
+
+	if (_Outline == 1)
+		i.color.rgb = lerp(_EmissionColor, diffuse.rgb, interpolator);
+	else 
+		i.color.rgb = lerp(diffuse.rgb+emiss.rgb, diffuse.rgb, interpolator);
+
 	#if defined(UBERX)
-		i.color.rgb = ApplyFalloffRim(i, i.color.rgb, falloffRim)
+		i.color.rgb = ApplyFalloffRim(i, i.color.rgb, falloffRim);
 	#endif
 	UNITY_APPLY_FOG(i.fogCoord, i.color);
     return i.color;

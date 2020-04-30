@@ -20,10 +20,11 @@ public class SFXEditor : ShaderGUI {
 	public static Dictionary<string, float> presetDict = new Dictionary<string, float>();
 	public static List<string> presetsList = new List<string>();
 	public static string[] presets;
-	int popupIndex = 0;
+
+	int popupIndex = -1;
 	string presetText = "";
 	string dirPath = "Assets/Mochie/Unity/Presets/ScreenFX/";
-	
+
     Toggles toggles = new Toggles(
 		new bool[] {
 			true, false, false, false,
@@ -272,9 +273,13 @@ public class SFXEditor : ShaderGUI {
 		//  AssetDatabase.Refresh();
 		// }
 
+		// Generate preset popup items (and folders if necessary)
+		if (!AssetDatabase.IsValidFolder(MGUI.parentPath))
+			AssetDatabase.CreateFolder(MGUI.presetPath, "Presets");
+		if (!AssetDatabase.IsValidFolder(MGUI.parentPath+"/ScreenFX"))
+			AssetDatabase.CreateFolder(MGUI.parentPath, "ScreenFX");
 		DirectoryInfo dir = new DirectoryInfo(dirPath);
 		FileInfo[] info = dir.GetFiles();
-		presetsList.Clear();
 		foreach (FileInfo f in info){
 			if (!f.Name.Contains(".meta") && f.Name.Contains(".mat")){
 				Material candidate = (Material)AssetDatabase.LoadAssetAtPath(dirPath + f.Name, typeof(Material));
@@ -285,6 +290,7 @@ public class SFXEditor : ShaderGUI {
 			}
 		}
 		presets = presetsList.ToArray();
+		presetsList.Clear();
 
 
 		bool isSFXX = MGUI.IsXVersion(mat);
@@ -318,9 +324,9 @@ public class SFXEditor : ShaderGUI {
         EditorGUI.BeginChangeCheck(); {
 
             // Global
-            if (MGUI.DoFoldout(foldouts, mat, me, "GENERAL")){
+            if (Foldouts.DoFoldout(foldouts, mat, me, "GENERAL")){
 				MGUI.Space4();
-				MGUI.RenderQueueLabel(mat);
+				me.RenderQueueField();
                 EditorGUI.showMixedValue = _BlendMode.hasMixedValue;
                 var mode = (BlendingModes)_BlendMode.floatValue;
                 EditorGUI.BeginChangeCheck();
@@ -345,7 +351,7 @@ public class SFXEditor : ShaderGUI {
 
             // Color Filtering
             if (_DeepFry.floatValue != 1){
-                if (MGUI.DoFoldout(foldouts, mat, me, "COLOR")){
+                if (Foldouts.DoFoldout(foldouts, mat, me, "COLOR")){
                     MGUI.Space4();
                     me.ShaderProperty(_FilterModel, modeLabel);
 					if (_FilterModel.floatValue > 0){
@@ -393,7 +399,7 @@ public class SFXEditor : ShaderGUI {
             }
 
             // Shake
-            if (MGUI.DoFoldout(foldouts, mat, me, "SHAKE")){
+            if (Foldouts.DoFoldout(foldouts, mat, me, "SHAKE")){
                 MGUI.Space4();
                 me.ShaderProperty(_ShakeModel, modeLabel);
 				if (_ShakeModel.floatValue > 0){
@@ -419,7 +425,7 @@ public class SFXEditor : ShaderGUI {
             }
 
             // Distortion
-            if (MGUI.DoFoldout(foldouts, mat, me, "DISTORTION")){
+            if (Foldouts.DoFoldout(foldouts, mat, me, "DISTORTION")){
                 MGUI.Space4();
                 me.ShaderProperty(_DistortionModel, modeLabel);
                 if (_DistortionModel.floatValue > 0){
@@ -448,7 +454,7 @@ public class SFXEditor : ShaderGUI {
 
             // Blur
             if (_DeepFry.floatValue != 1){
-                if (MGUI.DoFoldout(foldouts, mat, me, "BLUR")){
+                if (Foldouts.DoFoldout(foldouts, mat, me, "BLUR")){
                     MGUI.Space4();
                     me.ShaderProperty(_BlurModel, modeLabel);
                     if (_BlurModel.floatValue > 0){
@@ -506,7 +512,7 @@ public class SFXEditor : ShaderGUI {
             
 			if (isSFXX){
 				// Zoom
-				if (MGUI.DoFoldout(foldouts, mat, me, "ZOOM")){
+				if (Foldouts.DoFoldout(foldouts, mat, me, "ZOOM")){
 					MGUI.Space4();
 					me.ShaderProperty(_Zoom, modeLabel);
 					if (_Zoom.floatValue > 0){
@@ -528,7 +534,7 @@ public class SFXEditor : ShaderGUI {
 				}
 				
 				// Screenspace Texture Overlay
-				if (MGUI.DoFoldout(foldouts, mat, me, "IMAGE OVERLAY")){
+				if (Foldouts.DoFoldout(foldouts, mat, me, "IMAGE OVERLAY")){
 					MGUI.Space4();
 					me.ShaderProperty(_SST, modeLabel);
 					if (_SST.floatValue > 0){
@@ -563,7 +569,7 @@ public class SFXEditor : ShaderGUI {
 				}
 
 				// Fog
-				if (MGUI.DoFoldout(foldouts, mat, me, "FOG")){
+				if (Foldouts.DoFoldout(foldouts, mat, me, "FOG")){
 					MGUI.Space4();
 					me.ShaderProperty(_Fog, modeLabel);
 					if (_Fog.floatValue == 1){
@@ -579,7 +585,7 @@ public class SFXEditor : ShaderGUI {
 						me.ShaderProperty(_FogFade, fadeLabel);
 						me.ShaderProperty(_FogP2O, p2oLabel);
 						
-						if (MGUI.DoMediumFoldout(foldouts, mat, me, _FogSafeZone, "Safe Zone")){
+						if (Foldouts.DoMediumFoldout(foldouts, mat, me, _FogSafeZone, "Safe Zone")){
 							MGUI.Space6();
 							EditorGUI.BeginDisabledGroup(_FogSafeZone.floatValue == 0);
 							me.ShaderProperty(_FogSafeRadius, "Vision Radius");
@@ -593,7 +599,7 @@ public class SFXEditor : ShaderGUI {
 				}
 
 				// Triplanar Mapping
-				if (MGUI.DoFoldout(foldouts, mat, me, "TRIPLANAR")){
+				if (Foldouts.DoFoldout(foldouts, mat, me, "TRIPLANAR")){
 					MGUI.Space4();
 					me.ShaderProperty(_Triplanar, modeLabel);
 					if (_Triplanar.floatValue > 0){				
@@ -629,7 +635,7 @@ public class SFXEditor : ShaderGUI {
 				}
 
 				// Outline
-				if (MGUI.DoFoldout(foldouts, mat, me, "OUTLINE")){
+				if (Foldouts.DoFoldout(foldouts, mat, me, "OUTLINE")){
 					MGUI.Space4();
 					me.ShaderProperty(_OutlineType, modeLabel);
 					if (_OutlineType.floatValue > 0){
@@ -647,9 +653,9 @@ public class SFXEditor : ShaderGUI {
 
 				// Extras
 				mat.SetShaderPassEnabled("Always", _GhostingToggle.floatValue == 1 || _FreezeFrame.floatValue == 1);
-				if (MGUI.DoFoldout(foldouts, mat, me, "MISC")){
+				if (Foldouts.DoFoldout(foldouts, mat, me, "MISC")){
 					MGUI.Space4();
-					if (MGUI.DoMediumFoldout(foldouts, mat, me, "Framebuffer")){
+					if (Foldouts.DoMediumFoldout(foldouts, mat, me, "Framebuffer")){
 						MGUI.Space6();
 						if (_FreezeFrame.floatValue == 1 && _GhostingToggle.floatValue == 1){
 							_FreezeFrame.floatValue = 0;
@@ -661,7 +667,7 @@ public class SFXEditor : ShaderGUI {
 					}
 					else GUILayout.Space(-2);
 
-					if (MGUI.DoMediumFoldout(foldouts, mat, me, _Letterbox, "Letterbox")){
+					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _Letterbox, "Letterbox")){
 						MGUI.Space6();
 						EditorGUI.BeginDisabledGroup(_Letterbox.floatValue == 0);
 						me.ShaderProperty(_UseZoomFalloff, "Use Zoom Falloff");
@@ -671,7 +677,7 @@ public class SFXEditor : ShaderGUI {
 					}
 					else GUILayout.Space(-2);
 
-					if (MGUI.DoMediumFoldout(foldouts, mat, me, _DeepFry, "Deep Fry")){
+					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _DeepFry, "Deep Fry")){
 						MGUI.Space6();
 						EditorGUI.BeginDisabledGroup(_DeepFry.floatValue == 0);
 						me.ShaderProperty(_Flavor, "Flavor");
@@ -682,7 +688,7 @@ public class SFXEditor : ShaderGUI {
 					}
 					else GUILayout.Space(-2);
 
-					if (MGUI.DoMediumFoldout(foldouts, mat, me, _Pulse, "Pulse")){
+					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _Pulse, "Pulse")){
 						MGUI.Space6();
 						EditorGUI.BeginDisabledGroup(_Pulse.floatValue == 0);
 						me.ShaderProperty(_WaveForm, "Waveform");
@@ -695,7 +701,7 @@ public class SFXEditor : ShaderGUI {
 					}
 					else GUILayout.Space(-2);
 
-					if (MGUI.DoMediumFoldout(foldouts, mat, me, _Shift, "UV Manipulation")){
+					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _Shift, "UV Manipulation")){
 						MGUI.Space6();
 						EditorGUI.BeginDisabledGroup(_Shift.floatValue == 0);
 						me.ShaderProperty(_InvertX, "Invert X");
@@ -707,7 +713,7 @@ public class SFXEditor : ShaderGUI {
 					}
 					else GUILayout.Space(-2);
 
-					if (MGUI.DoMediumFoldout(foldouts, mat, me, _RoundingToggle, "Rounding")){
+					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _RoundingToggle, "Rounding")){
 						MGUI.Space6();
 						EditorGUI.BeginDisabledGroup(_RoundingToggle.floatValue == 0);
 						me.ShaderProperty(_RoundingOpacity, "Opacity");
@@ -717,7 +723,7 @@ public class SFXEditor : ShaderGUI {
 					}
 					else GUILayout.Space(-2);
 
-					if (MGUI.DoMediumFoldout(foldouts, mat, me, _NMFToggle, "Normal Map")){
+					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _NMFToggle, "Normal Map")){
 						MGUI.Space6();
 						EditorGUI.BeginDisabledGroup(_NMFToggle.floatValue == 0);
 						me.ShaderProperty(_NMFOpacity, "Opacity");
@@ -727,7 +733,7 @@ public class SFXEditor : ShaderGUI {
 					}
 					else GUILayout.Space(-2);
 					
-					if (MGUI.DoMediumFoldout(foldouts, mat, me, _DepthBufferToggle, "Depth Buffer")){
+					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _DepthBufferToggle, "Depth Buffer")){
 						MGUI.Space6();
 						EditorGUI.BeginDisabledGroup(_DepthBufferToggle.floatValue == 0);
 						me.ShaderProperty(_DBOpacity, "Opacity");
@@ -739,31 +745,54 @@ public class SFXEditor : ShaderGUI {
 					MGUI.Space6();
 				}
 			}
-			if (MGUI.DoFoldout(foldouts, mat, me, "PRESETS")){
+
+			// -----------------
+			// Presets
+			// -----------------
+			if (Foldouts.DoFoldout(foldouts, mat, me, "PRESETS")){
 				MGUI.Space4();
 				float buttonWidth = EditorGUIUtility.labelWidth-5.0f;
-				if (MGUI.SimpleButton("Capture", buttonWidth, 0)){
+				if (MGUI.SimpleButton("Save", buttonWidth, 0)){
 					presetText = MGUI.ReplaceInvalidChars(presetText);
 					string filePath = dirPath + presetText + ".mat";
 					Material newMat = new Material(mat);
 					AssetDatabase.CreateAsset(newMat, filePath);
 					AssetDatabase.Refresh();
+					GUIUtility.keyboardControl = 0;
+					GUIUtility.hotControl = 0;
+					presetText = "";
+					popupIndex = -1;
 				}
 				GUILayout.Space(-17);
+
+				// Text area
 				Rect r = EditorGUILayout.GetControlRect();
 				r.x += EditorGUIUtility.labelWidth;
 				r.width = MGUI.GetPropertyWidth();
 				presetText = EditorGUI.TextArea(r, presetText);
-				if (MGUI.SimpleButton("Apply", buttonWidth, 0)){
-					string presetPath = dirPath + presets[popupIndex] + ".mat";
-					Material selectedMat = (Material)AssetDatabase.LoadAssetAtPath(presetPath, typeof(Material));
-					mat.CopyPropertiesFromMaterial(selectedMat);
+				
+				// Locate button
+				if (MGUI.SimpleButton("Locate", buttonWidth, 0) && popupIndex != -1){
+					string filePath = dirPath + presets[popupIndex]+".mat";
+					EditorUtility.FocusProjectWindow();
+					Selection.activeObject = AssetDatabase.LoadAssetAtPath(filePath, typeof(Material));
 				}
 				GUILayout.Space(-17);
+
+				// Popup list
 				r = EditorGUILayout.GetControlRect();
 				r.x += EditorGUIUtility.labelWidth;
 				r.width = MGUI.GetPropertyWidth();
 				popupIndex = EditorGUI.Popup(r, popupIndex, presets);
+
+				// Apply button
+				GUILayout.Space(-GUILayoutUtility.GetLastRect().height);
+				if (MGUI.SimpleButton("Apply", r.width, r.x-14f) && popupIndex != -1){
+					string presetPath = dirPath + presets[popupIndex] + ".mat";
+					Material selectedMat = (Material)AssetDatabase.LoadAssetAtPath(presetPath, typeof(Material));
+					mat.CopyPropertiesFromMaterial(selectedMat);
+					popupIndex = -1;
+				}
 			}
 		}
 		GUILayout.Space(15);

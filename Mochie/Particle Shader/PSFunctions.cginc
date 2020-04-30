@@ -12,6 +12,9 @@ float4 GetTexture(v2f i){
 	#if defined(PSX) && defined(EFFECT_BUMP)
 		float4 texCol = tex2D(_MainTex, i.uv0.xy);
 		ApplyDistortion(i, texCol.a);
+		UNITY_BRANCH
+		if (_DistortMainTex == 1)
+			texCol = tex2D(_MainTex, i.uv0.xy);
 		float3 grabCol = tex2Dproj(_PSGrab, i.uv1).rgb;
 		texCol.rgb = lerp(texCol.rgb, grabCol, saturate(texCol.a - _DistortionBlend));
 	#else
@@ -88,7 +91,6 @@ float4 GetColor(v2f i){
 			col.a *= i.falloff;
 			col *= _Color;
 			col *= i.pulse;
-			UNITY_APPLY_FOG(i.fogCoord, col);
 			break;
 
 		// Premultiplied
@@ -111,7 +113,6 @@ float4 GetColor(v2f i){
 			#endif
 			col.a *= i.falloff;
 			col *= _Color;
-			UNITY_APPLY_FOG_COLOR(i.fogCoord, col, float4(0,0,0,0));
 			break;
 		
 		// Soft Additive
@@ -124,7 +125,6 @@ float4 GetColor(v2f i){
 			col *= i.falloff;
 			col *= _Color;
 			col.rgb *= i.pulse;
-			UNITY_APPLY_FOG_COLOR(i.fogCoord, col, float4(0,0,0,0));
 			break;
 		
 		// Multiply
@@ -135,7 +135,6 @@ float4 GetColor(v2f i){
 				col.rgb = GetHSLFilter(col);
 			#endif
 			col *= _Color;
-			UNITY_APPLY_FOG_COLOR(i.fogCoord, col, float4(1,1,1,1));
 			break;
 		
 		// Multiply x2
@@ -148,7 +147,6 @@ float4 GetColor(v2f i){
 				col.rgb = GetHSLFilter(col);
 			#endif
 			col *= _Color;
-			UNITY_APPLY_FOG_COLOR(i.fogCoord, col, float4(0.5,0.5,0.5,0.5));
 			break;
 		
 		default: break;

@@ -12,7 +12,7 @@ float _Brightness, _Opacity;
 	sampler2D _PSGrab; float4 _PSGrab_TexelSize;
 	sampler2D _SecondTex;
 	sampler2D _NormalMap;
-	int _Distortion, _TexBlendMode, _Filtering, _AutoShift, _Layering;
+	int _Distortion, _DistortMainTex, _TexBlendMode, _Filtering, _AutoShift, _Layering;
 	float _DistortionStr, _DistortionBlend, _DistortionSpeedX, _DistortionSpeedY;
 	float _Hue, _Saturation, _Luminance, _Contrast, _HDR, _AutoShiftSpeed;
 #endif
@@ -38,7 +38,8 @@ struct v2f {
 };
 
 
-#include "PSUtilities.cginc"
+#include "../Common/Utilities.cginc"
+#include "../Common/Color.cginc"
 #if defined(PSX)
 	#include "PSXFeatures.cginc"
 #endif

@@ -17,7 +17,8 @@ public class PSEditor : ShaderGUI {
 
 	public static List<string> presetsList = new List<string>();
 	public static string[] presets;
-	int popupIndex = 0;
+
+	int popupIndex = -1;
 	string presetText = "";
 	string dirPath = "Assets/Mochie/Unity/Presets/Particle/";
 
@@ -35,7 +36,6 @@ public class PSEditor : ShaderGUI {
     MaterialProperty _SrcBlend;
     MaterialProperty _DstBlend = null;
     MaterialProperty _Culling = null;
-    MaterialProperty _ZWrite = null;
     MaterialProperty _ZTest = null;
     MaterialProperty _ZT = null;
     MaterialProperty _Falloff = null;
@@ -72,6 +72,7 @@ public class PSEditor : ShaderGUI {
     MaterialProperty _DistortionBlend = null;
     MaterialProperty _DistortionSpeedX = null;
     MaterialProperty _DistortionSpeedY = null;
+	MaterialProperty _DistortMainTex = null;
 
 	// Pulse
 	MaterialProperty _Pulse = null;
@@ -104,6 +105,11 @@ public class PSEditor : ShaderGUI {
 			m_FirstTimeApply = false;
         }
 
+		// Generate preset popup items (and folders if necessary)
+		if (!AssetDatabase.IsValidFolder(MGUI.parentPath))
+			AssetDatabase.CreateFolder(MGUI.presetPath, "Presets");
+		if (!AssetDatabase.IsValidFolder(MGUI.parentPath+"/Particle"))
+			AssetDatabase.CreateFolder(MGUI.parentPath, "Particle");
 		DirectoryInfo dir = new DirectoryInfo(dirPath);
 		FileInfo[] info = dir.GetFiles();
 		foreach (FileInfo f in info){
@@ -116,6 +122,7 @@ public class PSEditor : ShaderGUI {
 			}
 		}
 		presets = presetsList.ToArray();
+		presetsList.Clear();
 
 		bool isParticleX = MGUI.IsXVersion(mat);
 
@@ -145,11 +152,11 @@ public class PSEditor : ShaderGUI {
             // -----------------
             // Render Settings
             // -----------------
-            if (MGUI.DoFoldout(foldouts, mat, me, "RENDERING")){
+            if (Foldouts.DoFoldout(foldouts, mat, me, "RENDERING")){
 
                 // Blending mode dropdown
                 MGUI.Space4();
-				MGUI.RenderQueueLabel(mat);
+				me.RenderQueueField();
                 EditorGUI.showMixedValue = _BlendMode.hasMixedValue;
                 var mode = (BlendingModes)_BlendMode.floatValue;
                 EditorGUI.BeginChangeCheck();
@@ -164,7 +171,6 @@ public class PSEditor : ShaderGUI {
                 }
 				me.ShaderProperty(_Culling, "Culling Mode");
 				me.ShaderProperty(_FlipbookBlending, "Flipbook Blending");
-				me.ShaderProperty(_ZWrite, "ZWrite");
 				me.ShaderProperty(_ZTest, "ZTest Always");
 				if (_ZTest.floatValue == 1) _ZT.floatValue = 6;
 				else _ZT.floatValue = 2;
@@ -203,7 +209,7 @@ public class PSEditor : ShaderGUI {
             // -----------------
             // Base Settings
             // -----------------
-            if (MGUI.DoFoldout(foldouts, mat, me, "BASE")){
+            if (Foldouts.DoFoldout(foldouts, mat, me, "BASE")){
                 MGUI.Space4();
 				if (isParticleX){
 					me.TexturePropertySingleLine(texLabel, _MainTex, _Color, _Layering);
@@ -226,7 +232,7 @@ public class PSEditor : ShaderGUI {
 
 			if (isParticleX){
 				// Filtering
-				if (MGUI.DoFoldout(foldouts, mat, me, "FILTERING")){
+				if (Foldouts.DoFoldout(foldouts, mat, me, "FILTERING")){
 					MGUI.Space4();
 					me.ShaderProperty(_Filtering, "Enable");
 					MGUI.Space4();
@@ -246,12 +252,13 @@ public class PSEditor : ShaderGUI {
 
 				// Distortion
 				if (canDistort){
-					if (MGUI.DoFoldout(foldouts, mat, me, "DISTORTION")){
+					if (Foldouts.DoFoldout(foldouts, mat, me, "DISTORTION")){
 						MGUI.Space4();
 						me.ShaderProperty(_Distortion, "Enable");
 						MGUI.Space4();
 						MGUI.ToggleGroup(_Distortion.floatValue == 0);
-						me.TexturePropertySingleLine(normalLabel, _NormalMap);
+						me.TexturePropertySingleLine(normalLabel, _NormalMap, _DistortMainTex);
+						MGUI.TexPropLabel("Distort Main Tex", 155);
 						me.ShaderProperty(_DistortionStr, "Strength");
 						me.ShaderProperty(_DistortionBlend, "Blend");
 						me.ShaderProperty(_DistortionSpeedX, "Speed X");
@@ -269,7 +276,7 @@ public class PSEditor : ShaderGUI {
 			else mat.DisableKeyword("EFFECT_BUMP");
 
 			// Pulse
-			if (MGUI.DoFoldout(foldouts, mat, me, "PULSE")){
+			if (Foldouts.DoFoldout(foldouts, mat, me, "PULSE")){
 				MGUI.Space4();
 				me.ShaderProperty(_Pulse, "Enable");
 				MGUI.Space4();
@@ -282,7 +289,7 @@ public class PSEditor : ShaderGUI {
 			}
 
 			// Falloff
-			if (MGUI.DoFoldout(foldouts, mat, me, "FALLOFF")){
+			if (Foldouts.DoFoldout(foldouts, mat, me, "FALLOFF")){
 				MGUI.Space4();
 				me.ShaderProperty(_Falloff, "Enable");
 				MGUI.Space4();
@@ -295,34 +302,54 @@ public class PSEditor : ShaderGUI {
 				MGUI.ToggleGroupEnd();
 				MGUI.Space8();
 			}
-
-			if (MGUI.DoFoldout(foldouts, mat, me, "PRESETS")){
+			// -----------------
+			// Presets
+			// -----------------
+			if (Foldouts.DoFoldout(foldouts, mat, me, "PRESETS")){
 				MGUI.Space4();
 				float buttonWidth = EditorGUIUtility.labelWidth-5.0f;
-				if (MGUI.SimpleButton("Capture", buttonWidth, 0)){
+				if (MGUI.SimpleButton("Save", buttonWidth, 0)){
 					presetText = MGUI.ReplaceInvalidChars(presetText);
 					string filePath = dirPath + presetText + ".mat";
 					Material newMat = new Material(mat);
 					AssetDatabase.CreateAsset(newMat, filePath);
 					AssetDatabase.Refresh();
+					GUIUtility.keyboardControl = 0;
+					GUIUtility.hotControl = 0;
+					presetText = "";
+					popupIndex = -1;
 				}
 				GUILayout.Space(-17);
+
+				// Text area
 				Rect r = EditorGUILayout.GetControlRect();
 				r.x += EditorGUIUtility.labelWidth;
 				r.width = MGUI.GetPropertyWidth();
 				presetText = EditorGUI.TextArea(r, presetText);
-				if (MGUI.SimpleButton("Apply", buttonWidth, 0)){
-					string presetPath = dirPath + presets[popupIndex] + ".mat";
-					Material selectedMat = (Material)AssetDatabase.LoadAssetAtPath(presetPath, typeof(Material));
-					mat.CopyPropertiesFromMaterial(selectedMat);
+				
+				// Locate button
+				if (MGUI.SimpleButton("Locate", buttonWidth, 0) && popupIndex != -1){
+					string filePath = dirPath + presets[popupIndex]+".mat";
+					EditorUtility.FocusProjectWindow();
+					Selection.activeObject = AssetDatabase.LoadAssetAtPath(filePath, typeof(Material));
 				}
 				GUILayout.Space(-17);
+
+				// Popup list
 				r = EditorGUILayout.GetControlRect();
 				r.x += EditorGUIUtility.labelWidth;
 				r.width = MGUI.GetPropertyWidth();
 				popupIndex = EditorGUI.Popup(r, popupIndex, presets);
-			}
 
+				// Apply button
+				GUILayout.Space(-GUILayoutUtility.GetLastRect().height);
+				if (MGUI.SimpleButton("Apply", r.width, r.x-14f) && popupIndex != -1){
+					string presetPath = dirPath + presets[popupIndex] + ".mat";
+					Material selectedMat = (Material)AssetDatabase.LoadAssetAtPath(presetPath, typeof(Material));
+					mat.CopyPropertiesFromMaterial(selectedMat);
+					popupIndex = -1;
+				}
+			}
 			GUILayout.Space(15);
             MGUI.CenteredTexture(watermarkTex, 0, 0);
 			float buttonSize = 24.0f;
