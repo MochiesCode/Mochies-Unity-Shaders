@@ -1,6 +1,7 @@
 ﻿using UnityEditor;
 using UnityEngine;
 using System;
+using System.IO;
 using System.Reflection;
 using System.Collections.Generic;
 
@@ -18,7 +19,7 @@ public class USEditor : ShaderGUI {
 			false, false, false, false,
 			false, false, false, false,
 			false, false, false, false,
-			false, false
+			false, false, false
 		},
 		new string[] {
 			"BASE", 
@@ -47,9 +48,16 @@ public class USEditor : ShaderGUI {
 			"Pattern",
 			"Glitch",
 			"Shatter Culling",
-			"Wireframe"
+			"Wireframe",
+			"PRESETS"
 		}
 	);
+
+	public static List<string> presetsList = new List<string>();
+	public static string[] presets;
+	int popupIndex = 0;
+	string presetText = "";
+	string dirPath = "Assets/Mochie/Unity/Presets/Uber/";
 
 	string header = "Header_Pro";
 	string watermark = "Watermark_Pro";
@@ -374,7 +382,20 @@ public class USEditor : ShaderGUI {
                 property.SetValue(this, FindProperty(property.Name, props));
             }
         }
-		
+
+		DirectoryInfo dir = new DirectoryInfo(dirPath);
+		FileInfo[] info = dir.GetFiles();
+		foreach (FileInfo f in info){
+			if (!f.Name.Contains(".meta") && f.Name.Contains(".mat")){
+				Material candidate = (Material)AssetDatabase.LoadAssetAtPath(dirPath + f.Name, typeof(Material));
+				if (candidate.shader.name == mat.shader.name){
+					int indOf = f.Name.IndexOf(".");
+					presetsList.Add(f.Name.Substring(0, indOf));
+				}
+			}
+		}
+		presets = presetsList.ToArray();
+
 		// Check name of shader to determine if certain properties should be displayed
         bool isTransparent = mat.shader.name.Contains("Transparent");
         bool isCutout = mat.shader.name.Contains("Cutout");
@@ -1020,7 +1041,7 @@ public class USEditor : ShaderGUI {
 		if (isUberX){
 			if (MGUI.DoFoldout(foldouts, mat, me, "SPECIAL FEATURES")){
 				MGUI.Space4();
-				me.ShaderProperty(_GeomFXToggle, "Geometry Shader FX");
+				me.ShaderProperty(_GeomFXToggle, "Geometry Shader");
 				MGUI.ToggleGroup(_GeomFXToggle.floatValue == 0);
 				me.ShaderProperty(_DisguiseMain, "Clones Only");
 				MGUI.ToggleGroupEnd();
@@ -1190,7 +1211,34 @@ public class USEditor : ShaderGUI {
 				else MGUI.SpaceN2();
 
 				MGUI.ToggleGroupEnd();
+				MGUI.Space6();
 			}
+		}
+		if (MGUI.DoFoldout(foldouts, mat, me, "PRESETS")){
+			MGUI.Space4();
+			float buttonWidth = EditorGUIUtility.labelWidth-5.0f;
+			if (MGUI.SimpleButton("Capture", buttonWidth, 0)){
+				presetText = MGUI.ReplaceInvalidChars(presetText);
+				string filePath = dirPath + presetText + ".mat";
+				Material newMat = new Material(mat);
+				AssetDatabase.CreateAsset(newMat, filePath);
+				AssetDatabase.Refresh();
+			}
+			GUILayout.Space(-17);
+			Rect r = EditorGUILayout.GetControlRect();
+			r.x += EditorGUIUtility.labelWidth;
+			r.width = MGUI.GetPropertyWidth();
+			presetText = EditorGUI.TextArea(r, presetText);
+			if (MGUI.SimpleButton("Apply", buttonWidth, 0)){
+				string presetPath = dirPath + presets[popupIndex] + ".mat";
+				Material selectedMat = (Material)AssetDatabase.LoadAssetAtPath(presetPath, typeof(Material));
+				mat.CopyPropertiesFromMaterial(selectedMat);
+			}
+			GUILayout.Space(-17);
+			r = EditorGUILayout.GetControlRect();
+			r.x += EditorGUIUtility.labelWidth;
+			r.width = MGUI.GetPropertyWidth();
+			popupIndex = EditorGUI.Popup(r, popupIndex, presets);
 		}
 		GUILayout.Space(15);
 		

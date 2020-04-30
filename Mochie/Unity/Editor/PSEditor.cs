@@ -1,6 +1,7 @@
 ﻿using UnityEditor;
 using UnityEngine;
 using System;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Collections.Generic;
@@ -14,10 +15,16 @@ public class PSEditor : ShaderGUI {
     GUIContent normalLabel = new GUIContent("Normal Map");
 	GUIContent applyStreamsText = new GUIContent("Fix Vertex Streams", "Apply the vertex stream layout to all Particle Systems using this material");
 
+	public static List<string> presetsList = new List<string>();
+	public static string[] presets;
+	int popupIndex = 0;
+	string presetText = "";
+	string dirPath = "Assets/Mochie/Unity/Presets/Particle/";
+
     static Dictionary<Material, Toggles> foldouts = new Dictionary<Material, Toggles>();
     Toggles toggles = new Toggles(
-		new bool[] {true, true, false, false, false, false}, 
-		new string[] {"RENDERING", "BASE", "FILTERING", "DISTORTION", "PULSE", "FALLOFF"}
+		new bool[] {true, true, false, false, false, false, false}, 
+		new string[] {"RENDERING", "BASE", "FILTERING", "DISTORTION", "PULSE", "FALLOFF", "PRESETS"}
 	);
     string header = "ParticleHeader_Pro";
 	string watermark = "Watermark_Pro";
@@ -96,6 +103,20 @@ public class PSEditor : ShaderGUI {
 			CacheRenderersUsingThisMaterial(mat);
 			m_FirstTimeApply = false;
         }
+
+		DirectoryInfo dir = new DirectoryInfo(dirPath);
+		FileInfo[] info = dir.GetFiles();
+		foreach (FileInfo f in info){
+			if (!f.Name.Contains(".meta") && f.Name.Contains(".mat")){
+				Material candidate = (Material)AssetDatabase.LoadAssetAtPath(dirPath + f.Name, typeof(Material));
+				if (candidate.shader.name == mat.shader.name){
+					int indOf = f.Name.IndexOf(".");
+					presetsList.Add(f.Name.Substring(0, indOf));
+				}
+			}
+		}
+		presets = presetsList.ToArray();
+
 		bool isParticleX = MGUI.IsXVersion(mat);
 
 		if (isParticleX){
@@ -273,6 +294,33 @@ public class PSEditor : ShaderGUI {
 				me.ShaderProperty(_NearMaxRange, "Near Max Range");
 				MGUI.ToggleGroupEnd();
 				MGUI.Space8();
+			}
+
+			if (MGUI.DoFoldout(foldouts, mat, me, "PRESETS")){
+				MGUI.Space4();
+				float buttonWidth = EditorGUIUtility.labelWidth-5.0f;
+				if (MGUI.SimpleButton("Capture", buttonWidth, 0)){
+					presetText = MGUI.ReplaceInvalidChars(presetText);
+					string filePath = dirPath + presetText + ".mat";
+					Material newMat = new Material(mat);
+					AssetDatabase.CreateAsset(newMat, filePath);
+					AssetDatabase.Refresh();
+				}
+				GUILayout.Space(-17);
+				Rect r = EditorGUILayout.GetControlRect();
+				r.x += EditorGUIUtility.labelWidth;
+				r.width = MGUI.GetPropertyWidth();
+				presetText = EditorGUI.TextArea(r, presetText);
+				if (MGUI.SimpleButton("Apply", buttonWidth, 0)){
+					string presetPath = dirPath + presets[popupIndex] + ".mat";
+					Material selectedMat = (Material)AssetDatabase.LoadAssetAtPath(presetPath, typeof(Material));
+					mat.CopyPropertiesFromMaterial(selectedMat);
+				}
+				GUILayout.Space(-17);
+				r = EditorGUILayout.GetControlRect();
+				r.x += EditorGUIUtility.labelWidth;
+				r.width = MGUI.GetPropertyWidth();
+				popupIndex = EditorGUI.Popup(r, popupIndex, presets);
 			}
 
 			GUILayout.Space(15);

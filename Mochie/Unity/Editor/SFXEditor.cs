@@ -1,6 +1,7 @@
 ﻿using UnityEditor;
 using UnityEngine;
 using System;
+using System.IO;
 using System.Reflection;
 using System.Collections.Generic;
 
@@ -16,6 +17,13 @@ public class SFXEditor : ShaderGUI {
     GUIContent tpNoiseTexLabel = new GUIContent("Noise Texture");
     
 	public static Dictionary<Material, Toggles> foldouts = new Dictionary<Material, Toggles>();
+	public static Dictionary<string, float> presetDict = new Dictionary<string, float>();
+	public static List<string> presetsList = new List<string>();
+	public static string[] presets;
+	int popupIndex = 0;
+	string presetText = "";
+	string dirPath = "Assets/Mochie/Unity/Presets/ScreenFX/";
+	
     Toggles toggles = new Toggles(
 		new bool[] {
 			true, false, false, false,
@@ -23,7 +31,8 @@ public class SFXEditor : ShaderGUI {
 			false, false, false, false,
 			false, false, false, false,
 			false, false, false, false,
-			false, false, false, false
+			false, false, false, false,
+			false
 		},
 		new string[] {
 			"GENERAL",
@@ -46,6 +55,7 @@ public class SFXEditor : ShaderGUI {
 			"Normal Map",
 			"Depth Buffer",
 			"Safe Zone",
+			"PRESETS"
 		}
 	);
 
@@ -255,6 +265,27 @@ public class SFXEditor : ShaderGUI {
             if (property.FieldType == typeof(MaterialProperty))
                 property.SetValue(this, FindProperty(property.Name, props));
         }
+		
+		// if (!File.Exists(Application.dataPath + "Mochie/Unity/Presets/ScreenFX/Default.mat")){
+		// 	Material defMat = new Material(mat.shader);
+		// 	AssetDatabase.CreateAsset(defMat, dirPath);
+		//  AssetDatabase.Refresh();
+		// }
+
+		DirectoryInfo dir = new DirectoryInfo(dirPath);
+		FileInfo[] info = dir.GetFiles();
+		presetsList.Clear();
+		foreach (FileInfo f in info){
+			if (!f.Name.Contains(".meta") && f.Name.Contains(".mat")){
+				Material candidate = (Material)AssetDatabase.LoadAssetAtPath(dirPath + f.Name, typeof(Material));
+				if (candidate.shader.name == mat.shader.name){
+					int indOf = f.Name.IndexOf(".");
+					presetsList.Add(f.Name.Substring(0, indOf));
+				}
+			}
+		}
+		presets = presetsList.ToArray();
+
 
 		bool isSFXX = MGUI.IsXVersion(mat);
 
@@ -701,10 +732,38 @@ public class SFXEditor : ShaderGUI {
 						EditorGUI.BeginDisabledGroup(_DepthBufferToggle.floatValue == 0);
 						me.ShaderProperty(_DBOpacity, "Opacity");
 						me.ShaderProperty(_DBColor, "Tint");
+						MGUI.ToggleGroupEnd();
 						MGUI.Space6();
 					}
 					else GUILayout.Space(-2);
+					MGUI.Space6();
 				}
+			}
+			if (MGUI.DoFoldout(foldouts, mat, me, "PRESETS")){
+				MGUI.Space4();
+				float buttonWidth = EditorGUIUtility.labelWidth-5.0f;
+				if (MGUI.SimpleButton("Capture", buttonWidth, 0)){
+					presetText = MGUI.ReplaceInvalidChars(presetText);
+					string filePath = dirPath + presetText + ".mat";
+					Material newMat = new Material(mat);
+					AssetDatabase.CreateAsset(newMat, filePath);
+					AssetDatabase.Refresh();
+				}
+				GUILayout.Space(-17);
+				Rect r = EditorGUILayout.GetControlRect();
+				r.x += EditorGUIUtility.labelWidth;
+				r.width = MGUI.GetPropertyWidth();
+				presetText = EditorGUI.TextArea(r, presetText);
+				if (MGUI.SimpleButton("Apply", buttonWidth, 0)){
+					string presetPath = dirPath + presets[popupIndex] + ".mat";
+					Material selectedMat = (Material)AssetDatabase.LoadAssetAtPath(presetPath, typeof(Material));
+					mat.CopyPropertiesFromMaterial(selectedMat);
+				}
+				GUILayout.Space(-17);
+				r = EditorGUILayout.GetControlRect();
+				r.x += EditorGUIUtility.labelWidth;
+				r.width = MGUI.GetPropertyWidth();
+				popupIndex = EditorGUI.Popup(r, popupIndex, presets);
 			}
 		}
 		GUILayout.Space(15);

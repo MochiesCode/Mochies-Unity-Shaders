@@ -1,4 +1,4 @@
-Shader "Mochie/Particle Shader" {
+Shader "Mochie/Particles" {
     Properties {
 
         [HideInInspector]_BlendMode("__mode", Int) = 1.0
