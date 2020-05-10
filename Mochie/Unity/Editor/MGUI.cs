@@ -216,17 +216,6 @@ public static class MGUI {
 		return SimpleButton("Reset", GetPropertyWidth(), EditorGUIUtility.labelWidth);
 	}
 
-	public static void DoCloneResetButton(MaterialProperty[] props){
-		if (ResetButton()){
-			int i = 0;
-			foreach (MaterialProperty p in props){
-				Vector4 v = USEditor.clonePositions[i];
-				props[i].vectorValue = v;
-				i++;
-			};
-		}
-	}
-
 	public static void DoResetButton(MaterialProperty vec0, MaterialProperty vec1, Vector4 default0, Vector4 default1){
 		if (ResetButton()){
 			vec0.vectorValue = default0;
@@ -442,6 +431,15 @@ public static class MGUI {
 		me.TextureScaleOffsetProperty(tex);
         SpaceN2();
 		Vector2Field("Scrolling", vec);
+	}
+
+	// Scale offset property with added scrolling x/y
+	public static void TextureSOScroll(MaterialEditor me, MaterialProperty tex, MaterialProperty vec, bool shouldDisplay){
+		if (shouldDisplay){
+			me.TextureScaleOffsetProperty(tex);
+			SpaceN2();
+			Vector2Field("Scrolling", vec);
+		}
 	}
 
 	// Shorthand for displaying an error window

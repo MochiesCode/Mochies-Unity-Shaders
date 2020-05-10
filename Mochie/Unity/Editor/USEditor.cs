@@ -1008,7 +1008,7 @@ public class USEditor : ShaderGUI {
 			me.ShaderProperty(_EmissionToggle, "Enable");
 			if (EditorGUI.EndChangeCheck())
 				SetMaterialKeywords(mat);
-			MGUI.Space8();
+			MGUI.Space6();
 			MGUI.ToggleGroup(_EmissionToggle.floatValue == 0);
 			me.TexturePropertySingleLine(EmissTexLabel, _EmissionMap, _EmissionColor);
 			if (_EmissionMap.textureValue){
@@ -1286,7 +1286,7 @@ public class USEditor : ShaderGUI {
 							me.ShaderProperty(_Clone6, "Clone 6", 1); GUILayout.Space(-16);
 							me.ShaderProperty(_Clone7, "Clone 7", 1); GUILayout.Space(-16);
 							me.ShaderProperty(_Clone8, "Clone 8", 1); GUILayout.Space(-16);
-							MGUI.DoCloneResetButton(cloneProps);
+							DoCloneResetButton(cloneProps);
 						}
 						else {
 							me.ShaderProperty(_CloneSpacing, "Spacing", 1);
@@ -1421,5 +1421,16 @@ public class USEditor : ShaderGUI {
 		SetKeyword(mat, "_METALLICGLOSSMAP", mat.GetTexture("_MetallicGlossMap"));
 		SetKeyword(mat, "_PARALLAXMAP", mat.GetTexture("_ParallaxMap") || mat.GetTexture("_PackedMap"));
 		SetKeyword(mat, "_DETAIL_MULX2", mat.GetTexture("_DetailNormalMap"));
+	}
+
+	void DoCloneResetButton(MaterialProperty[] props){
+		if (MGUI.ResetButton()){
+			int i = 0;
+			foreach (MaterialProperty p in props){
+				Vector4 v = USEditor.clonePositions[i];
+				props[i].vectorValue = v;
+				i++;
+			};
+		}
 	}
 }
