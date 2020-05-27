@@ -1,3 +1,6 @@
+#ifndef COLOR_COM_INCLUDED
+#define COLOR_COM_INCLUDED
+
 // ---------------------------
 // Color Model Conversions
 // ---------------------------
@@ -6,14 +9,14 @@ float3 RGBtoHCV(in float3 rgb) {
     float4 P = lerp(float4(rgb.bg, -1.0, 2.0/3.0), float4(rgb.gb, 0.0, -1.0/3.0), step(rgb.b, rgb.g));
     float4 Q = lerp(float4(P.xyw, rgb.r), float4(rgb.r, P.yzx), step(P.x, rgb.r));
     float C = Q.x - min(Q.w, Q.y);
-    float H = abs((Q.w - Q.y) / (6 * C + EPS) + Q.z);
+    float H = abs((Q.w - Q.y) / (6.0 * C + EPS) + Q.z);
     return float3(H, C, Q.x);
 }
 
 float3 RGBtoHSL(in float3 rgb) {
     float3 HCV = RGBtoHCV(rgb);
     float L = HCV.z - HCV.y * 0.5;
-    float S = HCV.y / (1 - abs(L * 2 - 1) + EPS);
+    float S = HCV.y / (1.0 - abs(L * 2.0 - 1.0) + EPS);
     return float3(HCV.x, S, L);
 }
 
@@ -37,6 +40,38 @@ float3 HSVtoRGB(float3 c){
 	float4 K = float4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
 	float3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
 	return c.z * lerp(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
+// sRGB luminance(Y) values
+const float rY = 0.212655;
+const float gY = 0.715158;
+const float bY = 0.072187;
+
+// Inverse of sRGB "gamma" function. (approx 2.2)
+float inv_gam_sRGB(int ic) {
+    float c = ic/255.0;
+    if ( c <= 0.04045 )
+        return c/12.92;
+    else 
+        return pow(((c+0.055)/(1.055)),2.4);
+}
+
+// sRGB "gamma" function (approx 2.2)
+int gam_sRGB(float v) {
+    if(v<=0.0031308)
+        v *= 12.92;
+    else 
+        v = 1.055*pow(v,1.0/2.4)-0.055;
+    return int(v*255+0.5);
+}
+
+// GRAY VALUE ("brightness")
+int GetLum(int r, int g, int b) {
+    return gam_sRGB(
+            rY*inv_gam_sRGB(r) +
+            gY*inv_gam_sRGB(g) +
+            bY*inv_gam_sRGB(b)
+    );
 }
 
 // ---------------------------
@@ -143,6 +178,14 @@ float3 BlendLuminosity(float3 s, float3 d){
 		return c;
 }
 
+float3 GetContrast(float3 col, float contrast){
+    return clamp((lerp(float3(0.5,0.5,0.5), col, contrast)), 0, 10);
+}
+
+float3 GetSaturation(float3 col, float interpolator){
+    return lerp(dot(col, float3(0.3,0.59,0.11)), col, interpolator);
+}
+
 // ---------------------------
 // Fake HDR
 // ---------------------------
@@ -167,3 +210,5 @@ float eotf_sRGB_scalar(float V) {
 float3 GetHDR(float3 rgb) {
 	return float3(eotf_sRGB_scalar(rgb.r), eotf_sRGB_scalar(rgb.g), eotf_sRGB_scalar(rgb.b));
 }
+
+#endif

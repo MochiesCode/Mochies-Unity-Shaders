@@ -1,40 +1,34 @@
-#include "UnityPBSLighting.cginc"
-#include "Autolight.cginc"
-#include "UnityCG.cginc"
+#ifndef US_DEFINES_INCLUDED
+#define US_DEFINES_INCLUDED
 
-#define BASE_OR_ADD_DEFINED defined(UNITY_PASS_FORWARDBASE) || defined(UNITY_PASS_FORWARDADD)
-#define CUT_OR_TRANS_DEFINED defined(_ALPHABLEND_ON) || defined(_ALPHATEST_ON) || defined(_ALPHAPREMULTIPLY_ON)
-#define TRANSPARENT_DEFINED defined(_ALPHABLEND_ON) || defined(_ALPHAPREMULTIPLY_ON)
+#include "UnityPBSLighting.cginc"
+#include "../Common/Color.cginc"
+#include "../Common/Utilities.cginc"
+#include "../Common/Noise.cginc"
+#include "Autolight.cginc"
 
 #if defined(SHADOWS_DEPTH) && !defined(SPOT)
 	#define SHADOW_COORDS(idx1) unityShadowCoord2 _ShadowCoord : TEXCOORD##idx1;
 #endif
 
-// The missing macros for reusing samplers with manual lod, lod by gradient, and bias
-#if !defined(UNITY_SAMPLE_TEX2D_GRAD_SAMPLER)
-	#define UNITY_SAMPLE_TEX2D_GRAD_SAMPLER(tex,samplertex,coord,dx,dy) tex.SampleGrad(sampler##samplertex,coord,dx,dy)
-#endif
-#if !defined(UNITY_SAMPLE_TEX2D_LOD_SAMPLER)
-	#define UNITY_SAMPLE_TEX2D_LOD_SAMPLER(tex,samplertex,coord) tex.SampleLevel(sampler##samplertex,(coord).xy,(coord).w)
-#endif
-#if !defined(UNITY_SAMPLE_TEX2D_BIAS_SAMPLER)
-	#define UNITY_SAMPLE_TEX2D_BIAS_OFFS_SAMPLER(tex,samplertex,coord,offset) tex.SampleBias(sampler##samplertex,(coord).xy,(coord).w,(offset).xy)
-	#define UNITY_SAMPLE_TEX2D_BIAS_SAMPLER(tex,samplertex,coord) tex.SampleBias(sampler##samplertex,(coord).xy,(coord).w)
-#endif
-
-UNITY_DECLARE_TEX2D(_MainTex); float4 _MainTex_ST;
+UNITY_DECLARE_TEX2D(_MainTex); float4 _MainTex_ST, _MainTex_TexelSize;
 UNITY_DECLARE_TEX2D_NOSAMPLER(_BumpMap);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_MetallicGlossMap);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_SpecGlossMap);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_OcclusionMap);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_ParallaxMap);
-UNITY_DECLARE_TEX2D(_EmissionMap); float4 _EmissionMap_ST;
-UNITY_DECLARE_TEX2D_NOSAMPLER(_DetailAlbedoMap); float4 _DetailAlbedoMap_ST;
+UNITY_DECLARE_TEX2D(_EmissionMap); float4 _EmissionMap_ST, _EmissionMap_TexelSize;
+UNITY_DECLARE_TEX2D_NOSAMPLER(_DetailAlbedoMap); float4 _DetailAlbedoMap_ST, _DetailAlbedoMap_TexelSize;
 UNITY_DECLARE_TEX2D_NOSAMPLER(_DetailNormalMap); float4 _DetailNormalMap_ST;
 UNITY_DECLARE_TEX2D_NOSAMPLER(_EmissMask); float4 _EmissMask_ST;
 UNITY_DECLARE_TEX2D_NOSAMPLER(_OutlineTex); float4 _OutlineTex_ST;
-UNITY_DECLARE_TEX2D_NOSAMPLER(_RimTex); float4 _RimTex_ST;
+UNITY_DECLARE_TEX2D_NOSAMPLER(_RimTex); float4 _RimTex_ST, _RimTex_TexelSize;
+UNITY_DECLARE_TEX2D_NOSAMPLER(_ERimTex); float4 _ERimTex_ST;
 UNITY_DECLARE_TEX2D_NOSAMPLER(_DistortUVMap); float4 _DistortUVMap_ST;
+UNITY_DECLARE_TEX2D_NOSAMPLER(_ReflTex); float4 _ReflTex_ST;
+UNITY_DECLARE_TEX2D_NOSAMPLER(_SpecTex); float4 _SpecTex_ST;
+UNITY_DECLARE_TEX2D_NOSAMPLER(_AOTintTex);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_SmoothnessMap);
 
 UNITY_DECLARE_TEX2D_NOSAMPLER(_Matcap);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_DetailMask);
@@ -57,11 +51,16 @@ UNITY_DECLARE_TEX2D_NOSAMPLER(_SubsurfaceMask);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_TranslucencyMap);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_SubsurfaceTex);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_MatcapMask);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_SpritesheetMask);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_AlphaMask);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_ERimMask);
 
 samplerCUBE _MainTexCube0, _MainTexCube1, _ReflCube;
 sampler2D _ShadowRamp; float4 _ShadowRamp_TexelSize;
 sampler2D _NoiseTexSSR; float4 _NoiseTexSSR_TexelSize;
 sampler2D _PackedMap;
+sampler2D _Spritesheet;
+sampler2D _Spritesheet1;
 
 int _Dith;
 float _Alpha;
@@ -99,19 +98,20 @@ int _EmissMaskChannel;
 int _PulseMaskChannel;
 int _SubsurfaceMaskChannel;
 int _MatcapMaskChannel;
-#if defined(UBERX)
-	int _DissolveMaskChannel;
-#endif
+int _SpritesheetMaskChannel;
+int _AlphaMaskChannel;
+int _DissolveMaskChannel;
+int _ERimMaskChannel;
 
-int _RenderMode, _BlendMode, _ZWrite, _ATM, _ColorPreservation;
+int _RenderMode, _BlendMode, _ZWrite, _ATM, _ColorPreservation, _UseAlphaMask;
 int _CubeMode, _CubeBlendMode, _UnlitCube, _AutoRotate0, _AutoRotate1;
 int _StaticLightDirToggle, _NonlinearSHToggle, _ClampAdditive;
-int _Shadows, _EnableShadowRamp, _RTSelfShadow, _LinearIntRamp, _AttenSmoothing, _ShadowDithering;
+int _Shadows, _ShadowMode, _MainTexTint, _RTSelfShadow, _AttenSmoothing, _ShadowDithering;
 int _Reflections, _ReflCubeFallback, _UseReflCube;
 int _Specular, _SharpSpecular, _SpecularStyle, _AnisoLerp;
 int _MatcapToggle, _MatcapBlending, _UnlitMatcap;
 int _RimLighting, _RimBlending, _UnlitRim;
-int _RoughnessAdjust;
+int _RoughnessFiltering;
 int _ClearCoat, _InvertNormalY0, _InvertNormalY1, _HardenNormals;
 int _PBRWorkflow, _SourceAlpha;
 int _MetallicChannel, _RoughnessChannel, _OcclusionChannel, _HeightChannel;
@@ -119,23 +119,41 @@ int _PulseToggle, _PulseWaveform, _ReactToggle, _CrossMode;
 int _FilterModel, _AutoShift, _TeamColorsToggle;
 int _DistortMainUV, _DistortDetailUV, _DistortEmissUV, _DistortRimUV;
 int _Outline, _ApplyOutlineLighting, _ApplyOutlineEmiss;
-int _Subsurface;
+int _Subsurface, _PostFiltering;
+int _ManualScrub, _ScrubPos, _EnableSpritesheet, _UnlitSpritesheet, _SpritesheetBlending;
+int _ManualScrub1, _ScrubPos1, _EnableSpritesheet1, _SpritesheetBlending1;
+int _AOFiltering, _HeightFiltering;
+int _UseSpecTex, _UseReflTex, _EnvironmentRim, _ERimBlending, _ERimUseRough, _UseERimTex;
+int _SRampTintAO, _PreviewActive, _UseAOTintTex, _UseSmoothMap, _LinearSmooth, _PreviewSmooth;
+int _SmoothnessFiltering, _PackedRoughPreview, _ShadowConditions, _DirectAO, _UseRimTex, _DistortUVs;
+int _DistortionStyle, _PreviewNoise, _IndirectAO, _NoiseOctaves, _UseMetallicMap, _UseSpecMap;
+int _UseDetailNormal, _UseParallaxMap, _EmissionToggle;
 
 float4 _Color, _CubeColor0, _CubeColor1;
 float4 _SpecCol, _ReflCol, _MatcapColor;
-float4 _RimCol, _EmissionColor, _OutlineCol;
+float4 _RimCol, _ERimTint, _EmissionColor, _OutlineCol;
 float4 _TeamColor0, _TeamColor1, _TeamColor2, _TeamColor3;
-float4 _SColor;
+float4 _SColor, _ShadowTint;
+float4 _SpritesheetCol, _SpritesheetCol1;
 
 float3 _CubeRotate0, _CubeRotate1;
 float3 _StaticLightDir;
+float3 _AOTint;
 
 float2 _MainTexScroll;
 float2 _EmissScroll;
 float2 _DetailScroll;
 float2 _RimScroll;
+float2 _ERimScroll;
 float2 _OutlineScroll;
 float2 _DistortUVScroll;
+float2 _RowsColumns;
+float2 _FrameClipOfs;
+float2 _SpritesheetScale, _SpritesheetPos;
+float2 _RowsColumns1;
+float2 _FrameClipOfs1;
+float2 _SpritesheetScale1, _SpritesheetPos1;
+float2 _NoiseScale, _NoiseMinMax;
 
 float _Opacity, _Cutoff, _OutlineThicc, _OutlineRange;
 float _DistanceFadeMin, _DistanceFadeMax, _ClipRimStr, _ClipRimWidth;
@@ -151,49 +169,24 @@ float _RimStr, _RimWidth, _RimEdge;
 float _RoughLightness, _RoughIntensity, _RoughContrast;
 float _SHStr, _DisneyDiffuse;
 float _PulseSpeed, _PulseStr, _Crossfade, _ReactThresh;
-float _SaturationRGB, _Brightness, _RAmt, _GAmt, _BAmt;
-float _SaturationHSL, _AutoShiftSpeed, _Hue, _Luminance, _HSLMin, _HSLMax;
+float _Saturation, _Brightness, _RAmt, _GAmt, _BAmt;
+float _AutoShiftSpeed, _Hue, _Luminance, _HSLMin, _HSLMax;
 float _Contrast, _HDR, _Noise;
 float _DistortUVStr;
 float _SPen, _SStr, _SSharp, _SAtten;
+float _SpritesheetRot, _FPS;
+float _SpritesheetRot1, _FPS1;
+float _AOLightness, _AOIntensity, _AOContrast;
+float _HeightLightness, _HeightIntensity, _HeightContrast;
 float _NaNxddddd;
+float _ERimWidth, _ERimStr, _ERimEdge, _ERimRoughness;
+float _SmoothLightness, _SmoothIntensity, _SmoothContrast;
+float _Value;
+float _NoiseSpeed, _RampPos, _SharpSpecStr;
 
-#if defined(UBERX)
-	UNITY_DECLARE_TEX2D_NOSAMPLER(_DissolveMask);
-	UNITY_DECLARE_TEX2D_NOSAMPLER(_DissolveTex); float4 _DissolveTex_ST;
-	UNITY_DECLARE_TEX2D_NOSAMPLER(_DissolveRimTex); float4 _DissolveRimTex_ST;
-	UNITY_DECLARE_TEX2D_NOSAMPLER(_DissolveFlow);
-
-	int _GeomFXToggle, _DisguiseMain;
-	int _WireframeToggle, _WFMode;
-	int _GlitchToggle;
-	int _ShatterToggle;
-	int _ClonePattern, _ClonePosition, _SaturateEP;
-	int _Screenspace;
-	int _DistanceFadeToggle;
-	int _ShowInMirror, _ShowBase, _Connected;
-	int _DissolveToggle, _DissolveChannel, _DissolveWave, _DissolveBlending;
-
-	float4 _Clone1, _Clone2, _Clone3, _Clone4, _Clone5, _Clone6, _Clone7, _Clone8;
-	float4 _DissolveRimCol;
-	float4 _WFColor;
-	float4 _ClipRimColor;
-
-	float3 _EntryPos;
-	float3 _BaseOffset, _BaseRotation;
-	float3 _ReflOffset, _ReflRotation;
-	float3 _Position, _Rotation;
-
-	float2 _DissolveScroll0; 
-	float2 _DissolveScroll1;
-
-	float _Range;
-	float _DissolveAmount, _DissolveRimWidth, _DissolveBlendSpeed;
-	float _WFFill, _WFVisibility;
-	float _ShatterMax, _ShatterMin, _ShatterSpread, _ShatterCull; 
-	float _Instability, _GlitchFrequency, _GlitchIntensity, _PosPrecision, _PatternMult; 
-	float _Visibility, _CloneSpacing, _CloneSize;
-#endif
+int _DebugIntRange, _DebugToggle, _DebugEnum;
+float _DebugFloat, _DebugRange;
+float4 _DebugVector, _DebugColor, _DebugHDRColor;
 
 // Outputs
 float4 spec;
@@ -207,87 +200,7 @@ float occlusion;
 float height; 
 float cubeMask;
 
-#if !defined(UBERX)
-	#define v2g v2f
-	#define g2f v2f
-#endif
-
-struct appdata {
-    float4 vertex : POSITION;
-    float4 uv : TEXCOORD0;
-	float4 uv1 : TEXCOORD1;
-    float4 tangent : TANGENT;
-    float3 normal : NORMAL;
-};
-
-#if defined(UBERX)
-struct v2g {
-	float4 pos : POSITION;
-	centroid float4 uv : TEXCOORD0;
-	centroid float4 uv1 : TEXCOORD1;
-	centroid float4 uv2 : TEXCOORD2;
-	float4 worldPos : TEXCOORD3;
-	float3 binormal : TEXCOORD4; 
-	float3 tangentViewDir : TEXCOORD5;
-	float3 cameraPos : TEXCOORD6;
-	float3 objPos : TEXCOORD7;
-	bool isVLight : TEXCOORD8;
-	float4 screenPos : TEXCOORD9;
-
-	float4 color : COLOR;
-	float4 tangent : TANGENT;
-	float3 normal : NORMAL;
-
-	UNITY_SHADOW_COORDS(15)
-	UNITY_FOG_COORDS(16)
-};
-
-struct g2f {
-	float4 pos : SV_POSITION;
-	centroid float4 uv : TEXCOORD0;
-	centroid float4 uv1 : TEXCOORD1;
-	centroid float4 uv2 : TEXCOORD2;
-	float4 worldPos : TEXCOORD3;
-	float3 binormal : TEXCOORD4; 
-	float3 tangentViewDir : TEXCOORD5;
-	float3 cameraPos : TEXCOORD6;
-	float3 objPos : TEXCOORD7;
-	float3 bCoords : TEXCOORD8;
-	float WFStr : TEXCOORD9;
-	uint instID : TEXCOORD10;
-	bool isVLight : TEXCOORD11;
-	float4 screenPos : TEXCOORD12;
-
-	float4 color : COLOR;
-	float4 tangent : TANGENT;
-	float3 normal : NORMAL;
-
-	UNITY_SHADOW_COORDS(15)
-	UNITY_FOG_COORDS(16)
-};
-#else
-struct v2f {
-	float4 pos : SV_POSITION;
-	centroid float4 uv : TEXCOORD0;
-	centroid float4 uv1 : TEXCOORD1;
-	centroid float4 uv2 : TEXCOORD2;
-	float4 worldPos : TEXCOORD3;
-	float3 binormal : TEXCOORD4; 
-	float3 tangentViewDir : TEXCOORD5;
-	float3 cameraPos : TEXCOORD6;
-	float3 objPos : TEXCOORD7;
-	bool isVLight : TEXCOORD8;
-	float4 screenPos : TEXCOORD9;
-
-	float4 color : COLOR;
-	float4 tangent : TANGENT;
-	float3 normal : NORMAL;
-
-	UNITY_SHADOW_COORDS(13)
-	UNITY_FOG_COORDS(14)
-};
-#endif
-
+int _PreviewRough, _PreviewAO, _PreviewHeight;
 struct lighting {
     float NdotL;
 	float NdotV;
@@ -295,7 +208,8 @@ struct lighting {
 	float TdotH;
 	float BdotH;
 	float LdotH;
-    float ao;
+    float3 ao;
+	float3 sRamp;
     float worldBrightness;
     float3 directCol;
     float3 indirectCol;
@@ -319,23 +233,146 @@ struct lighting {
 struct masks {
     float reflectionMask;
     float specularMask;
+	float eRimMask;
 	float detailMask;
 	float shadowMask;
 	float rimMask;
 	float matcapMask;
-	#if defined(UBERX)
-		float dissolveMask;
-	#endif
+	float dissolveMask;
 	float ddMask;
 	float anisoMask;
 	float smoothMask;
+	float spriteMask;
+	float filterMask;
 };
 
-#include "USUtilities.cginc"
-#include "USSSR.cginc"
+struct appdata {
+    float4 vertex : POSITION;
+    float4 uv : TEXCOORD0;
+	float4 uv1 : TEXCOORD1;
+    float4 tangent : TANGENT;
+    float3 normal : NORMAL;
+};
+
+
+// Define this here so the Uberx features sees it
+#include "USSampling.cginc"
+
 #if defined(UBERX)
-	#include "USXFeatures.cginc"
+
+UNITY_DECLARE_TEX2D_NOSAMPLER(_DissolveMask);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_DissolveTex); float4 _DissolveTex_ST;
+UNITY_DECLARE_TEX2D_NOSAMPLER(_DissolveRimTex); float4 _DissolveRimTex_ST;
+UNITY_DECLARE_TEX2D_NOSAMPLER(_DissolveFlow);
+int _GeomFXToggle, _DisguiseMain;
+int _WireframeToggle, _WFMode;
+int _GlitchToggle;
+int _ShatterToggle;
+int _ClonePattern, _ClonePosition, _SaturateEP;
+int _Screenspace;
+int _DistanceFadeToggle;
+int _ShowInMirror, _ShowBase, _Connected;
+int _DissolveToggle, _DissolveChannel, _DissolveWave, _DissolveBlending;
+float4 _Clone1, _Clone2, _Clone3, _Clone4, _Clone5, _Clone6, _Clone7, _Clone8;
+float4 _DissolveRimCol;
+float4 _WFColor;
+float4 _ClipRimColor;
+float3 _EntryPos;
+float3 _BaseOffset, _BaseRotation;
+float3 _ReflOffset, _ReflRotation;
+float3 _Position, _Rotation;
+float2 _DissolveScroll0; 
+float2 _DissolveScroll1;
+float _Range;
+float _DissolveAmount, _DissolveRimWidth, _DissolveBlendSpeed;
+float _WFFill, _WFVisibility;
+float _ShatterMax, _ShatterMin, _ShatterSpread, _ShatterCull; 
+float _Instability, _GlitchFrequency, _GlitchIntensity, _PosPrecision, _PatternMult; 
+float _Visibility, _CloneSpacing, _CloneSize;
+
+struct v2g {
+	float4 pos : POSITION;
+	centroid float4 uv : TEXCOORD0;
+	centroid float4 uv1 : TEXCOORD1;
+	centroid float4 uv2 : TEXCOORD2;
+	centroid float4 uv3 : TEXCOORD3;
+	centroid float4 uv4 : TEXCOORD4;
+	float4 worldPos : TEXCOORD5;
+	float3 binormal : TEXCOORD6; 
+	float3 tangentViewDir : TEXCOORD7;
+	float3 cameraPos : TEXCOORD8;
+	float3 objPos : TEXCOORD9;
+	bool isVLight : TEXCOORD10;
+	float4 screenPos : TEXCOORD11;
+
+	float4 color : COLOR;
+	float4 tangent : TANGENT;
+	float3 normal : NORMAL;
+
+	UNITY_SHADOW_COORDS(18)
+	UNITY_FOG_COORDS(19)
+};
+
+struct g2f {
+	float4 pos : SV_POSITION;
+	centroid float4 uv : TEXCOORD0;
+	centroid float4 uv1 : TEXCOORD1;
+	centroid float4 uv2 : TEXCOORD2;
+	centroid float4 uv3 : TEXCOORD3;
+	centroid float4 uv4 : TEXCOORD4;
+	float4 worldPos : TEXCOORD5;
+	float3 binormal : TEXCOORD6; 
+	float3 tangentViewDir : TEXCOORD7;
+	float3 cameraPos : TEXCOORD8;
+	float3 objPos : TEXCOORD9;
+	float3 bCoords : TEXCOORD10;
+	float WFStr : TEXCOORD11;
+	uint instID : TEXCOORD12;
+	bool isVLight : TEXCOORD13;
+	float4 screenPos : TEXCOORD14;
+
+	float4 color : COLOR;
+	float4 tangent : TANGENT;
+	float3 normal : NORMAL;
+
+	UNITY_SHADOW_COORDS(18)
+	UNITY_FOG_COORDS(19)
+};
+
+#include "USXFeatures.cginc"
+
+#else
+
+#define v2g v2f
+#define g2f v2f
+
+struct v2f {
+	float4 pos : SV_POSITION;
+	centroid float4 uv : TEXCOORD0;
+	centroid float4 uv1 : TEXCOORD1;
+	centroid float4 uv2 : TEXCOORD2;
+	centroid float4 uv3 : TEXCOORD3;
+	centroid float4 uv4 : TEXCOORD4;
+	float4 worldPos : TEXCOORD5;
+	float3 binormal : TEXCOORD6; 
+	float3 tangentViewDir : TEXCOORD7;
+	float3 cameraPos : TEXCOORD8;
+	float3 objPos : TEXCOORD9;
+	bool isVLight : TEXCOORD10;
+	float4 screenPos : TEXCOORD11;
+
+	float4 color : COLOR;
+	float4 tangent : TANGENT;
+	float3 normal : NORMAL;
+
+	UNITY_SHADOW_COORDS(15)
+	UNITY_FOG_COORDS(16)
+};
 #endif
+
+#include "USSSR.cginc"
 #include "USLighting.cginc"
 #include "USFunctions.cginc"
 #include "USPass.cginc"
+
+#endif

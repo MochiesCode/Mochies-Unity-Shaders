@@ -5,10 +5,11 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using System.IO;
+using System;
 
 public static class MGUI {
 
-    public enum BlendMode {OPAQUE, CUTOUT, FADE, TRANSPARENT}
+    public enum BlendMode {Opaque, Cutout, Fade, Transparent}
 
 	private static int chanOfs = 105;
 	public static string parentPath = "Assets/Mochie/Unity/Presets";
@@ -21,7 +22,7 @@ public static class MGUI {
 	public static void SetBlendMode(Material material, BlendMode blendMode){
 		switch (blendMode){
 			
-			case BlendMode.OPAQUE:
+			case BlendMode.Opaque:
 				material.SetOverrideTag("RenderType", "");
 				material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
 				material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
@@ -32,7 +33,7 @@ public static class MGUI {
 				material.renderQueue = -1;
 				break;
 
-			case BlendMode.CUTOUT:
+			case BlendMode.Cutout:
 				material.SetOverrideTag("RenderType", "TransparentCutout");
 				material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
 				material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
@@ -43,7 +44,7 @@ public static class MGUI {
 				material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
 				break;
 
-			case BlendMode.FADE:
+			case BlendMode.Fade:
 				material.SetOverrideTag("RenderType", "Transparent");
 				material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
 				material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
@@ -54,7 +55,7 @@ public static class MGUI {
 				material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
 				break;
 
-			case BlendMode.TRANSPARENT:
+			case BlendMode.Transparent:
 				material.SetOverrideTag("RenderType", "Transparent");
 				material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
 				material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
@@ -69,6 +70,24 @@ public static class MGUI {
 		}
 	}
 	
+	public static bool WriteBytes(byte[] bytes, string path){
+		try {
+			using (var fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write))
+			{
+				fs.Write(bytes, 0, bytes.Length);
+				return true;
+			}
+		}
+		catch (Exception ex) {
+			Debug.Log("Exception caught in process: " + ex.ToString());
+			return false;
+		}
+	}
+
+	public static Texture2D GetTextureAsset(string path){
+		return (Texture2D)AssetDatabase.LoadAssetAtPath("Assets/" + path, typeof(Texture2D));
+	}
+
 	public static void ExclusiveToggle(MaterialEditor me, MaterialProperty[] toggles){
 		for (int i = 0; i < toggles.Length; i++){
 			me.ShaderProperty(toggles[i], toggles[i].displayName);
@@ -162,54 +181,11 @@ public static class MGUI {
 		return GUI.Button(buttonRect, text);
 	}
 
-	public static void DoCollapseAllButton(Dictionary<Material, Toggles> foldouts, Material mat){
-        float lw = EditorGUIUtility.labelWidth;
-        float iw = GetInspectorWidth();
-        // float width = (iw-lw)/3;
-
-		if (SimpleButton("Collapse Tabs", iw+9, -9)){
-			for (int i = 1; i <= foldouts[mat].GetToggles().Length-1; i++)
-				foldouts[mat].SetState(i, false);
-		}
-	}
-
-	// public static void DoCollapseMainButton(Dictionary<Material, Toggles> foldouts, Material mat){
-	// 	GUILayout.Space(-20);
-	// 	float lw = EditorGUIUtility.labelWidth;
-    //     float iw = GetInspectorWidth();
-    //     float width = (iw-lw)/3;
-	// 	lw += width;
-
-	// 	if (SimpleButton("Main", width, lw)){
-	// 		int[] mains = foldouts[mat].GetMain();
-	// 		for (int i = 0; i < mains.Length; i++){
-	// 			foldouts[mat].SetState(mains[i], false);
-	// 		}
-	// 	}
-	// }
-
-	// public static void DoCollapseSubButton(Dictionary<Material, Toggles> foldouts, Material mat){
-	// 	GUILayout.Space(-20);
-    //     float lw = EditorGUIUtility.labelWidth;
-    //     float iw = GetInspectorWidth();
-    //     float width = (iw-lw)/3;
-	// 	lw += width*2;
-
-	// 	if (SimpleButton("Sub", width, lw)){
-	// 		int[] subs = foldouts[mat].GetSub();
-	// 		for (int i = 0; i < subs.Length; i++){
-	// 			foldouts[mat].SetState(subs[i], false);
-	// 		}
-	// 	}
-	// }
-
-	public static void DoCollapseButtons(Dictionary<Material, Toggles> foldouts, Material mat){
-		DoCollapseAllButton(foldouts, mat);
-		// DoCollapseMainButton(foldouts, mat);
-		// DoCollapseSubButton(foldouts, mat);
-		// GUILayout.Space(-17);
-		// GUILayout.Label("Collapse Tabs");
-		Space4();
+	public static bool SimpleButton(Texture2D tex, float width, float xPos){
+		Rect buttonRect = EditorGUILayout.GetControlRect();
+		buttonRect.width = width;
+		buttonRect.x += xPos;
+		return GUI.Button(buttonRect, tex);
 	}
 
 	public static bool ResetButton(){
@@ -229,7 +205,25 @@ public static class MGUI {
 			vec1.vectorValue = new Vector4(0,0,0,0);
 		}
 	}
-	
+
+	public static bool TabButton(Texture2D tex, float offset){
+		GUILayout.Space(-28);
+		Rect buttonRect = EditorGUILayout.GetControlRect();
+		buttonRect.width = 27;
+		buttonRect.height = 23;
+		buttonRect.x += GetInspectorWidth()-offset;
+		return GUI.Button(buttonRect, tex);
+	}
+
+	public static bool MedTabButton(Texture2D tex, float offset){
+		GUILayout.Space(-25);
+		Rect buttonRect = EditorGUILayout.GetControlRect();
+		buttonRect.width = 23;
+		buttonRect.height = 19;
+		buttonRect.x += GetInspectorWidth()-offset;
+		return GUI.Button(buttonRect, tex);
+	}
+
 
     // Slider with a toggle
     public static void ToggleSlider(MaterialEditor me, string label, MaterialProperty toggle, MaterialProperty slider){
@@ -243,6 +237,21 @@ public static class MGUI {
         r.width -= indent;
         EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
         me.RangeProperty(r, slider, "");
+        EditorGUI.EndDisabledGroup();
+    }
+
+    public static void ToggleIntSlider(MaterialEditor me, string label, MaterialProperty toggle, MaterialProperty slider){
+        float lw = EditorGUIUtility.labelWidth;
+        float indent = lw + 25f;
+        GUILayoutOption clickArea = GUILayout.MaxWidth(lw+13f);
+        toggle.floatValue = EditorGUILayout.Toggle(label, toggle.floatValue==1, clickArea)?1:0;
+        GUILayout.Space(-18);
+        Rect r = EditorGUILayout.GetControlRect();
+        r.x += indent;
+        r.width -= indent;
+        EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
+
+        slider.floatValue = (int)EditorGUI.Slider(r, slider.floatValue, slider.rangeLimits.x, slider.rangeLimits.y);
         EditorGUI.EndDisabledGroup();
     }
 
@@ -380,7 +389,7 @@ public static class MGUI {
         rm.x += EditorGUIUtility.labelWidth+offset+14.0f;
         EditorGUI.LabelField(rm, text);
     }
-
+	
 	// Draws a tinted box behind properties
     public static void ContentBox(int boxSize){
         Rect pos = GUILayoutUtility.GetRect(0f, boxSize);
@@ -433,7 +442,6 @@ public static class MGUI {
 		Vector2Field("Scrolling", vec);
 	}
 
-	// Scale offset property with added scrolling x/y
 	public static void TextureSOScroll(MaterialEditor me, MaterialProperty tex, MaterialProperty vec, bool shouldDisplay){
 		if (shouldDisplay){
 			me.TextureScaleOffsetProperty(tex);
@@ -456,58 +464,6 @@ public static class MGUI {
     	return updated;
 	}
 
-	// public static string QueueText(int q){
-	// 	string text = "";
-	// 	if (q < 1000)
-	// 		text += "Background-" + (1000-q);
-	// 	else if (q == 1000)
-	// 		text += "Background";
-	// 	else if (q > 1000 && q < 1500)
-	// 		text += "Background+" + (q-1000);
-	// 	else if (q >= 1500 && q < 2000)
-	// 		text += "Geometry-" + (2000-q);
-	// 	else if (q == 2000)
-	// 		text += "Geometry";
-	// 	else if (q > 2000 && q < 2225)
-	// 		text += "Geometry+" + (q-2000);
-	// 	else if (q >= 2225 && q < 2450)
-	// 		text += "AlphaTest-" + (2450-q);
-	// 	else if (q == 2450)
-	// 		text += "AlphaTest";
-	// 	else if (q > 2450 && q < 2725)
-	// 		text += "AlphaTest+" + (q-2450);
-	// 	else if (q >= 2725 && q < 3000)
-	// 		text += "Transparent-" + (3000-q);
-	// 	else if (q == 3000)
-	// 		text += "Transparent";
-	// 	else if (q > 3000 && q < 3500)
-	// 		text += "Transparent+" + (q-3000);
-	// 	else if (q >= 3500 && q < 4000)
-	// 		text += "Overlay-" + (4000-q);
-	// 	else if (q == 4000)
-	// 		text += "Overlay";
-	// 	else if (q > 4000 && q < 5000)
-	// 		text += "Overlay+" + (q-4000);
-	// 	else if (q >= 5000)
-	// 		text += "Okay then buddy";
-
-	// 	if (q < 5000)
-	// 		text += " (" + q + ")";
-	// 	return text;
-	// }
-
-	// // Generate text for render queue display
-    // public static void RenderQueueLabel(Material mat){
-	// 	string text = QueueText(mat.renderQueue);
-    //     DummyProperty("Queue: ", text);
-	// 	float lw = EditorGUIUtility.labelWidth;
-    //     float iw = GetInspectorWidth();
-	// 	GUILayout.Space(-20);
-	// 	if (SimpleButton("Edit", 50, iw-50)){
-	// 		EditShader(mat);
-	// 	}
-    // }
-
 	// Shorthand disable group stuff
 	public static void ToggleGroup(bool isToggled){
 		EditorGUI.BeginDisabledGroup(isToggled);
@@ -516,6 +472,11 @@ public static class MGUI {
 		EditorGUI.EndDisabledGroup();
 	}
 
+	// Shorthand spacing funcs
+	public static void SpaceN16(){ GUILayout.Space(-16); }
+	public static void SpaceN14(){ GUILayout.Space(-14); }
+	public static void SpaceN12(){ GUILayout.Space(-12); }
+	public static void SpaceN10(){ GUILayout.Space(-10); }
 	public static void SpaceN8(){ GUILayout.Space(-8); }
 	public static void SpaceN6(){ GUILayout.Space(-6); }
 	public static void SpaceN4(){ GUILayout.Space(-4); }
@@ -524,6 +485,10 @@ public static class MGUI {
 	public static void Space4(){ GUILayout.Space(4); }
 	public static void Space6(){ GUILayout.Space(6); }
 	public static void Space8(){ GUILayout.Space(8); }
+	public static void Space10(){ GUILayout.Space(10); }
+	public static void Space12(){ GUILayout.Space(12); }
+	public static void Space14(){ GUILayout.Space(14); }
+	public static void Space16(){ GUILayout.Space(16); }
 
 	public static void SetKeyword(Material mat, string keyword, bool state){
 		if (state) mat.EnableKeyword(keyword);
@@ -552,47 +517,20 @@ public static class MGUI {
 	}
 }
 
-    // bool SmallFoldout(string header, bool display, float height){
-    //     GUIStyle formatting = new GUIStyle("ShurikenModuleTitle");
-    //     GUILayoutOption clickArea = GUILayout.MaxWidth(EditorGUIUtility.labelWidth-13);
-    //     formatting.contentOffset = new Vector2(14f, -2f);
-    //     formatting.fixedHeight = height;
-    //     formatting.fontSize = 9;
-    //     formatting.wordWrap = true;
-    //     Rect boxRect = GUILayoutUtility.GetRect(5f, height, formatting);
-    //     GUI.Box(boxRect, header, formatting);
-    //     GUILayout.Space(-height);
-    //     Rect toggleRect = GUILayoutUtility.GetRect(5f, height, formatting, clickArea);
-    //     return DoSmallToggle(display, toggleRect);
-    // }
+// public public void FoldoutDivider(){
+// 	Rect pos = EditorGUILayout.GetControlRect();
+// 	pos.width = GetPropertyWidth();
+// 	pos.height = 0.5f;
+// 	pos.x += EditorGUIUtility.labelWidth;
+// 	GUI.Box(pos, "");
+// }
 
-    // bool DoSmallToggle(bool display, Rect rect){
-    //     Event evt = Event.current;
-    //     Rect arrowRect = new Rect(rect.x+1f, rect.y+1.5f, 0f, 0f);
-    //     if (evt.rawType == EventType.Repaint)
-    //         EditorStyles.foldout.Draw(arrowRect, false, false, display, false);
-    //     if (evt.rawType == EventType.MouseDown && rect.Contains(evt.mousePosition)){
-    //         display = !display;
-    //         evt.Use();
-    //     }
-    //     GUILayout.Space(-22f);
-    //     return display;
-    // }
-
-	// public public void FoldoutDivider(){
-	// 	Rect pos = EditorGUILayout.GetControlRect();
-	// 	pos.width = GetPropertyWidth();
-	// 	pos.height = 0.5f;
-	// 	pos.x += EditorGUIUtility.labelWidth;
-	// 	GUI.Box(pos, "");
-	// }
-
-	// public public void FoldoutDividerToggle(){
-	// 	GUILayout.Space(-10);
-	// 	Rect pos = EditorGUILayout.GetControlRect();
-	// 	pos.width = GetPropertyWidth()-24f;
-	// 	pos.height = 0.5f;
-	// 	pos.x += EditorGUIUtility.labelWidth+24f;
-	// 	GUI.Box(pos, "");
-	// 	GUILayout.Space(-8);
-	// }
+// public public void FoldoutDividerToggle(){
+// 	GUILayout.Space(-10);
+// 	Rect pos = EditorGUILayout.GetControlRect();
+// 	pos.width = GetPropertyWidth()-24f;
+// 	pos.height = 0.5f;
+// 	pos.x += EditorGUIUtility.labelWidth+24f;
+// 	GUI.Box(pos, "");
+// 	GUILayout.Space(-8);
+// }

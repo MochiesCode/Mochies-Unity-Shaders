@@ -31,6 +31,22 @@ float max4(float4 p){
 	return max(max(max(p.x, p.y), p.z), p.w);
 }
 
+float Pow5 (float x){
+    return x*x * x*x * x;
+}
+
+float2 Pow5 (float2 x){
+    return x*x * x*x * x;
+}
+
+float3 Pow5 (float3 x){
+    return x*x * x*x * x;
+}
+
+float4 Pow5 (float4 x){
+    return x*x * x*x * x;
+}
+
 // ---------------------------
 // Remapping/Interpolation
 // ---------------------------
@@ -153,8 +169,6 @@ float3 GetCameraPos(){
     return cameraPos;
 }
 
-
-
 float3 GetForwardVector(){
 	#if UNITY_SINGLE_PASS_STEREO
 		float3 p1 = mul(unity_StereoCameraToWorld[0], float4(0, 0, 1, 1));
@@ -173,6 +187,15 @@ float2x2 GetRotationMatrix(float axis){
 	float2x2 mat = float2x2(c,-s,s,c);
 	mat = ((mat*0.5)+0.5)*2-1;
 	return mat;
+}
+
+float2 Rotate2D(float2 coords, float rot){
+	rot *= (UNITY_PI/180.0);
+	float sinVal = sin(rot);
+	float cosX = cos(rot);
+	float2x2 mat = float2x2(cosX, -sinVal, sinVal, cosX);
+	mat = ((mat*0.5)+0.5)*2-1;
+	return mul(coords, mat);
 }
 
 float3 Rotate(float3 coords, float3 axis){
@@ -201,4 +224,12 @@ float GetNoise(float2 p, float str){
 	float n = frac(sin(p.x*100+p.y*6574)*5647);
 	n = linearstep(-1,1,n);
 	return n*str;
+}
+
+float3 FlowUV (float2 uv, float time, float phase) {
+	float progress = frac(time + phase);
+	float waveform = 1-abs(1-2 * progress);
+	uv += (time - progress) * float2(0.24, 0.2083333);
+	float3 uvw = float3(uv, waveform);
+	return uvw;
 }

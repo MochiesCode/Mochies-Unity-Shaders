@@ -1,7 +1,8 @@
 #include "USBRDF.cginc"
 
 float3 ApplyLREmission(lighting l, float3 diffuse, float3 emiss){
-	#if defined(_EMISSION) && (defined(UNITY_PASS_FORWARDBASE) || defined(OUTLINE))
+	UNITY_BRANCH
+	if (_EmissionToggle == 1){
 		float interpolator = 0;
 		UNITY_BRANCH
 		if (_ReactToggle == 1){
@@ -14,13 +15,12 @@ float3 ApplyLREmission(lighting l, float3 diffuse, float3 emiss){
 				interpolator = l.worldBrightness;
 			}
 		}
-		return lerp(diffuse+emiss, diffuse, interpolator);
-	#else
-		return diffuse;
-	#endif
+		diffuse = lerp(diffuse+emiss, diffuse, interpolator);
+	}
+	return diffuse;
 }
 
-float FadeShadows (g2f i, float atten) {
+float FadeShadows (g2f i, float3 atten) {
     #if HANDLE_SHADOWS_BLENDING_IN_GI
         float viewZ = dot(_WorldSpaceCameraPos - i.worldPos, UNITY_MATRIX_V[2].xyz);
         float shadowFadeDistance = UnityComputeShadowFadeDistance(i.worldPos, viewZ);
@@ -62,64 +62,56 @@ float4 GetVertexLightAtten(float4 lengthSq){
 }
 
 float3 GetVertexLightColor(g2f i, lighting l) {
-	#if !defined(OUTLINE)
-		float3 lightColor = 0;
+	float3 lightColor = 0;
+	UNITY_BRANCH
+	if (i.isVLight){
+		float4 lengthSq = 0;
+		lengthSq += l.toLightX * l.toLightX;
+		lengthSq += l.toLightY * l.toLightY;
+		lengthSq += l.toLightZ * l.toLightZ;
+		
+		// NdotL
+		float4 NdotL = 0;
+		NdotL += l.toLightX * l.normal.x;
+		NdotL += l.toLightY * l.normal.y;
+		NdotL += l.toLightZ * l.normal.z;
+
+		// Correct NdotL
+		float4 corr = rsqrt(lengthSq);
+		NdotL = max(0, NdotL * corr);
+
+		float4 atten = GetVertexLightAtten(lengthSq);
+		float4 diff = NdotL * atten;
 		UNITY_BRANCH
-		if (i.isVLight){
-			float4 lengthSq = 0;
-			lengthSq += l.toLightX * l.toLightX;
-			lengthSq += l.toLightY * l.toLightY;
-			lengthSq += l.toLightZ * l.toLightZ;
-			
-			// NdotL
-			float4 NdotL = 0;
-			NdotL += l.toLightX * l.normal.x;
-			NdotL += l.toLightY * l.normal.y;
-			NdotL += l.toLightZ * l.normal.z;
-
-			// Correct NdotL
-			float4 corr = rsqrt(lengthSq);
-			NdotL = max(0, NdotL * corr);
-
-			float4 atten = GetVertexLightAtten(lengthSq);
-			float4 diff = NdotL * atten;
-			UNITY_BRANCH
-			if (_RenderMode != 2){
-				float4 ramp0 = smoothstep(0, _RampWidth0+0.005, NdotL);
-				float4 ramp1 = smoothstep(0, _RampWidth1+0.005, NdotL);
-				diff = lerp(ramp0, ramp1, _RampWeight) * atten;
-			}
-
-			lightColor.rgb += unity_LightColor[0] * diff.x;
-			lightColor.rgb += unity_LightColor[1] * diff.y;
-			lightColor.rgb += unity_LightColor[2] * diff.z;
-			lightColor.rgb += unity_LightColor[3] * diff.w;
+		if (_RenderMode != 2){
+			float4 ramp0 = smoothstep(0, _RampWidth0+0.005, NdotL);
+			float4 ramp1 = smoothstep(0, _RampWidth1+0.005, NdotL);
+			diff = lerp(ramp0, ramp1, _RampWeight) * atten;
 		}
-    	return lightColor * _VLightCont;
-	#else
-		return 0;
-	#endif
+
+		lightColor.rgb += unity_LightColor[0] * diff.x;
+		lightColor.rgb += unity_LightColor[1] * diff.y;
+		lightColor.rgb += unity_LightColor[2] * diff.z;
+		lightColor.rgb += unity_LightColor[3] * diff.w;
+	}
+	return lightColor * _VLightCont;
 }
 
 void GetLightColor(g2f i, inout lighting l, masks m){
 	#if defined(UNITY_PASS_FORWARDBASE)
 		float3 probeCol = float3(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w);
-		[forcecase]
-		switch (_RenderMode){
-			case 0: l.indirectCol = probeCol; break;
-			case 1:
-				l.indirectCol = lerp(ShadeSH9(l.normal), ShadeSHNL(l.normal), _NonlinearSHToggle) * l.ao;
-				l.indirectCol = lerp(probeCol, l.indirectCol, _SHStr*m.smoothMask);
-				break;
-			case 2: l.indirectCol = ShadeSH9(l.normal) * l.ao; break;
-			default: break;
+		UNITY_BRANCH
+		if (_RenderMode == 1){
+			l.indirectCol = lerp(ShadeSH9(l.normal), ShadeSHNL(l.normal), _NonlinearSHToggle);
+			l.indirectCol = lerp(probeCol, l.indirectCol, _SHStr*m.smoothMask);
 		}
-		
+		else l.indirectCol = probeCol;
+
 		UNITY_BRANCH
 		if (l.lightEnv){
 			l.directCol = _LightColor0;
 			UNITY_BRANCH
-			if (_RenderMode > 0){
+			if (_RenderMode == 1){
 				l.directCol *= _RTDirectCont;
 				l.indirectCol *= _RTIndirectCont;
 			}
@@ -130,10 +122,6 @@ void GetLightColor(g2f i, inout lighting l, masks m){
 				l.directCol = l.indirectCol * _DirectCont;
 				l.indirectCol *= _IndirectCont;
 			}
-			else if (_RenderMode == 2){
-				l.directCol = l.indirectCol * _DirectContSTD;
-				l.indirectCol *= _IndirectContSTD;
-			}
 			else {
 				l.directCol = l.indirectCol * 0.6;
 				l.indirectCol *= 0.5;
@@ -142,7 +130,8 @@ void GetLightColor(g2f i, inout lighting l, masks m){
 
 		l.vLightCol = GetVertexLightColor(i, l);
 		l.worldBrightness = saturate(AverageRGB(l.directCol + l.indirectCol + l.vLightCol));
-		l.directCol *= _RenderMode != 0 ? l.ao : 1;
+		l.directCol *= lerp(1, l.ao, _DirectAO);
+		l.indirectCol *= lerp(1, l.ao, _IndirectAO);
 	#else
 		l.directCol = lerp(_LightColor0, clamp(_LightColor0, 0, _AdditiveMax), _ClampAdditive);
 	#endif
@@ -178,14 +167,14 @@ float3 GetLightDir(g2f i, lighting l) {
 	#if defined(UNITY_PASS_FORWARDADD)
 		lightDir = UnityWorldSpaceLightDir(i.worldPos);
 	#else
-	UNITY_BRANCH
-	if (_StaticLightDirToggle == 0){
-		lightDir = UnityWorldSpaceLightDir(i.worldPos) * l.lightEnv;
-		lightDir += unity_SHAr.xyz + unity_SHAg.xyz + unity_SHAb.xyz;
-	}
-	UNITY_BRANCH
-	if (i.isVLight) 
-		lightDir += GetVertexLightDir(i.worldPos);
+		UNITY_BRANCH
+		if (_StaticLightDirToggle == 0){
+			lightDir = UnityWorldSpaceLightDir(i.worldPos) * l.lightEnv;
+			lightDir += unity_SHAr.xyz + unity_SHAg.xyz + unity_SHAb.xyz;
+		}
+		UNITY_BRANCH
+		if (i.isVLight) 
+			lightDir = GetVertexLightDir(i.worldPos);
 	#endif
 
 	return normalize(lightDir);
@@ -199,16 +188,25 @@ float3 GetHalfVector(float3 lightDir, float3 viewDir){
 	return normalize(lightDir + viewDir);
 }
 
+float3 GetNormal(g2f i, float3 normalDir){
+	return lerp(normalDir, normalize(i.normal), _ClearCoat);
+}
+
+float3 GetBinormal(float4 tangent, float3 normalDir){
+	return cross(normalDir, tangent.xyz) * (tangent.w * unity_WorldTransformParams.w);
+}
+
 float3 GetNormalDir(g2f i, float detailMask){
 	float3 normalMap = UnpackScaleNormal(UNITY_SAMPLE_TEX2D_SAMPLER(_BumpMap, _MainTex, i.uv.xy), _BumpScale);
 	normalMap.y = lerp(normalMap.y, 1-normalMap.y, _InvertNormalY0);
-	#if defined(_DETAIL_MULX2)
+	UNITY_BRANCH
+	if (_UseDetailNormal == 1){
 		float3 detailNormal = UnpackScaleNormal(UNITY_SAMPLE_TEX2D_SAMPLER(_DetailNormalMap, _MainTex, i.uv2.xy), _DetailNormalMapScale * detailMask);
 		detailNormal.y = lerp(detailNormal.y, 1-detailNormal.y, _InvertNormalY1);
 		normalMap = BlendNormals(normalMap, detailNormal);
-	#else
-		normalMap = normalize(normalMap);
-	#endif
+	}
+	else normalMap = normalize(normalMap);
+
 	UNITY_BRANCH
 	if (_HardenNormals == 1){
 		float3 xPos = ddx(i.worldPos);
@@ -219,28 +217,33 @@ float3 GetNormalDir(g2f i, float detailMask){
 	return normalDir;
 }
 
-float3 GetNormal(g2f i, float3 normalDir){
-	return lerp(normalDir, normalize(i.normal), _ClearCoat);
-}
-
-float3 GetBinormal(float4 tangent, float3 normalDir){
-	return cross(normalDir, tangent.xyz) * (tangent.w * unity_WorldTransformParams.w);
-}
-
-float GetAO(g2f i){
-	float ao = 1;
+float3 GetAO(g2f i){
+	float3 ao = 1;
 	UNITY_BRANCH
-	if (_RenderMode == 2 && _PBRWorkflow == 2){
+	if (_PBRWorkflow == 3){
 		float4 packedTex = tex2D(_PackedMap, i.uv.xy);
-		ao = ChannelCheck(packedTex, ao, _OcclusionChannel);
+		ao = ChannelCheck(packedTex, _OcclusionChannel);
 	}
-	else ao = UNITY_SAMPLE_TEX2D_SAMPLER(_OcclusionMap, _MainTex, i.uv.xy).g;
-	return lerp(1, ao, _OcclusionStrength);
+	else ao = UNITY_SAMPLE_TEX2D_SAMPLER(_OcclusionMap, _MainTex, i.uv.xy).rgb;
+
+	UNITY_BRANCH
+	if (_AOFiltering == 1){
+		UNITY_BRANCH
+		if (_UseAOTintTex == 1)
+			_AOTint.rgb *= UNITY_SAMPLE_TEX2D_SAMPLER(_AOTintTex, _MainTex, i.uv.xy).rgb;
+		ao = lerp(_AOTint, 1, ao);
+		ao = saturate(lerp(0.5, ao, _AOContrast));
+		ao += saturate(ao * _AOIntensity);
+		ao = saturate(ao + _AOLightness);
+	}
+	ao = lerp(1, ao, _OcclusionStrength);
+	return ao;
 }
 
-lighting GetLighting(g2f i, masks m, float atten){
+lighting GetLighting(g2f i, masks m, float3 atten){
     lighting l;
 	UNITY_INITIALIZE_OUTPUT(lighting, l);
+	l.ao = 1;
 
 	#if defined(UNITY_PASS_FORWARDBASE)
 		l.lightEnv = any(_WorldSpaceLightPos0);
@@ -254,54 +257,35 @@ lighting GetLighting(g2f i, masks m, float atten){
     UNITY_BRANCH
     if (_RenderMode > 0){
 		l.ao = GetAO(i);
-		#if !defined(OUTLINE)
+
+		UNITY_BRANCH
+		if (i.isVLight){
 			l.toLightX = unity_4LightPosX0 - i.worldPos.x;
 			l.toLightY = unity_4LightPosY0 - i.worldPos.y;
 			l.toLightZ = unity_4LightPosZ0 - i.worldPos.z;
+		}
 
-			l.lightDir = GetLightDir(i, l);
-			l.viewDir = GetViewDir(i.worldPos);
-			l.halfVector = GetHalfVector(l.lightDir, l.viewDir);
-			l.normalDir = GetNormalDir(i, m.detailMask);
-			l.normal = GetNormal(i, l.normalDir);
-			l.tangent = i.tangent;
-			l.binormal = GetBinormal(l.tangent, l.normal);
-			#if !defined(_GLOSSYREFLECTIONS_OFF)
-				l.reflectionDir = reflect(-l.viewDir, l.normal);
-			#endif
+		l.lightDir = GetLightDir(i, l);
+		l.viewDir = GetViewDir(i.worldPos);
+		l.halfVector = GetHalfVector(l.lightDir, l.viewDir);
+		l.normalDir = GetNormalDir(i, m.detailMask);
+		l.normal = GetNormal(i, l.normalDir);
+		l.tangent = i.tangent;
+		l.binormal = GetBinormal(l.tangent, l.normal);
+		l.reflectionDir = reflect(-l.viewDir, l.normal);
 
-			l.NdotL = DotClamped(l.normalDir, l.lightDir);
-			l.NdotV = abs(dot(l.normal, l.viewDir));
-			l.NdotH = DotClamped(l.normal, l.halfVector);
-			l.LdotH = DotClamped(l.lightDir, l.halfVector);
-			#if !defined(_SPECULARHIGHLIGHTS_OFF)
-				UNITY_BRANCH
-				if (_SpecularStyle > 0){
-					l.TdotH = dot(l.tangent, l.halfVector);
-					l.BdotH = dot(l.binormal, l.halfVector);
-				}
-			#endif
-		#endif
+		l.NdotL = DotClamped(l.normalDir, l.lightDir);
+		l.NdotV = abs(dot(l.normal, l.viewDir));
+		l.NdotH = DotClamped(l.normal, l.halfVector);
+		l.LdotH = DotClamped(l.lightDir, l.halfVector);
+		UNITY_BRANCH
+		if (_Specular == 1){
+			l.TdotH = dot(l.tangent, l.halfVector);
+			l.BdotH = dot(l.binormal, l.halfVector);
+		}
     }
 
 	GetLightColor(i,l,m);
 
     return l;
-}
-
-UnityLight GetDirectLight(lighting l, float atten){
-    UnityLight o;
-    o.color = l.directCol * atten;
-    o.dir = l.lightDir;
-    return o;
-}
-
-UnityIndirect GetIndirectLight(g2f i, lighting l, float roughness){
-    UnityIndirect o;
-    o.diffuse = l.indirectCol + l.vLightCol;
-    o.specular = 0;
-    #if defined(UNITY_PASS_FORWARDBASE) && !defined(OUTLINE)
-        o.specular = GetReflections(i, l, roughness);
-    #endif
-    return o;
 }

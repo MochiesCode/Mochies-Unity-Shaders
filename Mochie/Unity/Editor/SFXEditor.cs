@@ -20,11 +20,11 @@ public class SFXEditor : ShaderGUI {
 	public static Dictionary<string, float> presetDict = new Dictionary<string, float>();
 	public static List<string> presetsList = new List<string>();
 	public static string[] presets;
-
+	
 	int popupIndex = -1;
 	string presetText = "";
 	string dirPath = "Assets/Mochie/Unity/Presets/ScreenFX/";
-
+	
     Toggles toggles = new Toggles(
 		new bool[] {
 			true, false, false, false,
@@ -81,8 +81,8 @@ public class SFXEditor : ShaderGUI {
 
     // General
     MaterialProperty _BlendMode = null;
-    MaterialProperty _SrcBlend;
-    MaterialProperty _DstBlend;
+    MaterialProperty _SrcBlend = null;
+    MaterialProperty _DstBlend = null;
     MaterialProperty _MinRange = null;
     MaterialProperty _MaxRange = null;
     MaterialProperty _Opacity = null;
@@ -141,21 +141,20 @@ public class SFXEditor : ShaderGUI {
     MaterialProperty _BlurMinRange = null;
     MaterialProperty _BlurMaxRange = null;
     MaterialProperty _RGBSplit = null;
-    MaterialProperty _Flicker = null;
     MaterialProperty _DoF = null;
     MaterialProperty _BlurOpacity = null;
     MaterialProperty _BlurStr = null;
     MaterialProperty _DoFP2O = null;
     MaterialProperty _DoFFade = null;
     MaterialProperty _DoFRadius = null;
-    MaterialProperty _FlickerSpeedX = null;
-    MaterialProperty _FlickerSpeedY = null;
     MaterialProperty _PixelationStr = null;
     MaterialProperty _RippleGridStr = null;
     MaterialProperty _BlurRadius = null;
     MaterialProperty _BlurY = null;
-	//MaterialProperty _BloomThreshold = null;
+// 	MaterialProperty _BloomThreshold = null;
 	MaterialProperty _BlurSamples = null;
+	MaterialProperty _PixelBlurSamples = null;
+	MaterialProperty _CrushBlur = null;
 
     // Fog
     MaterialProperty _Fog = null;
@@ -219,10 +218,10 @@ public class SFXEditor : ShaderGUI {
     MaterialProperty _TPScanFade = null;
 
     // Extras
-    MaterialProperty _DeepFry = null;
-    MaterialProperty _Flavor = null;
-    MaterialProperty _Sizzle = null;
-    MaterialProperty _Heat = null;
+    // MaterialProperty _DeepFry = null;
+    // MaterialProperty _Flavor = null;
+    // MaterialProperty _Sizzle = null;
+    // MaterialProperty _Heat = null;
     MaterialProperty _Pulse = null;
     MaterialProperty _PulseColor = null;
     MaterialProperty _PulseSpeed = null;
@@ -240,7 +239,7 @@ public class SFXEditor : ShaderGUI {
     MaterialProperty _BackgroundCol = null;
     MaterialProperty _OutlineType = null;
     MaterialProperty _OutlineThiccS = null;
-    MaterialProperty _OutlineThiccN = null;
+//    MaterialProperty _OutlineThiccN = null;
 	MaterialProperty _GhostingToggle = null;
 	MaterialProperty _GhostingStr = null;
 	MaterialProperty _FreezeFrame = null;
@@ -253,6 +252,9 @@ public class SFXEditor : ShaderGUI {
 	MaterialProperty _DepthBufferToggle = null;
 	MaterialProperty _DBOpacity = null;
 	MaterialProperty _DBColor = null;
+	MaterialProperty _AuraFade = null;
+	MaterialProperty _AuraSampleCount = null;
+	MaterialProperty _AuraStr = null;
 
     BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
@@ -266,12 +268,6 @@ public class SFXEditor : ShaderGUI {
             if (property.FieldType == typeof(MaterialProperty))
                 property.SetValue(this, FindProperty(property.Name, props));
         }
-		
-		// if (!File.Exists(Application.dataPath + "Mochie/Unity/Presets/ScreenFX/Default.mat")){
-		// 	Material defMat = new Material(mat.shader);
-		// 	AssetDatabase.CreateAsset(defMat, dirPath);
-		//  AssetDatabase.Refresh();
-		// }
 
 		// Generate preset popup items (and folders if necessary)
 		if (!AssetDatabase.IsValidFolder(MGUI.parentPath))
@@ -318,13 +314,28 @@ public class SFXEditor : ShaderGUI {
         Texture2D headerTex = (Texture2D)Resources.Load(header, typeof(Texture2D));
 		Texture2D watermarkTex = (Texture2D)Resources.Load(watermark, typeof(Texture2D));
 		Texture2D patIconTex = (Texture2D)Resources.Load(patIcon, typeof(Texture2D));
+		Texture2D resetIconTex = (Texture2D)Resources.Load("ResetIcon", typeof(Texture2D));
+		Texture2D collapseIconTex = (Texture2D)Resources.Load("CollapseIcon", typeof(Texture2D));
+		Texture2D expandIconTex = (Texture2D)Resources.Load("ExpandIcon", typeof(Texture2D));
+		Texture2D collapseIcon = (Texture2D)Resources.Load("CollapseIcon", typeof(Texture2D));
 
         MGUI.CenteredTexture(headerTex, 0, 0);
-		MGUI.DoCollapseButtons(foldouts, mat);
+		MGUI.Space4();
         EditorGUI.BeginChangeCheck(); {
+			
+			mat.SetShaderPassEnabled("Always", _GhostingToggle.floatValue == 1 || _FreezeFrame.floatValue == 1);
 
             // Global
-            if (Foldouts.DoFoldout(foldouts, mat, me, "GENERAL")){
+			bool generalTab = Foldouts.DoFoldout(foldouts, mat, me, -48f, "GENERAL");
+			if (MGUI.TabButton(collapseIcon, 26f)){
+				for (int i = 1; i <= foldouts[mat].GetToggles().Length-1; i++)
+					foldouts[mat].SetState(i, false);
+			}
+			MGUI.Space8();
+			if (MGUI.TabButton(resetIconTex, 54f))
+				ResetRendering();
+			MGUI.Space8();
+            if (generalTab){
 				MGUI.Space4();
 				me.RenderQueueField();
                 EditorGUI.showMixedValue = _BlendMode.hasMixedValue;
@@ -339,7 +350,7 @@ public class SFXEditor : ShaderGUI {
                     }
                     EditorGUI.showMixedValue = false;
                 }
-                if (_BlendMode.floatValue == 1 || _BlendMode.floatValue == 2)
+                if (_BlendMode.floatValue > 0)
                     me.ShaderProperty(_Opacity, "Opacity");
 				
 				GUILayout.Label("Global Falloff", EditorStyles.boldLabel);
@@ -350,56 +361,62 @@ public class SFXEditor : ShaderGUI {
             }
 
             // Color Filtering
-            if (_DeepFry.floatValue != 1){
-                if (Foldouts.DoFoldout(foldouts, mat, me, "COLOR")){
-                    MGUI.Space4();
-                    me.ShaderProperty(_FilterModel, modeLabel);
-					if (_FilterModel.floatValue > 0){
-						MGUI.Space6();
-					    me.ShaderProperty(_ColorUseGlobal, ugfLabel);
-                        if (_ColorUseGlobal.floatValue == 0){
-                            me.ShaderProperty(_ColorMinRange, minLabel, 1);
-                            me.ShaderProperty(_ColorMaxRange, maxLabel, 1);
-                        }
-						MGUI.Space6();
+			bool colorTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "COLOR");
+			if (MGUI.TabButton(resetIconTex, 26f))
+				ResetColor();
+			MGUI.Space8();
+			if (colorTab){
+				MGUI.Space4();
+				me.ShaderProperty(_FilterModel, modeLabel);
+				if (_FilterModel.floatValue > 0){
+					MGUI.Space6();
+					me.ShaderProperty(_ColorUseGlobal, ugfLabel);
+					if (_ColorUseGlobal.floatValue == 0){
+						me.ShaderProperty(_ColorMinRange, minLabel, 1);
+						me.ShaderProperty(_ColorMaxRange, maxLabel, 1);
 					}
-                    switch((int)_FilterModel.floatValue){
-                        case 1: 
-                            me.ShaderProperty(_Color, colorLabel);
-                            break;
-                        case 2: 
-                            me.ShaderProperty(_AutoShift, "Auto Shift");
-                            if (_AutoShift.floatValue ==1)
-                                me.ShaderProperty(_AutoShiftSpeed, speedLabel);
-                            else
-                                me.ShaderProperty(_Hue, "Hue");
-                            me.ShaderProperty(_SaturationHSL, "Saturation");
-                            me.ShaderProperty(_Luminance, "Luminance");
-                            me.ShaderProperty(_HSLMin, "Min Threshold");
-                            me.ShaderProperty(_HSLMax, "Max Threshold");
-                            break;
-                        default: break;
-                    }
-                    if (_FilterModel.floatValue > 0){
-						MGUI.Space8();
-                        //ToggleSlider(me, "Sobel", _Sobel, _SobelStr);
-                        me.ShaderProperty(_HDR, "HDR");
-                        me.ShaderProperty(_Contrast, "Contrast");
-                        me.ShaderProperty(_Exposure, "Exposure");
-                        if (_FilterModel.floatValue != 3)
-                            me.ShaderProperty(_SaturationRGB, "Saturation");
-                        me.ShaderProperty(_Noise, "Noise");
-						me.ShaderProperty(_Invert, "Invert");
-						me.ShaderProperty(_InvertR, "Red Inversion", 1);
-						me.ShaderProperty(_InvertG, "Green Inversion", 1);
-						me.ShaderProperty(_InvertB, "Blue Inversion", 1);
-                    }
-                    MGUI.Space8();
-                }
-            }
+					MGUI.Space6();
+				}
+				switch((int)_FilterModel.floatValue){
+					case 1: 
+						me.ShaderProperty(_Color, colorLabel);
+						break;
+					case 2: 
+						me.ShaderProperty(_AutoShift, "Auto Shift");
+						if (_AutoShift.floatValue ==1)
+							me.ShaderProperty(_AutoShiftSpeed, speedLabel);
+						else
+							me.ShaderProperty(_Hue, "Hue");
+						me.ShaderProperty(_SaturationHSL, "Saturation");
+						me.ShaderProperty(_Luminance, "Luminance");
+						me.ShaderProperty(_HSLMin, "Min Threshold");
+						me.ShaderProperty(_HSLMax, "Max Threshold");
+						break;
+					default: break;
+				}
+				if (_FilterModel.floatValue > 0){
+					MGUI.Space8();
+					//ToggleSlider(me, "Sobel", _Sobel, _SobelStr);
+					me.ShaderProperty(_HDR, "HDR");
+					me.ShaderProperty(_Contrast, "Contrast");
+					me.ShaderProperty(_Exposure, "Exposure");
+					if (_FilterModel.floatValue != 3)
+						me.ShaderProperty(_SaturationRGB, "Saturation");
+					me.ShaderProperty(_Noise, "Noise");
+					me.ShaderProperty(_Invert, "Invert");
+					me.ShaderProperty(_InvertR, "Red Inversion", 1);
+					me.ShaderProperty(_InvertG, "Green Inversion", 1);
+					me.ShaderProperty(_InvertB, "Blue Inversion", 1);
+				}
+				MGUI.Space8();
+			}
 
             // Shake
-            if (Foldouts.DoFoldout(foldouts, mat, me, "SHAKE")){
+			bool shakeTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "SHAKE");
+			if (MGUI.TabButton(resetIconTex, 26f))
+				ResetShake();
+			MGUI.Space8();
+            if (shakeTab){
                 MGUI.Space4();
                 me.ShaderProperty(_ShakeModel, modeLabel);
 				if (_ShakeModel.floatValue > 0){
@@ -425,7 +442,11 @@ public class SFXEditor : ShaderGUI {
             }
 
             // Distortion
-            if (Foldouts.DoFoldout(foldouts, mat, me, "DISTORTION")){
+			bool distTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "DISTORTION");
+			if (MGUI.TabButton(resetIconTex, 26f))
+				ResetDistortion();
+			MGUI.Space8();
+            if (distTab){
                 MGUI.Space4();
                 me.ShaderProperty(_DistortionModel, modeLabel);
                 if (_DistortionModel.floatValue > 0){
@@ -444,6 +465,7 @@ public class SFXEditor : ShaderGUI {
                     me.ShaderProperty(_DistortionSpeed, speedLabel);
                     if (_DistortionModel.floatValue == 2){
                         GUILayout.Label("Triplanar", EditorStyles.boldLabel);
+						MGUI.DisplayWarning("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
                         me.ShaderProperty(_DistortionRadius, radiusLabel);
                         me.ShaderProperty(_DistortionFade, fadeLabel);
                         me.ShaderProperty(_DistortionP2O, p2oLabel);
@@ -452,67 +474,63 @@ public class SFXEditor : ShaderGUI {
                 MGUI.Space8();
             }
 
-            // Blur
-            if (_DeepFry.floatValue != 1){
-                if (Foldouts.DoFoldout(foldouts, mat, me, "BLUR")){
-                    MGUI.Space4();
-                    me.ShaderProperty(_BlurModel, modeLabel);
-                    if (_BlurModel.floatValue > 0){
-						MGUI.Space6();
-                        me.ShaderProperty(_BlurUseGlobal, ugfLabel);
-                        if (_BlurUseGlobal.floatValue == 0){
-                            me.ShaderProperty(_BlurMinRange, minLabel, 1);
-                            me.ShaderProperty(_BlurMaxRange, maxLabel, 1);
-                        }
-						MGUI.Space6();
-                        me.ShaderProperty(_BlurOpacity, "Opacity");
-                        me.ShaderProperty(_BlurStr, strengthLabel);
-						if (_BlurModel.floatValue != 2){
-							string itersLabel = "Iterations";
-							if (_BlurModel.floatValue != 3){
-								int sampleCount = 0;
-								if (_RGBSplit.floatValue == 1)
-									sampleCount = (int)_BlurSamples.floatValue*4;
-								else if (_BlurY.floatValue == 1)
-									sampleCount = (int)_BlurSamples.floatValue*2;
-								else
-									sampleCount = (int)_BlurSamples.floatValue*8;
-								itersLabel += " (" + sampleCount + ")";
-							}
-							me.ShaderProperty(_BlurSamples, itersLabel);
+			// Blur
+			bool blurTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "BLUR");
+			if (MGUI.TabButton(resetIconTex, 26f))
+				ResetBlur();
+			MGUI.Space8();
+			if (blurTab){
+				MGUI.Space4();
+				me.ShaderProperty(_BlurModel, modeLabel);
+				if (_BlurModel.floatValue > 0){
+					if (_BlurModel.floatValue == 1){
+						me.ShaderProperty(_PixelBlurSamples, "Sample Count");
+						if (_PixelBlurSamples.floatValue > 43){
+							MGUI.Space6();
+							MGUI.DisplayWarning("High sample counts can be very laggy! If your strength value is low please consider staying at or below 43 samples.");
 						}
-                        if (_BlurModel.floatValue == 3)
-                            me.ShaderProperty(_BlurRadius, radiusLabel);
-						
-						me.ShaderProperty(_PixelationStr, "Pixelation");
-						me.ShaderProperty(_RippleGridStr, "Ripple Grid");
-                        if (_BlurModel.floatValue != 3){
-							me.ShaderProperty(_DoF, "Depth of Field");
-							if (_DoF.floatValue == 1){
-                                me.ShaderProperty(_DoFRadius, radiusLabel, 1);
-                                me.ShaderProperty(_DoFFade, fadeLabel, 1);
-                                me.ShaderProperty(_DoFP2O, p2oLabel, 1);
-								MGUI.Space4();
-							}
-							me.ShaderProperty(_Flicker, "Flicker");
-							if (_Flicker.floatValue == 1){
-                                me.ShaderProperty(_FlickerSpeedX, speedXLabel, 1);
-                                me.ShaderProperty(_FlickerSpeedY, speedYLabel, 1);
-								MGUI.Space4();
-							}
-                            EditorGUI.BeginDisabledGroup(_RGBSplit.floatValue == 1);
-                            me.ShaderProperty(_BlurY, "Y Axis Only");
-                            EditorGUI.EndDisabledGroup();
-                            me.ShaderProperty(_RGBSplit, "RGB Split");
-                        }
-                    }
-                    MGUI.Space8();  
-                }
-            }
+					}
+					
+					MGUI.Space6();
+					me.ShaderProperty(_BlurUseGlobal, ugfLabel);
+					if (_BlurUseGlobal.floatValue == 0){
+						me.ShaderProperty(_BlurMinRange, minLabel, 1);
+						me.ShaderProperty(_BlurMaxRange, maxLabel, 1);
+					}
+					MGUI.Space6();
+					me.ShaderProperty(_BlurOpacity, "Opacity");
+					me.ShaderProperty(_BlurStr, strengthLabel);
+					if (_BlurModel.floatValue == 3){
+						me.ShaderProperty(_BlurSamples, "Sample Count");
+						me.ShaderProperty(_BlurRadius, radiusLabel);
+					}
+					me.ShaderProperty(_PixelationStr, "Pixelation");
+					me.ShaderProperty(_RippleGridStr, "Ripple Grid");
+					if (_BlurModel.floatValue != 3){
+						me.ShaderProperty(_DoF, "Depth of Field");
+						if (_DoF.floatValue == 1){
+							MGUI.DisplayWarning("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
+							me.ShaderProperty(_DoFRadius, radiusLabel, 1);
+							me.ShaderProperty(_DoFFade, fadeLabel, 1);
+							me.ShaderProperty(_DoFP2O, p2oLabel, 1);
+							MGUI.Space4();
+						}
+						me.ShaderProperty(_BlurY, "Y Axis Only");
+						me.ShaderProperty(_RGBSplit, "Chrom. Abberation");
+					}
+					if (_BlurModel.floatValue == 1)
+						me.ShaderProperty(_CrushBlur, "Crush");
+				}
+				MGUI.Space8();  
+			}
             
 			if (isSFXX){
+				bool zoomTab =Foldouts.DoFoldout(foldouts, mat, me, -20f, "ZOOM");
+				if (MGUI.TabButton(resetIconTex, 26f))
+					ResetZoom();
+				MGUI.Space8();
 				// Zoom
-				if (Foldouts.DoFoldout(foldouts, mat, me, "ZOOM")){
+				if (zoomTab){
 					MGUI.Space4();
 					me.ShaderProperty(_Zoom, modeLabel);
 					if (_Zoom.floatValue > 0){
@@ -534,7 +552,11 @@ public class SFXEditor : ShaderGUI {
 				}
 				
 				// Screenspace Texture Overlay
-				if (Foldouts.DoFoldout(foldouts, mat, me, "IMAGE OVERLAY")){
+				bool sstTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "IMAGE OVERLAY");
+				if (MGUI.TabButton(resetIconTex, 26f))
+					ResetSST();
+				MGUI.Space8();
+				if (sstTab){
 					MGUI.Space4();
 					me.ShaderProperty(_SST, modeLabel);
 					if (_SST.floatValue > 0){
@@ -554,9 +576,9 @@ public class SFXEditor : ShaderGUI {
 							me.ShaderProperty(_SSTColumnsX, "Columns (X)");
 							me.ShaderProperty(_SSTRowsY, "Rows (Y)");
 							MGUI.CustomToggleSlider("Frame", _ManualScrub, _ScrubPos, 0f, (_SSTColumnsX.floatValue*_SSTRowsY.floatValue)-1);
-							EditorGUI.BeginDisabledGroup(_ManualScrub.floatValue == 1);
+							MGUI.ToggleGroup(_ManualScrub.floatValue == 1);
 							me.ShaderProperty(_SSTAnimationSpeed, "FPS");
-							EditorGUI.EndDisabledGroup();
+							MGUI.ToggleGroupEnd();
 						}
 						GUILayout.Label(new GUIContent("UVs"), EditorStyles.boldLabel);
 						me.ShaderProperty(_SSTScale, "Scale");
@@ -569,10 +591,16 @@ public class SFXEditor : ShaderGUI {
 				}
 
 				// Fog
-				if (Foldouts.DoFoldout(foldouts, mat, me, "FOG")){
+				bool fogTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "FOG");
+				if (MGUI.TabButton(resetIconTex, 26f))
+					ResetFog();
+				MGUI.Space8();
+				if (fogTab){
 					MGUI.Space4();
 					me.ShaderProperty(_Fog, modeLabel);
 					if (_Fog.floatValue == 1){
+						MGUI.Space6();
+						MGUI.DisplayWarning("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
 						MGUI.Space6();
 						me.ShaderProperty(_FogUseGlobal, ugfLabel);
 						if (_FogUseGlobal.floatValue == 0){
@@ -585,24 +613,29 @@ public class SFXEditor : ShaderGUI {
 						me.ShaderProperty(_FogFade, fadeLabel);
 						me.ShaderProperty(_FogP2O, p2oLabel);
 						
-						if (Foldouts.DoMediumFoldout(foldouts, mat, me, _FogSafeZone, "Safe Zone")){
+						if (Foldouts.DoMediumFoldout(foldouts, mat, me, 4f, _FogSafeZone, "Safe Zone")){
 							MGUI.Space6();
-							EditorGUI.BeginDisabledGroup(_FogSafeZone.floatValue == 0);
+							MGUI.ToggleGroup(_FogSafeZone.floatValue == 0);
 							me.ShaderProperty(_FogSafeRadius, "Vision Radius");
 							me.ShaderProperty(_FogSafeMaxRange, "Outer Perimeter");
 							me.ShaderProperty(_FogSafeOpacity, "Opacity");
-							EditorGUI.EndDisabledGroup();
-							MGUI.Space6();
+							MGUI.ToggleGroupEnd();
 						}
 					}
 					MGUI.Space8();
 				}
 
 				// Triplanar Mapping
-				if (Foldouts.DoFoldout(foldouts, mat, me, "TRIPLANAR")){
+				bool triplanarTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "TRIPLANAR");
+				if (MGUI.TabButton(resetIconTex, 26f))
+					ResetTriplanar();
+				MGUI.Space8();
+				if (triplanarTab){
 					MGUI.Space4();
 					me.ShaderProperty(_Triplanar, modeLabel);
 					if (_Triplanar.floatValue > 0){				
+						MGUI.Space6();
+						MGUI.DisplayWarning("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
 						MGUI.Space6();
 						me.ShaderProperty(_TPUseGlobal, ugfLabel);
 						if (_TPUseGlobal.floatValue == 0){
@@ -635,121 +668,140 @@ public class SFXEditor : ShaderGUI {
 				}
 
 				// Outline
-				if (Foldouts.DoFoldout(foldouts, mat, me, "OUTLINE")){
+				bool outlineTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "OUTLINE");
+				if (MGUI.TabButton(resetIconTex, 26f))
+					ResetOutline();
+				MGUI.Space8();
+				if (outlineTab){
 					MGUI.Space4();
 					me.ShaderProperty(_OutlineType, modeLabel);
 					if (_OutlineType.floatValue > 0){
-						me.ShaderProperty(_OutlineCol, "Line");
-						me.ShaderProperty(_BackgroundCol, "Background");
+						MGUI.Space6();
+						MGUI.DisplayWarning("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
+						MGUI.Space6();
+						if (_OutlineType.floatValue == 2)
+							me.ShaderProperty(_AuraSampleCount, "Sample Count");
+						me.ShaderProperty(_OutlineCol, "Line Tint");
+						me.ShaderProperty(_BackgroundCol, "Background Tint");
 						if (_OutlineType.floatValue == 1){
 							me.ShaderProperty(_OutlineThiccS, "Thickness");
 							me.ShaderProperty(_OutlineThresh, strengthLabel);
 						}
-						else if (_OutlineType.floatValue == 2)
-							me.ShaderProperty(_OutlineThiccN, "Thickness");
+						else if (_OutlineType.floatValue == 2){
+							me.ShaderProperty(_AuraStr, "Thickness");
+							me.ShaderProperty(_AuraFade, "Fade");
+						}
 					}
 					MGUI.Space8();
 				}
 
 				// Extras
-				mat.SetShaderPassEnabled("Always", _GhostingToggle.floatValue == 1 || _FreezeFrame.floatValue == 1);
-				if (Foldouts.DoFoldout(foldouts, mat, me, "MISC")){
+				
+				bool miscTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "MISC");
+				if (MGUI.TabButton(resetIconTex, 26f))
+					ResetExtras();
+				MGUI.Space8();
+				if (miscTab){
 					MGUI.Space4();
-					if (Foldouts.DoMediumFoldout(foldouts, mat, me, "Framebuffer")){
-						MGUI.Space6();
-						if (_FreezeFrame.floatValue == 1 && _GhostingToggle.floatValue == 1){
-							_FreezeFrame.floatValue = 0;
-							_GhostingToggle.floatValue = 0;
-						}
-						me.ShaderProperty(_FreezeFrame, "Freeze Frame");
-						MGUI.ToggleSlider(me, "Ghosting", _GhostingToggle, _GhostingStr);
+					if (Foldouts.DoMediumFoldout(foldouts, mat, me, 4f, "Framebuffer")){
+						// if (_FreezeFrame.floatValue == 1 && _GhostingToggle.floatValue == 1){
+						// 	_FreezeFrame.floatValue = 0;
+						// 	_GhostingToggle.floatValue = 0;
+						// }
+						// me.ShaderProperty(_FreezeFrame, "Freeze Frame");
+						// MGUI.ToggleSlider(me, "Ghosting", _GhostingToggle, _GhostingStr);
+						MGUI.FramebufferSection(me, new MaterialProperty[] {_FreezeFrame, _GhostingToggle}, _GhostingStr);
 						MGUI.Space6();
 					}
-					else GUILayout.Space(-2);
+					else MGUI.SpaceN2();
 
-					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _Letterbox, "Letterbox")){
+					if (Foldouts.DoMediumFoldout(foldouts, mat, me, 4f, _Letterbox, "Letterbox")){
 						MGUI.Space6();
-						EditorGUI.BeginDisabledGroup(_Letterbox.floatValue == 0);
+						MGUI.ToggleGroup(_Letterbox.floatValue == 0);
 						me.ShaderProperty(_UseZoomFalloff, "Use Zoom Falloff");
 						me.ShaderProperty(_LetterboxStr, "Bar Width");
-						EditorGUI.EndDisabledGroup();
+						MGUI.ToggleGroupEnd();
 						MGUI.Space6();
 					}
-					else GUILayout.Space(-2);
+					else MGUI.SpaceN4();
 
-					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _DeepFry, "Deep Fry")){
-						MGUI.Space6();
-						EditorGUI.BeginDisabledGroup(_DeepFry.floatValue == 0);
-						me.ShaderProperty(_Flavor, "Flavor");
-						me.ShaderProperty(_Heat, "Heat");
-						me.ShaderProperty(_Sizzle, "Sizzle");
-						EditorGUI.EndDisabledGroup();
-						MGUI.Space6();
-					}
-					else GUILayout.Space(-2);
+					// if (Foldouts.DoMediumFoldout(foldouts, mat, me, 4f, _DeepFry, "Deep Fry")){
+					// 	MGUI.Space6();
+					// 	MGUI.ToggleGroup(_DeepFry.floatValue == 0);
+					// 	me.ShaderProperty(_Flavor, "Flavor");
+					// 	me.ShaderProperty(_Heat, "Heat");
+					// 	me.ShaderProperty(_Sizzle, "Sizzle");
+					// 	MGUI.ToggleGroupEnd();
+					// 	MGUI.Space6();
+					// }
+					// else MGUI.SpaceN2();
 
-					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _Pulse, "Pulse")){
+					if (Foldouts.DoMediumFoldout(foldouts, mat, me, 4f, _Pulse, "Pulse")){
 						MGUI.Space6();
-						EditorGUI.BeginDisabledGroup(_Pulse.floatValue == 0);
+						MGUI.ToggleGroup(_Pulse.floatValue == 0);
 						me.ShaderProperty(_WaveForm, "Waveform");
-						EditorGUI.BeginDisabledGroup(_WaveForm.floatValue == 0);
+						MGUI.ToggleGroup(_WaveForm.floatValue == 0);
 						me.ShaderProperty(_PulseColor, "Include Color");
 						me.ShaderProperty(_PulseSpeed, speedLabel);
-						EditorGUI.EndDisabledGroup();
-						EditorGUI.EndDisabledGroup();
+						MGUI.ToggleGroupEnd();
+						MGUI.ToggleGroupEnd();
 						MGUI.Space6();
 					}
-					else GUILayout.Space(-2);
+					else MGUI.SpaceN4();
 
-					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _Shift, "UV Manipulation")){
+					if (Foldouts.DoMediumFoldout(foldouts, mat, me, 4f, _Shift, "UV Manipulation")){
 						MGUI.Space6();
-						EditorGUI.BeginDisabledGroup(_Shift.floatValue == 0);
+						MGUI.ToggleGroup(_Shift.floatValue == 0);
 						me.ShaderProperty(_InvertX, "Invert X");
 						me.ShaderProperty(_InvertY, "Invert Y");
 						me.ShaderProperty(_ShiftX, "Shift X");
 						me.ShaderProperty(_ShiftY, "Shift Y");
-						EditorGUI.EndDisabledGroup();
+						MGUI.ToggleGroupEnd();
 						MGUI.Space6();
 					}
-					else GUILayout.Space(-2);
+					else MGUI.SpaceN4();
 
-					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _RoundingToggle, "Rounding")){
+					if (Foldouts.DoMediumFoldout(foldouts, mat, me, 4f, _RoundingToggle, "Rounding")){
 						MGUI.Space6();
-						EditorGUI.BeginDisabledGroup(_RoundingToggle.floatValue == 0);
+						MGUI.ToggleGroup(_RoundingToggle.floatValue == 0);
 						me.ShaderProperty(_RoundingOpacity, "Opacity");
 						me.ShaderProperty(_Rounding, "Precision");
-						EditorGUI.EndDisabledGroup();
+						MGUI.ToggleGroupEnd();
 						MGUI.Space6();
 					}
-					else GUILayout.Space(-2);
+					else MGUI.SpaceN4();
 
-					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _NMFToggle, "Normal Map")){
+					if (Foldouts.DoMediumFoldout(foldouts, mat, me, 4f, _NMFToggle, "Normal Map")){
 						MGUI.Space6();
-						EditorGUI.BeginDisabledGroup(_NMFToggle.floatValue == 0);
+						MGUI.ToggleGroup(_NMFToggle.floatValue == 0);
 						me.ShaderProperty(_NMFOpacity, "Opacity");
 						me.ShaderProperty(_NormalMapFilter, "Strength");
-						EditorGUI.EndDisabledGroup();
+						MGUI.ToggleGroupEnd();
 						MGUI.Space6();
 					}
-					else GUILayout.Space(-2);
+					else MGUI.SpaceN4();
 					
-					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _DepthBufferToggle, "Depth Buffer")){
+					if (Foldouts.DoMediumFoldout(foldouts, mat, me, 4f, _DepthBufferToggle, "Depth Buffer")){
 						MGUI.Space6();
-						EditorGUI.BeginDisabledGroup(_DepthBufferToggle.floatValue == 0);
+						if (_DepthBufferToggle.floatValue == 1){
+							MGUI.DisplayWarning("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
+							MGUI.Space6();
+						}
+						MGUI.ToggleGroup(_DepthBufferToggle.floatValue == 0);
 						me.ShaderProperty(_DBOpacity, "Opacity");
 						me.ShaderProperty(_DBColor, "Tint");
 						MGUI.ToggleGroupEnd();
 						MGUI.Space6();
 					}
-					else GUILayout.Space(-2);
+					else MGUI.SpaceN2();
 					MGUI.Space6();
 				}
 			}
-
+			
 			// -----------------
 			// Presets
 			// -----------------
-			if (Foldouts.DoFoldout(foldouts, mat, me, "PRESETS")){
+			if (Foldouts.DoFoldout(foldouts, mat, me, 8f, "PRESETS")){
 				MGUI.Space4();
 				float buttonWidth = EditorGUIUtility.labelWidth-5.0f;
 				if (MGUI.SimpleButton("Save", buttonWidth, 0)){
@@ -841,4 +893,179 @@ public class SFXEditor : ShaderGUI {
                 break;
         }
     }
+
+	void ResetRendering(){
+		_BlendMode.floatValue = 0f;
+		_SrcBlend.floatValue = 1f;
+		_DstBlend.floatValue = 0f;
+		_Opacity.floatValue = 1f;
+		_MinRange.floatValue = 8f;
+		_MaxRange.floatValue = 15f;
+	}
+
+	void ResetColor(){
+		_FilterModel.floatValue = 0f;
+		_ColorUseGlobal.floatValue = 1f;
+		_ColorMinRange.floatValue = 8f;
+		_ColorMaxRange.floatValue = 15f;
+		_AutoShift.floatValue = 0f;
+		_Color.colorValue = Color.white;
+		_SaturationRGB.floatValue = 1f;
+		_AutoShiftSpeed.floatValue = 0.25f;
+		_Hue.floatValue = 0f;
+		_SaturationHSL.floatValue = 0f;
+		_Luminance.floatValue = 0f;
+		_HSLMin.floatValue = 0f;
+		_HSLMax.floatValue = 1f;
+		_HDR.floatValue = 0f;
+		_Exposure.floatValue = 0f;
+		_Contrast.floatValue = 1f;
+		_Invert.floatValue = 0f;
+		_InvertR.floatValue = 0f;
+		_InvertG.floatValue = 0f;
+		_InvertB.floatValue = 0f;
+		_Noise.floatValue = 0f;
+	}
+
+	void ResetShake(){
+		_ShakeModel.floatValue = 0f;
+		_ShakeUseGlobal.floatValue = 0f;
+		_ShakeMinRange.floatValue = 8f;
+		_ShakeMaxRange.floatValue = 15f;
+		_Amplitude.floatValue = 0f;
+		_ShakeSpeedX.floatValue = 0.5234375f;
+		_ShakeSpeedY.floatValue = 0.78125f;
+		_ShakeSpeedXY.floatValue = 5f;
+	}
+	
+	void ResetDistortion(){
+		_DistortionModel.floatValue = 0f;
+		_DistortionUseGlobal.floatValue = 1f;
+		_DistortionMinRange.floatValue = 8f;
+		_DistortionMaxRange.floatValue = 15f;
+		_DistortionStr.floatValue = 0.5f;
+		_DistortionSpeed.floatValue = 0f;
+		_DistortionRadius.floatValue = 2f;
+		_DistortionFade.floatValue = 1f;
+		_DistortionP2O.floatValue = 1f;
+	}
+
+	void ResetBlur(){
+		_BlurModel.floatValue = 0f;
+		_PixelBlurSamples.floatValue = 43f;
+		_BlurUseGlobal.floatValue = 1f;
+		_BlurMinRange.floatValue = 8f;
+		_BlurMaxRange.floatValue = 15f;
+		_BlurY.floatValue = 0f;
+		_RGBSplit.floatValue = 0f;
+		_DoF.floatValue = 0f;
+		_DoFRadius.floatValue = 2f;
+		_DoFFade.floatValue = 1f;
+		_DoFP2O.floatValue = 1f;
+		_BlurOpacity.floatValue = 1f;
+		_BlurStr.floatValue = 0f;
+		_BlurRadius.floatValue = 1f;
+		_PixelationStr.floatValue = 0f;
+		_RippleGridStr.floatValue = 0f;
+		_BlurSamples.floatValue = 10f;
+		_CrushBlur.floatValue = 0f;
+	}
+
+	void ResetFog(){
+		_Fog.floatValue = 0f;
+		_FogUseGlobal.floatValue = 0f;
+		_FogMinRange.floatValue = 15f;
+		_FogMaxRange.floatValue = 20f;
+		_FogColor.colorValue = new Color(0.75f, 0.75f, 0.75f, 1f);
+		_FogRadius.floatValue = 2f;
+		_FogFade.floatValue = 1f;
+		_FogP2O.floatValue = 0f;
+		_FogSafeZone.floatValue = 0f;
+		_FogSafeRadius.floatValue = 4f;
+		_FogSafeMaxRange.floatValue = 6f;
+		_FogSafeOpacity.floatValue = 1f;
+	}
+
+	void ResetZoom(){
+		_Zoom.floatValue = 0f;
+		_ZoomStr.floatValue = 0f;
+		_ZoomStrR.floatValue = 0f;
+		_ZoomStrG.floatValue = 0f;
+		_ZoomStrB.floatValue = 0f;
+		_ZoomUseGlobal.floatValue = 0f;
+		_ZoomMinRange.floatValue = 3f;
+		_ZoomMaxRange.floatValue = 4.5f;
+	}
+
+	void ResetSST(){
+		_SST.floatValue = 0f;
+		_SSTBlend.floatValue = 0f;
+		_SSTUseGlobal.floatValue = 1f;
+		_SSTMinRange.floatValue = 8f;
+		_SSTMaxRange.floatValue = 15f;
+		_ScreenTex.textureValue = null;
+		_SSTColor.colorValue = Color.white;
+		_SSTScale.floatValue = 1f;
+		_SSTWidth.floatValue = 1f;
+		_SSTHeight.floatValue = 1f;
+		_SSTLR.floatValue = 0f;
+		_SSTUD.floatValue = 0f;
+		_SSTColumnsX.floatValue = 2f;
+		_SSTRowsY.floatValue = 2f;
+		_SSTAnimationSpeed.floatValue = 60f;
+		_ScrubPos.floatValue = 0f;
+		_ManualScrub.floatValue = 0f;
+	}
+
+	void ResetTriplanar(){
+		_Triplanar.floatValue = 0f;
+		_TPUseGlobal.floatValue = 1f;
+		_TPColor.colorValue = Color.white;
+		_TPMinRange.floatValue = 8f;
+		_TPMaxRange.floatValue = 15f;
+		_TPRadius.floatValue = 2f;
+		_TPFade.floatValue = 0.5f;
+		_TPP2O.floatValue = 1f;
+		_TPScroll.vectorValue = new Vector4(0,0,0,0);
+		_TPNoiseScroll.vectorValue = new Vector4(0,0,0,0);
+		_TPThickness.floatValue = 0.4f;
+		_TPNoise.floatValue = 0f;
+		_TPScanFade.floatValue = 0.1f;
+	}
+
+	void ResetOutline(){
+		_OutlineType.floatValue = 0f;
+		_AuraSampleCount.floatValue = 43f;
+		_OutlineCol.colorValue = new Color(0,0,0,1);
+		_BackgroundCol.colorValue = new Color(1,1,1,0);
+		_OutlineThresh.floatValue = 1000f;
+		_OutlineThiccS.floatValue = 0.49f;
+		_AuraFade.floatValue = 0.5f;
+		_AuraStr.floatValue = 0.25f;
+	}
+
+	void ResetExtras(){
+		_Letterbox.floatValue = 0f;
+		_UseZoomFalloff.floatValue = 0f;
+		_LetterboxStr.floatValue = 0f;
+		_Pulse.floatValue = 0f;
+		_PulseColor.floatValue = 0f;
+		_PulseSpeed.floatValue = 1f;
+		_WaveForm.floatValue = 0f;
+		_Shift.floatValue = 0f;
+		_InvertX.floatValue = 0f;
+		_InvertY.floatValue = 0f;
+		_ShiftX.floatValue = 0f;
+		_ShiftY.floatValue = 0f;
+		_GhostingToggle.floatValue = 0f;
+		_GhostingStr.floatValue = 0.7f;
+		_FreezeFrame.floatValue = 0f;
+		_RoundingToggle.floatValue = 0f;
+		_Rounding.floatValue = 1f;
+		_RoundingOpacity.floatValue = 1f;
+		_NormalMapFilter.floatValue = 0.74f;
+		_NMFToggle.floatValue = 0f;
+		_NMFOpacity.floatValue = 1f;
+		_DBColor.colorValue = Color.white;
+	}
 }

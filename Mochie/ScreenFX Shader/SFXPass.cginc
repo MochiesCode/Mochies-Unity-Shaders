@@ -1,3 +1,6 @@
+#ifndef SFX_PASS_INCLUDED
+#define SFX_PASS_INCLUDED
+
 #if defined(FULL_PASS)
 v2f vert (appdata v){
     v2f o;
@@ -29,14 +32,11 @@ v2f vert (appdata v){
     float4 oPos = mul(unity_WorldToObject, wPos);
     o.raycast = UnityObjectToViewPos(oPos).xyz * float3(-1,-1,1);
     o.raycast *= (_ProjectionParams.z / o.raycast.z);
-    o.pos = GetVertexPos(v.vertex);
+    o.pos = GetScreenspaceVertexPos(v.vertex);
 
     o.uv = ComputeGrabScreenPos(o.pos);
     o.uvd = TRANSFORM_TEX(v.uv, _NormalMap) + _Time.y * _DistortionSpeed;
     o.uv.xy += DoNoiseShake(o.shakeF) * o.pulseSpeed;
-	#if defined(SFXX)
-    	o.uvs = GetSSTUV(v.uv);
-	#endif
     return o;
 }
 
@@ -44,10 +44,9 @@ float4 frag (v2f i) : SV_Target {
 
     MirrorCheck();
 	#if defined(SFXX)
-		DoDeepfry();
+		// DoDeepfry();
     	DoPulse(i.pulseSpeed);
 		i.uv.xy = DoUVManip(i);
-		i.uv.xy = GetSSTAD(i);
 	#endif
     i.uv.xy = DoShake(i);
     i.uv.xy = DoDistortion(i);
@@ -64,12 +63,12 @@ float4 frag (v2f i) : SV_Target {
 	#endif
     col.rgb = DoColor(i, col.rgb);
 	#if defined(SFXX)
-    	col.rgb = DoSST(i, col.rgb);
+		col.rgb = DoRounding(col.rgb);
 	#endif
-	col.rgb = DoRounding(col.rgb);
     col = DoTransparency(i, col);
-    return col;
+	return col;
 }
 #elif defined(SFXX)
 	#include "SFXXPasses.cginc"
+#endif
 #endif

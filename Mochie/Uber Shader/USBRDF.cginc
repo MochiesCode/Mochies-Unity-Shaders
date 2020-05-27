@@ -47,17 +47,29 @@ float3 GetStaticReflections(float3 reflDir, float3 worldPos, float brightness, f
 
 float3 GetReflections(g2f i, lighting l, float roughness){
     float3 reflections = 0;
-	#if defined(UNITY_PASS_FORWARDBASE)
-		#if !defined(_GLOSSYREFLECTIONS_OFF)
+	#if defined(UNITY_PASS_FORWARDBASE) && !defined(OUTLINE)
+		UNITY_BRANCH
+		if (_Reflections == 1){
 			UNITY_BRANCH
 			if (_UseReflCube == 0)
 				reflections = GetWorldReflections(l.reflectionDir, i.worldPos.xyz, roughness);
 			else
 				reflections = GetStaticReflections(l.reflectionDir, i.worldPos.xyz, l.worldBrightness, roughness);
 			reflections *= l.ao;
-		#endif
+		}
 	#endif
     return reflections;
+}
+
+float3 GetERimReflections(g2f i, lighting l, float roughness){
+	float3 reflections = 0;
+	#if defined(UNITY_PASS_FORWARDBASE) && !defined(OUTLINE)
+		reflections = GetWorldReflections(l.reflectionDir, i.worldPos.xyz, lerp(_ERimRoughness, roughness, _ERimUseRough));
+		reflections *= tex2DBoolWhiteSampler(_ERimTex, i.uv4.xy, _UseERimTex).rgb;
+		reflections *= _ERimTint.rgb;
+		reflections *= l.ao;
+	#endif
+	return reflections;
 }
 
 void ApplyMatcap(g2f i, lighting l, masks m, inout float3 environment){
@@ -83,23 +95,8 @@ void ApplyMatcap(g2f i, lighting l, masks m, inout float3 environment){
 	#endif
 }
 
-// float DotHalftone(lighting l, float scalar){
-// 	bool inMirror = IsInMirror();
-// 	float2 uv = l.screenUVs;
-// 	#if UNITY_SINGLE_PASS_STEREO
-// 		uv.x *= 2;
-// 	#endif
-    
-//     float2 nearest = 2 * frac(100 * uv) - 1;
-//     float dist = length(nearest);
-// 	float dotSize = 5 * scalar;
-//     float dotMask = step(dotSize, dist);
-
-// 	return dotMask;
-// }
-
-float GetRamp(g2f i, lighting l, masks m, float atten){
-	float ramp = 1;
+float3 GetRamp(g2f i, lighting l, masks m, float3 albedo, float3 atten){
+	float3 ramp = 1;
 	float dithering = 1;
 	UNITY_BRANCH
 	if (_ShadowDithering == 1){
@@ -107,49 +104,55 @@ float GetRamp(g2f i, lighting l, masks m, float atten){
 		dithering = 1-frac(ditherUV.x + ditherUV.y);
 		l.NdotL *= dithering;
 	}
-	#if defined(UNITY_PASS_FORWARDBASE)
-		UNITY_BRANCH
-		if (_EnableShadowRamp == 1){
-			float rampUV = l.NdotL * 0.5 + 0.5;
-			UNITY_BRANCH
-			if (_LinearIntRamp == 1){
-				float pixelSize = max(_ShadowRamp_TexelSize.z, _ShadowRamp_TexelSize.w);
-				rampUV *= pixelSize;
-				float2 duv = float2(ddx(rampUV), ddy(rampUV));
-				float rf = rsqrt(dot(duv, duv));
-				float x = floor(rampUV);
-				x = x - max(0, 0.5 - rf * (rampUV - floor(rampUV)));
-				x = x + max(0, 0.5 - rf * (ceil(rampUV) - rampUV));
-				x = (x + 0.5) / pixelSize;
-				rampUV = x;
-			}
-			ramp = tex2D(_ShadowRamp, rampUV.xx).rgb;
-			ramp = lerp(1, ramp, _ShadowStr*m.shadowMask*_Shadows);
-		}
-		else {
+	UNITY_BRANCH
+	if (_ShadowMode == 1){
+		float rampUV = l.NdotL * 0.5 + 0.5;
+		float pixelSize = max(_ShadowRamp_TexelSize.z, _ShadowRamp_TexelSize.w);
+		rampUV *= pixelSize;
+		float2 duv = float2(ddx(rampUV), ddy(rampUV));
+		float rf = rsqrt(dot(duv, duv));
+		float x = floor(rampUV);
+		x = x - max(0, 0.5 - rf * (rampUV - floor(rampUV)));
+		x = x + max(0, 0.5 - rf * (ceil(rampUV) - rampUV));
+		x = (x + 0.5) / pixelSize;
+		rampUV = x;
+		ramp = tex2D(_ShadowRamp, rampUV.xx).rgb;
+		float3 interpolator = _ShadowStr*m.shadowMask*_Shadows;
+		ramp = lerp(1, ramp, interpolator);
+		#if !defined(UNITY_PASS_FORWARDBASE)
+			ramp *= atten;
+		#endif
+	}
+	else {
+		float3 tint = _ShadowTint.rgb * lerp(1, albedo, _MainTexTint);
+		#if defined(UNITY_PASS_FORWARDBASE)
 			UNITY_BRANCH
 			if (!l.lightEnv || _RTSelfShadow == 1){
 				atten = lerp(atten, smootherstep(0,1,atten), _AttenSmoothing);
 				l.NdotL *= atten;
 			}
-			float ramp0 = smoothstep(0, _RampWidth0, l.NdotL);
-			float ramp1 = smoothstep(0, _RampWidth1, l.NdotL);
+			float3 ramp0 = smoothstep(0, _RampWidth0, l.NdotL-_RampPos);
+			float3 ramp1 = smoothstep(0, _RampWidth1, l.NdotL-_RampPos);
 			ramp = lerp(ramp0, ramp1, _RampWeight);
-			// UNITY_BRANCH
-			// if (_ShadowDithering == 1)
-			// 	dithering = 1-DotHalftone(l, 1-ramp);
-			// ramp *= 1-dithering;
-		}
-		ramp = lerp(1, ramp, _ShadowStr*m.shadowMask*_Shadows); 
-	#else
-		float ramp0 = smoothstep(0, _RampWidth0, l.NdotL);
-		float ramp1 = smoothstep(0, _RampWidth1, l.NdotL);
-		ramp = lerp(ramp0, ramp1, _RampWeight) * atten;
-	#endif
+			ramp = lerp(1, ramp, _ShadowStr*m.shadowMask*_Shadows); 
+			ramp = lerp(tint, 1, ramp);
+		#else
+			float3 ramp0 = smoothstep(0, _RampWidth0, l.NdotL-_RampPos);
+			float3 ramp1 = smoothstep(0, _RampWidth1, l.NdotL-_RampPos);
+			ramp = lerp(ramp0, ramp1, _RampWeight) * atten;
+			ramp = lerp(tint*atten, 1, ramp);
+		#endif
+	}
+	UNITY_BRANCH
+	if (_ShadowConditions == 1)
+		ramp = lerp(1, ramp, l.lightEnv);
+	else if (_ShadowConditions == 2)
+		ramp = lerp(ramp, 1, l.lightEnv);
+
 	return ramp;
 }
 
-float3 GetSSS(g2f i, lighting l, float3 albedo, float atten){
+float3 GetSSS(g2f i, lighting l, float3 albedo, float3 atten){
     float3 sss = 0;
     UNITY_BRANCH
     if (_Subsurface == 1){
@@ -167,14 +170,14 @@ float3 GetSSS(g2f i, lighting l, float3 albedo, float atten){
     return sss;
 }
 
-float3 FresnelLerp(float3 F0, float3 F90, float cosA){
-    float t = Pow5(1 - cosA);
-    return lerp(F0, F90, t);
+float3 FresnelLerp(float3 specCol, float3 grazingTerm, float NdotV){
+    float t = Pow5(1 - NdotV);
+    return lerp(specCol, grazingTerm, t);
 }
 
-float3 FresnelTerm(float3 F0, float cosA){
-    float t = Pow5(1 - cosA);
-    return F0 + (1-F0) * t;
+float3 FresnelTerm(float3 specCol, float LdotH){
+    float t = Pow5(1 - LdotH);
+    return specCol + (1-specCol) * t;
 }
 
 float GetGGXTerm(lighting l, float roughness){
@@ -183,7 +186,6 @@ float GetGGXTerm(lighting l, float roughness){
     float lambdaL = l.NdotV * sqrt((-l.NdotL * rough2 + l.NdotL) * l.NdotL + rough2);
 
 	float visibilityTerm = 0.5f / (lambdaV + lambdaL + 1e-5f);
-
     float d = (l.NdotH * rough2 - l.NdotH) * l.NdotH + 1.0f;
 	float dotTerm = UNITY_INV_PI * rough2 / (d * d + 1e-7f);
 
@@ -202,7 +204,7 @@ float GetAnisoTerm(lighting l){
 	return lerp(addTerm, lerpTerm, _AnisoLerp);
 }
 
-void GetSpecFresTerm(lighting l, masks m, inout float specularTerm, inout float3 fresnelTerm, float3 specCol, float roughness){
+void GetSpecFresTerm(g2f i, lighting l, masks m, inout float3 specularTerm, inout float3 fresnelTerm, float3 specCol, float roughness){
 	UNITY_BRANCH
 	switch (_SpecularStyle){
 		case 0: 
@@ -223,24 +225,29 @@ void GetSpecFresTerm(lighting l, masks m, inout float specularTerm, inout float3
 	}
 
 	specularTerm = max(0, specularTerm * l.NdotL);
+	specularTerm *= tex2DBoolWhiteSampler(_SpecTex, i.uv3.zw, _UseSpecTex).rgb;
 
 	UNITY_BRANCH
 	if (_SharpSpecular == 1){
 		roughness = saturate(roughness*2);
-		float sharpTerm = round(specularTerm);
+		float3 sharpTerm = round(_SharpSpecStr*specularTerm)/_SharpSpecStr;
 		specularTerm = lerp(sharpTerm, specularTerm, roughness);
 	}
 }
 
-float DisneyDiffuse(lighting l, masks m, float atten, float percepRough) {
-	float fd90 = 0.5 + 2 * l.LdotH * l.LdotH * percepRough;
-	float lightScatter = (1 + (fd90 - 1) * Pow5(1 - atten));
-	float viewScatter = (1 + (fd90 - 1) * Pow5(1 - l.NdotV));
-	float term = lightScatter * viewScatter;
-	return lerp(1, term, _DisneyDiffuse * m.ddMask);
+float DisneyDiffuse(lighting l, masks m, float percepRough) {
+	float dd = 1;
+	UNITY_BRANCH
+	if (_DisneyDiffuse > 0){
+		float fd90 = 0.5 + 2 * l.LdotH * l.LdotH * percepRough;
+		// float lightScatter = (1 + (fd90 - 1) * Pow5(1 - atten));
+		float viewScatter = (1 + (fd90 - 1) * Pow5(1 - l.NdotV));
+		dd = lerp(1, viewScatter, _DisneyDiffuse * m.ddMask);
+	}
+	return dd;
 }
 
-float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, float3 specCol, float3 reflCol, float oneMinusReflectivity, float smoothness, float atten) {
+float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, float3 specCol, float3 reflCol, float oneMinusReflectivity, float smoothness, float3 atten){
 	float percepRough = 1-smoothness;
 	float roughness = percepRough * percepRough;
 	roughness = max(roughness, 0.002);
@@ -250,60 +257,48 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
 	l.directCol *= atten;
 	l.directCol += subsurfCol;
 
-	float diffuseTerm = DisneyDiffuse(l, m, atten, percepRough);
+	float diffuseTerm = DisneyDiffuse(l, m, percepRough);
 	float3 lighting = l.indirectCol + l.directCol * diffuseTerm;
 	float3 specular = 0;
 	float3 reflections = 0;
 
 	// Specular
-	#if !defined(_SPECULARHIGHLIGHTS_OFF)
+	UNITY_BRANCH
+	if (_Specular == 1){
 		float3 fresnelTerm = 1;
-		float specularTerm = 1;
-		GetSpecFresTerm(l, m, specularTerm, fresnelTerm, specCol, roughness);
+		float3 specularTerm = 1;
+		GetSpecFresTerm(i, l, m, specularTerm, fresnelTerm, specCol, roughness);
 		specular = lighting * specularTerm * fresnelTerm * m.specularMask * _SpecStr * _SpecCol;
-	#endif
+	}
 
 	// Reflections
-	#if !defined(_GLOSSYREFLECTIONS_OFF)
+	UNITY_BRANCH
+	if (_Reflections == 1){
 		float surfaceReduction = 1.0 / (roughness*roughness + 1.0);
 		float grazingTerm = saturate(smoothness + (1-oneMinusReflectivity));
 		reflections = surfaceReduction * reflCol * FresnelLerp(specCol, grazingTerm, l.NdotV);
-		#if defined(UNITY_PASS_FORWARDBASE) && !defined(OUTLINE)
+		#if defined(UNITY_PASS_FORWARDBASE)
 			UNITY_BRANCH
 			if (_SSR == 1){
-				float4 SSRColor = GetSSRColor2(
-					i.worldPos,
-					l.viewDir,
-					l.reflectionDir,
-					normalize(i.normal),
-					smoothness,
-					albedo,
-					metallic,
-					m.reflectionMask,
-					l.screenUVs,
-					i.screenPos
-				);
-				//reflections = SSRColor.a; 
+				float4 SSRColor = GetSSRColor2(i.worldPos, l.viewDir, l.reflectionDir, normalize(i.normal), smoothness, albedo, metallic, m.reflectionMask, l.screenUVs, i.screenPos);
 				reflections = lerp(reflections, SSRColor.rgb, SSRColor.a);
 			}
 		#endif
 		reflections *= m.reflectionMask * _ReflectionStr;
-	#endif
+	}
 
-	// Add it all up
+	// Calculate final diffuse color
 	float3 environment = specular + reflections;
 	ApplyMatcap(i, l, m, environment);
-	lighting = lerp(lighting, 1, cubeMask*_UnlitCube*_CubeMode > 0);
+	lighting = lerp(lighting, 1, cubeMask*_UnlitCube*_CubeMode == 1);
 	float3 col = diffuse.rgb * lighting;
 
-	// Prevent color from being washed out by intense lighting
-	#if defined(UNITY_PASS_FORWARDBASE)
-		UNITY_BRANCH
-		if (_ColorPreservation == 1){
-			float3 maxCol = (diffuse.rgb + environment + subsurfCol) * diffuseTerm;
-			col = clamp(col, 0, maxCol);
-		}
-	#endif
+	// Prevents being washed out by intense lighting
+	UNITY_BRANCH
+	if (_ColorPreservation == 1){
+		float3 maxCol = (diffuse.rgb + environment + subsurfCol) * diffuseTerm;
+		col = clamp(col, 0, maxCol);
+	}
 
-    return col + environment;
+    return col + environment;;
 }

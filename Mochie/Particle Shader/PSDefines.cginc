@@ -1,3 +1,6 @@
+#ifndef P_DEFINES_INCLUDED
+#define P_DEFINES_INCLUDED
+
 #include "UnityCG.cginc"
 
 sampler2D _CameraDepthTexture;
@@ -44,3 +47,5 @@ struct v2f {
 	#include "PSXFeatures.cginc"
 #endif
 #include "PSFunctions.cginc"
+
+#endif

@@ -8,8 +8,13 @@ public class Foldouts {
 	private static bool foldoutClicked = false;
 	private static Color errorCol = new Color(1f,0.3f,0.3f,1f);
 
-	public static bool DoFoldout(Dictionary<Material, Toggles> foldouts, Material mat, MaterialEditor me, string header){
-		foldouts[mat].SetState(header, Foldout(header, foldouts[mat].GetState(header), me));
+	public static bool DoFoldout(Dictionary<Material, Toggles> foldouts, Material mat, MaterialEditor me, float offset, string header){
+		foldouts[mat].SetState(header, Foldout(header, foldouts[mat].GetState(header), offset, me));
+		return foldouts[mat].GetState(header);
+	}
+
+	public static bool DoFoldoutBase(Dictionary<Material, Toggles> foldouts, Material mat, MaterialEditor me, string header){
+		foldouts[mat].SetState(header, FoldoutBase(header, foldouts[mat].GetState(header), me));
 		return foldouts[mat].GetState(header);
 	}
 
@@ -23,41 +28,49 @@ public class Foldouts {
 		return foldouts[mat].GetState(header);
 	}
 
-	public static bool DoMediumFoldout(Dictionary<Material, Toggles> foldouts, Material mat, MaterialEditor me, MaterialProperty prop, string header){
-		foldouts[mat].SetState(header, MediumFoldout(header, foldouts[mat].GetState(header), me));
-		me.ShaderProperty(prop, " ");
-		MGUI.Space4();
+	public static bool DoMediumFoldout(Dictionary<Material, Toggles> foldouts, Material mat, MaterialEditor me, float offset, MaterialProperty prop, string header){
+		foldouts[mat].SetState(header, MediumFoldout(header, foldouts[mat].GetState(header), offset, me));
+		FoldoutProperty(me, prop);
+		MGUI.Space6();
 		return foldouts[mat].GetState(header);
 	}
 
-	public static bool DoMediumFoldout(Dictionary<Material, Toggles> foldouts, Material mat, MaterialEditor me, string header){
-		foldouts[mat].SetState(header, MediumFoldout(header, foldouts[mat].GetState(header), me));
+	public static bool DoMediumFoldout(Dictionary<Material, Toggles> foldouts, Material mat, MaterialEditor me, float offset, string header){
+		foldouts[mat].SetState(header, MediumFoldout(header, foldouts[mat].GetState(header), offset, me));
 		GUILayout.Space(24);
 		return foldouts[mat].GetState(header);
 	}
 
 	public static bool DoMediumFoldoutSSR(Dictionary<Material, Toggles> foldouts, Material mat, MaterialEditor me, MaterialProperty[] props, string header){
 		foldouts[mat].SetState(header, MediumFoldoutSSR(header, foldouts[mat].GetState(header), me, mat, props));
-		me.ShaderProperty(props[0], " ");
-		MGUI.Space4();
+		FoldoutProperty(me, props[0]);
+		MGUI.Space6();
 		return foldouts[mat].GetState(header);
 	}
 
-	public static bool DoMediumFoldoutSpecial(Dictionary<Material, Toggles> foldouts, Material mat, MaterialEditor me, MaterialProperty[] props, string header){
+	public static bool DoMediumFoldoutSpecial(Dictionary<Material, Toggles> foldouts, Material mat, MaterialEditor me, MaterialProperty[] props, bool hasProp, string header){
 		foldouts[mat].SetState(header, MediumFoldoutSpecial(header, foldouts[mat].GetState(header), me, mat, props));
-		me.ShaderProperty(props[0], " ");
-		MGUI.Space4();
+		if (hasProp)
+			FoldoutProperty(me, props[0]);
+		else
+			GUILayout.Space(24);
 		return foldouts[mat].GetState(header);
 	}
 
 	public static bool DoMediumFoldoutMatcap(Dictionary<Material, Toggles> foldouts, Material mat, MaterialEditor me, MaterialProperty[] props, string header){
 		foldouts[mat].SetState(header, MediumFoldoutMatcap(header, foldouts[mat].GetState(header), me, mat, props));
-		me.ShaderProperty(props[0], " ");
-		MGUI.Space4();
+		FoldoutProperty(me, props[0]);
+		MGUI.Space6();
 		return foldouts[mat].GetState(header);
 	}
 
-    public static bool Foldout(string header, bool display, MaterialEditor me){
+	public static void FoldoutProperty(MaterialEditor me, MaterialProperty prop){
+		float lw = EditorGUIUtility.labelWidth;
+        GUILayoutOption clickArea = GUILayout.MaxWidth(lw+15f);
+		prop.floatValue = EditorGUILayout.Toggle(" ", prop.floatValue==1, clickArea) ? 1 : 0;
+	}
+
+    public static bool Foldout(string header, bool display, float offset, MaterialEditor me){
         GUIStyle formatting = new GUIStyle("ShurikenModuleTitle");
 		formatting.font = new GUIStyle(EditorStyles.boldLabel).font;
         formatting.contentOffset = new Vector2(20f, -3f);
@@ -66,7 +79,7 @@ public class Foldouts {
 		formatting.fontSize = 10;
 
         Rect rect = GUILayoutUtility.GetRect(MGUI.GetInspectorWidth(), formatting.fixedHeight, formatting);
-		rect.width += 8f;
+		rect.width += offset;
         rect.x -= 8f;
 
 		Event evt = Event.current;
@@ -89,12 +102,12 @@ public class Foldouts {
 		return FoldoutToggle(rect, evt, mouseOver, display, 0);
     }
 
-	public static bool MediumFoldout(string header, bool display, MaterialEditor me){
+	public static bool MediumFoldout(string header, bool display, float offset, MaterialEditor me){
         GUIStyle formatting = new GUIStyle("ShurikenModuleTitle");
 		float lw = EditorGUIUtility.labelWidth;
         formatting.contentOffset = new Vector2(20f, -2f);
         formatting.fixedHeight = 22f;
-		formatting.fixedWidth = MGUI.GetInspectorWidth()+4f;
+		formatting.fixedWidth = MGUI.GetInspectorWidth() + offset;
 		formatting.fontSize = 10;
 
         Rect rect = GUILayoutUtility.GetRect(0f, 20f, formatting);
@@ -121,6 +134,40 @@ public class Foldouts {
 		return FoldoutToggle(rect, evt, mouseOver, display, 1);
 	}
 
+    public static bool FoldoutBase(string header, bool display, MaterialEditor me){
+        GUIStyle formatting = new GUIStyle("ShurikenModuleTitle");
+		formatting.font = new GUIStyle(EditorStyles.boldLabel).font;
+        formatting.contentOffset = new Vector2(20f, -3f);
+		formatting.hover.textColor = Color.gray;
+        formatting.fixedHeight = 28f;
+		formatting.fontSize = 10;
+
+        Rect rect = GUILayoutUtility.GetRect(MGUI.GetInspectorWidth(), formatting.fixedHeight, formatting);
+		rect.width -= 132f;
+        rect.x -= 8f;
+
+		Event evt = Event.current;
+		Color bgCol = GUI.backgroundColor;
+		bool mouseOver = rect.Contains(evt.mousePosition);
+		
+		if (evt.type == EventType.MouseDown && mouseOver){
+			foldoutClicked = true;
+			evt.Use();
+		}
+			
+		else if (evt.type == EventType.Repaint && foldoutClicked && mouseOver){
+			GUI.backgroundColor = Color.gray;
+			me.Repaint();
+		}
+		
+        GUI.Box(rect, header, formatting);
+		GUI.backgroundColor = bgCol;
+
+		return FoldoutToggle(rect, evt, mouseOver, display, 0);
+    }
+
+
+
     public static bool FoldoutShading(string header, bool display, MaterialEditor me, Material mat, MaterialProperty[] props){
         GUIStyle formatting = new GUIStyle("ShurikenModuleTitle");
 		formatting.font = new GUIStyle(EditorStyles.boldLabel).font;
@@ -130,7 +177,7 @@ public class Foldouts {
 		formatting.fontSize = 10;
 
         Rect rect = GUILayoutUtility.GetRect(MGUI.GetInspectorWidth(), formatting.fixedHeight, formatting);
-		rect.width += 8f;
+		rect.width -= 20f;
         rect.x -= 8f;
 
 		Event evt = Event.current;
@@ -163,7 +210,7 @@ public class Foldouts {
 		float lw = EditorGUIUtility.labelWidth;
         formatting.contentOffset = new Vector2(20f, -2f);
         formatting.fixedHeight = 22f;
-		formatting.fixedWidth = MGUI.GetInspectorWidth()+4f;
+		formatting.fixedWidth = MGUI.GetInspectorWidth()-21f;
 		formatting.fontSize = 10;
 
         Rect rect = GUILayoutUtility.GetRect(0f, 20f, formatting);
@@ -198,7 +245,7 @@ public class Foldouts {
 		float lw = EditorGUIUtility.labelWidth;
         formatting.contentOffset = new Vector2(20f, -2f);
         formatting.fixedHeight = 22f;
-		formatting.fixedWidth = MGUI.GetInspectorWidth()+4f;
+		formatting.fixedWidth = MGUI.GetInspectorWidth()-21f;
 		formatting.fontSize = 10;
 
         Rect rect = GUILayoutUtility.GetRect(0f, 20f, formatting);
@@ -237,7 +284,7 @@ public class Foldouts {
 		formatting.fontSize = 10;
 
         Rect rect = GUILayoutUtility.GetRect(MGUI.GetInspectorWidth(), formatting.fixedHeight, formatting);
-		rect.width += 8f;
+		rect.width -= 20f;
         rect.x -= 8f;
 
 		Event evt = Event.current;
@@ -268,7 +315,7 @@ public class Foldouts {
 		float lw = EditorGUIUtility.labelWidth;
         formatting.contentOffset = new Vector2(20f, -2f);
         formatting.fixedHeight = 22f;
-		formatting.fixedWidth = MGUI.GetInspectorWidth()+4f;
+		formatting.fixedWidth = MGUI.GetInspectorWidth()-21f;
 		formatting.fontSize = 10;
 
         Rect rect = GUILayoutUtility.GetRect(0f, 20f, formatting);

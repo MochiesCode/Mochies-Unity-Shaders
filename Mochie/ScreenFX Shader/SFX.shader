@@ -59,15 +59,13 @@ Shader "Mochie/Screen FX" {
 		_DistortionP2O("", Range(0,1)) = 1
 		
 		// Blur
-		[Enum(OFF,0, PIXEL,1, DITHER,2, RADIAL,3, CRUSH,4)]_BlurModel("", Int) = 0
+		[Enum(OFF,0, PIXEL,1, DITHER,2, RADIAL,3)]_BlurModel("", Int) = 0
+		[Enum(Sample16,16, Sample22,22, Sample43,43, Sample71,71, Sample136,136)]_PixelBlurSamples("", Int) = 43
 		[Toggle(_)]_BlurUseGlobal("", Int) = 1
 		_BlurMinRange("", Range(0,49.99)) = 8
 		_BlurMaxRange("", Range (0.01,50)) = 15
 		[Toggle(_)]_BlurY("", Int) = 0
 		[Toggle(_)]_RGBSplit("", Int) = 0
-		[Toggle(_)]_Flicker("", Int) = 0
-		_FlickerSpeedX("", Range(0,1)) = 0.35
-		_FlickerSpeedY("", Range(0,1)) =  0.7
 		[Toggle(_)]_DoF("", Int) = 0
 		_DoFRadius("", Float) = 2
 		_DoFFade("", Float) = 1
@@ -77,8 +75,8 @@ Shader "Mochie/Screen FX" {
 		_BlurRadius("", Range(1,3)) = 1
 		_PixelationStr("", Range(0,1)) = 0
 		_RippleGridStr("", Range(0,2)) = 0
-		_BloomThreshold("", Float) = 1
-		[IntRange]_BlurSamples("", Range(2,20)) = 10
+		[IntRange]_BlurSamples("", Range(2,40)) = 10
+		[Toggle(_)]_CrushBlur("", Int) = 0
 
 		// Fog
 		[Enum(OFF,0, ON,1)]_Fog("", Int) = 0
@@ -118,8 +116,8 @@ Shader "Mochie/Screen FX" {
 		_SSTLR("", Range(-1,1)) = 0
 		_SSTUD("", Range(-1,1)) = 0
 		_SSTAnimatedDist("", Range(0,128)) = 0
-		_SSTColumnsX("", Int) = 1
-		_SSTRowsY("", Int) = 1
+		_SSTColumnsX("", Int) = 2
+		_SSTRowsY("", Int) = 2
 		_SSTAnimationSpeed("", Range(1,120)) = 60
 		_SSTFrameSizeXP("", Range(0,1)) = 1
 		_SSTFrameSizeYP("", Range(0,1)) = 1
@@ -146,15 +144,18 @@ Shader "Mochie/Screen FX" {
 		_TPScanFade("", Range(0,1)) = 0.1
 
 		// Outline
-		[Enum(OFF,0, SOFT,1, SHARP,2)]_OutlineType("", Int) = 0
+		[Enum(OFF,0, SOBEL,1, AURA,2)]_OutlineType("", Int) = 0
+		[Enum(Sample16,16, Sample22,22, Sample43,43)]_AuraSampleCount("", Int) = 43
 		[Toggle(_)]_OLUseGlobal("", Int) = 1
 		_OLMinRange("", Range(0,49.99)) = 8
 		_OLMaxRange("", Range(0.01,50)) = 15
-		_OutlineCol("", Color) = (0,0,0,1)
+		[HDR]_OutlineCol("", Color) = (0,0,0,1)
 		_BackgroundCol("", Color) = (1,1,1,0)
 		_OutlineThresh("", Float) = 1000
 		_OutlineThiccS("", Float) = 0.49
 		_OutlineThiccN("", Float) = 0.5
+		_AuraFade("", Range(0,1)) = 0.5
+		_AuraStr("", Range(0,1)) = 0.25
 
 		// Extras
 		[Toggle(_)]_Letterbox("", Int) = 0
@@ -173,9 +174,9 @@ Shader "Mochie/Screen FX" {
 		[Toggle(_)]_InvertY("", Int) = 0
 		_ShiftX("", Float) = 0
 		_ShiftY("", Float) = 0
-		[Toggle(_)]_GhostingToggle("", Int) = 0
+		[Toggle(_)]_GhostingToggle("Ghosting", Int) = 0
 		_GhostingStr("", Range(0,0.999)) = 0.7
-		[Toggle(_)]_FreezeFrame("", Int) = 0
+		[Toggle(_)]_FreezeFrame("Freeze Frame", Int) = 0
 		[Toggle(_)]_RoundingToggle("", Int) = 0
 		_Rounding("", Range(1,10)) = 1
 		_RoundingOpacity("", Range(0,1)) = 1
@@ -187,14 +188,6 @@ Shader "Mochie/Screen FX" {
 		_DBColor("", Color) = (1,1,1,1)
     }
     SubShader {
-		// Render queue options:
-		// Background 	- renders first, will show up behind all environment
-		// Geometry 	- standard opaque queue for solid objects
-		// AlphaTest	- most often used for cutout shading
-		// Transparent	- standard queue for transparent objects
-		// Overlay		- standard queue for post processing effects and menus
-		// Use + or - to go above or below the queue level (ie. Transparent+1)
-		// Change the following text seen below: "Queue"="____" to the desired value
         Tags {
 			"RenderType"="Overlay" 
 			"Queue"="Overlay-2" 

@@ -1,3 +1,6 @@
+#ifndef SFX_DEFINES_INCLUDED
+#define SFX_DEFINES_INCLUDED
+
 #include "UnityCG.cginc"
 
 // Global
@@ -31,15 +34,13 @@ float _DistortionStr, _DistortionSpeed;
 float _DistortionRadius, _DistortionP2O, _DistortionFade;
 
 // Blur
-int _FocusPlayer, _BlurUseGlobal, _BlurY, _BlurSamples;
-int _BlurModel, _RGBSplit, _Flicker, _DoF;
+int _FocusPlayer, _BlurUseGlobal, _BlurY, _BlurSamples, _CrushBlur;
+int _BlurModel, _RGBSplit, _DoF, _PixelBlurSamples;
 float _BlurMinRange, _BlurMaxRange;
 float _BlurOpacity, _BlurStr;
 float _DoFP2O, _DoFRadius, _DoFFade;
-float _FlickerSpeedX, _FlickerSpeedY;
 float _PixelationStr, _RippleGridStr;
 float _BlurRadius;
-float _CrushContrast;
 
 // outputs
 float3 wPos;
@@ -47,7 +48,53 @@ float3 wNorm;
 float depth;
 
 #if defined(SFXX)
-	#include "SFXXDefines.cginc"
+// Fog
+	int _Fog, _FogSafeZone, _FogUseGlobal;
+	float4 _FogColor;
+	float _FogMinRange, _FogMaxRange;
+	float _FogRadius, _FogFade;
+	float _FogSafeRadius, _FogSafeMaxRange;
+	float _FogP2O, _FogSafeOpacity;
+
+	// Screenspace Texture
+	int _SST, _SSTBlend, _SSTUseGlobal, _ManualScrub, _ScrubPos;
+	sampler2D _ScreenTex;
+	float4 _SSTColor;
+	float _SSTMinRange, _SSTMaxRange;
+	float _SSTWidth, _SSTHeight, _SSTScale;
+	float _SSTLR, _SSTUD;
+	float _SSTColumnsX, _SSTRowsY, _SSTAnimationSpeed, _SSTAnimatedDist;
+	float _SSTFrameSizeXP, _SSTFrameSizeYP, _SSTFrameSizeXN, _SSTFrameSizeYN;
+
+	// Triplanar
+	sampler2D _TPTexture, _TPNoiseTex;
+	int _Triplanar, _TPUseGlobal, _TPBlend;
+	float4 _TPTexture_ST, _TPNoiseTex_ST, _TPColor;
+	float3 _TPScroll, _TPNoiseScroll;
+	float _TPRadius, _TPFade, _TPMinRange, _TPMaxRange, _TPP2O, _TPThickness, _TPNoise, _TPScanFade;
+
+	// Letterbox
+	int _UseZoomFalloff, _Letterbox;
+	float _LetterboxStr;
+
+	// Zoom
+	sampler2D _ZoomGrab;
+	int _Zoom, _ZoomUseGlobal;
+	float _ZoomMinRange, _ZoomMaxRange;
+	float _ZoomStr, _ZoomStrR, _ZoomStrG, _ZoomStrB;
+
+	// Extras
+	sampler2D _GhostingGrab;
+	int _OLUseGlobal, _OutlineType, _GhostingToggle, _DeepFry, _Shift, _InvertX, _InvertY, _Sobel, _FreezeFrame, _DepthBufferToggle;
+	int _AuraSampleCount;
+	float _GhostingStr, _OLMinRange, _OLMaxRange, _AuraFade, _AuraStr;
+	float4 _OutlineCol, _BackgroundCol;
+	float3 _DBColor;
+	float _OutlineThiccS, _OutlineThiccN, _OutlineThresh, _SobelStr;
+	float _Flavor, _Heat, _Sizzle;
+	float _ShiftX, _ShiftY, _Rotate;
+	int _Pulse, _WaveForm, _PulseColor;
+	float _PulseSpeed, _NormalMapFilter, _NMFToggle, _NMFOpacity, _DBOpacity;
 #endif
 
 struct appdata {
@@ -83,29 +130,22 @@ struct v2f {
 	float olF : TEXCOORD22;
 };
 
-
-static const float divisor[19] = {
-	2.0,
-	2.666666,
-	3.0,
-	3.175,
-	3.333333,
-	3.45,
-	3.5,
-	3.575,
-	3.6,
-	3.666666,
-	3.7,
-	3.725,
-	3.75,
-	3.775,
-	3.8,
-	3.8,
-	3.8,
-	3.8,
-	3.8
-};
-
-#include "SFXUtilities.cginc"
+#define STD_BLUR
+#define STD_BLUR_Y
+// #define STD_BLUR_DEPTH
+// #define STD_BLUR_Y_DEPTH
+#define STD_BLUR_ONLY_DEPTH
+#define CHROM_AB
+#define CHROM_AB_Y
+#define RAD_BLUR
+#define FAST_BLUR_COMPILE
+#include "../Common/Utilities.cginc"
+#include "../Common/Color.cginc"
+#include "SFXBlur.cginc"
 #include "SFXFunctions.cginc"
+#if defined(SFXX)
+	#include "SFXXFeatures.cginc"
+#endif
 #include "SFXPass.cginc"
+
+#endif

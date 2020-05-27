@@ -33,7 +33,7 @@ public class PSEditor : ShaderGUI {
 
     // Render Settings
     MaterialProperty _BlendMode = null;
-    MaterialProperty _SrcBlend;
+    MaterialProperty _SrcBlend = null;
     MaterialProperty _DstBlend = null;
     MaterialProperty _Culling = null;
     MaterialProperty _ZTest = null;
@@ -142,6 +142,7 @@ public class PSEditor : ShaderGUI {
         Texture2D headerTex = (Texture2D)Resources.Load(header, typeof(Texture2D));
 		Texture2D watermarkTex = (Texture2D)Resources.Load(watermark, typeof(Texture2D));
 		Texture2D patIconTex = (Texture2D)Resources.Load(patIcon, typeof(Texture2D));
+		Texture2D resetIconTex = (Texture2D)Resources.Load("ResetIcon", typeof(Texture2D));
         MGUI.CenteredTexture(headerTex, 0, 0);
         
         EditorGUI.BeginChangeCheck(); {
@@ -152,7 +153,11 @@ public class PSEditor : ShaderGUI {
             // -----------------
             // Render Settings
             // -----------------
-            if (Foldouts.DoFoldout(foldouts, mat, me, "RENDERING")){
+			bool renderingTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "RENDERING");
+			if (MGUI.TabButton(resetIconTex, 26f))
+				ResetRendering();
+			MGUI.Space8();
+            if (renderingTab){
 
                 // Blending mode dropdown
                 MGUI.Space4();
@@ -209,7 +214,11 @@ public class PSEditor : ShaderGUI {
             // -----------------
             // Base Settings
             // -----------------
-            if (Foldouts.DoFoldout(foldouts, mat, me, "BASE")){
+			bool baseTab = Foldouts.DoFoldout(foldouts, mat, me, -21f, "BASE");
+			if (MGUI.TabButton(resetIconTex, 26f))
+				ResetBase();
+			MGUI.Space8();
+            if (baseTab){
                 MGUI.Space4();
 				if (isParticleX){
 					me.TexturePropertySingleLine(texLabel, _MainTex, _Color, _Layering);
@@ -231,8 +240,13 @@ public class PSEditor : ShaderGUI {
 			}
 
 			if (isParticleX){
+				
 				// Filtering
-				if (Foldouts.DoFoldout(foldouts, mat, me, "FILTERING")){
+				bool filteringTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "FILTERING");
+				if (MGUI.TabButton(resetIconTex, 26f))
+					ResetFiltering();
+				MGUI.Space8();
+				if (filteringTab){
 					MGUI.Space4();
 					me.ShaderProperty(_Filtering, "Enable");
 					MGUI.Space4();
@@ -252,7 +266,11 @@ public class PSEditor : ShaderGUI {
 
 				// Distortion
 				if (canDistort){
-					if (Foldouts.DoFoldout(foldouts, mat, me, "DISTORTION")){
+					bool distortionTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "DISTORTION");
+					if (MGUI.TabButton(resetIconTex, 26f))
+						ResetDistortion();
+					MGUI.Space8();
+					if (distortionTab){
 						MGUI.Space4();
 						me.ShaderProperty(_Distortion, "Enable");
 						MGUI.Space4();
@@ -276,7 +294,11 @@ public class PSEditor : ShaderGUI {
 			else mat.DisableKeyword("EFFECT_BUMP");
 
 			// Pulse
-			if (Foldouts.DoFoldout(foldouts, mat, me, "PULSE")){
+			bool pulseTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "PULSE");
+			if (MGUI.TabButton(resetIconTex, 26f))
+				ResetPulse();
+			MGUI.Space8();
+			if (pulseTab){
 				MGUI.Space4();
 				me.ShaderProperty(_Pulse, "Enable");
 				MGUI.Space4();
@@ -289,7 +311,11 @@ public class PSEditor : ShaderGUI {
 			}
 
 			// Falloff
-			if (Foldouts.DoFoldout(foldouts, mat, me, "FALLOFF")){
+			bool falloffTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "FALLOFF");
+			if (MGUI.TabButton(resetIconTex, 26f))
+				ResetFalloff();
+			MGUI.Space8();
+			if (falloffTab){
 				MGUI.Space4();
 				me.ShaderProperty(_Falloff, "Enable");
 				MGUI.Space4();
@@ -305,7 +331,7 @@ public class PSEditor : ShaderGUI {
 			// -----------------
 			// Presets
 			// -----------------
-			if (Foldouts.DoFoldout(foldouts, mat, me, "PRESETS")){
+			if (Foldouts.DoFoldout(foldouts, mat, me, 8f, "PRESETS")){
 				MGUI.Space4();
 				float buttonWidth = EditorGUIUtility.labelWidth-5.0f;
 				if (MGUI.SimpleButton("Save", buttonWidth, 0)){
@@ -402,5 +428,70 @@ public class PSEditor : ShaderGUI {
 			if (renderer.sharedMaterial == material)
 				m_RenderersUsingThisMaterial.Add(renderer);
 		}
+	}
+
+	void FullReset(){
+		ResetBase();
+		ResetFiltering();
+		ResetDistortion();
+		ResetPulse();
+		ResetFalloff();
+	}
+
+	void ResetRendering(){
+		_BlendMode.floatValue = 1f;
+		_Culling.floatValue = 2f;
+		_FlipbookBlending.floatValue = 0f;
+		_ZTest.floatValue = 0f;
+		_ZT.floatValue = 2f;
+		_SrcBlend.floatValue = 1f;
+		_DstBlend.floatValue = 10f;
+	}
+
+	void ResetBase(){
+		_MainTex.textureValue = null;
+		_Color.colorValue = Color.white;
+		_Layering.floatValue = 0f;
+		_TexBlendMode.floatValue = 0f;
+		_SecondTex.textureValue = null;
+		_SecondColor.colorValue = Color.white;
+		_Brightness.floatValue = 1f;
+		_Opacity.floatValue = 1f;
+		_Cutout.floatValue = 0f;
+		_IsCutout.floatValue = 0f;
+		_Softening.floatValue = 0f;
+		_SoftenStr.floatValue = 0f;
+	}
+
+	void ResetFiltering(){
+		_AutoShift.floatValue = 0f;
+		_AutoShiftSpeed.floatValue = 0.25f;
+		_Hue.floatValue = 0f;
+		_Saturation.floatValue = 1f;
+		_Luminance.floatValue = 0f;
+		_HDR.floatValue = 0f;
+		_Contrast.floatValue = 0f;
+	}
+
+	void ResetDistortion(){
+		_NormalMap.textureValue = null;
+		_DistortMainTex.floatValue = 0f;
+		_DistortionStr.floatValue = 0f;
+		_DistortionBlend.floatValue = 1f;
+		_DistortionSpeedX.floatValue = 0f;
+		_DistortionSpeedY.floatValue = 0f;
+	}
+
+	void ResetPulse(){
+		_Waveform.floatValue = 0f;
+		_PulseStr.floatValue = 0.5f;
+		_PulseSpeed.floatValue = 1f;
+	}
+
+	void ResetFalloff(){
+		_MinRange.floatValue = 8f;
+		_MaxRange.floatValue = 15f;
+		_NearMinRange.floatValue = 1f;
+		_NearMaxRange.floatValue = 5f;
 	}
 }

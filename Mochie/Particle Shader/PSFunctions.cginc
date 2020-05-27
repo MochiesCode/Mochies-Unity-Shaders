@@ -1,3 +1,6 @@
+#ifndef P_FUNCS_INCLUDED
+#define P_FUNCS_INCLUDED
+
 void Softening(v2f i, inout float fade){
     fade = 1;
 	#if defined(_FADING_ON)
@@ -153,3 +156,5 @@ float4 GetColor(v2f i){
 	}
     return col;
 }
+
+#endif
