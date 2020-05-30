@@ -121,6 +121,12 @@ float3 GetRamp(g2f i, lighting l, masks m, float3 albedo, float3 atten){
 		ramp = lerp(1, ramp, interpolator);
 		#if !defined(UNITY_PASS_FORWARDBASE)
 			ramp *= atten;
+		#else
+			UNITY_BRANCH
+			if (_ShadowConditions == 1)
+				ramp = lerp(1, ramp, l.lightEnv);
+			else if (_ShadowConditions == 2)
+				ramp = lerp(ramp, 1, l.lightEnv);
 		#endif
 	}
 	else {
@@ -136,6 +142,11 @@ float3 GetRamp(g2f i, lighting l, masks m, float3 albedo, float3 atten){
 			ramp = lerp(ramp0, ramp1, _RampWeight);
 			ramp = lerp(1, ramp, _ShadowStr*m.shadowMask*_Shadows); 
 			ramp = lerp(tint, 1, ramp);
+			UNITY_BRANCH
+			if (_ShadowConditions == 1)
+				ramp = lerp(1, ramp, l.lightEnv);
+			else if (_ShadowConditions == 2)
+				ramp = lerp(ramp, 1, l.lightEnv);
 		#else
 			float3 ramp0 = smoothstep(0, _RampWidth0, l.NdotL-_RampPos);
 			float3 ramp1 = smoothstep(0, _RampWidth1, l.NdotL-_RampPos);
@@ -143,11 +154,6 @@ float3 GetRamp(g2f i, lighting l, masks m, float3 albedo, float3 atten){
 			ramp = lerp(tint*atten, 1, ramp);
 		#endif
 	}
-	UNITY_BRANCH
-	if (_ShadowConditions == 1)
-		ramp = lerp(1, ramp, l.lightEnv);
-	else if (_ShadowConditions == 2)
-		ramp = lerp(ramp, 1, l.lightEnv);
 
 	return ramp;
 }
