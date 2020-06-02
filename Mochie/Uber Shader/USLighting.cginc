@@ -2,7 +2,7 @@
 
 float3 ApplyLREmission(lighting l, float3 diffuse, float3 emiss){
 	UNITY_BRANCH
-	if (_EmissionToggle == 1){
+	if (_EmissionToggle > 0){
 		float interpolator = 0;
 		UNITY_BRANCH
 		if (_ReactToggle == 1){
@@ -53,22 +53,29 @@ float3 ShadeSH9(float3 normal){
 	return max(0, ShadeSH9(float4(normal,1)));
 }
 
-float4 GetVertexLightAtten(float4 lengthSq){
-	float4 invRangeSqr = unity_4LightAtten0 / 25.0;
-	float4 ratio2 = lengthSq * invRangeSqr;
-	float4 num = saturate(1.0 - (ratio2 * ratio2));
-	float4 atten = (num * num) / (lengthSq + 1.0);	
-	return atten;
+void GetLengthSq(g2f i, inout lighting l){
+	UNITY_BRANCH
+	if (i.isVLight){
+		l.toLightX = unity_4LightPosX0 - i.worldPos.x;
+		l.toLightY = unity_4LightPosY0 - i.worldPos.y;
+		l.toLightZ = unity_4LightPosZ0 - i.worldPos.z;
+		l.lengthSq += l.toLightX * l.toLightX;
+		l.lengthSq += l.toLightY * l.toLightY;
+		l.lengthSq += l.toLightZ * l.toLightZ;
+	}
+}
+
+void GetVertexLightAtten(inout lighting l){
+	float4 lightAttenSq = unity_4LightAtten0;
+	float4 atten = 1.0 / (1.0 + l.lengthSq * lightAttenSq);
+	l.vLightWeight = saturate(1 - (l.lengthSq * lightAttenSq / 25));
+	l.vLightAtten = min(atten, l.vLightWeight * l.vLightWeight);	
 }
 
 float3 GetVertexLightColor(g2f i, lighting l) {
 	float3 lightColor = 0;
 	UNITY_BRANCH
 	if (i.isVLight){
-		float4 lengthSq = 0;
-		lengthSq += l.toLightX * l.toLightX;
-		lengthSq += l.toLightY * l.toLightY;
-		lengthSq += l.toLightZ * l.toLightZ;
 		
 		// NdotL
 		float4 NdotL = 0;
@@ -77,22 +84,21 @@ float3 GetVertexLightColor(g2f i, lighting l) {
 		NdotL += l.toLightZ * l.normal.z;
 
 		// Correct NdotL
-		float4 corr = rsqrt(lengthSq);
+		float4 corr = rsqrt(l.lengthSq);
 		NdotL = max(0, NdotL * corr);
 
-		float4 atten = GetVertexLightAtten(lengthSq);
-		float4 diff = NdotL * atten;
+		float4 vlAtten = NdotL * l.vLightAtten;
 		UNITY_BRANCH
 		if (_RenderMode != 2){
 			float4 ramp0 = smoothstep(0, _RampWidth0+0.005, NdotL);
 			float4 ramp1 = smoothstep(0, _RampWidth1+0.005, NdotL);
-			diff = lerp(ramp0, ramp1, _RampWeight) * atten;
+			vlAtten = lerp(ramp0, ramp1, _RampWeight) * l.vLightAtten;
 		}
 
-		lightColor.rgb += unity_LightColor[0] * diff.x;
-		lightColor.rgb += unity_LightColor[1] * diff.y;
-		lightColor.rgb += unity_LightColor[2] * diff.z;
-		lightColor.rgb += unity_LightColor[3] * diff.w;
+		lightColor.rgb += unity_LightColor[0] * vlAtten.x;
+		lightColor.rgb += unity_LightColor[1] * vlAtten.y;
+		lightColor.rgb += unity_LightColor[2] * vlAtten.z;
+		lightColor.rgb += unity_LightColor[3] * vlAtten.w;
 	}
 	return lightColor * _VLightCont;
 }
@@ -128,7 +134,6 @@ void GetLightColor(g2f i, inout lighting l, masks m){
 			}
 		}
 
-		l.vLightCol = GetVertexLightColor(i, l);
 		l.worldBrightness = saturate(AverageRGB(l.directCol + l.indirectCol + l.vLightCol));
 		l.directCol *= lerp(1, l.ao, _DirectAO);
 		l.indirectCol *= lerp(1, l.ao, _IndirectAO);
@@ -147,16 +152,11 @@ float3 GetVertexLightDir(float3 worldPos) {
     float3 dirY = toLightY - worldPos;
     float3 dirZ = toLightZ - worldPos;
 	float3 dirW = toLightW - worldPos;
-
-	float distX = length(toLightX);
-	float distY = length(toLightY);
-	float distZ = length(toLightZ);
-	float distW = length(toLightW);
 	
-	dirX *= distX;
-	dirY *= distY;
-	dirZ *= distZ;
-	dirW *= distW;
+	dirX *= length(toLightX);
+	dirY *= length(toLightY);
+	dirZ *= length(toLightZ);
+	dirW *= length(toLightW);
 	
 	return normalize(dirX + dirY + dirZ + dirW);
 }
@@ -173,8 +173,11 @@ float3 GetLightDir(g2f i, lighting l) {
 			lightDir += unity_SHAr.xyz + unity_SHAg.xyz + unity_SHAb.xyz;
 		}
 		UNITY_BRANCH
-		if (i.isVLight) 
-			lightDir = GetVertexLightDir(i.worldPos);
+		if (i.isVLight){
+			float weight = smoothstep(0, 0.3, Average(l.vLightWeight) * Average(l.vLightCol));
+			lightDir += GetVertexLightDir(i.worldPos) * weight;
+			// lightDir += GetVertexLightDir(l, i.worldPos);
+		}
 	#endif
 
 	return normalize(lightDir);
@@ -241,8 +244,7 @@ float3 GetAO(g2f i){
 }
 
 lighting GetLighting(g2f i, masks m, float3 atten){
-    lighting l;
-	UNITY_INITIALIZE_OUTPUT(lighting, l);
+    lighting l = (lighting)0;
 	l.ao = 1;
 
 	#if defined(UNITY_PASS_FORWARDBASE)
@@ -257,22 +259,20 @@ lighting GetLighting(g2f i, masks m, float3 atten){
     UNITY_BRANCH
     if (_RenderMode > 0){
 		l.ao = GetAO(i);
-
-		UNITY_BRANCH
-		if (i.isVLight){
-			l.toLightX = unity_4LightPosX0 - i.worldPos.x;
-			l.toLightY = unity_4LightPosY0 - i.worldPos.y;
-			l.toLightZ = unity_4LightPosZ0 - i.worldPos.z;
-		}
-
-		l.lightDir = GetLightDir(i, l);
 		l.viewDir = GetViewDir(i.worldPos);
-		l.halfVector = GetHalfVector(l.lightDir, l.viewDir);
 		l.normalDir = GetNormalDir(i, m.detailMask);
 		l.normal = GetNormal(i, l.normalDir);
 		l.tangent = i.tangent;
 		l.binormal = GetBinormal(l.tangent, l.normal);
 		l.reflectionDir = reflect(-l.viewDir, l.normal);
+		UNITY_BRANCH
+		if (i.isVLight){
+			GetLengthSq(i, l);
+			GetVertexLightAtten(l);
+			l.vLightCol = GetVertexLightColor(i, l);
+		}
+		l.lightDir = GetLightDir(i, l);
+		l.halfVector = GetHalfVector(l.lightDir, l.viewDir);
 
 		l.NdotL = DotClamped(l.normalDir, l.lightDir);
 		l.NdotV = abs(dot(l.normal, l.viewDir));

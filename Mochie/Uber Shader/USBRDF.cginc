@@ -64,7 +64,7 @@ float3 GetReflections(g2f i, lighting l, float roughness){
 float3 GetERimReflections(g2f i, lighting l, float roughness){
 	float3 reflections = 0;
 	#if defined(UNITY_PASS_FORWARDBASE) && !defined(OUTLINE)
-		reflections = GetWorldReflections(l.reflectionDir, i.worldPos.xyz, lerp(_ERimRoughness, roughness, _ERimUseRough));
+		reflections = GetWorldReflections(l.reflectionDir, i.worldPos.xyz, lerp(roughness, _ERimRoughness, _ERimUseRough));
 		reflections *= tex2DBoolWhiteSampler(_ERimTex, i.uv4.xy, _UseERimTex).rgb;
 		reflections *= _ERimTint.rgb;
 		reflections *= l.ao;
@@ -72,14 +72,14 @@ float3 GetERimReflections(g2f i, lighting l, float roughness){
 	return reflections;
 }
 
-void ApplyMatcap(g2f i, lighting l, masks m, inout float3 environment){
+void ApplyMatcap(g2f i, lighting l, masks m, inout float3 environment, float roughness){
 	#if defined(UNITY_PASS_FORWARDBASE) && !defined(OUTLINE)
 		UNITY_BRANCH
 		if (_MatcapToggle == 1){
 			float3 worldViewUp = normalize(float3(0,1,0) - l.viewDir * dot(l.viewDir, float3(0,1,0)));
 			float3 worldViewRight = normalize(cross(l.viewDir, worldViewUp));
 			float2 matcapUV = float2(dot(worldViewRight, l.normal), dot(worldViewUp, l.normal)) * 0.5 + 0.5;
-			float4 matcap = UNITY_SAMPLE_TEX2D_SAMPLER(_Matcap, _MainTex, matcapUV) * _MatcapColor;
+			float4 matcap = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_Matcap, _MainTex, float4(matcapUV, 0, roughness * UNITY_SPECCUBE_LOD_STEPS)) * _MatcapColor;
 			matcap.rgb *= _MatcapStr * m.matcapMask * lerp(l.worldBrightness, 1, _UnlitMatcap);
 			UNITY_BRANCH
 			if (_MatcapBlending == 0){
@@ -253,10 +253,10 @@ float DisneyDiffuse(lighting l, masks m, float percepRough) {
 	return dd;
 }
 
-float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, float3 specCol, float3 reflCol, float oneMinusReflectivity, float smoothness, float3 atten){
+float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, float3 specCol, float3 reflCol, float omr, float smoothness, float3 atten){
 	float percepRough = 1-smoothness;
-	float roughness = percepRough * percepRough;
-	roughness = max(roughness, 0.002);
+	float brdfRoughness = percepRough * percepRough;
+	brdfRoughness = max(brdfRoughness, 0.002);
 	float3 subsurfCol = GetSSS(i, l, diffuse.rgb, atten);
 
 	l.directCol += l.vLightCol;
@@ -273,15 +273,15 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
 	if (_Specular == 1){
 		float3 fresnelTerm = 1;
 		float3 specularTerm = 1;
-		GetSpecFresTerm(i, l, m, specularTerm, fresnelTerm, specCol, roughness);
+		GetSpecFresTerm(i, l, m, specularTerm, fresnelTerm, specCol, lerp(brdfRoughness, _SpecRough, _SpecUseRough));
 		specular = lighting * specularTerm * fresnelTerm * m.specularMask * _SpecStr * _SpecCol;
 	}
 
 	// Reflections
 	UNITY_BRANCH
 	if (_Reflections == 1){
-		float surfaceReduction = 1.0 / (roughness*roughness + 1.0);
-		float grazingTerm = saturate(smoothness + (1-oneMinusReflectivity));
+		float surfaceReduction = 1.0 / (brdfRoughness*brdfRoughness + 1.0);
+		float grazingTerm = saturate(smoothness + (1-omr));
 		reflections = surfaceReduction * reflCol * FresnelLerp(specCol, grazingTerm, l.NdotV);
 		#if defined(UNITY_PASS_FORWARDBASE)
 			UNITY_BRANCH
@@ -295,7 +295,7 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
 
 	// Calculate final diffuse color
 	float3 environment = specular + reflections;
-	ApplyMatcap(i, l, m, environment);
+	ApplyMatcap(i, l, m, environment, lerp(GetRoughness(smoothness), _MatcapRough, _MatcapUseRough));
 	lighting = lerp(lighting, 1, cubeMask*_UnlitCube*_CubeMode == 1);
 	float3 col = diffuse.rgb * lighting;
 
@@ -306,5 +306,5 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
 		col = clamp(col, 0, maxCol);
 	}
 
-    return col + environment;;
+    return col + environment;
 }

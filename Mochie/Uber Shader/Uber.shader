@@ -1,5 +1,5 @@
 // BY MOCHIE
-// Version 1.7
+// Version 1.7.1
 
 Shader "Mochie/Uber Shader" {
     Properties {
@@ -141,6 +141,8 @@ Shader "Mochie/Uber Shader" {
 		_ReflTex("tex", 2D) = "white" {}
 		_ReflCol("col", Color) = (1,1,1,1)
 		_ReflectionStr("fl", Float) = 1
+		[Toggle(_)]_ReflUseRough("", Int) = 1
+		_ReflRough("ra", Range(0,2)) = 0.5
 		[Toggle(_)]_SSR("", Int) = 0 // SSR
 		[Toggle(_)]_Dith("", Int) = 0
 		_Alpha("", Range(0.0, 1.0)) = 1
@@ -167,14 +169,18 @@ Shader "Mochie/Uber Shader" {
 		[Toggle(_)]_AnisoLerp("tog", Int) = 0
 		_InterpMask("tex", 2D) = "gray" {}
 		[Enum(Red,0, Green,1, Blue,2, Alpha,3)]_InterpMaskChannel("", Int) = 0
+		[Toggle(_)]_SpecUseRough("", Int) = 1
+		_SpecRough("ra", Range(0,2)) = 0.5
 
 		// MATCAP
 		[Toggle(_)]_MatcapToggle("", Int) = 0
 		_Matcap("tex", 2D) = "black" {}
 		_MatcapColor("col", Color) = (1,1,1,1)
-		[Enum(Add,0, Mult,1, Alpha,2)]_MatcapBlending("en02", Int) = 2
+		[Enum(Add,0, Mult,1, Alpha,2)]_MatcapBlending("en02", Int) = 0
 		_MatcapStr("fl", Float) = 1
 		[Toggle(_)]_UnlitMatcap("tog", Int) = 0
+		[Toggle(_)]_MatcapUseRough("", Int) = 1
+		_MatcapRough("ra", Range(0,2)) = 0.5
 
 		// SHADOWS
 		[Toggle(_)]_Shadows("", Int) = 1
@@ -219,13 +225,13 @@ Shader "Mochie/Uber Shader" {
 		[Toggle(_)]_EnvironmentRim("", Int) = 0
 		_ERimTex("tex", 2D) = "white" {}
 		[HDR]_ERimTint("col", Color) = (1,1,1,1)
-		[Enum(Lerp,0, Add,1, Sub,2, Mult,3)]_ERimBlending("en03", Int) = 0
+		[Enum(Lerp,0, Add,1, Sub,2, Mult,3)]_ERimBlending("en03", Int) = 1
 		_ERimScroll("", Vector) = (0,0,0,0)
 		_ERimStr("ra", Range(0,1)) = 1
-		_ERimWidth("ra", Range (0,1)) = 0.5
+		_ERimWidth("ra", Range (0,1)) = 0.7
 		_ERimEdge("ra", Range(0,0.5)) = 0
-		_ERimRoughness("ra", Range(0,1)) = 0.5
-		[Toggle(_)]_ERimUseRough("tog", Int) = 1
+		_ERimRoughness("ra", Range(0,2)) = 0.5
+		[Toggle(_)]_ERimUseRough("tog", Int) = 0
 
 		// NORMALS
 		[Toggle(_)]_HardenNormals("", Int) = 0
@@ -238,7 +244,7 @@ Shader "Mochie/Uber Shader" {
 		//----------------------------
 		// EMISSION
 		//----------------------------
-		[Toggle(_)]_EmissionToggle("", Int) = 0
+		[Enum(Off,0, Emission Map,1, Albedo Alpha,2)]_EmissionToggle("", Int) = 0
 		_EmissionMap("tex", 2D) = "white" {}
 		[HDR]_EmissionColor("col", Color) = (0,0,0,1)
 		_EmissScroll("", Vector) = (0,0,0,0)

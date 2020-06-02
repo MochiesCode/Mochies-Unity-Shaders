@@ -325,6 +325,13 @@ float3 GetEmission(g2f i){
 			emiss *= SampleMask(_EmissMask, i.uv.xy, _EmissMaskChannel, true);
 			emiss *= GetPulse(i);
 		}
+		else if (_EmissionToggle == 2){
+			emiss = UNITY_SAMPLE_TEX2D(_MainTex, i.uv.zw).a;
+			emiss = pow(emiss, 1.0/0.5833333);
+			emiss *= _EmissionColor.rgb;
+			emiss *= SampleMask(_EmissMask, i.uv.xy, _EmissMaskChannel, true);
+			emiss *= GetPulse(i);
+		}
 	#endif
 	return emiss;
 }
@@ -335,7 +342,7 @@ float3 ApplyRimLighting(g2f i, lighting l, masks m, float3 diffuse){
     if (_RenderMode == 1 && _RimLighting == 1){
         float VdotL = abs(dot(l.viewDir, l.normal));
         float rim = pow((1-VdotL), (1-_RimWidth) * 10);
-        rim = smootherstep(_RimEdge, (1-_RimEdge), rim);
+        rim = smoothstep(_RimEdge, (1-_RimEdge), rim);
         rim *= m.rimMask;
         float3 rimCol = UNITY_SAMPLE_TEX2D_SAMPLER(_RimTex, _MainTex, i.uv2.zw).rgb * _RimCol.rgb;
         float interpolator = rim*_RimStr;
@@ -359,7 +366,7 @@ float3 ApplyERimLighting(g2f i, lighting l, masks m, float3 diffuse, float rough
 		float3 reflCol = GetERimReflections(i, l, roughness);
         float VdotL = abs(dot(l.viewDir, l.normal));
         float rim = pow((1-VdotL), (1-_ERimWidth) * 10);
-        rim = smootherstep(_ERimEdge, (1-_ERimEdge), rim);
+        rim = smoothstep(_ERimEdge, (1-_ERimEdge), rim);
         rim *= m.eRimMask;
         float3 rimCol = reflCol * _ERimTint.rgb;
         float interpolator = rim*_ERimStr;
@@ -376,37 +383,32 @@ float3 ApplyERimLighting(g2f i, lighting l, masks m, float3 diffuse, float rough
     return diffuse;
 }
 
-float GetRoughness(float roughness){
-    roughness *= 1.7-0.7*roughness;
-    return roughness;
-}
-
 //----------------------------
 // Toon Workflows
 //----------------------------
-float3 GetMetallicWorkflow(g2f i, lighting l, masks m, float3 albedo, out float3 specularTint, out float smoothness, out float omr){
-	float metallic = _Metallic;
+float3 GetMetallicWorkflow(g2f i, lighting l, masks m, float3 albedo){
+	metallic = _Metallic;
 	UNITY_BRANCH
 	if (_UseMetallicMap == 1)
 		metallic = UNITY_SAMPLE_TEX2D_SAMPLER(_MetallicGlossMap, _MainTex, i.uv.xy);
-	smoothness = _Glossiness;
+	roughness = _Glossiness;
 	UNITY_BRANCH
 	if (_UseSpecMap == 1)
-		smoothness = UNITY_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, _MainTex, i.uv.xy);
+		roughness = UNITY_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, _MainTex, i.uv.xy);
 	UNITY_BRANCH
 	if (_RoughnessFiltering == 1){
-		smoothness = saturate(lerp(0.5, smoothness, _RoughContrast));
-		smoothness += saturate(smoothness * _RoughIntensity);
-		smoothness = saturate(smoothness + _RoughLightness);
+		roughness = saturate(lerp(0.5, roughness, _RoughContrast));
+		roughness += saturate(roughness * _RoughIntensity);
+		roughness = saturate(roughness + _RoughLightness);
 	}
-	smoothness = 1-smoothness;
+	smoothness = 1-roughness;
 	specularTint = lerp(unity_ColorSpaceDielectricSpec.rgb, albedo, metallic);
 	omr = unity_ColorSpaceDielectricSpec.a - metallic * unity_ColorSpaceDielectricSpec.a;
 	float interpolator = _ReflectionStr*m.reflectionMask;
 	return lerp(albedo, albedo*omr, interpolator);
 }
 
-float3 GetSpecWorkflow(g2f i, lighting l, masks m, float3 albedo, out float3 specularTint, out float smoothness, out float omr){
+float3 GetSpecWorkflow(g2f i, lighting l, masks m, float3 albedo){
 	UNITY_BRANCH
 	if (_UseSpecMap == 1){
 		float4 specMap = UNITY_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, _MainTex, i.uv.xy);
@@ -446,12 +448,13 @@ float3 GetSpecWorkflow(g2f i, lighting l, masks m, float3 albedo, out float3 spe
 	return albedo;
 }
 
-float3 GetPackedWorkflow(g2f i, lighting l, masks m, float3 albedo, out float3 specularTint, out float smoothness, out float omr){
+float3 GetPackedWorkflow(g2f i, lighting l, masks m, float3 albedo){
 	float4 packedTex = tex2D(_PackedMap, i.uv.xy);
 	metallic = ChannelCheck(packedTex, _MetallicChannel);
 	roughness = ChannelCheck(packedTex, _RoughnessChannel);
 	UNITY_BRANCH
 	if (_RoughnessFiltering == 1){
+		roughness = lerp(roughness, pow(roughness, 0.454545), _LinearSmooth);
 		roughness = saturate(lerp(0.5, roughness, _RoughContrast));
 		roughness += saturate(roughness * _RoughIntensity);
 		roughness = saturate(roughness + _RoughLightness);
@@ -463,16 +466,16 @@ float3 GetPackedWorkflow(g2f i, lighting l, masks m, float3 albedo, out float3 s
 	return lerp(albedo, albedo*omr, interpolator);
 }
 
-float3 GetWorkflow(g2f i, lighting l, masks m, float3 albedo, out float3 specularTint, out float smoothness, out float omr){
+float3 GetWorkflow(g2f i, lighting l, masks m, float3 albedo){
 	float3 diffuse = albedo;
 	UNITY_BRANCH
 	if (_PBRWorkflow == 0){
-		diffuse = GetMetallicWorkflow(i, l, m, albedo, specularTint, smoothness, omr);
+		diffuse = GetMetallicWorkflow(i, l, m, albedo);
 	}
 	else if (_PBRWorkflow == 3){
-		diffuse = GetPackedWorkflow(i, l, m, albedo, specularTint, smoothness, omr);
+		diffuse = GetPackedWorkflow(i, l, m, albedo);
 	}
-	else diffuse = GetSpecWorkflow(i, l, m, albedo, specularTint, smoothness, omr);
+	else diffuse = GetSpecWorkflow(i, l, m, albedo);
 
 	return diffuse;
 }
@@ -480,7 +483,7 @@ float3 GetWorkflow(g2f i, lighting l, masks m, float3 albedo, out float3 specula
 // PBR filtering previews
 float3 ApplyRoughPreview(g2f i, float3 diffuse){
 	UNITY_BRANCH
-	if (_UseSpecMap == 1){
+	if (_UseSpecMap == 1 && _PBRWorkflow != 3){
 		UNITY_BRANCH
 		if (_RoughnessFiltering == 1 && _PreviewRough == 1){
 			if (_PBRWorkflow != 3)
@@ -499,6 +502,7 @@ float3 ApplyRoughPreview(g2f i, float3 diffuse){
 		if (_PackedRoughPreview == 1){
 			float3 packedTex = tex2D(_PackedMap, i.uv.xy);
 			diffuse = ChannelCheck(packedTex, _RoughnessChannel);
+			diffuse = lerp(diffuse, pow(diffuse, 0.454545), _LinearSmooth);
 			diffuse = saturate(lerp(0.5, diffuse, _RoughContrast));
 			diffuse += saturate(diffuse * _RoughIntensity);
 			diffuse = saturate(diffuse + _RoughLightness);

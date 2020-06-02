@@ -128,6 +128,7 @@ int _SRampTintAO, _PreviewActive, _UseAOTintTex, _UseSmoothMap, _LinearSmooth, _
 int _SmoothnessFiltering, _PackedRoughPreview, _ShadowConditions, _DirectAO, _UseRimTex, _DistortUVs;
 int _DistortionStyle, _PreviewNoise, _IndirectAO, _NoiseOctaves, _UseMetallicMap, _UseSpecMap;
 int _UseDetailNormal, _UseParallaxMap, _EmissionToggle;
+int _MatcapUseRough, _ReflUseRough, _SpecUseRough;
 
 float4 _Color, _CubeColor0, _CubeColor1;
 float4 _SpecCol, _ReflCol, _MatcapColor;
@@ -183,6 +184,7 @@ float _ERimWidth, _ERimStr, _ERimEdge, _ERimRoughness;
 float _SmoothLightness, _SmoothIntensity, _SmoothContrast;
 float _Value;
 float _NoiseSpeed, _RampPos, _SharpSpecStr;
+float _MatcapRough, _SpecRough, _ReflRough;
 
 int _DebugIntRange, _DebugToggle, _DebugEnum;
 float _DebugFloat, _DebugRange;
@@ -201,6 +203,7 @@ float height;
 float cubeMask;
 
 int _PreviewRough, _PreviewAO, _PreviewHeight;
+
 struct lighting {
     float NdotL;
 	float NdotV;
@@ -225,6 +228,9 @@ struct lighting {
 	float4 toLightX;
 	float4 toLightY;
 	float4 toLightZ;
+	float4 lengthSq;
+	float4 vLightWeight;
+	float4 vLightAtten;
 	float2 screenUVs;
 	bool lightEnv;
 	bool lightEnvFull;

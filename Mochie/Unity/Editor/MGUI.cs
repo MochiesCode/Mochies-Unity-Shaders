@@ -255,6 +255,21 @@ public static class MGUI {
         EditorGUI.EndDisabledGroup();
     }
 
+    // Float with a toggle
+    public static void ToggleFloat(MaterialEditor me, string label, MaterialProperty toggle, MaterialProperty floatProp){
+        float lw = EditorGUIUtility.labelWidth;
+        float indent = lw + 20f;
+        GUILayoutOption clickArea = GUILayout.MaxWidth(lw+13f);
+        toggle.floatValue = EditorGUILayout.Toggle(label, toggle.floatValue==1, clickArea)?1:0;
+        GUILayout.Space(-18);
+        Rect r = EditorGUILayout.GetControlRect();
+        r.x += indent;
+        r.width -= indent;
+        EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
+        me.FloatProperty(r, floatProp, "");
+        EditorGUI.EndDisabledGroup();
+    }
+
 	public static void ToggleVector3(string label, MaterialProperty toggle, MaterialProperty vec){
 		SpaceN2();
         Vector4 newVec = vec.vectorValue;
@@ -449,6 +464,14 @@ public static class MGUI {
 			Vector2Field("Scrolling", vec);
 		}
 	}
+
+    // Shorthand Scale Offset func with fixed spacing
+    public static void TextureSO(MaterialEditor me, MaterialProperty prop, bool shouldDisplay){
+		if (shouldDisplay){
+			me.TextureScaleOffsetProperty(prop);
+			Space2();
+		}
+    }
 
 	// Shorthand for displaying an error window
 	public static void ErrorBox(string message){

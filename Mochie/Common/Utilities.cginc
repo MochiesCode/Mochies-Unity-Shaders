@@ -11,6 +11,10 @@ float Average(float3 col){
     return (col.r + col.g + col.b)/3.0;
 }
 
+float Average(float4 value){
+	return (value.x + value.y + value.z + value.w)/4.0;
+}
+
 float AverageRGB(float3 col){
     return (col.r + col.g + col.b)/3.0;
 }
@@ -232,4 +236,10 @@ float3 FlowUV (float2 uv, float time, float phase) {
 	uv += (time - progress) * float2(0.24, 0.2083333);
 	float3 uvw = float3(uv, waveform);
 	return uvw;
+}
+
+float GetRoughness(float smoothness){
+	float roughness = 1-smoothness;
+    roughness *= 1.7-0.7*roughness;
+    return roughness;
 }

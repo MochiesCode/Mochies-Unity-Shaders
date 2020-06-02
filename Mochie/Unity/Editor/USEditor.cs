@@ -475,6 +475,13 @@ public class USEditor : ShaderGUI {
 	MaterialProperty _ERimMask = null;
 	MaterialProperty _ERimMaskChannel = null;
 
+	MaterialProperty _ReflUseRough = null;
+	MaterialProperty _ReflRough = null;
+	MaterialProperty _SpecUseRough = null;
+	MaterialProperty _SpecRough = null;
+	MaterialProperty _MatcapUseRough = null;
+	MaterialProperty _MatcapRough = null;
+
 	MaterialProperty _NaNxddddd = null;
 	MaterialProperty _UseAOTintTex = null;
 	MaterialProperty _UseReflCube = null;
@@ -505,10 +512,6 @@ public class USEditor : ShaderGUI {
 		if (m_FirstTimeApply) {
 			m_FirstTimeApply = false;
 		}
-
-		// Return if the mat editor isn't displayed in the inspector
-        if (!me.isVisible)
-            return;
 
 		// Find properties
         foreach (var property in GetType().GetFields(bindingFlags)){
@@ -576,7 +579,7 @@ public class USEditor : ShaderGUI {
 		if (isUberX && _Screenspace.floatValue == 1 && _CullingMode.floatValue != 0)
 			_CullingMode.floatValue = 0;
 
-		// Setting floats based on render mode/texture presence/etc to save on excess conditionals in-shader
+		// Setting floats based on render mode/texture presence/etc to save on excess samples in-shader
 		_UseParallaxMap.floatValue = _ParallaxMap.textureValue ? 1 : 0;
 		_UseDetailNormal.floatValue = _DetailNormalMap.textureValue ? 1 : 0;
 		_UseAOTintTex.floatValue = _AOTintTex.textureValue ? 1 : 0;
@@ -618,6 +621,7 @@ public class USEditor : ShaderGUI {
 			_PreviewHeight.floatValue = 0f;
 		}
 
+		// Offloading these from the shader so there aren't if statements with 3-4+ conditions
 		bool roughPreview = _PreviewRough.floatValue == 1 && _RoughnessFiltering.floatValue == 1;
 		bool smoothPreview = _PreviewSmooth.floatValue == 1 && _SmoothnessFiltering.floatValue == 1;
 		bool aoPreview = _PreviewAO.floatValue == 1 && _AOFiltering.floatValue == 1;
@@ -661,6 +665,12 @@ public class USEditor : ShaderGUI {
 		}
 		else _DistortUVs.floatValue = 0f;
 		
+		mat.SetShaderPassEnabled("Always", _SSR.floatValue == 1 && _Reflections.floatValue == 1 && _RenderMode.floatValue == 1);
+
+		// Return here to reduce editor overhead if it's not visible
+		if (!me.isVisible)
+			return;
+
         Texture2D headerTex = (Texture2D)Resources.Load(header, typeof(Texture2D));
 		Texture2D watermarkTex = (Texture2D)Resources.Load(watermark, typeof(Texture2D));
 		Texture2D patIconTex = (Texture2D)Resources.Load(patIcon, typeof(Texture2D));
@@ -871,6 +881,8 @@ public class USEditor : ShaderGUI {
 						MGUI.Space2();
 						MGUI.ToggleGroup(_RoughnessFiltering.floatValue == 0);
 						me.ShaderProperty(_PreviewRough, "Preview");
+						if (_PBRWorkflow.floatValue == 3)
+							me.ShaderProperty(_LinearSmooth, "Treat as Linear");
 						me.ShaderProperty(_RoughLightness, "Lightness");
 						me.ShaderProperty(_RoughIntensity, "Intensity");
 						me.ShaderProperty(_RoughContrast, "Contrast");
@@ -980,11 +992,11 @@ public class USEditor : ShaderGUI {
 				if (lightingTab){
 					MGUI.Space8();
 					MGUI.ToggleVector3("Static Direction", _StaticLightDirToggle, _StaticLightDir);
-					MGUI.ToggleGroup(!_OcclusionMap.textureValue);
+					MGUI.ToggleGroup(!_OcclusionMap.textureValue && _PBRWorkflow.floatValue != 3);
 					me.ShaderProperty(_DirectAO, "Direct Occlusion");
 					me.ShaderProperty(_IndirectAO, "Indirect Occlusion");
 					MGUI.ToggleGroupEnd();
-					if (!_OcclusionMap.textureValue){
+					if (!_OcclusionMap.textureValue && _PBRWorkflow.floatValue != 3){
 						GUILayout.Space(-28);
 						GUIStyle f = new GUIStyle(EditorStyles.boldLabel);
         				f.fontSize = 10;
@@ -1070,6 +1082,7 @@ public class USEditor : ShaderGUI {
 					if (_ReflTex.textureValue)
 						MGUI.TextureSO(me, _ReflTex);
 					me.ShaderProperty(_ReflectionStr, "Strength");
+					MGUI.ToggleSlider(me, "Manual Roughness", _ReflUseRough, _ReflRough);
 					me.ShaderProperty(_SSR, "SSR");
 					if (_SSR.floatValue == 1 && _Reflections.floatValue == 1){
 						MGUI.Space8();
@@ -1105,6 +1118,7 @@ public class USEditor : ShaderGUI {
 					if (_SpecTex.textureValue)
 						MGUI.TextureSO(me, _SpecTex);
 					me.ShaderProperty(_SpecStr, "Strength");
+					MGUI.ToggleSlider(me, "Manual Roughness", _SpecUseRough, _SpecRough);
 					MGUI.ToggleIntSlider(me, "Stepping", _SharpSpecular, _SharpSpecStr);
 					if (_SpecularStyle.floatValue == 2){
 						MGUI.Space6();
@@ -1141,6 +1155,7 @@ public class USEditor : ShaderGUI {
 					if (_Matcap.textureValue)
 						MGUI.TexPropLabel("Blending", 106);
 					me.ShaderProperty(_MatcapStr, "Strength");
+					MGUI.ToggleSlider(me, "Manual Roughness", _MatcapUseRough, _MatcapRough);
 					me.ShaderProperty(_UnlitMatcap, "Unlit");
 					MGUI.ToggleGroupEnd();
 					MGUI.Space6();
@@ -1256,10 +1271,7 @@ public class USEditor : ShaderGUI {
 					me.ShaderProperty(_ERimStr, "Strength");
 					me.ShaderProperty(_ERimWidth, "Width");
 					me.ShaderProperty(_ERimEdge, "Sharpness");
-					MGUI.ToggleGroup(_ERimUseRough.floatValue == 1);
-					me.ShaderProperty(_ERimRoughness, "Roughness");
-					MGUI.ToggleGroupEnd();
-					me.ShaderProperty(_ERimUseRough, "Use Roughness Map");
+					MGUI.ToggleSlider(me, "Manual Roughness", _ERimUseRough, _ERimRoughness);
 					MGUI.ToggleGroupEnd();
 					MGUI.Space6();
 				}
@@ -1291,51 +1303,61 @@ public class USEditor : ShaderGUI {
 		MGUI.Space8();
 		if (emissTab){
 			MGUI.Space6();
-			me.ShaderProperty(_EmissionToggle, "Enable");
+			me.ShaderProperty(_EmissionToggle, "Mode");
 			MGUI.Space6();
-			MGUI.ToggleGroup(_EmissionToggle.floatValue == 0);
-			me.TexturePropertySingleLine(EmissTexLabel, _EmissionMap, _EmissionColor);
-			if (_EmissionMap.textureValue){
-				MGUI.TextureSOScroll(me, _EmissionMap, _EmissScroll);
+			if (_EmissionToggle.floatValue > 0){
+				if (_EmissionToggle.floatValue == 1){
+					me.TexturePropertySingleLine(EmissTexLabel, _EmissionMap, _EmissionColor);
+					if (_EmissionMap.textureValue){
+						MGUI.TextureSOScroll(me, _EmissionMap, _EmissScroll);
+						MGUI.Space8();
+					}
+				}
+				else if (_EmissionToggle.floatValue == 2){
+					me.ShaderProperty(_EmissionColor, "Color");
+					MGUI.Space4();
+					MGUI.TextureSOScroll(me, _EmissionMap, _EmissScroll);
+					MGUI.Space8();
+				}
+				MGUI.MaskProperty(me, _EmissMask, _EmissMaskChannel);
+				if (_EmissMask.textureValue)
+					MGUI.TextureSO(me, _EmissMask);
+				MGUI.Space8();
+				bool lrTab = Foldouts.DoMediumFoldout(foldouts, mat, me, -21f, _ReactToggle, "Light Reactivity") && _EmissionToggle.floatValue == 1;
+				if (MGUI.MedTabButton(resetIcon, 23f))
+					DoLRReset();
+				GUILayout.Space(5);
+				if (lrTab){
+					MGUI.Space2();
+					MGUI.ToggleGroup(_ReactToggle.floatValue == 0);
+					me.ShaderProperty(_CrossMode, "Crossfade Mode");
+					MGUI.ToggleGroup(_CrossMode.floatValue == 0);
+					me.ShaderProperty(_ReactThresh, "Threshold");
+					me.ShaderProperty(_Crossfade, "Strength");
+					MGUI.ToggleGroupEnd();
+					MGUI.ToggleGroupEnd();
+					MGUI.Space6();
+				}
+				else MGUI.SpaceN2();
+
+				bool pulseTab = Foldouts.DoMediumFoldout(foldouts, mat, me, -21f, _PulseToggle, "Pulse") && _EmissionToggle.floatValue == 1;
+				if (MGUI.MedTabButton(resetIcon, 23f))
+					DoPulseReset();
+				GUILayout.Space(5);
+				if (pulseTab){
+					MGUI.Space4();
+					MGUI.ToggleGroup(_PulseToggle.floatValue == 0);
+					me.ShaderProperty(_PulseWaveform, "Waveform");
+					MGUI.Space6();
+					MGUI.MaskProperty(me, _PulseMask, _PulseMaskChannel);
+					me.ShaderProperty(_PulseStr, "Strength");
+					me.ShaderProperty(_PulseSpeed, "Speed");
+					MGUI.ToggleGroupEnd();
+				}
+				MGUI.ToggleGroupEnd();
 				MGUI.Space8();
 			}
-			MGUI.MaskProperty(me, _EmissMask, _EmissMaskChannel);
-			if (_EmissMask.textureValue)
-				MGUI.TextureSO(me, _EmissMask);
-			MGUI.Space8();
-			bool lrTab = Foldouts.DoMediumFoldout(foldouts, mat, me, -21f, _ReactToggle, "Light Reactivity") && _EmissionToggle.floatValue == 1;
-			if (MGUI.MedTabButton(resetIcon, 23f))
-				DoLRReset();
-			GUILayout.Space(5);
-			if (lrTab){
-				MGUI.Space2();
-				MGUI.ToggleGroup(_ReactToggle.floatValue == 0);
-				me.ShaderProperty(_CrossMode, "Crossfade Mode");
-				MGUI.ToggleGroup(_CrossMode.floatValue == 0);
-				me.ShaderProperty(_ReactThresh, "Threshold");
-				me.ShaderProperty(_Crossfade, "Strength");
-				MGUI.ToggleGroupEnd();
-				MGUI.ToggleGroupEnd();
-				MGUI.Space6();
-			}
-			else MGUI.SpaceN2();
-
-			bool pulseTab = Foldouts.DoMediumFoldout(foldouts, mat, me, -21f, _PulseToggle, "Pulse") && _EmissionToggle.floatValue == 1;
-			if (MGUI.MedTabButton(resetIcon, 23f))
-				DoPulseReset();
-			GUILayout.Space(5);
-			if (pulseTab){
-				MGUI.Space4();
-				MGUI.ToggleGroup(_PulseToggle.floatValue == 0);
-				me.ShaderProperty(_PulseWaveform, "Waveform");
-				MGUI.Space6();
-				MGUI.MaskProperty(me, _PulseMask, _PulseMaskChannel);
-				me.ShaderProperty(_PulseStr, "Strength");
-				me.ShaderProperty(_PulseSpeed, "Speed");
-				MGUI.ToggleGroupEnd();
-			}
-			MGUI.ToggleGroupEnd();
-			MGUI.Space8();
+			else MGUI.Space4();
 		}
 			
 		// -----------------
@@ -2107,6 +2129,8 @@ public class USEditor : ShaderGUI {
 		_ReflCube.textureValue = null;
 		_ReflTex.textureValue = null;
 		_ReflectionStr.floatValue = 1f;
+		_ReflUseRough.floatValue = 0f;
+		_ReflRough.floatValue = 0.5f;
 		_ReflCol.colorValue = Color.white;
 		_SSR.floatValue = 0f;
 		_Alpha.floatValue = 1f;
@@ -2131,6 +2155,8 @@ public class USEditor : ShaderGUI {
 		_AnisoLayerStr.floatValue = 0.1f;
 		_AnisoLerp.floatValue = 0f;
 		_SharpSpecStr.floatValue = 0f;
+		_SpecUseRough.floatValue = 0f;
+		_SpecRough.floatValue = 0.5f;
 	}
 
 	void DoMatcapReset(){
@@ -2138,7 +2164,9 @@ public class USEditor : ShaderGUI {
 		_MatcapStr.floatValue = 1f;
 		_MatcapColor.colorValue = Color.white;
 		_UnlitMatcap.floatValue = 0f;
-		_MatcapBlending.floatValue = 2f;
+		_MatcapBlending.floatValue = 0f;
+		_MatcapUseRough.floatValue = 0f;
+		_MatcapRough.floatValue = 0.5f;
 	}
 
 	void DoShadowReset(){
@@ -2180,12 +2208,12 @@ public class USEditor : ShaderGUI {
 
 	void DoERimReset(){
 		_ERimTint.colorValue = Color.white;
-		_ERimBlending.floatValue = 0f;
+		_ERimBlending.floatValue = 1f;
 		_ERimStr.floatValue = 1f;
-		_ERimWidth.floatValue = 0.5f;
+		_ERimWidth.floatValue = 0.7f;
 		_ERimEdge.floatValue = 0f;
 		_ERimTex.textureValue = null;
-		_ERimUseRough.floatValue = 1f;
+		_ERimUseRough.floatValue = 0f;
 		_ERimRoughness.floatValue = 0.5f;
 	}
 

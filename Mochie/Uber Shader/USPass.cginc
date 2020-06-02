@@ -4,8 +4,8 @@
 #if (defined(UNITY_PASS_FORWARDBASE) || defined(UNITY_PASS_FORWARDADD)) && !defined(OUTLINE)
 
 v2g vert (appdata v) {
-    v2g o;
-	UNITY_INITIALIZE_OUTPUT(v2g, o);
+    v2g o = (v2g)0;
+	
 	o.objPos = mul(unity_ObjectToWorld, float4(0,0,0,1)).xyz;
 	o.cameraPos = _WorldSpaceCameraPos;
 	#if UNITY_SINGLE_PASS_STEREO
@@ -64,7 +64,6 @@ float4 frag (g2f i) : SV_Target {
 	attenCol = FadeShadows(i, attenCol);
 	masks m = GetMasks(i);
     lighting l = GetLighting(i, m, attenCol);
-    
 	float4 albedo = GetAlbedo(i, l, m);
 	
 	UNITY_BRANCH
@@ -78,24 +77,25 @@ float4 frag (g2f i) : SV_Target {
 	float3 reflCol = 1;
 
 	UNITY_BRANCH
-	if (_RenderMode == 0){
+	if (_RenderMode == 1){
+		attenCol = GetRamp(i, l, m, albedo.rgb, attenCol);
+		diffuse.rgb = GetWorkflow(i, l, m, albedo.rgb);
+		roughness = GetRoughness(smoothness);
+		reflCol = GetReflections(i, l, lerp(roughness, _ReflRough, _ReflUseRough)) * _ReflCol.rgb;
+		reflCol *= tex2DBoolWhiteSampler(_ReflTex, i.uv3.xy, _UseReflTex);
+		diffuse.rgb = GetMochieBRDF(i, l, m, diffuse, albedo, specularTint, reflCol, omr, smoothness, attenCol);
+	}
+	else {
 		#if defined(UNITY_PASS_FORWARDBASE)
 			diffuse = GetDiffuse(l, albedo, 1);
 		#else
 			diffuse = GetDiffuse(l, albedo, attenCol);
 		#endif
 	}
-	else {
-		attenCol = GetRamp(i, l, m, albedo.rgb, attenCol);
-		diffuse.rgb = GetWorkflow(i, l, m, albedo.rgb, specularTint, smoothness, omr);
-		reflCol = GetReflections(i, l, GetRoughness(1-smoothness)) * _ReflCol.rgb;
-		reflCol *= tex2DBoolWhiteSampler(_ReflTex, i.uv3.xy, _UseReflTex);
-		diffuse.rgb = GetMochieBRDF(i, l, m, diffuse, albedo, specularTint, reflCol, omr, smoothness, attenCol);
-	}
 
 	// Emission, Rim Lighting, Dissolve Rim, Wireframe (if clone), and Fog
     diffuse.rgb = ApplyRimLighting(i, l, m, diffuse.rgb);
-	diffuse.rgb = ApplyERimLighting(i, l, m, diffuse.rgb, GetRoughness(1-smoothness));
+	diffuse.rgb = ApplyERimLighting(i, l, m, diffuse.rgb, lerp(roughness, _ERimRoughness, _ERimUseRough));
     diffuse.rgb = ApplyLREmission(l, diffuse.rgb, emiss);
 	diffuse = ApplyUnlitSpritesheet(i, m, diffuse);
 	#if defined(UBERX)
@@ -136,8 +136,8 @@ float4 frag (g2f i) : SV_Target {
 #if defined(UNITY_PASS_SHADOWCASTER)
 
 v2g vert (appdata v) {
-    v2g o;
-	UNITY_INITIALIZE_OUTPUT(v2g, o);
+    v2g o = (v2g)0;
+
 	#if defined(_ALPHABLEND_ON) || defined(_ALPHAPREMULTIPLY_ON)
 		o.pos = 0.0/_NaNxddddd;
 	#else
@@ -198,8 +198,8 @@ float4 frag(g2f i) : SV_Target {
 #if defined(OUTLINE)
 
 v2g vert (appdata v) {
-    v2g o;
-	UNITY_INITIALIZE_OUTPUT(v2g, o);
+    v2g o = (v2g)0;
+
 	#if defined(_ALPHABLEND_ON) || defined(_ALPHAPREMULTIPLY_ON)
 		o.pos = 0.0/_NaNxddddd;
 	#else
@@ -303,16 +303,21 @@ float4 frag(g2f i) : SV_Target {
 
 	UNITY_BRANCH
 	if (_ApplyOutlineLighting == 1){
-		attenCol = GetRamp(i, l, m, albedo.rgb, attenCol);
-		diffuse.rgb = GetWorkflow(i, l, m, albedo.rgb, specularTint, smoothness, omr);
-		diffuse.rgb = GetMochieBRDF(i, l, m, diffuse, albedo, specularTint, 0, omr, smoothness, attenCol);
+		UNITY_BRANCH
+		if (_RenderMode == 1){
+			attenCol = GetRamp(i, l, m, albedo.rgb, attenCol);
+			diffuse.rgb = GetWorkflow(i, l, m, albedo.rgb);
+			roughness = GetRoughness(smoothness);
+			diffuse.rgb = GetMochieBRDF(i, l, m, diffuse, albedo, specularTint, 0, omr, smoothness, attenCol);
+		}
+		else diffuse = GetDiffuse(l, albedo, 1);
 	}
 
 	float3 emiss = GetEmission(i);
 
 	float interpolator = 1;
 	UNITY_BRANCH
-	if (_EmissionToggle == 1 && _ApplyOutlineEmiss == 1){
+	if (_EmissionToggle > 0 && _ApplyOutlineEmiss == 1){
 		interpolator = 0;
 		UNITY_BRANCH
 		if (_ReactToggle == 1){
@@ -337,11 +342,6 @@ float4 frag(g2f i) : SV_Target {
 		i.color.rgb = ApplyDissolveRim(i, i.color.rgb); 
 		i.color.rgb = ApplyWireframe(i, i.color.rgb);
 	#endif
-
-	UNITY_BRANCH
-	if (_ApplyOutlineLighting == 1){
-		i.color.rgb = ApplyLREmission(l, i.color.rgb, emiss);
-	}
 
 	UNITY_BRANCH
 	if (_PostFiltering == 1 && _FilterModel > 0){
