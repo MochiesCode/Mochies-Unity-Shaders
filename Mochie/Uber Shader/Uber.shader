@@ -141,7 +141,7 @@ Shader "Mochie/Uber Shader" {
 		_ReflTex("tex", 2D) = "white" {}
 		_ReflCol("col", Color) = (1,1,1,1)
 		_ReflectionStr("fl", Float) = 1
-		[Toggle(_)]_ReflUseRough("", Int) = 1
+		[Toggle(_)]_ReflUseRough("", Int) = 0
 		_ReflRough("ra", Range(0,2)) = 0.5
 		[Toggle(_)]_SSR("", Int) = 0 // SSR
 		[Toggle(_)]_Dith("", Int) = 0
@@ -169,7 +169,7 @@ Shader "Mochie/Uber Shader" {
 		[Toggle(_)]_AnisoLerp("tog", Int) = 0
 		_InterpMask("tex", 2D) = "gray" {}
 		[Enum(Red,0, Green,1, Blue,2, Alpha,3)]_InterpMaskChannel("", Int) = 0
-		[Toggle(_)]_SpecUseRough("", Int) = 1
+		[Toggle(_)]_SpecUseRough("", Int) = 0
 		_SpecRough("ra", Range(0,2)) = 0.5
 
 		// MATCAP
@@ -179,7 +179,7 @@ Shader "Mochie/Uber Shader" {
 		[Enum(Add,0, Mult,1, Alpha,2)]_MatcapBlending("en02", Int) = 0
 		_MatcapStr("fl", Float) = 1
 		[Toggle(_)]_UnlitMatcap("tog", Int) = 0
-		[Toggle(_)]_MatcapUseRough("", Int) = 1
+		[Toggle(_)]_MatcapUseRough("", Int) = 0
 		_MatcapRough("ra", Range(0,2)) = 0.5
 
 		// SHADOWS
