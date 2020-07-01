@@ -42,6 +42,12 @@ float3 HSVtoRGB(float3 c){
 	return c.z * lerp(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 
+float3 HSVShift(float3 col, float hue, float saturation, float value){
+	float3 hsv = float3(hue, saturation, value);
+    float3 hsvCol = RGBtoHSV(col);
+    return HSVtoRGB(hsvCol + hsv);
+}
+
 // sRGB luminance(Y) values
 const float rY = 0.212655;
 const float gY = 0.715158;
@@ -179,7 +185,7 @@ float3 BlendLuminosity(float3 s, float3 d){
 }
 
 float3 GetContrast(float3 col, float contrast){
-    return clamp((lerp(float3(0.5,0.5,0.5), col, contrast)), 0, 10);
+    return lerp(float3(0.5,0.5,0.5), col, contrast);
 }
 
 float3 GetSaturation(float3 col, float interpolator){

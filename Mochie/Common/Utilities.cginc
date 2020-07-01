@@ -237,9 +237,3 @@ float3 FlowUV (float2 uv, float time, float phase) {
 	float3 uvw = float3(uv, waveform);
 	return uvw;
 }
-
-float GetRoughness(float smoothness){
-	float roughness = 1-smoothness;
-    roughness *= 1.7-0.7*roughness;
-    return roughness;
-}

@@ -9,13 +9,14 @@ Shader "Mochie/Particle Shader" {
         [HideInInspector]_DstBlend("__dst", Int) = 10
         [HideInInspector]_ZT("", Int) = 2
         [Toggle(_)]_ZTest("", Int) = 0
-        [Enum(OFF,0, FRONT,1, BACK,2)]_Culling("", Int) = 2
+        [Toggle(_)]_ZWrite("", Int) = 0
+        [Enum(Off,0, Front,1, Back,2)]_Culling("", Int) = 2
 		[Toggle(_)]_FlipbookBlending("", Int) = 0
 
         _MainTex("", 2D) = "white" {}
         [HDR]_Color("", Color) = (1,1,1,1)
         [Toggle(_)]_Layering("", Int) = 0
-        [Enum(LERP,0, ADD,1, SUB,2, MULT,3)]_TexBlendMode("", Int) = 0
+        [Enum(Lerp,0, Add,1, Sub,2, Mult,3)]_TexBlendMode("", Int) = 0
         _SecondTex("", 2D) = "white" {}
         [HDR]_SecondColor("", Color) = (1,1,1,1)
 		_Brightness("", Float) = 1
@@ -31,20 +32,20 @@ Shader "Mochie/Particle Shader" {
 		_AutoShiftSpeed("", Range(0,1)) = 0.25
 		_Hue("", Range(0,1)) = 0
 		_Saturation("", Range(0,2)) = 1
-		_Luminance ("", Range(0,3)) = 0
+		_Value("", Range(-3,3)) = 0
 		_HDR("", Range(0,1)) = 0
-		_Contrast("", Range(0,1)) = 0
+		_Contrast("", Range(0,2)) = 1
 
         [Toggle(EFFECT_BUMP)]_Distortion("", Int) = 0
         _NormalMap("", 2D) = "bump" {}
+		_NormalMapScale("", Vector) = (1,1,0,0)
 		[Toggle(_)]_DistortMainTex("", Int) = 0
-        _DistortionStr("", Range(0,1)) = 0
-        _DistortionBlend("", Range(0,1)) = 1
-        _DistortionSpeedX("", Range(-1,1)) = 0
-        _DistortionSpeedY("", Range(-1,1)) = 0
+        _DistortionStr("", Float) = 0
+        _DistortionBlend("", Range(0,1)) = 0.5
+        _DistortionSpeed("", Vector) = (0,0,0,0)
 
 		[Toggle(_)]_Pulse("", Int) = 0
-		[Enum(SIN,0, SQUARE,1, TRIANGLE,2, SAW,3, REV_SAW,4)]_Waveform("", Int) = 0
+		[Enum(Sin,0, Square,1, Triangle,2, Saw,3, Reverse Saw,4)]_Waveform("", Int) = 0
 		_PulseStr("", Range(0,1)) = 0.5
 		_PulseSpeed("", Float) = 1
 
@@ -53,6 +54,8 @@ Shader "Mochie/Particle Shader" {
         _NearMaxRange("", Float) = 5
         _MinRange("", Float) = 8
         _MaxRange("", Float) = 15
+
+		[HideInInspector]_NaNLmao("", Float) = 0.0
     }
     
     SubShader {
@@ -90,7 +93,7 @@ Shader "Mochie/Particle Shader" {
 				o.pulse = GetPulse();
 				UNITY_BRANCH
 				if (_Falloff == 1 && o.falloff <= 0.0001)
-					o.pos = 0;
+					o.pos = 0.0/_NaNLmao;
                 o.uv0 = v.uv0;
 				o.color = v.color;
 				o.color.rgb *= _Brightness;

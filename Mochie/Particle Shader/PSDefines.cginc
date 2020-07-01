@@ -10,14 +10,16 @@ int _Falloff, _IsCutout, _BlendMode, _Softening, _Pulse, _Waveform, _FlipbookBle
 float _MinRange, _MaxRange, _NearMinRange, _NearMaxRange, _Cutout;
 float _SoftenStr, _PulseStr, _PulseSpeed, fade;
 float _Brightness, _Opacity;
+float _NaNLmao;
 
 #if defined(PSX)
 	sampler2D _PSGrab; float4 _PSGrab_TexelSize;
 	sampler2D _SecondTex;
 	sampler2D _NormalMap;
+	float2 _NormalMapScale, _DistortionSpeed;
 	int _Distortion, _DistortMainTex, _TexBlendMode, _Filtering, _AutoShift, _Layering;
-	float _DistortionStr, _DistortionBlend, _DistortionSpeedX, _DistortionSpeedY;
-	float _Hue, _Saturation, _Luminance, _Contrast, _HDR, _AutoShiftSpeed;
+	float _DistortionStr, _DistortionBlend;
+	float _Hue, _Saturation, _Value, _Contrast, _HDR, _AutoShiftSpeed;
 #endif
 
 struct appdata {

@@ -1,7 +1,7 @@
 // BY MOCHIE
 // Version 1.8
 
-Shader "Mochie/Uber Shader" {
+Shader "Mochie/Uber Shader (Outline)" {
     Properties {
 		
 		//----------------------------
@@ -563,6 +563,29 @@ Shader "Mochie/Uber Shader" {
 			#pragma warning (disable : 3033)	
 			#if !(UNITY_VERSION >= 201840)
 				#define UNITY_PASS_SHADOWCASTER
+			#endif
+            #include "USDefines.cginc"
+            ENDCG
+        }
+
+        Pass {
+            Name "Outline"
+            Tags {"LightMode"="ForwardBase"}
+            Cull Front
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+			#pragma shader_feature _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
+			#pragma multi_compile _ _FOG_EXP2
+            #pragma multi_compile_fwdbase
+			#pragma skip_variants DIRLIGHTMAP_COMBINED DIRLIGHTMAP_SEPARATE 
+			#pragma skip_variants DYNAMICLIGHTMAP_ON LIGHTMAP_ON LIGHTMAP_SHADOW_MIXING 
+			#pragma skip_variants UNITY_HDR_ON
+			#pragma target 5.0
+			#pragma warning (disable : 3033)
+            #define OUTLINE
+			#if !(UNITY_VERSION >= 201840)
+				#define UNITY_PASS_FORWARDBASE
 			#endif
             #include "USDefines.cginc"
             ENDCG

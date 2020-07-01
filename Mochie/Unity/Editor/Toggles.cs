@@ -7,18 +7,25 @@ public class Toggles {
 	List<int> mainFoldouts = new List<int>();
 	List<int> subFoldouts = new List<int>();
 
-	public Toggles(bool[] t, string[] h){
-		toggles = t;
-		headers = h;
-		for (int i = 0; i < h.Length; i++){
-			if (h[i].ToUpper() == h[i])
+	public Toggles(string[] s){
+		headers = s;
+		toggles = new bool[s.Length];
+		toggles[0] = true;
+		 
+		for (int i = 0; i < s.Length; i++){
+			if (s[i].ToUpper() == s[i])
 				mainFoldouts.Add(i);
 			else
 				subFoldouts.Add(i);
+			if (i > 0)
+				toggles[i] = false;
 		}
 	}
 
-	public bool GetState(int index){return toggles[index];}
+	public bool GetState(int index){ 
+		return toggles[index]; 
+	}
+
 	public bool GetState(string index){
 		bool state = false;
 		for (int i = 0; i < headers.Length; i++){
@@ -29,7 +36,10 @@ public class Toggles {
 		return state;
 	}
 
-	public void SetState(int index, bool state){toggles[index] = state;}
+	public void SetState(int index, bool state){ 
+		toggles[index] = state; 
+	}
+
 	public void SetState(string index, bool state){
 		for (int i = 0; i < headers.Length; i++){
 			if (headers[i].ToLower() == index.ToLower()){
@@ -38,7 +48,7 @@ public class Toggles {
 		}
 	}
 
-	public int[] GetMain(){return mainFoldouts.ToArray();}
-	public int[] GetSub(){return subFoldouts.ToArray();}
-	public bool[] GetToggles(){return toggles;}
+	public bool[] GetToggles(){ 
+		return toggles; 
+	}
 }

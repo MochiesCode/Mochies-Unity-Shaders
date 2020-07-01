@@ -15,21 +15,18 @@ float4 GetTexture(v2f i){
 	#if defined(PSX) && defined(EFFECT_BUMP)
 		float4 texCol = tex2D(_MainTex, i.uv0.xy);
 		ApplyDistortion(i, texCol.a);
-		UNITY_BRANCH
 		if (_DistortMainTex == 1)
 			texCol = tex2D(_MainTex, i.uv0.xy);
-		float3 grabCol = tex2Dproj(_PSGrab, i.uv1).rgb;
-		texCol.rgb = lerp(texCol.rgb, grabCol, saturate(texCol.a - _DistortionBlend));
+		float4 grabCol = float4(tex2Dproj(_PSGrab, i.uv1).rgb, texCol.a);
+		texCol = lerp(texCol, grabCol*lerp(1,texCol.a,_BlendMode == 1), _DistortionBlend);
 	#else
 		float4 texCol = tex2D(_MainTex, i.uv0.xy) * _Color;
 	#endif
 
-	UNITY_BRANCH
 	if (_FlipbookBlending == 1){
 		float4 blendedTex = tex2D(_MainTex, i.uv0.xy) * _Color;
 		texCol = lerp(texCol, blendedTex, i.uv0.z);
 	}
-    UNITY_BRANCH
     if (_IsCutout == 1)
         clip(texCol.a - _Cutout);
 	
@@ -50,8 +47,7 @@ float4 GetProjPos(float4 vertex0, float4 vertex1){
 
 float GetFalloff(float4 vertex){
     float falloff = 1;
-    UNITY_BRANCH
-    if(_Falloff == 1){
+    if (_Falloff == 1){
         float dist = distance(GetCameraPos(), mul(unity_ObjectToWorld, vertex));
         falloff = smoothstep(_MaxRange, clamp(_MinRange, 0, _MinRange-0.001), dist);
         falloff *= smoothstep(clamp(_NearMinRange, 0, _NearMaxRange-0.001), _NearMaxRange, dist);
@@ -61,7 +57,6 @@ float GetFalloff(float4 vertex){
 
 float GetPulse(){
 	float pulse = 1;
-	UNITY_BRANCH
 	if (_Pulse == 1){
 		UNITY_BRANCH
 		switch (_Waveform){
@@ -86,58 +81,58 @@ float4 GetColor(v2f i){
 
 		// Alpha Blended
 		case 0:
-			col = 2.0 * i.color * GetTexture(i);
+			col = i.color * GetTexture(i);
 			col.a = saturate(col.a);
-			#if defined(PSX)
-				col.rgb = GetHSLFilter(col);
-			#endif
 			col.a *= i.falloff;
 			col *= _Color;
 			col *= i.pulse;
+			#if defined(PSX)
+				col.rgb = GetHSVFilter(col);
+			#endif
 			break;
 
 		// Premultiplied
 		case 1: 
 			col = i.color * GetTexture(i) * i.color.a;
-			#if defined(PSX)
-				col.rgb = GetHSLFilter(col);
-			#endif
 			col *= i.falloff;
 			col *= _Color;
 			col *= i.pulse;
+			#if defined(PSX)
+				col.rgb = GetHSVFilter(col);
+			#endif
 			break;
 
 		// Additive
 		case 2:
 			col = 2.0 * i.color * GetTexture(i);
 			col.a = saturate(col.a);
-			#if defined(PSX)
-				col.rgb = GetHSLFilter(col);
-			#endif
 			col.a *= i.falloff;
 			col *= _Color;
+			#if defined(PSX)
+				col.rgb = GetHSVFilter(col);
+			#endif
 			break;
 		
 		// Soft Additive
 		case 3: 
 			col = i.color * GetTexture(i);
 			col.rgb *= col.a;
-			#if defined(PSX)
-				col.rgb = GetHSLFilter(col);
-			#endif
 			col *= i.falloff;
 			col *= _Color;
 			col.rgb *= i.pulse;
+			#if defined(PSX)
+				col.rgb = GetHSVFilter(col);
+			#endif
 			break;
 		
 		// Multiply
 		case 4:
 			float4 prev = i.color * GetTexture(i);
 			col = lerp(float4(1,1,1,1), prev, prev.a*i.falloff);
-			#if defined(PSX)
-				col.rgb = GetHSLFilter(col);
-			#endif
 			col *= _Color;
+			#if defined(PSX)
+				col.rgb = GetHSVFilter(col);
+			#endif
 			break;
 		
 		// Multiply x2
@@ -146,10 +141,10 @@ float4 GetColor(v2f i){
 			col.rgb = tex.rgb * i.color.rgb * 2;
 			col.a = i.color.a * tex.a;
 			col = lerp(float4(0.5,0.5,0.5,0.5), col, col.a*i.falloff);
-			#if defined(PSX)
-				col.rgb = GetHSLFilter(col);
-			#endif
 			col *= _Color;
+			#if defined(PSX)
+				col.rgb = GetHSVFilter(col);
+			#endif
 			break;
 		
 		default: break;

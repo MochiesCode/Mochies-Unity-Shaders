@@ -26,15 +26,6 @@ public class SFXEditor : ShaderGUI {
 	string dirPath = "Assets/Mochie/Unity/Presets/ScreenFX/";
 	
     Toggles toggles = new Toggles(
-		new bool[] {
-			true, false, false, false,
-			false, false, false, false,
-			false, false, false, false,
-			false, false, false, false,
-			false, false, false, false,
-			false, false, false, false,
-			false
-		},
 		new string[] {
 			"GENERAL",
 			"COLOR",

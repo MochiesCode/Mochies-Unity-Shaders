@@ -12,6 +12,7 @@
 #endif
 
 UNITY_DECLARE_TEX2D(_MainTex); float4 _MainTex_ST, _MainTex_TexelSize;
+UNITY_DECLARE_TEX2D_NOSAMPLER(_MirrorTex);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_BumpMap);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_MetallicGlossMap);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_SpecGlossMap);
@@ -23,7 +24,6 @@ UNITY_DECLARE_TEX2D_NOSAMPLER(_DetailNormalMap); float4 _DetailNormalMap_ST;
 UNITY_DECLARE_TEX2D_NOSAMPLER(_EmissMask); float4 _EmissMask_ST;
 UNITY_DECLARE_TEX2D_NOSAMPLER(_OutlineTex); float4 _OutlineTex_ST;
 UNITY_DECLARE_TEX2D_NOSAMPLER(_RimTex); float4 _RimTex_ST, _RimTex_TexelSize;
-UNITY_DECLARE_TEX2D_NOSAMPLER(_ERimTex); float4 _ERimTex_ST;
 UNITY_DECLARE_TEX2D_NOSAMPLER(_DistortUVMap); float4 _DistortUVMap_ST;
 UNITY_DECLARE_TEX2D_NOSAMPLER(_ReflTex); float4 _ReflTex_ST;
 UNITY_DECLARE_TEX2D_NOSAMPLER(_SpecTex); float4 _SpecTex_ST;
@@ -56,6 +56,7 @@ UNITY_DECLARE_TEX2D_NOSAMPLER(_AlphaMask);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_ERimMask);
 
 samplerCUBE _MainTexCube0, _MainTexCube1, _ReflCube;
+sampler3D _DitherMaskLOD;
 sampler2D _ShadowRamp; float4 _ShadowRamp_TexelSize;
 sampler2D _NoiseTexSSR; float4 _NoiseTexSSR_TexelSize;
 sampler2D _PackedMap;
@@ -106,13 +107,13 @@ int _ERimMaskChannel;
 int _RenderMode, _BlendMode, _ZWrite, _ATM, _ColorPreservation, _UseAlphaMask;
 int _CubeMode, _CubeBlendMode, _UnlitCube, _AutoRotate0, _AutoRotate1;
 int _StaticLightDirToggle, _NonlinearSHToggle, _ClampAdditive;
-int _Shadows, _ShadowMode, _MainTexTint, _RTSelfShadow, _AttenSmoothing, _ShadowDithering;
-int _Reflections, _ReflCubeFallback, _UseReflCube;
+int _Shadows, _ShadowMode, _RTSelfShadow, _AttenSmoothing, _ShadowDithering;
+int _Reflections, _UseReflCube;
 int _Specular, _SharpSpecular, _SpecularStyle, _AnisoLerp;
 int _MatcapToggle, _MatcapBlending, _UnlitMatcap;
 int _RimLighting, _RimBlending, _UnlitRim;
-int _RoughnessFiltering;
-int _ClearCoat, _InvertNormalY0, _InvertNormalY1, _HardenNormals;
+int _RoughnessFiltering, _MirrorBehavior;
+int _ClearCoat, _HardenNormals;
 int _PBRWorkflow, _SourceAlpha;
 int _MetallicChannel, _RoughnessChannel, _OcclusionChannel, _HeightChannel;
 int _PulseToggle, _PulseWaveform, _ReactToggle, _CrossMode;
@@ -123,14 +124,16 @@ int _Subsurface, _PostFiltering;
 int _ManualScrub, _ScrubPos, _EnableSpritesheet, _UnlitSpritesheet, _SpritesheetBlending;
 int _ManualScrub1, _ScrubPos1, _EnableSpritesheet1, _SpritesheetBlending1;
 int _AOFiltering, _HeightFiltering;
-int _UseSpecTex, _UseReflTex, _EnvironmentRim, _ERimBlending, _ERimUseRough, _UseERimTex;
+int _UseSpecTex, _UseReflTex, _EnvironmentRim, _ERimBlending, _ERimUseRough;
 int _SRampTintAO, _PreviewActive, _UseAOTintTex, _UseSmoothMap, _LinearSmooth, _PreviewSmooth;
 int _SmoothnessFiltering, _PackedRoughPreview, _ShadowConditions, _DirectAO, _UseRimTex, _DistortUVs;
 int _DistortionStyle, _PreviewNoise, _IndirectAO, _NoiseOctaves, _UseMetallicMap, _UseSpecMap;
 int _UseDetailNormal, _UseParallaxMap, _EmissionToggle;
-int _MatcapUseRough, _ReflUseRough, _SpecUseRough;
+int _MatcapUseRough, _ReflUseRough, _SpecUseRough, _UseNormalMap;
+int _UseMirrorAlbedo, _DissolveStyle;
 
-float4 _Color, _CubeColor0, _CubeColor1;
+float4 _Color; 
+float4 _CubeColor0, _CubeColor1;
 float4 _SpecCol, _ReflCol, _MatcapColor;
 float4 _RimCol, _ERimTint, _EmissionColor, _OutlineCol;
 float4 _TeamColor0, _TeamColor1, _TeamColor2, _TeamColor3;
@@ -140,12 +143,12 @@ float4 _SpritesheetCol, _SpritesheetCol1;
 float3 _CubeRotate0, _CubeRotate1;
 float3 _StaticLightDir;
 float3 _AOTint;
+float3 _DissolveNoiseScale;
 
 float2 _MainTexScroll;
 float2 _EmissScroll;
 float2 _DetailScroll;
 float2 _RimScroll;
-float2 _ERimScroll;
 float2 _OutlineScroll;
 float2 _DistortUVScroll;
 float2 _RowsColumns;
@@ -154,7 +157,7 @@ float2 _SpritesheetScale, _SpritesheetPos;
 float2 _RowsColumns1;
 float2 _FrameClipOfs1;
 float2 _SpritesheetScale1, _SpritesheetPos1;
-float2 _NoiseScale, _NoiseMinMax;
+float2 _NoiseScale;
 
 float _Opacity, _Cutoff, _OutlineThicc, _OutlineRange;
 float _DistanceFadeMin, _DistanceFadeMax, _ClipRimStr, _ClipRimWidth;
@@ -179,16 +182,16 @@ float _SpritesheetRot, _FPS;
 float _SpritesheetRot1, _FPS1;
 float _AOLightness, _AOIntensity, _AOContrast;
 float _HeightLightness, _HeightIntensity, _HeightContrast;
-float _NaNxddddd;
+float _NaNLmao;
 float _ERimWidth, _ERimStr, _ERimEdge, _ERimRoughness;
 float _SmoothLightness, _SmoothIntensity, _SmoothContrast;
 float _Value;
 float _NoiseSpeed, _RampPos, _SharpSpecStr;
 float _MatcapRough, _SpecRough, _ReflRough;
 
-int _DebugIntRange, _DebugToggle, _DebugEnum;
-float _DebugFloat, _DebugRange;
-float4 _DebugVector, _DebugColor, _DebugHDRColor;
+// int _DebugIntRange, _DebugToggle, _DebugEnum;
+// float _DebugFloat, _DebugRange;
+// float4 _DebugVector, _DebugColor, _DebugHDRColor;
 
 // Outputs
 float4 spec;
@@ -308,15 +311,15 @@ struct v2g {
 	float3 tangentViewDir : TEXCOORD7;
 	float3 cameraPos : TEXCOORD8;
 	float3 objPos : TEXCOORD9;
-	bool isVLight : TEXCOORD10;
-	float4 screenPos : TEXCOORD11;
+	float4 screenPos : TEXCOORD10;
+	bool isReflection : TEXCOORD11;
+	float3 localPos : TEXCOORD12;
 
-	float4 color : COLOR;
 	float4 tangent : TANGENT;
 	float3 normal : NORMAL;
 
-	UNITY_SHADOW_COORDS(18)
-	UNITY_FOG_COORDS(19)
+	UNITY_SHADOW_COORDS(15)
+	UNITY_FOG_COORDS(16)
 };
 
 struct g2f {
@@ -334,10 +337,10 @@ struct g2f {
 	float3 bCoords : TEXCOORD10;
 	float WFStr : TEXCOORD11;
 	uint instID : TEXCOORD12;
-	bool isVLight : TEXCOORD13;
-	float4 screenPos : TEXCOORD14;
+	float4 screenPos : TEXCOORD13;
+	bool isReflection : TEXCOORD14;
+	float3 localPos : TEXCOORD15;
 
-	float4 color : COLOR;
 	float4 tangent : TANGENT;
 	float3 normal : NORMAL;
 
@@ -364,10 +367,10 @@ struct v2f {
 	float3 tangentViewDir : TEXCOORD7;
 	float3 cameraPos : TEXCOORD8;
 	float3 objPos : TEXCOORD9;
-	bool isVLight : TEXCOORD10;
-	float4 screenPos : TEXCOORD11;
+	float4 screenPos : TEXCOORD10;
+	bool isReflection : TEXCOORD11;
+	float3 localPos : TEXCOORD12;
 
-	float4 color : COLOR;
 	float4 tangent : TANGENT;
 	float3 normal : NORMAL;
 

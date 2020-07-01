@@ -12,7 +12,6 @@
 
 float4 tex2DBoolWhite(sampler2D tex, float2 uv, bool shouldSample){
 	float4 col = 1;
-	UNITY_BRANCH
 	if (shouldSample)
 		col = tex2D(tex, uv);
 	return col;
@@ -20,7 +19,6 @@ float4 tex2DBoolWhite(sampler2D tex, float2 uv, bool shouldSample){
 
 float4 tex2DBoolBlack(sampler2D tex, float2 uv, bool shouldSample){
 	float4 col = 0;
-	UNITY_BRANCH
 	if (shouldSample)
 		col = tex2D(tex, uv);
 	return col;
@@ -28,7 +26,6 @@ float4 tex2DBoolBlack(sampler2D tex, float2 uv, bool shouldSample){
 
 float4 tex2DBoolWhiteSampler(Texture2D tex, float2 uv, bool shouldSample){
 	float4 col = 1;
-	UNITY_BRANCH
 	if (shouldSample)
 		col = UNITY_SAMPLE_TEX2D_SAMPLER(tex, _MainTex, uv);
 	return col;
@@ -36,7 +33,6 @@ float4 tex2DBoolWhiteSampler(Texture2D tex, float2 uv, bool shouldSample){
 
 float4 tex2DBoolBlackSampler(Texture2D tex, float2 uv, bool shouldSample){
 	float4 col = 0;
-	UNITY_BRANCH
 	if (shouldSample)
 		col = UNITY_SAMPLE_TEX2D_SAMPLER(tex, _MainTex, uv);
 	return col;
@@ -44,14 +40,14 @@ float4 tex2DBoolBlackSampler(Texture2D tex, float2 uv, bool shouldSample){
 
 float SampleMask(texture2D tex, float2 uv, int channel, bool isOn){
 	float mask = 1;
-	UNITY_BRANCH
 	if (isOn){
-		UNITY_BRANCH
+		float4 maskTex = UNITY_SAMPLE_TEX2D_SAMPLER(tex, _MainTex, uv);
+		[flatten]
 		switch (channel){
-			case 0: mask = UNITY_SAMPLE_TEX2D_SAMPLER(tex, _MainTex, uv).r; break;
-			case 1: mask = UNITY_SAMPLE_TEX2D_SAMPLER(tex, _MainTex, uv).g; break;
-			case 2: mask = UNITY_SAMPLE_TEX2D_SAMPLER(tex, _MainTex, uv).b; break;
-			case 3: mask = UNITY_SAMPLE_TEX2D_SAMPLER(tex, _MainTex, uv).a; break;
+			case 0: mask = maskTex.r; break;
+			case 1: mask = maskTex.g; break;
+			case 2: mask = maskTex.b; break;
+			case 3: mask = maskTex.a; break;
 			default: break;
 		}
 	}
@@ -60,12 +56,13 @@ float SampleMask(texture2D tex, float2 uv, int channel, bool isOn){
 
 float SampleTex2DMask(sampler2D tex, float2 uv, int channel){
 	float mask = 1;
-	UNITY_BRANCH
+	float4 maskTex = tex2D(tex, uv);
+	[flatten]
 	switch (channel){
-		case 0: mask = tex2D(tex, uv).r; break;
-		case 1: mask = tex2D(tex, uv).g; break;
-		case 2: mask = tex2D(tex, uv).b; break;
-		case 3: mask = tex2D(tex, uv).a; break;
+		case 0: mask = maskTex.r; break;
+		case 1: mask = maskTex.g; break;
+		case 2: mask = maskTex.b; break;
+		case 3: mask = maskTex.a; break;
 		default: break;
 	}
 	return mask;
@@ -73,14 +70,14 @@ float SampleTex2DMask(sampler2D tex, float2 uv, int channel){
 
 float SampleCubeMask(texture2D tex, float2 uv, float str, int channel, int isBlendMask){
 	float mask = 1;
-	UNITY_BRANCH
+	float4 maskTex = UNITY_SAMPLE_TEX2D_SAMPLER(tex, _MainTex, uv);
 	if (isBlendMask == 1){
-		UNITY_BRANCH
+		[flatten]
 		switch (channel){
-			case 0: mask = UNITY_SAMPLE_TEX2D_SAMPLER(tex, _MainTex, uv).r; break;
-			case 1: mask = UNITY_SAMPLE_TEX2D_SAMPLER(tex, _MainTex, uv).g; break;
-			case 2: mask = UNITY_SAMPLE_TEX2D_SAMPLER(tex, _MainTex, uv).b; break;
-			case 3: mask = UNITY_SAMPLE_TEX2D_SAMPLER(tex, _MainTex, uv).a; break;
+			case 0: mask = maskTex.r; break;
+			case 1: mask = maskTex.g; break;
+			case 2: mask = maskTex.b; break;
+			case 3: mask = maskTex.a; break;
 			default: break;
 		}
 	}
@@ -90,7 +87,7 @@ float SampleCubeMask(texture2D tex, float2 uv, float str, int channel, int isBle
 
 float ChannelCheck(float3 packedTex, int channel){
 	float map = 0;
-	UNITY_BRANCH
+	[flatten]
 	switch (channel){
 		case 0: map = packedTex.r; break;
 		case 1: map = packedTex.g; break;
@@ -101,7 +98,7 @@ float ChannelCheck(float3 packedTex, int channel){
 }
 
 float3 BlendCubemap(float3 baseCol, float3 cubeCol, float blend, int blendMode){
-	UNITY_BRANCH
+	[flatten]
 	switch (blendMode){
 		case 0: baseCol = lerp(baseCol, cubeCol, blend); break;
 		case 1: baseCol += cubeCol * blend; break;

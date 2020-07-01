@@ -1,15 +1,15 @@
 ﻿// A collection of UI functions I've developed over the years to improve customization of editor scripts
-// By Mochie
+// By Mochie#8794
 
+using System;
+using System.IO;
+using System.Reflection;
 using UnityEngine;
 using UnityEditor;
-using System.Collections.Generic;
-using System.IO;
-using System;
 
 public static class MGUI {
 
-    public enum BlendMode {Opaque, Cutout, Fade, Transparent}
+    public enum BlendMode {Opaque, Cutout, Dithered, A2C, Fade, Transparent}
 
 	private static int chanOfs = 105;
 	public static string parentPath = "Assets/Mochie/Unity/Presets";
@@ -19,6 +19,9 @@ public static class MGUI {
 		return mat.shader.name.Contains(" X") || mat.shader.name.Contains(" X ");
 	}
 
+	public static bool IsOutline(Material mat){
+		return mat.shader.name.Contains("(Outline)");
+	}
 	public static void SetBlendMode(Material material, BlendMode blendMode){
 		switch (blendMode){
 			
@@ -34,6 +37,8 @@ public static class MGUI {
 				break;
 
 			case BlendMode.Cutout:
+			case BlendMode.Dithered:
+			case BlendMode.A2C:
 				material.SetOverrideTag("RenderType", "TransparentCutout");
 				material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
 				material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
@@ -48,7 +53,6 @@ public static class MGUI {
 				material.SetOverrideTag("RenderType", "Transparent");
 				material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
 				material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-				material.SetInt("_ZWrite", 0);
 				material.DisableKeyword("_ALPHATEST_ON");
 				material.EnableKeyword("_ALPHABLEND_ON");
 				material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
@@ -69,7 +73,17 @@ public static class MGUI {
 			default: break;
 		}
 	}
-	
+
+	public static void FillArray<T>(T[] array, T value){
+		for (int i = 0; i < array.Length; i++)
+			array[i] = value;
+	}
+
+	public static void FillArray<T>(T[] array, T value, int startIndex, int count){
+		for (int i = startIndex; i < startIndex + count; i++)
+			array[i] = value;
+	}
+
 	public static bool WriteBytes(byte[] bytes, string path){
 		try {
 			using (var fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write))
@@ -215,6 +229,15 @@ public static class MGUI {
 		return GUI.Button(buttonRect, tex);
 	}
 
+	public static bool TabButton(GUIContent label, float offset){
+		GUILayout.Space(-28);
+		Rect buttonRect = EditorGUILayout.GetControlRect();
+		buttonRect.width = 27;
+		buttonRect.height = 23;
+		buttonRect.x += GetInspectorWidth()-offset;
+		return GUI.Button(buttonRect, label);
+	}
+
 	public static bool MedTabButton(Texture2D tex, float offset){
 		GUILayout.Space(-25);
 		Rect buttonRect = EditorGUILayout.GetControlRect();
@@ -224,6 +247,14 @@ public static class MGUI {
 		return GUI.Button(buttonRect, tex);
 	}
 
+	public static bool MedTabButton(GUIContent label, float offset){
+		GUILayout.Space(-25);
+		Rect buttonRect = EditorGUILayout.GetControlRect();
+		buttonRect.width = 23;
+		buttonRect.height = 19;
+		buttonRect.x += GetInspectorWidth()-offset;
+		return GUI.Button(buttonRect, label);
+	}
 
     // Slider with a toggle
     public static void ToggleSlider(MaterialEditor me, string label, MaterialProperty toggle, MaterialProperty slider){

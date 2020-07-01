@@ -143,7 +143,7 @@ public class Foldouts {
 		formatting.fontSize = 10;
 
         Rect rect = GUILayoutUtility.GetRect(MGUI.GetInspectorWidth(), formatting.fixedHeight, formatting);
-		rect.width -= 132f;
+		rect.width -= 104f;
         rect.x -= 8f;
 
 		Event evt = Event.current;
@@ -165,8 +165,6 @@ public class Foldouts {
 
 		return FoldoutToggle(rect, evt, mouseOver, display, 0);
     }
-
-
 
     public static bool FoldoutShading(string header, bool display, MaterialEditor me, Material mat, MaterialProperty[] props){
         GUIStyle formatting = new GUIStyle("ShurikenModuleTitle");

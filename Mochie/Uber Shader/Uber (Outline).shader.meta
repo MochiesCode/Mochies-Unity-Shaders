@@ -1,0 +1,64 @@
+fileFormatVersion: 2
+guid: b252ff402bce931488cf8ff5152bf2dc
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures:
+  - _MainTex: {instanceID: 0}
+  - _MainTexCube0: {instanceID: 0}
+  - _MainTexCube1: {instanceID: 0}
+  - _EmissionMap: {instanceID: 0}
+  - _PackedMap: {instanceID: 0}
+  - _MetallicGlossMap: {instanceID: 0}
+  - _SpecGlossMap: {instanceID: 0}
+  - _BumpMap: {instanceID: 0}
+  - _OcclusionMap: {instanceID: 0}
+  - _ParallaxMap: {instanceID: 0}
+  - _DetailMask: {instanceID: 0}
+  - _DetailAlbedoMap: {instanceID: 0}
+  - _DetailNormalMap: {instanceID: 0}
+  - _RimTex: {instanceID: 0}
+  - _OutlineTex: {instanceID: 0}
+  - _ReflCube: {instanceID: 0}
+  - _ShadowRamp: {fileID: 2800000, guid: f276a76437cf84847a5986084b4d11f3, type: 3}
+  - _EmissMask: {instanceID: 0}
+  - _RimMask: {instanceID: 0}
+  - _ReflectionMask: {instanceID: 0}
+  - _SpecularMask: {instanceID: 0}
+  - _ShadowMask: {instanceID: 0}
+  - _DissolveMask: {instanceID: 0}
+  - _DissolveTex: {instanceID: 0}
+  - _DissolveRimTex: {instanceID: 0}
+  - _DissolveFlow: {instanceID: 0}
+  - _OutlineMask: {instanceID: 0}
+  - _FilterMask: {instanceID: 0}
+  - _ImposterTex: {instanceID: 0}
+  - _Matcap: {instanceID: 0}
+  - _DDMask: {instanceID: 0}
+  - _SmoothShadeMask: {instanceID: 0}
+  - _TeamColorMask: {instanceID: 0}
+  - _RimNormal: {instanceID: 0}
+  - _InterpMask: {instanceID: 0}
+  - _DistortUVMap: {instanceID: 0}
+  - _DistortUVMask: {instanceID: 0}
+  - _CubeBlendMask: {instanceID: 0}
+  - _PackedMask0: {instanceID: 0}
+  - _PackedMask1: {instanceID: 0}
+  - _PulseMask: {instanceID: 0}
+  - _SubsurfaceMask: {instanceID: 0}
+  - _TranslucencyMap: {instanceID: 0}
+  - _SubsurfaceTex: {instanceID: 0}
+  - _MatcapMask: {instanceID: 0}
+  - _Spritesheet: {instanceID: 0}
+  - _Spritesheet1: {instanceID: 0}
+  - _SpritesheetMask: {instanceID: 0}
+  - _AlphaMask: {instanceID: 0}
+  - _ReflTex: {instanceID: 0}
+  - _SpecTex: {instanceID: 0}
+  - _ERimTex: {instanceID: 0}
+  - _AOTintTex: {instanceID: 0}
+  - _SSRMask: {instanceID: 0}
+  - _NoiseTexSSR: {fileID: 2800000, guid: b7359cc7e3e84444b88656ff6c166220, type: 3}
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

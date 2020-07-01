@@ -24,8 +24,15 @@ public class PSEditor : ShaderGUI {
 
     static Dictionary<Material, Toggles> foldouts = new Dictionary<Material, Toggles>();
     Toggles toggles = new Toggles(
-		new bool[] {true, true, false, false, false, false, false}, 
-		new string[] {"RENDERING", "BASE", "FILTERING", "DISTORTION", "PULSE", "FALLOFF", "PRESETS"}
+		new string[] {
+			"RENDERING", 
+			"BASE", 
+			"FILTERING", 
+			"DISTORTION", 
+			"PULSE", 
+			"FALLOFF", 
+			"PRESETS"
+		}
 	);
     string header = "ParticleHeader_Pro";
 	string watermark = "Watermark_Pro";
@@ -61,7 +68,7 @@ public class PSEditor : ShaderGUI {
     MaterialProperty _AutoShiftSpeed = null;
     MaterialProperty _Hue = null;
     MaterialProperty _Saturation = null;
-    MaterialProperty _Luminance = null;
+    MaterialProperty _Value = null;
     MaterialProperty _Contrast = null;
     MaterialProperty _HDR = null;
 
@@ -70,9 +77,9 @@ public class PSEditor : ShaderGUI {
     MaterialProperty _NormalMap = null;
     MaterialProperty _DistortionStr = null;
     MaterialProperty _DistortionBlend = null;
-    MaterialProperty _DistortionSpeedX = null;
-    MaterialProperty _DistortionSpeedY = null;
+    MaterialProperty _DistortionSpeed = null;
 	MaterialProperty _DistortMainTex = null;
+	MaterialProperty _NormalMapScale = null;
 
 	// Pulse
 	MaterialProperty _Pulse = null;
@@ -134,6 +141,7 @@ public class PSEditor : ShaderGUI {
 			}
 		}
 		else {
+			header = "ParticleHeader_Pro";
 			if (!EditorGUIUtility.isProSkin){
 				header = "ParticleHeader";
 				watermark = "Watermark";
@@ -148,7 +156,7 @@ public class PSEditor : ShaderGUI {
         EditorGUI.BeginChangeCheck(); {
             if (!foldouts.ContainsKey(mat))
                 foldouts.Add(mat, toggles);
-            bool canDistort = _BlendMode.floatValue < 4;
+            bool canDistort = true;
 
             // -----------------
             // Render Settings
@@ -257,7 +265,7 @@ public class PSEditor : ShaderGUI {
 					else
 						me.ShaderProperty(_Hue, "Hue");
 					me.ShaderProperty(_Saturation, "Saturation");
-					me.ShaderProperty(_Luminance, "Luminance");
+					me.ShaderProperty(_Value, "Value");
 					me.ShaderProperty(_HDR, "HDR");
 					me.ShaderProperty(_Contrast, "Contrast");
 					MGUI.ToggleGroupEnd();
@@ -277,10 +285,10 @@ public class PSEditor : ShaderGUI {
 						MGUI.ToggleGroup(_Distortion.floatValue == 0);
 						me.TexturePropertySingleLine(normalLabel, _NormalMap, _DistortMainTex);
 						MGUI.TexPropLabel("Distort Main Tex", 155);
+						MGUI.Vector2Field("Scale", _NormalMapScale);
+						MGUI.Vector2Field("Scrolling", _DistortionSpeed);
 						me.ShaderProperty(_DistortionStr, "Strength");
 						me.ShaderProperty(_DistortionBlend, "Blend");
-						me.ShaderProperty(_DistortionSpeedX, "Speed X");
-						me.ShaderProperty(_DistortionSpeedY, "Speed Y");
 						MGUI.ToggleGroupEnd();
 						MGUI.Space8();
 					}
@@ -328,6 +336,7 @@ public class PSEditor : ShaderGUI {
 				MGUI.ToggleGroupEnd();
 				MGUI.Space8();
 			}
+
 			// -----------------
 			// Presets
 			// -----------------
@@ -449,7 +458,6 @@ public class PSEditor : ShaderGUI {
 	}
 
 	void ResetBase(){
-		_MainTex.textureValue = null;
 		_Color.colorValue = Color.white;
 		_Layering.floatValue = 0f;
 		_TexBlendMode.floatValue = 0f;
@@ -468,18 +476,16 @@ public class PSEditor : ShaderGUI {
 		_AutoShiftSpeed.floatValue = 0.25f;
 		_Hue.floatValue = 0f;
 		_Saturation.floatValue = 1f;
-		_Luminance.floatValue = 0f;
+		_Value.floatValue = 0f;
 		_HDR.floatValue = 0f;
 		_Contrast.floatValue = 0f;
 	}
 
 	void ResetDistortion(){
-		_NormalMap.textureValue = null;
 		_DistortMainTex.floatValue = 0f;
 		_DistortionStr.floatValue = 0f;
-		_DistortionBlend.floatValue = 1f;
-		_DistortionSpeedX.floatValue = 0f;
-		_DistortionSpeedY.floatValue = 0f;
+		_DistortionBlend.floatValue = 0.5f;
+		_DistortionSpeed.vectorValue = new Vector4(0,0,0,0);
 	}
 
 	void ResetPulse(){

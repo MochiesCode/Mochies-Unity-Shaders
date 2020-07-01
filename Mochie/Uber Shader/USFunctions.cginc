@@ -2,15 +2,14 @@
 // Color Filtering
 //----------------------------
 
-float3 ApplyGeneralFilters(float3 albedo){
+void ApplyGeneralFilters(inout float3 albedo){
     albedo = GetSaturation(albedo, _Saturation);
     albedo = lerp(albedo, GetHDR(albedo), _HDR);
     albedo = GetContrast(albedo, _Contrast);
     albedo += albedo*_Brightness;
-	return albedo;
 }
 
-float3 ApplyTeamColors(masks m, float3 albedo, float2 uv0){
+void ApplyTeamColors(masks m, inout float3 albedo, float2 uv0){
 	float3 baseCol = albedo;
 	float4 teamMask = UNITY_SAMPLE_TEX2D_SAMPLER(_TeamColorMask, _MainTex, uv0);
 
@@ -24,58 +23,72 @@ float3 ApplyTeamColors(masks m, float3 albedo, float2 uv0){
 					+ saturate(1.0h - weight).rrr;
 	albedo *= teamColor;
 
-	albedo.rgb = ApplyGeneralFilters(albedo);
+	ApplyGeneralFilters(albedo);
 	albedo = lerp(baseCol, albedo, m.filterMask*2);
-	return albedo;
 }
 
-float3 GetHSLFilter(masks m, float3 albedo){
+void ApplyHSLFilter(masks m, inout float3 albedo){
     float3 baseCol = albedo;
-    UNITY_BRANCH
     if (_AutoShift == 1)
         _Hue += frac(_Time.y*_AutoShiftSpeed);
     float3 shift = float3(_Hue, 0, _Luminance);
     float3 hsl = RGBtoHSL(albedo);
     float hslRange = step(_HSLMin, hsl) * step(hsl, _HSLMax);
     albedo = HSLtoRGB(hsl + shift * hslRange);
-	albedo = ApplyGeneralFilters(albedo);
+	ApplyGeneralFilters(albedo);
 	albedo = lerp(baseCol, albedo, m.filterMask);
-    return albedo;
 }
 
-float3 GetHSVFilter(masks m, float3 albedo){
+void ApplyHSVFilter(masks m, inout float3 albedo){
     float3 baseCol = albedo;
-    UNITY_BRANCH
     if (_AutoShift == 1)
         _Hue += frac(_Time.y*_AutoShiftSpeed);
     float3 shift = float3(_Hue, 0, _Value);
     float3 hsv = RGBtoHSV(albedo);
     float hsvRange = step(_HSLMin, hsv) * step(hsv, _HSLMax);
     albedo = HSVtoRGB(hsv + shift * hsvRange);
-	albedo = ApplyGeneralFilters(albedo);
+	ApplyGeneralFilters(albedo);
 	albedo = lerp(baseCol, albedo, m.filterMask);
-    return albedo;
 }
 
-float3 GetRGBFilter(masks m, float3 albedo){
+void ApplyRGBFilter(masks m, inout float3 albedo){
     float3 baseCol = albedo;
     albedo.r *= _RAmt;
     albedo.g *= _GAmt;
     albedo.b *= _BAmt;
-	albedo.rgb = ApplyGeneralFilters(albedo);
+	ApplyGeneralFilters(albedo);
 	albedo = lerp(baseCol, albedo, m.filterMask);
-    return albedo;
 }
 
 //------------------------------------
 // Albedo/Diffuse/Emission/Rim/GIF
 //------------------------------------
 
-void ApplyCutout(float alpha){
+float Dither8x8Bayer(int x, int y){
+    const float dither[ 64 ] = {
+		1, 49, 13, 61,  4, 52, 16, 64,
+		33, 17, 45, 29, 36, 20, 48, 32,
+		9, 57,  5, 53, 12, 60,  8, 56,
+		41, 25, 37, 21, 44, 28, 40, 24,
+		3, 51, 15, 63,  2, 50, 14, 62,
+		35, 19, 47, 31, 34, 18, 46, 30,
+		11, 59,  7, 55, 10, 58,  6, 54,
+		43, 27, 39, 23, 42, 26, 38, 22
+	};
+    return dither[y * 8 + x] / 64;
+}
+
+float Dither(float2 pos, float alpha) {
+	pos *= _ScreenParams.xy;
+	return alpha - Dither8x8Bayer(fmod(pos.x, 8), fmod(pos.y, 8));
+}
+
+void ApplyCutout(float2 screenUV, float alpha){
 	#if defined(_ALPHATEST_ON)
-        UNITY_BRANCH
-        if (_ATM != 1)
+        if (_BlendMode == 1)
             clip(alpha - _Cutoff);
+		else if (_BlendMode == 2)
+			clip(Dither(screenUV, alpha));
     #endif
 }
 
@@ -98,7 +111,6 @@ float2 GetSpritesheetUV(float2 uv, float2 rowsColumns, float scrubPos, float fps
 	uint totalFrames = rowsColumns.x * rowsColumns.y;
 	uint index = 0;
 
-	UNITY_BRANCH
 	if (manualScrub == 1)
 		index = scrubPos;
 	else
@@ -119,7 +131,6 @@ float4 GetSpritesheetCol(g2f i,
 		float rot, float scrubPos, float fps, int manualScrub
 	) {
 	float4 gifCol = 0;
-	UNITY_BRANCH
 	if (_EnableSpritesheet == 1){
 		float2 scaledUV = ScaleUV(i.uv.xy, pos, scale, rot);
 		float2 uv = GetSpritesheetUV(scaledUV, rowsColumns, scrubPos, fps, manualScrub);
@@ -130,8 +141,7 @@ float4 GetSpritesheetCol(g2f i,
 
 float4 ApplySpritesheet(g2f i, masks m, float4 col, float4 gifCol, int blendMode){
 	
-	float interpolator = gifCol.a * m.filterMask;
-	UNITY_BRANCH
+	float interpolator = gifCol.a * m.spriteMask;
 	if (blendMode == 0){
 		#if defined(_ALPHABLEND_ON) || defined(_ALPHATEST_ON) || defined(_ALPHAPREMULTIPLY_ON)
 			gifCol.a = AverageRGB(gifCol.rgb) > 0.01;
@@ -149,7 +159,7 @@ float4 ApplySpritesheet(g2f i, masks m, float4 col, float4 gifCol, int blendMode
 	return col;
 }
 
-float4 ApplyUnlitSpritesheet(g2f i, masks m, float4 diffuse){
+void ApplyUnlitSpritesheet(g2f i, masks m, inout float4 diffuse, float2 screenUVs){
 	UNITY_BRANCH
 	if (_EnableSpritesheet == 1 && _UnlitSpritesheet == 1){
 		float4 spriteCol = GetSpritesheetCol(i, 
@@ -165,7 +175,6 @@ float4 ApplyUnlitSpritesheet(g2f i, masks m, float4 diffuse){
 			_ManualScrub
 		);
 		diffuse = ApplySpritesheet(i, m, diffuse, spriteCol, _SpritesheetBlending);
-		UNITY_BRANCH
 		if (_EnableSpritesheet1 == 1){
 			spriteCol = GetSpritesheetCol(i, 
 				_Spritesheet1,
@@ -181,15 +190,14 @@ float4 ApplyUnlitSpritesheet(g2f i, masks m, float4 diffuse){
 			);
 			diffuse = ApplySpritesheet(i, m, diffuse, spriteCol, _SpritesheetBlending1);
 		}
-		ApplyCutout(diffuse.a);
+		ApplyCutout(screenUVs, diffuse.a);
 	}
 	else if (_EnableSpritesheet == 0 && _UnlitSpritesheet == 1){
-		ApplyCutout(diffuse.a);
+		ApplyCutout(screenUVs, diffuse.a);
 	}
-	return diffuse;
 }
 
-float4 ApplyLitSpritesheet(g2f i, masks m, float4 albedo){
+void ApplyLitSpritesheet(g2f i, masks m, inout float4 albedo){
 	UNITY_BRANCH
 	if (_EnableSpritesheet == 1 && _UnlitSpritesheet == 0){
 		float4 spriteCol = GetSpritesheetCol(i, 
@@ -205,7 +213,6 @@ float4 ApplyLitSpritesheet(g2f i, masks m, float4 albedo){
 			_ManualScrub
 		);
 		albedo = ApplySpritesheet(i, m, albedo, spriteCol, _SpritesheetBlending);
-		UNITY_BRANCH
 		if (_EnableSpritesheet1 == 1){
 			spriteCol = GetSpritesheetCol(i, 
 				_Spritesheet1,
@@ -222,7 +229,6 @@ float4 ApplyLitSpritesheet(g2f i, masks m, float4 albedo){
 			albedo = ApplySpritesheet(i, m, albedo, spriteCol, _SpritesheetBlending1);
 		}
 	}
-	return albedo;
 }
 
 float3 GetDetailAlbedo(g2f i, lighting l, masks m, float3 col){
@@ -232,27 +238,35 @@ float3 GetDetailAlbedo(g2f i, lighting l, masks m, float3 col){
 }
 
 float4 GetAlbedo(g2f i, lighting l, masks m){
+	float4 mainTex =  UNITY_SAMPLE_TEX2D(_MainTex, i.uv.xy);
 	float4 albedo = 1;
 	cubeMask = 1;
 
 	UNITY_BRANCH
 	if (_CubeMode == 0){
-		albedo = UNITY_SAMPLE_TEX2D(_MainTex, i.uv.xy);
+		albedo = mainTex;
+		#if !defined(UBERX)
+			UNITY_BRANCH
+			if (i.isReflection && _MirrorBehavior == 2)
+				albedo = UNITY_SAMPLE_TEX2D_SAMPLER(_MirrorTex, _MainTex, i.uv.xy);
+		#else
+			UNITY_BRANCH
+			if (i.isReflection && _UseMirrorAlbedo == 1)
+				albedo = UNITY_SAMPLE_TEX2D_SAMPLER(_MirrorTex, _MainTex, i.uv.xy);
+		#endif
 		albedo.rgb *= _Color.rgb;
 	}
 	else if (_CubeMode == 1){ 
-		UNITY_BRANCH
 		if (_AutoRotate0)
 			_CubeRotate0 = _Time.y * _CubeRotate0;
-		float3 vDir = Rotate(GetViewDir(i.worldPos), _CubeRotate0);
+		float3 vDir = Rotate(l.viewDir, _CubeRotate0);
 		albedo = texCUBE(_MainTexCube0, vDir);
 		albedo.rgb *= _CubeColor0.rgb;
 	}
 	else if (_CubeMode == 2){
-		UNITY_BRANCH
 		if (_AutoRotate0)
 			_CubeRotate0 = _Time.y * _CubeRotate0;
-		float3 vDir = Rotate(GetViewDir(i.worldPos), _CubeRotate0);
+		float3 vDir = Rotate(l.viewDir, _CubeRotate0);
 		float4 albedo0 = UNITY_SAMPLE_TEX2D(_MainTex, i.uv.xy); 
 		float4 albedo1 = texCUBE(_MainTexCube0, vDir);
 		albedo0.rgb *= _Color.rgb;
@@ -264,25 +278,22 @@ float4 GetAlbedo(g2f i, lighting l, masks m){
     albedo.rgb = GetDetailAlbedo(i, l, m, albedo);
 
 	#if defined(_ALPHABLEND_ON) || defined(_ALPHATEST_ON) || defined(_ALPHAPREMULTIPLY_ON)
-		UNITY_BRANCH
 		if (_UseAlphaMask == 1)
 			albedo.a = SampleMask(_AlphaMask, i.uv.xy, _AlphaMaskChannel, true);
 	#endif
 
-	albedo = ApplyLitSpritesheet(i, m, albedo);
+	ApplyLitSpritesheet(i, m, albedo);
 
-	UNITY_BRANCH
 	if (_PostFiltering == 0 && _FilterModel > 0){
 		UNITY_BRANCH
-		if 		(_FilterModel == 1) albedo.rgb = GetRGBFilter(m, albedo.rgb);
-		else if (_FilterModel == 2) albedo.rgb = GetHSLFilter(m, albedo.rgb);
-		else if (_FilterModel == 3) albedo.rgb = GetHSVFilter(m, albedo.rgb);
-		else if (_FilterModel == 4) albedo.rgb = ApplyTeamColors(m, albedo.rgb, i.uv.xy);
+		if 		(_FilterModel == 1) ApplyRGBFilter(m, albedo.rgb);
+		else if (_FilterModel == 2) ApplyHSLFilter(m, albedo.rgb);
+		else if (_FilterModel == 3) ApplyHSVFilter(m, albedo.rgb);
+		else if (_FilterModel == 4) ApplyTeamColors(m, albedo.rgb, i.uv.xy);
 	}
 
-	UNITY_BRANCH
-	if 		(_BlendMode == 2) albedo.a *= _Color.a;
-	else if (_BlendMode == 3) albedo.a = _Color.a;
+	if 		(_BlendMode == 4) albedo.a *= _Color.a;
+	else if (_BlendMode == 5) albedo.a = _Color.a;
 
     return albedo;
 }
@@ -299,7 +310,6 @@ float4 GetDiffuse(lighting l, float4 albedo, float atten){
 
 float GetPulse(g2f i){
 	float pulse = 1;
-	UNITY_BRANCH
 	if (_PulseToggle == 1){
 		UNITY_BRANCH
 		switch (_PulseWaveform){
@@ -319,16 +329,8 @@ float GetPulse(g2f i){
 float3 GetEmission(g2f i){
 	float3 emiss = 0;
 	#if defined(UNITY_PASS_FORWARDBASE)
-		UNITY_BRANCH
 		if (_EmissionToggle == 1){
 			emiss = UNITY_SAMPLE_TEX2D(_EmissionMap, i.uv.zw).rgb * _EmissionColor.rgb;
-			emiss *= SampleMask(_EmissMask, i.uv.xy, _EmissMaskChannel, true);
-			emiss *= GetPulse(i);
-		}
-		else if (_EmissionToggle == 2){
-			emiss = UNITY_SAMPLE_TEX2D(_MainTex, i.uv.zw).a;
-			emiss = pow(emiss, 1.0/0.5833333);
-			emiss *= _EmissionColor.rgb;
 			emiss *= SampleMask(_EmissMask, i.uv.xy, _EmissMaskChannel, true);
 			emiss *= GetPulse(i);
 		}
@@ -336,18 +338,17 @@ float3 GetEmission(g2f i){
 	return emiss;
 }
 
-float3 ApplyRimLighting(g2f i, lighting l, masks m, float3 diffuse){
+void ApplyRimLighting(g2f i, lighting l, masks m, inout float3 diffuse){
 	#if defined(UNITY_PASS_FORWARDBASE)
-    UNITY_BRANCH
     if (_RenderMode == 1 && _RimLighting == 1){
         float VdotL = abs(dot(l.viewDir, l.normal));
         float rim = pow((1-VdotL), (1-_RimWidth) * 10);
         rim = smoothstep(_RimEdge, (1-_RimEdge), rim);
         rim *= m.rimMask;
         float3 rimCol = UNITY_SAMPLE_TEX2D_SAMPLER(_RimTex, _MainTex, i.uv2.zw).rgb * _RimCol.rgb;
-        float interpolator = rim*_RimStr;
+        float interpolator = rim*_RimStr*lerp(l.worldBrightness, 1, _UnlitRim);
 
-		[forcecase]
+		[flatten]
 		switch (_RimBlending){
 			case 0: diffuse = lerp(diffuse, rimCol, interpolator); break;
 			case 1: diffuse += rimCol*interpolator; break;
@@ -356,12 +357,10 @@ float3 ApplyRimLighting(g2f i, lighting l, masks m, float3 diffuse){
 		}
     }
 	#endif
-    return diffuse;
 }
 
-float3 ApplyERimLighting(g2f i, lighting l, masks m, float3 diffuse, float roughness){
+void ApplyERimLighting(g2f i, lighting l, masks m, inout float3 diffuse, float roughness){
 	#if defined(UNITY_PASS_FORWARDBASE)
-    UNITY_BRANCH
     if (_RenderMode == 1 && _EnvironmentRim == 1){
 		float3 reflCol = GetERimReflections(i, l, roughness);
         float VdotL = abs(dot(l.viewDir, l.normal));
@@ -371,7 +370,7 @@ float3 ApplyERimLighting(g2f i, lighting l, masks m, float3 diffuse, float rough
         float3 rimCol = reflCol * _ERimTint.rgb;
         float interpolator = rim*_ERimStr;
 
-		[forcecase]
+		[flatten]
 		switch (_ERimBlending){
 			case 0: diffuse = lerp(diffuse, rimCol, interpolator); break;
 			case 1: diffuse += rimCol*interpolator; break;
@@ -380,7 +379,6 @@ float3 ApplyERimLighting(g2f i, lighting l, masks m, float3 diffuse, float rough
 		}
     }
 	#endif
-    return diffuse;
 }
 
 //----------------------------
@@ -395,7 +393,6 @@ float3 GetMetallicWorkflow(g2f i, lighting l, masks m, float3 albedo){
 	UNITY_BRANCH
 	if (_UseSpecMap == 1)
 		roughness = UNITY_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, _MainTex, i.uv.xy);
-	UNITY_BRANCH
 	if (_RoughnessFiltering == 1){
 		roughness = saturate(lerp(0.5, roughness, _RoughContrast));
 		roughness += saturate(roughness * _RoughIntensity);
@@ -413,12 +410,10 @@ float3 GetSpecWorkflow(g2f i, lighting l, masks m, float3 albedo){
 	if (_UseSpecMap == 1){
 		float4 specMap = UNITY_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, _MainTex, i.uv.xy);
 		specularTint = specMap.rgb;
-		UNITY_BRANCH
 		if (_PBRWorkflow == 1){
 			UNITY_BRANCH
 			if (_UseSmoothMap == 1){
 				smoothness = UNITY_SAMPLE_TEX2D_SAMPLER(_SmoothnessMap, _MainTex, i.uv.xy).r * _GlossMapScale;
-				UNITY_BRANCH
 				if (_SmoothnessFiltering == 1){
 					smoothness = lerp(smoothness, pow(smoothness, 0.454545), _LinearSmooth);
 					smoothness = saturate(lerp(0.5, smoothness, _SmoothContrast));
@@ -430,7 +425,6 @@ float3 GetSpecWorkflow(g2f i, lighting l, masks m, float3 albedo){
 		}
 		else {
 			smoothness = specMap.a * _GlossMapScale;
-			UNITY_BRANCH
 			if (_SmoothnessFiltering == 1){
 				smoothness = saturate(lerp(0.5, smoothness, _SmoothContrast));
 				smoothness += saturate(smoothness * _SmoothIntensity);
@@ -452,7 +446,6 @@ float3 GetPackedWorkflow(g2f i, lighting l, masks m, float3 albedo){
 	float4 packedTex = tex2D(_PackedMap, i.uv.xy);
 	metallic = ChannelCheck(packedTex, _MetallicChannel);
 	roughness = ChannelCheck(packedTex, _RoughnessChannel);
-	UNITY_BRANCH
 	if (_RoughnessFiltering == 1){
 		roughness = lerp(roughness, pow(roughness, 0.454545), _LinearSmooth);
 		roughness = saturate(lerp(0.5, roughness, _RoughContrast));
@@ -481,10 +474,9 @@ float3 GetWorkflow(g2f i, lighting l, masks m, float3 albedo){
 }
 
 // PBR filtering previews
-float3 ApplyRoughPreview(g2f i, float3 diffuse){
+void ApplyRoughPreview(g2f i, inout float3 diffuse){
 	UNITY_BRANCH
 	if (_UseSpecMap == 1 && _PBRWorkflow != 3){
-		UNITY_BRANCH
 		if (_RoughnessFiltering == 1 && _PreviewRough == 1){
 			if (_PBRWorkflow != 3)
 				diffuse = UNITY_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, _MainTex, i.uv.xy);
@@ -498,7 +490,6 @@ float3 ApplyRoughPreview(g2f i, float3 diffuse){
 		}
 	}
 	else {
-		UNITY_BRANCH
 		if (_PackedRoughPreview == 1){
 			float3 packedTex = tex2D(_PackedMap, i.uv.xy);
 			diffuse = ChannelCheck(packedTex, _RoughnessChannel);
@@ -508,46 +499,33 @@ float3 ApplyRoughPreview(g2f i, float3 diffuse){
 			diffuse = saturate(diffuse + _RoughLightness);
 		}
 	}
-	return diffuse;
 }
 
-float3 ApplySmoothPreview(float3 diffuse){
-	UNITY_BRANCH
+void ApplySmoothPreview(inout float3 diffuse){
 	if (_SmoothnessFiltering == 1 && _PreviewSmooth == 1)
 		diffuse = smoothness;
-	return diffuse;
 }
 
-float3 ApplyAOPreview(lighting l, float3 diffuse){
-	UNITY_BRANCH
+void ApplyAOPreview(lighting l, inout float3 diffuse){
 	if (_AOFiltering == 1 && _PreviewAO == 1)
 		diffuse = l.ao;
-	return diffuse;
 }
 
-float3 ApplyHeightPreview(g2f i, float3 diffuse){
-	UNITY_BRANCH
+void ApplyHeightPreview(g2f i, inout float3 diffuse){
 	if (_HeightFiltering == 1 && _PreviewHeight == 1){
 		diffuse = UNITY_SAMPLE_TEX2D_SAMPLER(_ParallaxMap, _MainTex, i.uv.xy);
 		diffuse = saturate(lerp(0.5, diffuse, _HeightContrast));
 		diffuse += saturate(diffuse * _HeightIntensity);
 		diffuse = saturate(diffuse + _HeightLightness);
 	}
-	return diffuse;
 }
 
 //----------------------------
 // UV Distortion
 //----------------------------
-// float2 GetCurlOffset(g2f i){
-// 	float xOfs = GetCurl3D(i.uv.xy, _NoiseMinMax, _NoiseScale, _Time.y*_NoiseSpeed) * _DistortUVStr;
-// 	float yOfs = GetCurl3D(i.uv.xy, _NoiseMinMax, _NoiseScale, (_Time.y+43.423984)*_NoiseSpeed) * _DistortUVStr;
-// 	return float2(xOfs, yOfs);
-// }
-
 float2 GetSimplexOffset(g2f i){
-	float xOfs = GetSimplex3D(i.uv.xy, _NoiseMinMax, _NoiseScale, _Time.y*_NoiseSpeed, _NoiseOctaves) * _DistortUVStr;
-	float yOfs = GetSimplex3D(i.uv.xy, _NoiseMinMax, _NoiseScale, (_Time.y+43.423984)*_NoiseSpeed, _NoiseOctaves) * _DistortUVStr;
+	float xOfs = GetSimplex3D(i.uv.xy, _NoiseScale, _Time.y*_NoiseSpeed, _NoiseOctaves) * _DistortUVStr;
+	float yOfs = GetSimplex3D(i.uv.xy, _NoiseScale, (_Time.y+43.423984)*_NoiseSpeed, _NoiseOctaves) * _DistortUVStr;
 	return float2(xOfs, yOfs);
 }
 
@@ -555,17 +533,9 @@ float3 GetUVOffset(g2f i){
 	_DistortUVStr *= SampleMask(_DistortUVMask, i.uv.xy, _DistortUVMaskChannel, _DistortUVStr > 0);
 	float3 ofs = 0;
 
-	// UNITY_BRANCH
-	// switch(_DistortionStyle){
-	// 	case 0: ofs = UnpackScaleNormal(UNITY_SAMPLE_TEX2D_SAMPLER(_DistortUVMap, _MainTex, i.uv4.zw), _DistortUVStr); break;
-	// 	case 1: ofs.xy = GetSimplexOffset(i); break;
-	// 	case 2: ofs.xy = GetCurlOffset(i); break;
-	// 	default: break;
-	// }
-
 	UNITY_BRANCH
 	if (_DistortionStyle == 0)
-		ofs = UnpackScaleNormal(UNITY_SAMPLE_TEX2D_SAMPLER(_DistortUVMap, _MainTex, i.uv4.zw), _DistortUVStr);
+		ofs = UnpackScaleNormal(UNITY_SAMPLE_TEX2D_SAMPLER(_DistortUVMap, _MainTex, i.uv4.xy), _DistortUVStr);
 	else 
 		ofs.xy = GetSimplexOffset(i);
 
@@ -583,15 +553,13 @@ void ApplyUVDistortion(inout g2f i, inout float3 uvOffset){
 	}
 }
 
-float3 ApplyNoisePreview(g2f i, float3 diffuse){
-	UNITY_BRANCH
+void ApplyNoisePreview(g2f i, inout float3 diffuse){
 	if (_DistortUVs == 1 && _PreviewNoise == 1){
 		float red = saturate(uvOffset.x - uvOffset.y);
 		float green = saturate(uvOffset.y - uvOffset.x);
 		float blue = (red + green);
 		diffuse = float3(red, green, blue)*5;
 	}
-	return diffuse;
 }
 
 //----------------------------
@@ -615,7 +583,6 @@ float2 GetParallaxOffset(g2f i){
 		uvOffset -= uvDelta;
 		stepHeight -= stepSize;
 		surfaceHeight = UNITY_SAMPLE_TEX2D_SAMPLER(_ParallaxMap, _MainTex, i.uv.xy+uvOffset);
-		UNITY_BRANCH
 		if (_HeightFiltering == 1){
 			surfaceHeight = saturate(lerp(0.5, surfaceHeight, _HeightContrast));
 			surfaceHeight += saturate(surfaceHeight * _HeightIntensity);
@@ -646,6 +613,10 @@ void ApplyParallax(inout g2f i){
 		i.uv1.xy += parallaxOffset;
 		i.uv1.zw += parallaxOffset;
 		i.uv2.xy += parallaxOffset;
+		i.uv3.xy += parallaxOffset;
+		i.uv3.zw += parallaxOffset;
+		i.uv4.xy += parallaxOffset;
+		i.uv4.zw += parallaxOffset;
 		i.normal.xy += parallaxOffset;
     }
 }
@@ -659,11 +630,13 @@ masks GetMasks(g2f i){
 	m.detailMask = SampleMask(_DetailMask, i.uv.xy, _DetailMaskChannel, true);
 	m.spriteMask = SampleMask(_SpritesheetMask, i.uv.xy, _SpritesheetMaskChannel, _EnableSpritesheet);
 	m.filterMask = SampleMask(_FilterMask, i.uv.xy, _FilterMaskChannel, _FilterModel);
+	m.anisoMask = 1-SampleMask(_InterpMask, i.uv.xy, _InterpMaskChannel, _SpecularStyle == 2);
 
 	UNITY_BRANCH
 	if (_MaskingMode != 0){
 
 		// Separate
+		UNITY_BRANCH
 		if (_MaskingMode == 1){
 			#if !defined(OUTLINE)
 				m.reflectionMask = SampleMask(_ReflectionMask, i.uv.xy, _ReflectionMaskChannel, _Reflections);
@@ -673,7 +646,6 @@ masks GetMasks(g2f i){
 			m.rimMask = SampleMask(_RimMask, i.uv.xy, _RimMaskChannel, _RimLighting);
 			m.eRimMask = SampleMask(_ERimMask, i.uv.xy, _ERimMaskChannel, _EnvironmentRim);
 			m.ddMask = SampleMask(_DDMask, i.uv.xy, _DDMaskChannel, _DisneyDiffuse > 0);
-			m.anisoMask = 1-SampleMask(_InterpMask, i.uv.xy, _InterpMaskChannel, _SpecularStyle == 2);
 			m.smoothMask = SampleMask(_SmoothShadeMask, i.uv.xy, _SmoothShadeMaskChannel, _SHStr > 0);
 			m.matcapMask = SampleMask(_MatcapMask, i.uv.xy, _MatcapMaskChannel, _MatcapToggle);
 		}
@@ -711,4 +683,28 @@ masks GetMasks(g2f i){
 		}
 	}
 	return m;
+}
+
+float4 PremultiplyAlpha(float4 diffuse, float omr){
+	#if defined(_ALPHAPREMULTIPLY_ON)
+		float3 diff = diffuse.rgb * diffuse.a;
+		float alpha = 1-omr + diffuse.a*omr;
+		return float4(diff, alpha);
+	#else
+		return diffuse;
+	#endif
+}
+
+float ShadowPremultiplyAlpha(g2f i, float alpha){
+	#if defined(_ALPHAPREMULTIPLY_ON)
+		lighting l = (lighting)0;
+		masks m = (masks)0;
+		if (_MaskingMode == 1)
+			m.reflectionMask = SampleMask(_ReflectionMask, i.uv.xy, _ReflectionMaskChannel, _Reflections); 
+		else if (_MaskingMode > 1)
+			m.reflectionMask = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMask0, _MainTex, i.uv.xy).r;
+		float3 diff = GetWorkflow(i, l, m, 0);
+		alpha = 1-omr + alpha*omr;
+	#endif
+	return alpha;
 }
