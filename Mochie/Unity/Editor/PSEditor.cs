@@ -161,7 +161,7 @@ public class PSEditor : ShaderGUI {
             // -----------------
             // Render Settings
             // -----------------
-			bool renderingTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "RENDERING");
+			bool renderingTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "RENDERING");
 			if (MGUI.TabButton(resetIconTex, 26f))
 				ResetRendering();
 			MGUI.Space8();
@@ -222,7 +222,7 @@ public class PSEditor : ShaderGUI {
             // -----------------
             // Base Settings
             // -----------------
-			bool baseTab = Foldouts.DoFoldout(foldouts, mat, me, -21f, "BASE");
+			bool baseTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "BASE");
 			if (MGUI.TabButton(resetIconTex, 26f))
 				ResetBase();
 			MGUI.Space8();
@@ -250,7 +250,7 @@ public class PSEditor : ShaderGUI {
 			if (isParticleX){
 				
 				// Filtering
-				bool filteringTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "FILTERING");
+				bool filteringTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "FILTERING");
 				if (MGUI.TabButton(resetIconTex, 26f))
 					ResetFiltering();
 				MGUI.Space8();
@@ -274,7 +274,7 @@ public class PSEditor : ShaderGUI {
 
 				// Distortion
 				if (canDistort){
-					bool distortionTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "DISTORTION");
+					bool distortionTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "DISTORTION");
 					if (MGUI.TabButton(resetIconTex, 26f))
 						ResetDistortion();
 					MGUI.Space8();
@@ -285,8 +285,8 @@ public class PSEditor : ShaderGUI {
 						MGUI.ToggleGroup(_Distortion.floatValue == 0);
 						me.TexturePropertySingleLine(normalLabel, _NormalMap, _DistortMainTex);
 						MGUI.TexPropLabel("Distort Main Tex", 155);
-						MGUI.Vector2Field("Scale", _NormalMapScale);
-						MGUI.Vector2Field("Scrolling", _DistortionSpeed);
+						MGUI.Vector2Field(_NormalMapScale, "Scale");
+						MGUI.Vector2Field(_DistortionSpeed, "Scrolling");
 						me.ShaderProperty(_DistortionStr, "Strength");
 						me.ShaderProperty(_DistortionBlend, "Blend");
 						MGUI.ToggleGroupEnd();
@@ -302,7 +302,7 @@ public class PSEditor : ShaderGUI {
 			else mat.DisableKeyword("EFFECT_BUMP");
 
 			// Pulse
-			bool pulseTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "PULSE");
+			bool pulseTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "PULSE");
 			if (MGUI.TabButton(resetIconTex, 26f))
 				ResetPulse();
 			MGUI.Space8();
@@ -319,7 +319,7 @@ public class PSEditor : ShaderGUI {
 			}
 
 			// Falloff
-			bool falloffTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "FALLOFF");
+			bool falloffTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "FALLOFF");
 			if (MGUI.TabButton(resetIconTex, 26f))
 				ResetFalloff();
 			MGUI.Space8();
@@ -340,7 +340,7 @@ public class PSEditor : ShaderGUI {
 			// -----------------
 			// Presets
 			// -----------------
-			if (Foldouts.DoFoldout(foldouts, mat, me, 8f, "PRESETS")){
+			if (Foldouts.DoFoldout(foldouts, mat, me, 0, "PRESETS")){
 				MGUI.Space4();
 				float buttonWidth = EditorGUIUtility.labelWidth-5.0f;
 				if (MGUI.SimpleButton("Save", buttonWidth, 0)){

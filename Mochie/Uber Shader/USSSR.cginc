@@ -5,6 +5,8 @@
 // Edits by Mochie
 //-----------------------------------------------------------------------------------
 
+#if REFLECTIONS_ENABLED && SSR_ENABLED
+
 float3 GetBlurredGP(const sampler2D ssrg, const float2 texelSize, const float2 uvs, const float dim){
 	float2 pixSize = 2/texelSize;
 	float center = floor(dim*0.5);
@@ -20,39 +22,6 @@ float3 GetBlurredGP(const sampler2D ssrg, const float2 texelSize, const float2 u
 	return refTotal/(floor(dim)*floor(dim));
 }
 
-/** @brief March a ray from a given position in a given direction
-*         until it intersects the depth buffer.
-*
-*  Given a starting location and direction march a ray in fixed steps. Each
-*  step convert the ray's position to screenspace coordinates and depth, and
-*  compare to the the depth texture's value at that locaion. If the ray is
-*  within _LRad of the depth buffer, reduce the fixed step size to 1/10
-*  of the original value. If the depth in the depth texture is also smaller
-*  than the rays current depth, reverse the direction. Repeat until the ray
-*  is within _SRad of the depth texture or the maximum number of
-*  iterations is exceeded. Additionally, the loop will be cut short if the
-*  ray passes out of the camera's view.
-*  
-*  @param reflectedRay Starting position of the ray, in world space
-*  @param rayDir Direction the ray is going, in world space
-*  @param _LRad Distance above/below the depth texture the ray must be
-*         within before it will slow down and possibly reverse direction.
-*         Expressed in world-space units
-*  @param _SRad Distance above/below the depth texture the ray must be
-*         before it can be considered to have successfully intersected the
-*         depth texture. World-space units.
-*  @param _Step Initial (large) size of the steps the ray moves each
-*         iteration before it gets within _LRad of the depth texture.
-*         In world space coordinates/scale
-*  @param noise Random noise added to offset the ray's starting position.
-*         This dramatically helps to hide repeating artifacts from the ray-
-*         marching process.
-*  @param maxIterations The maximum number of times we can step the ray
-*         before we give up.
-*  @return The final xyz position of the ray, with the number of iterations
-*          it took stored in the w component. If the function ran out of
-*          iterations or the ray went off screen, the xyz will be (0,0,0).
-*/
 float4 ReflectRay(float3 reflectedRay, float3 rayDir, float _LRad, float _SRad, float _Step, float noise, const int maxIterations){
 	
 	#if UNITY_SINGLE_PASS_STEREO
@@ -115,53 +84,21 @@ float4 ReflectRay(float3 reflectedRay, float3 rayDir, float _LRad, float _SRad, 
 	return float4(finalPos, totalIterations);
 }
 
-/** @brief Gets the reflected color for a pixel
-*  
-*  Same as getSSRColor, but it takes the reflected rays direction instead of internally
-*  calculating the reflection direction. If you're getting the cubemap reflection, you'll
-*  have already calculated the same reflection direction elsewhere so it makes no sense to
-*  calculate it again.
-*
-*	@param wPos World position of the fragment
-*  @param viewDir World-space view direction of the fragment
-*  @param rayDir Reflected ray's world-space direction
-*  @param faceNormal Raw mesh normal direction
-*  @param _LRad Large intersection radius for the ray (see ReflectRay())
-*  @param _SRad Small intersection radius for the ray (see ReflectRay())
-*  @param _Step initial step size for the ray (see ReflectRay())
-*  @param _Blur Square root of the max number of texture samples that can be taken to _Blur the grabpass
-*  @param _MaxSteps Max number of steps the ray can go
-*  @param _Dith Only do SSR on 1 out of every 2x2 pixel block if 1, otherwise do on every pixel if 0
-*  @param smoothness Smoothness, determines how _Blurred the grabpass is, how scattered the rays are, and how strong the reflection is
-*  @param _EdgeFade How far off the edges of the screen the reflection gets faded out
-*  @param _SSRGrab_TexelSize.zw width, height of screen in pixels (It is wise to use the zw components of the texel size of the grabpass for this,
-*		   unity's screen params give the wrong width for single pass stereo cameras)
-*  @param _SSRGrab Grabpass sampler
-*  @param _NoiseTexSSR Noise texture sampler
-*  @param _NoiseTexSSR_TexelSize.zw width/height of the noise texture
-*  @param albedo Albedo color of the pixel
-*  @param metallic How strongly the reflection color is influenced by the albedo color
-*  @param _RTint Override for how metallic the surface is, not necessary, I should remove this.
-*  @param mask Mask for how strong the SSR is. Useful for making the SSR only affect certain parts of a material without making them less smooth
-*  @param _Alpha Multiplier for how intense the SSR should be
-*/
-float4 GetSSRColor2(
+float4 GetSSRColor(
 	const float4 wPos, const float3 viewDir, float3 rayDir, const half3 faceNormal, float smoothness, float4 albedo, float metallic, float mask, float2 screenUVs, float4 screenPos
 ){
 	
-	UNITY_BRANCH
 	if (mask < 0.01)
 		return 0;
 	else {
 
 		float FdotR = dot(faceNormal, rayDir.xyz);
 
-			
 		// Changed dithering to skip 4x4 blocks and moved it up to avoid unnecessary noise texture samples - Mochie
 		float2 ditherUV = floor((_SSRGrab_TexelSize.zw*screenUVs.xy) * 0.5) * 0.5;
 		float dither = frac(ditherUV.x + ditherUV.y);
 		dither *= _Dith;
-		UNITY_BRANCH
+
 		if (dither != 0) {
 			return 0;
 		}
@@ -179,7 +116,6 @@ float4 GetSSRColor2(
 			float4 scatter = float4(0.5 - noiseRGBA.rgb,0);
 			rayDir = normalize(rayDir + scatterMult*scatter*(1-smoothness)*sqrt(FdotR));
 
-			UNITY_BRANCH
 			if (FdotR < 0){
 				return 0;
 			}
@@ -224,3 +160,74 @@ float4 GetSSRColor2(
 		}
 	}	
 }
+
+#endif
+
+// REFLECT RAY FUNCTION
+
+/** @brief March a ray from a given position in a given direction
+*         until it intersects the depth buffer.
+*
+*  Given a starting location and direction march a ray in fixed steps. Each
+*  step convert the ray's position to screenspace coordinates and depth, and
+*  compare to the the depth texture's value at that locaion. If the ray is
+*  within _LRad of the depth buffer, reduce the fixed step size to 1/10
+*  of the original value. If the depth in the depth texture is also smaller
+*  than the rays current depth, reverse the direction. Repeat until the ray
+*  is within _SRad of the depth texture or the maximum number of
+*  iterations is exceeded. Additionally, the loop will be cut short if the
+*  ray passes out of the camera's view.
+*  
+*  @param reflectedRay Starting position of the ray, in world space
+*  @param rayDir Direction the ray is going, in world space
+*  @param _LRad Distance above/below the depth texture the ray must be
+*         within before it will slow down and possibly reverse direction.
+*         Expressed in world-space units
+*  @param _SRad Distance above/below the depth texture the ray must be
+*         before it can be considered to have successfully intersected the
+*         depth texture. World-space units.
+*  @param _Step Initial (large) size of the steps the ray moves each
+*         iteration before it gets within _LRad of the depth texture.
+*         In world space coordinates/scale
+*  @param noise Random noise added to offset the ray's starting position.
+*         This dramatically helps to hide repeating artifacts from the ray-
+*         marching process.
+*  @param maxIterations The maximum number of times we can step the ray
+*         before we give up.
+*  @return The final xyz position of the ray, with the number of iterations
+*          it took stored in the w component. If the function ran out of
+*          iterations or the ray went off screen, the xyz will be (0,0,0).
+*/
+
+// GET SSR FUNCTION
+
+/** @brief Gets the reflected color for a pixel
+*  
+*  Same as getSSRColor, but it takes the reflected rays direction instead of internally
+*  calculating the reflection direction. If you're getting the cubemap reflection, you'll
+*  have already calculated the same reflection direction elsewhere so it makes no sense to
+*  calculate it again.
+*
+*	@param wPos World position of the fragment
+*  @param viewDir World-space view direction of the fragment
+*  @param rayDir Reflected ray's world-space direction
+*  @param faceNormal Raw mesh normal direction
+*  @param _LRad Large intersection radius for the ray (see ReflectRay())
+*  @param _SRad Small intersection radius for the ray (see ReflectRay())
+*  @param _Step initial step size for the ray (see ReflectRay())
+*  @param _Blur Square root of the max number of texture samples that can be taken to _Blur the grabpass
+*  @param _MaxSteps Max number of steps the ray can go
+*  @param _Dith Only do SSR on 1 out of every 2x2 pixel block if 1, otherwise do on every pixel if 0
+*  @param smoothness Smoothness, determines how _Blurred the grabpass is, how scattered the rays are, and how strong the reflection is
+*  @param _EdgeFade How far off the edges of the screen the reflection gets faded out
+*  @param _SSRGrab_TexelSize.zw width, height of screen in pixels (It is wise to use the zw components of the texel size of the grabpass for this,
+*		   unity's screen params give the wrong width for single pass stereo cameras)
+*  @param _SSRGrab Grabpass sampler
+*  @param _NoiseTexSSR Noise texture sampler
+*  @param _NoiseTexSSR_TexelSize.zw width/height of the noise texture
+*  @param albedo Albedo color of the pixel
+*  @param metallic How strongly the reflection color is influenced by the albedo color
+*  @param _RTint Override for how metallic the surface is, not necessary, I should remove this.
+*  @param mask Mask for how strong the SSR is. Useful for making the SSR only affect certain parts of a material without making them less smooth
+*  @param _Alpha Multiplier for how intense the SSR should be
+*/

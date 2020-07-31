@@ -317,7 +317,7 @@ public class SFXEditor : ShaderGUI {
 			mat.SetShaderPassEnabled("Always", _GhostingToggle.floatValue == 1 || _FreezeFrame.floatValue == 1);
 
             // Global
-			bool generalTab = Foldouts.DoFoldout(foldouts, mat, me, -48f, "GENERAL");
+			bool generalTab = Foldouts.DoFoldout(foldouts, mat, me, 2, "GENERAL");
 			if (MGUI.TabButton(collapseIcon, 26f)){
 				for (int i = 1; i <= foldouts[mat].GetToggles().Length-1; i++)
 					foldouts[mat].SetState(i, false);
@@ -352,7 +352,7 @@ public class SFXEditor : ShaderGUI {
             }
 
             // Color Filtering
-			bool colorTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "COLOR");
+			bool colorTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "COLOR");
 			if (MGUI.TabButton(resetIconTex, 26f))
 				ResetColor();
 			MGUI.Space8();
@@ -403,7 +403,7 @@ public class SFXEditor : ShaderGUI {
 			}
 
             // Shake
-			bool shakeTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "SHAKE");
+			bool shakeTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "SHAKE");
 			if (MGUI.TabButton(resetIconTex, 26f))
 				ResetShake();
 			MGUI.Space8();
@@ -433,7 +433,7 @@ public class SFXEditor : ShaderGUI {
             }
 
             // Distortion
-			bool distTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "DISTORTION");
+			bool distTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "DISTORTION");
 			if (MGUI.TabButton(resetIconTex, 26f))
 				ResetDistortion();
 			MGUI.Space8();
@@ -466,7 +466,7 @@ public class SFXEditor : ShaderGUI {
             }
 
 			// Blur
-			bool blurTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "BLUR");
+			bool blurTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "BLUR");
 			if (MGUI.TabButton(resetIconTex, 26f))
 				ResetBlur();
 			MGUI.Space8();
@@ -516,7 +516,7 @@ public class SFXEditor : ShaderGUI {
 			}
             
 			if (isSFXX){
-				bool zoomTab =Foldouts.DoFoldout(foldouts, mat, me, -20f, "ZOOM");
+				bool zoomTab =Foldouts.DoFoldout(foldouts, mat, me, 1, "ZOOM");
 				if (MGUI.TabButton(resetIconTex, 26f))
 					ResetZoom();
 				MGUI.Space8();
@@ -543,7 +543,7 @@ public class SFXEditor : ShaderGUI {
 				}
 				
 				// Screenspace Texture Overlay
-				bool sstTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "IMAGE OVERLAY");
+				bool sstTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "IMAGE OVERLAY");
 				if (MGUI.TabButton(resetIconTex, 26f))
 					ResetSST();
 				MGUI.Space8();
@@ -582,7 +582,7 @@ public class SFXEditor : ShaderGUI {
 				}
 
 				// Fog
-				bool fogTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "FOG");
+				bool fogTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "FOG");
 				if (MGUI.TabButton(resetIconTex, 26f))
 					ResetFog();
 				MGUI.Space8();
@@ -604,7 +604,7 @@ public class SFXEditor : ShaderGUI {
 						me.ShaderProperty(_FogFade, fadeLabel);
 						me.ShaderProperty(_FogP2O, p2oLabel);
 						
-						if (Foldouts.DoMediumFoldout(foldouts, mat, me, 4f, _FogSafeZone, "Safe Zone")){
+						if (Foldouts.DoMediumFoldout(foldouts, mat, me, _FogSafeZone, 1, "Safe Zone")){
 							MGUI.Space6();
 							MGUI.ToggleGroup(_FogSafeZone.floatValue == 0);
 							me.ShaderProperty(_FogSafeRadius, "Vision Radius");
@@ -617,7 +617,7 @@ public class SFXEditor : ShaderGUI {
 				}
 
 				// Triplanar Mapping
-				bool triplanarTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "TRIPLANAR");
+				bool triplanarTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "TRIPLANAR");
 				if (MGUI.TabButton(resetIconTex, 26f))
 					ResetTriplanar();
 				MGUI.Space8();
@@ -659,7 +659,7 @@ public class SFXEditor : ShaderGUI {
 				}
 
 				// Outline
-				bool outlineTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "OUTLINE");
+				bool outlineTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "OUTLINE");
 				if (MGUI.TabButton(resetIconTex, 26f))
 					ResetOutline();
 				MGUI.Space8();
@@ -688,13 +688,13 @@ public class SFXEditor : ShaderGUI {
 
 				// Extras
 				
-				bool miscTab = Foldouts.DoFoldout(foldouts, mat, me, -20f, "MISC");
+				bool miscTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "MISC");
 				if (MGUI.TabButton(resetIconTex, 26f))
 					ResetExtras();
 				MGUI.Space8();
 				if (miscTab){
 					MGUI.Space4();
-					if (Foldouts.DoMediumFoldout(foldouts, mat, me, 4f, "Framebuffer")){
+					if (Foldouts.DoMediumFoldout(foldouts, mat, me, 0, "Framebuffer")){
 						// if (_FreezeFrame.floatValue == 1 && _GhostingToggle.floatValue == 1){
 						// 	_FreezeFrame.floatValue = 0;
 						// 	_GhostingToggle.floatValue = 0;
@@ -706,7 +706,7 @@ public class SFXEditor : ShaderGUI {
 					}
 					else MGUI.SpaceN2();
 
-					if (Foldouts.DoMediumFoldout(foldouts, mat, me, 4f, _Letterbox, "Letterbox")){
+					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _Letterbox, 0, "Letterbox")){
 						MGUI.Space6();
 						MGUI.ToggleGroup(_Letterbox.floatValue == 0);
 						me.ShaderProperty(_UseZoomFalloff, "Use Zoom Falloff");
@@ -727,7 +727,7 @@ public class SFXEditor : ShaderGUI {
 					// }
 					// else MGUI.SpaceN2();
 
-					if (Foldouts.DoMediumFoldout(foldouts, mat, me, 4f, _Pulse, "Pulse")){
+					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _Pulse, 0, "Pulse")){
 						MGUI.Space6();
 						MGUI.ToggleGroup(_Pulse.floatValue == 0);
 						me.ShaderProperty(_WaveForm, "Waveform");
@@ -740,7 +740,7 @@ public class SFXEditor : ShaderGUI {
 					}
 					else MGUI.SpaceN4();
 
-					if (Foldouts.DoMediumFoldout(foldouts, mat, me, 4f, _Shift, "UV Manipulation")){
+					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _Shift, 0, "UV Manipulation")){
 						MGUI.Space6();
 						MGUI.ToggleGroup(_Shift.floatValue == 0);
 						me.ShaderProperty(_InvertX, "Invert X");
@@ -752,7 +752,7 @@ public class SFXEditor : ShaderGUI {
 					}
 					else MGUI.SpaceN4();
 
-					if (Foldouts.DoMediumFoldout(foldouts, mat, me, 4f, _RoundingToggle, "Rounding")){
+					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _RoundingToggle, 0, "Rounding")){
 						MGUI.Space6();
 						MGUI.ToggleGroup(_RoundingToggle.floatValue == 0);
 						me.ShaderProperty(_RoundingOpacity, "Opacity");
@@ -762,7 +762,7 @@ public class SFXEditor : ShaderGUI {
 					}
 					else MGUI.SpaceN4();
 
-					if (Foldouts.DoMediumFoldout(foldouts, mat, me, 4f, _NMFToggle, "Normal Map")){
+					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _NMFToggle, 0, "Normal Map")){
 						MGUI.Space6();
 						MGUI.ToggleGroup(_NMFToggle.floatValue == 0);
 						me.ShaderProperty(_NMFOpacity, "Opacity");
@@ -772,7 +772,7 @@ public class SFXEditor : ShaderGUI {
 					}
 					else MGUI.SpaceN4();
 					
-					if (Foldouts.DoMediumFoldout(foldouts, mat, me, 4f, _DepthBufferToggle, "Depth Buffer")){
+					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _DepthBufferToggle, 0, "Depth Buffer")){
 						MGUI.Space6();
 						if (_DepthBufferToggle.floatValue == 1){
 							MGUI.DisplayWarning("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
@@ -792,7 +792,7 @@ public class SFXEditor : ShaderGUI {
 			// -----------------
 			// Presets
 			// -----------------
-			if (Foldouts.DoFoldout(foldouts, mat, me, 8f, "PRESETS")){
+			if (Foldouts.DoFoldout(foldouts, mat, me, 0, "PRESETS")){
 				MGUI.Space4();
 				float buttonWidth = EditorGUIUtility.labelWidth-5.0f;
 				if (MGUI.SimpleButton("Save", buttonWidth, 0)){

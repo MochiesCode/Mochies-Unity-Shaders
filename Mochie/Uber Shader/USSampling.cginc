@@ -1,85 +1,21 @@
 // Extra macros for reusing samplers with manual lod, lod by gradient, and bias
-#if !defined(UNITY_SAMPLE_TEX2D_GRAD_SAMPLER)
+#ifndef UNITY_SAMPLE_TEX2D_GRAD_SAMPLER
 	#define UNITY_SAMPLE_TEX2D_GRAD_SAMPLER(tex,samplertex,coord,dx,dy) tex.SampleGrad(sampler##samplertex,coord,dx,dy)
 #endif
-#if !defined(UNITY_SAMPLE_TEX2D_LOD_SAMPLER)
+#ifndef UNITY_SAMPLE_TEX2D_LOD_SAMPLER
 	#define UNITY_SAMPLE_TEX2D_LOD_SAMPLER(tex,samplertex,coord) tex.SampleLevel(sampler##samplertex,(coord).xy,(coord).w)
 #endif
-#if !defined(UNITY_SAMPLE_TEX2D_BIAS_SAMPLER)
+#ifndef UNITY_SAMPLE_TEX2D_BIAS_SAMPLER
 	#define UNITY_SAMPLE_TEX2D_BIAS_OFFS_SAMPLER(tex,samplertex,coord,offset) tex.SampleBias(sampler##samplertex,(coord).xy,(coord).w,(offset).xy)
 	#define UNITY_SAMPLE_TEX2D_BIAS_SAMPLER(tex,samplertex,coord) tex.SampleBias(sampler##samplertex,(coord).xy,(coord).w)
 #endif
-
-float4 tex2DBoolWhite(sampler2D tex, float2 uv, bool shouldSample){
-	float4 col = 1;
-	if (shouldSample)
-		col = tex2D(tex, uv);
-	return col;
-}
-
-float4 tex2DBoolBlack(sampler2D tex, float2 uv, bool shouldSample){
-	float4 col = 0;
-	if (shouldSample)
-		col = tex2D(tex, uv);
-	return col;
-}
-
-float4 tex2DBoolWhiteSampler(Texture2D tex, float2 uv, bool shouldSample){
-	float4 col = 1;
-	if (shouldSample)
-		col = UNITY_SAMPLE_TEX2D_SAMPLER(tex, _MainTex, uv);
-	return col;
-}
-
-float4 tex2DBoolBlackSampler(Texture2D tex, float2 uv, bool shouldSample){
-	float4 col = 0;
-	if (shouldSample)
-		col = UNITY_SAMPLE_TEX2D_SAMPLER(tex, _MainTex, uv);
-	return col;
-}
-
-float SampleMask(texture2D tex, float2 uv, int channel, bool isOn){
+#ifndef UNITY_SAMPLE_TEX2D_LOD
+	#define UNITY_SAMPLE_TEX2D_LOD(tex,coord) tex.SampleLevel(sampler##tex,(coord).xy,(coord).w)
+#endif
+float SampleCubeMask(texture2D tex, float2 uv, float str, int isBlendMask){
 	float mask = 1;
-	if (isOn){
-		float4 maskTex = UNITY_SAMPLE_TEX2D_SAMPLER(tex, _MainTex, uv);
-		[flatten]
-		switch (channel){
-			case 0: mask = maskTex.r; break;
-			case 1: mask = maskTex.g; break;
-			case 2: mask = maskTex.b; break;
-			case 3: mask = maskTex.a; break;
-			default: break;
-		}
-	}
-	return mask;
-}
-
-float SampleTex2DMask(sampler2D tex, float2 uv, int channel){
-	float mask = 1;
-	float4 maskTex = tex2D(tex, uv);
-	[flatten]
-	switch (channel){
-		case 0: mask = maskTex.r; break;
-		case 1: mask = maskTex.g; break;
-		case 2: mask = maskTex.b; break;
-		case 3: mask = maskTex.a; break;
-		default: break;
-	}
-	return mask;
-}
-
-float SampleCubeMask(texture2D tex, float2 uv, float str, int channel, int isBlendMask){
-	float mask = 1;
-	float4 maskTex = UNITY_SAMPLE_TEX2D_SAMPLER(tex, _MainTex, uv);
 	if (isBlendMask == 1){
-		[flatten]
-		switch (channel){
-			case 0: mask = maskTex.r; break;
-			case 1: mask = maskTex.g; break;
-			case 2: mask = maskTex.b; break;
-			case 3: mask = maskTex.a; break;
-			default: break;
-		}
+		mask = UNITY_SAMPLE_TEX2D_SAMPLER(tex, _MainTex, uv).r;
 	}
 	else mask = str;
 	return mask;

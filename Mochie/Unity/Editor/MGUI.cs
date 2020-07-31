@@ -3,7 +3,7 @@
 
 using System;
 using System.IO;
-using System.Reflection;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
@@ -14,6 +14,35 @@ public static class MGUI {
 	private static int chanOfs = 105;
 	public static string parentPath = "Assets/Mochie/Unity/Presets";
 	public static string presetPath = "Assets/Mochie/Unity";
+
+	public static List<T> FindAssetsByType<T>() where T : UnityEngine.Object {
+		List<T> assets = new List<T>();
+		string[] guids = AssetDatabase.FindAssets(string.Format("t:{0}", typeof (T).ToString().Replace("UnityEngine.", "")));
+		for(int i = 0; i < guids.Length; i++){
+			string assetPath = AssetDatabase.GUIDToAssetPath( guids[i] );
+			T asset = AssetDatabase.LoadAssetAtPath<T>( assetPath );
+			if(asset != null){
+				assets.Add(asset);
+			}
+		}
+		return assets;
+	}
+	
+	public static void UpdateMaterials(){
+		List<Material> materials = FindAssetsByType<Material>();
+		foreach (Material m in materials){
+			if (m.shader.name.Contains("Uber Shader")){
+				Debug.Log("Selected next material");
+				Selection.activeObject = m;
+			}
+		}
+	}
+
+	public static void ClearKeywords(Material mat){
+		foreach (string s in mat.shaderKeywords){
+			mat.DisableKeyword(s);
+		}
+	}
 
 	public static bool IsXVersion(Material mat){
 		return mat.shader.name.Contains(" X") || mat.shader.name.Contains(" X ");
@@ -115,6 +144,7 @@ public static class MGUI {
 	}
 
 	public static void FramebufferSection(MaterialEditor me, MaterialProperty[] toggles, MaterialProperty gs){
+		DisplayWarning("\nFramebuffer features DO NOT WORK IN UNITY 2018 due to Unity fixing the technique/bug used to create the effects.\n\nThey will still function in versions before 2018, but I would not recommend downgrading.\n");
 		for (int i = 0; i < toggles.Length; i++){
 			if (i == 0)
 				me.ShaderProperty(toggles[i], toggles[i].displayName);
@@ -127,6 +157,7 @@ public static class MGUI {
 				}
 			}
 		}
+
 	}
 
 	public static void DisplayError(string message){
@@ -141,6 +172,10 @@ public static class MGUI {
 		EditorGUILayout.HelpBox(message, MessageType.Info);
 	}
 	
+	public static void DisplayText(string message){
+		EditorGUILayout.HelpBox(message, MessageType.None);
+	}
+
 	public static void MaskProperty(MaterialEditor me, MaterialProperty mask, MaterialProperty maskChannel){
 		bool hasTex = mask.textureValue;
 		me.TexturePropertySingleLine(new GUIContent("Mask"), mask, hasTex ? maskChannel : null);
@@ -179,6 +214,14 @@ public static class MGUI {
 		buttonRect.height = height;
 		buttonRect.x += ((GetInspectorWidth()/2f)-width/2f)-xPos;
 		return GUI.Button(buttonRect, tex);
+	}
+
+	public static bool LinkButton(GUIContent g, float width, float height, float xPos){
+		Rect buttonRect = EditorGUILayout.GetControlRect();
+		buttonRect.width = width;
+		buttonRect.height = height;
+		buttonRect.x += ((GetInspectorWidth()/2f)-width/2f)-xPos;
+		return GUI.Button(buttonRect, g);
 	}
 
 	public static void DummyProperty(string label, string property){
@@ -261,29 +304,54 @@ public static class MGUI {
         float lw = EditorGUIUtility.labelWidth;
         float indent = lw + 25f;
         GUILayoutOption clickArea = GUILayout.MaxWidth(lw+13f);
-        toggle.floatValue = EditorGUILayout.Toggle(label, toggle.floatValue==1, clickArea)?1:0;
+
+		EditorGUI.BeginChangeCheck();
+		EditorGUI.showMixedValue = toggle.hasMixedValue;
+        var tog = EditorGUILayout.Toggle(label, toggle.floatValue==1, clickArea)?1:0;
+		if (EditorGUI.EndChangeCheck())
+			toggle.floatValue = tog;
+		EditorGUI.showMixedValue = false;
+
         GUILayout.Space(-18);
         Rect r = EditorGUILayout.GetControlRect();
         r.x += indent;
         r.width -= indent;
+
+		EditorGUI.BeginChangeCheck();
+		EditorGUI.showMixedValue = slider.hasMixedValue;
         EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
-        me.RangeProperty(r, slider, "");
-        EditorGUI.EndDisabledGroup();
+        var slide = EditorGUI.Slider(r, slider.floatValue, slider.rangeLimits.x, slider.rangeLimits.y);
+		EditorGUI.EndDisabledGroup();
+		if (EditorGUI.EndChangeCheck())
+			slider.floatValue = slide;
+		EditorGUI.showMixedValue = false;
     }
 
     public static void ToggleIntSlider(MaterialEditor me, string label, MaterialProperty toggle, MaterialProperty slider){
         float lw = EditorGUIUtility.labelWidth;
         float indent = lw + 25f;
         GUILayoutOption clickArea = GUILayout.MaxWidth(lw+13f);
-        toggle.floatValue = EditorGUILayout.Toggle(label, toggle.floatValue==1, clickArea)?1:0;
+
+        EditorGUI.BeginChangeCheck();
+		EditorGUI.showMixedValue = toggle.hasMixedValue;
+        var tog = EditorGUILayout.Toggle(label, toggle.floatValue==1, clickArea)?1:0;
+		if (EditorGUI.EndChangeCheck())
+			toggle.floatValue = tog;
+		EditorGUI.showMixedValue = false;
+
         GUILayout.Space(-18);
         Rect r = EditorGUILayout.GetControlRect();
         r.x += indent;
         r.width -= indent;
-        EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
 
-        slider.floatValue = (int)EditorGUI.Slider(r, slider.floatValue, slider.rangeLimits.x, slider.rangeLimits.y);
-        EditorGUI.EndDisabledGroup();
+		EditorGUI.BeginChangeCheck();
+		EditorGUI.showMixedValue = slider.hasMixedValue;
+        EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
+        var slide = (int)EditorGUI.Slider(r, slider.floatValue, slider.rangeLimits.x, slider.rangeLimits.y);
+		EditorGUI.EndDisabledGroup();
+		if (EditorGUI.EndChangeCheck())
+			slider.floatValue = slide;
+		EditorGUI.showMixedValue = false;
     }
 
     // Float with a toggle
@@ -291,14 +359,27 @@ public static class MGUI {
         float lw = EditorGUIUtility.labelWidth;
         float indent = lw + 20f;
         GUILayoutOption clickArea = GUILayout.MaxWidth(lw+13f);
-        toggle.floatValue = EditorGUILayout.Toggle(label, toggle.floatValue==1, clickArea)?1:0;
+
+        EditorGUI.BeginChangeCheck();
+		EditorGUI.showMixedValue = toggle.hasMixedValue;
+        var tog = EditorGUILayout.Toggle(label, toggle.floatValue==1, clickArea)?1:0;
+		if (EditorGUI.EndChangeCheck())
+			toggle.floatValue = tog;
+		EditorGUI.showMixedValue = false;
+
         GUILayout.Space(-18);
         Rect r = EditorGUILayout.GetControlRect();
         r.x += indent;
         r.width -= indent;
+
+		EditorGUI.BeginChangeCheck();
+		EditorGUI.showMixedValue = floatProp.hasMixedValue;
         EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
-        me.FloatProperty(r, floatProp, "");
-        EditorGUI.EndDisabledGroup();
+        var floatVal = EditorGUI.FloatField(r, floatProp.floatValue);
+		EditorGUI.EndDisabledGroup();
+		if (EditorGUI.EndChangeCheck())
+			floatProp.floatValue = floatVal;
+		EditorGUI.showMixedValue = false;
     }
 
 	public static void ToggleVector3(string label, MaterialProperty toggle, MaterialProperty vec){
@@ -312,9 +393,19 @@ public static class MGUI {
 
 		GUILayout.Space(-19);
 		GUILayoutOption clickArea = GUILayout.MaxWidth(labelWidth+7f);
-		toggle.floatValue = EditorGUILayout.Toggle(label, toggle.floatValue==1, clickArea)?1:0;
+
+		EditorGUI.BeginChangeCheck();
+		EditorGUI.showMixedValue = toggle.hasMixedValue;
+        var tog = EditorGUILayout.Toggle(label, toggle.floatValue==1, clickArea)?1:0;
+		if (EditorGUI.EndChangeCheck())
+			toggle.floatValue = tog;
+		EditorGUI.showMixedValue = false;
+
 		EditorGUIUtility.labelWidth = 13f;
 		EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
+
+		EditorGUI.BeginChangeCheck();
+		EditorGUI.showMixedValue = vec.hasMixedValue;
 
 			// X Field
 			r.width = fieldWidth-1f;
@@ -328,8 +419,57 @@ public static class MGUI {
 			r.x += fieldWidth;
 			newVec.z = EditorGUI.FloatField(r, "Z", newVec.z);
 
-			EditorGUIUtility.labelWidth = labelWidth;
+		if (EditorGUI.EndChangeCheck())
 			vec.vectorValue = newVec;
+		EditorGUI.showMixedValue = false;
+		EditorGUIUtility.labelWidth = labelWidth;
+
+		EditorGUI.EndDisabledGroup();
+		GUILayout.Space(1);
+	}
+
+	public static void ToggleVector3W(string label, int toggle, MaterialProperty vec){
+		SpaceN2();
+        Vector4 newVec = vec.vectorValue;
+        float labelWidth = EditorGUIUtility.labelWidth;
+        float fieldWidth = (GetPropertyWidth()/3)-6f;
+
+        Rect r = EditorGUILayout.GetControlRect();
+        r.x += labelWidth+18f;
+
+		GUILayout.Space(-19);
+		GUILayoutOption clickArea = GUILayout.MaxWidth(labelWidth+14f);
+
+		EditorGUI.BeginChangeCheck();
+		EditorGUI.showMixedValue = vec.hasMixedValue;
+        var tog = EditorGUILayout.Toggle(label, toggle == 1, clickArea)?1:0;
+		if (EditorGUI.EndChangeCheck())
+			vec.vectorValue = new Vector4(vec.vectorValue.x, vec.vectorValue.y, vec.vectorValue.z, tog);
+		EditorGUI.showMixedValue = false;
+
+		EditorGUIUtility.labelWidth = 13f;
+		EditorGUI.BeginDisabledGroup(toggle == 0);
+
+		EditorGUI.BeginChangeCheck();
+		EditorGUI.showMixedValue = vec.hasMixedValue;
+
+			// X Field
+			r.width = fieldWidth-1f;
+			newVec.x = EditorGUI.FloatField(r, "X", newVec.x);
+			
+			// Y Field
+			r.x += fieldWidth+1;
+			newVec.y = EditorGUI.FloatField(r, "Y", newVec.y);
+
+			// Z Field
+			r.x += fieldWidth;
+			newVec.z = EditorGUI.FloatField(r, "Z", newVec.z);
+
+		if (EditorGUI.EndChangeCheck())
+			vec.vectorValue = new Vector4(newVec.x, newVec.y, newVec.z, tog);
+		EditorGUI.showMixedValue = false;
+		EditorGUIUtility.labelWidth = labelWidth;
+
 		EditorGUI.EndDisabledGroup();
 		GUILayout.Space(1);
 	}
@@ -347,24 +487,63 @@ public static class MGUI {
         r.x += labelWidth;
 		EditorGUIUtility.labelWidth = 13f;
 
-		// X Field
-		r.width = fieldWidth-1f;
-        newVec.x = EditorGUI.FloatField(r, "X", newVec.x);
-		
-		// Y Field
-		r.x += fieldWidth+1;
-		newVec.y = EditorGUI.FloatField(r, "Y", newVec.y);
+		EditorGUI.BeginChangeCheck();
+		EditorGUI.showMixedValue = vec.hasMixedValue;
 
-		// Z Field
-		r.x += fieldWidth;
-		newVec.z = EditorGUI.FloatField(r, "Z", newVec.z);
+			// X Field
+			r.width = fieldWidth-1f;
+			newVec.x = EditorGUI.FloatField(r, "X", newVec.x);
+			
+			// Y Field
+			r.x += fieldWidth+1;
+			newVec.y = EditorGUI.FloatField(r, "Y", newVec.y);
 
+			// Z Field
+			r.x += fieldWidth;
+			newVec.z = EditorGUI.FloatField(r, "Z", newVec.z);
+
+		if (EditorGUI.EndChangeCheck())
+			vec.vectorValue = newVec;
+		EditorGUI.showMixedValue = false;
 		EditorGUIUtility.labelWidth = labelWidth;
-        vec.vectorValue = newVec;
+    }
+
+    // Vector3 property with corrected width scaling
+    public static void Vector3FieldRGB(MaterialProperty vec, string label){
+		SpaceN2();
+        Vector4 newVec = vec.vectorValue;
+        float labelWidth = EditorGUIUtility.labelWidth;
+        float fieldWidth = GetPropertyWidth()/3;
+
+		EditorGUILayout.LabelField(label);
+		GUILayout.Space(-18);
+        Rect r = EditorGUILayout.GetControlRect();
+        r.x += labelWidth;
+		EditorGUIUtility.labelWidth = 13f;
+
+		EditorGUI.BeginChangeCheck();
+		EditorGUI.showMixedValue = vec.hasMixedValue;
+
+			// X Field
+			r.width = fieldWidth-1f;
+			newVec.x = EditorGUI.FloatField(r, "R", newVec.x);
+			
+			// Y Field
+			r.x += fieldWidth+1;
+			newVec.y = EditorGUI.FloatField(r, "G", newVec.y);
+
+			// Z Field
+			r.x += fieldWidth;
+			newVec.z = EditorGUI.FloatField(r, "B", newVec.z);
+
+		if (EditorGUI.EndChangeCheck())
+			vec.vectorValue = newVec;
+		EditorGUI.showMixedValue = false;
+		EditorGUIUtility.labelWidth = labelWidth;
     }
 
     // Vector2 property with corrected width scaling
-    public static void Vector2Field(string label, MaterialProperty vec){
+    public static void Vector2Field(MaterialProperty vec, string label){
 		SpaceN2();
         Vector4 newVec = vec.vectorValue;
         float labelWidth = EditorGUIUtility.labelWidth;
@@ -376,16 +555,21 @@ public static class MGUI {
         r.x += labelWidth;
 		EditorGUIUtility.labelWidth = 13f;
 
-		// X Field
-		r.width = fieldWidth-1f;
-        newVec.x = EditorGUI.FloatField(r, "X", newVec.x);
-		
-		// Y Field
-		r.x += fieldWidth+1;
-		newVec.y = EditorGUI.FloatField(r, "Y", newVec.y);
+		EditorGUI.BeginChangeCheck();
+		EditorGUI.showMixedValue = vec.hasMixedValue;
 
+			// X Field
+			r.width = fieldWidth-1f;
+			newVec.x = EditorGUI.FloatField(r, "X", newVec.x);
+			
+			// Y Field
+			r.x += fieldWidth+1;
+			newVec.y = EditorGUI.FloatField(r, "Y", newVec.y);
+
+		if (EditorGUI.EndChangeCheck())
+			vec.vectorValue = newVec;
+		EditorGUI.showMixedValue = false;
 		EditorGUIUtility.labelWidth = labelWidth;
-        vec.vectorValue = newVec;
     }
 
     public static void CenteredTexture(Texture2D tex1, Texture2D tex2, float spacing, float upperMargin, float lowerMargin){
@@ -485,14 +669,14 @@ public static class MGUI {
 	public static void TextureSOScroll(MaterialEditor me, MaterialProperty tex, MaterialProperty vec){
 		me.TextureScaleOffsetProperty(tex);
         SpaceN2();
-		Vector2Field("Scrolling", vec);
+		Vector2Field(vec, "Scrolling");
 	}
 
 	public static void TextureSOScroll(MaterialEditor me, MaterialProperty tex, MaterialProperty vec, bool shouldDisplay){
 		if (shouldDisplay){
 			me.TextureScaleOffsetProperty(tex);
 			SpaceN2();
-			Vector2Field("Scrolling", vec);
+			Vector2Field(vec, "Scrolling");
 		}
 	}
 
@@ -507,6 +691,27 @@ public static class MGUI {
 	// Shorthand for displaying an error window
 	public static void ErrorBox(string message){
 		EditorUtility.DisplayDialog("Error", message, "Close");
+	}
+
+	public static void PropertyGroup(Action action){
+		EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+		Space2();
+		action();
+		Space2();
+		EditorGUILayout.EndVertical();
+		Space2();
+	}
+
+	public static void PropertyGroupLayer(Action action){
+		Color col = GUI.backgroundColor;
+		GUI.backgroundColor = new Color(0.85f,0.85f,0.85f,1);
+		EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+		Space2();
+		action();
+		Space2();
+		GUI.backgroundColor = col;
+		EditorGUILayout.EndVertical();
+		SpaceN2();
 	}
 
 	// Replace invalid windows characters with underscores

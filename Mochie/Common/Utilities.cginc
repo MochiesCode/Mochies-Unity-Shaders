@@ -54,21 +54,21 @@ float4 Pow5 (float4 x){
 // ---------------------------
 // Remapping/Interpolation
 // ---------------------------
-float4 lerp34(float4 a, float4 b, float4 c, float t){
+float4 lerp3(float4 a, float4 b, float4 c, float t){
 	if (t <= 1)
 		return lerp(a, b, t);
 	else
 		return lerp(b, c, t*0.5);
 }
 
-float3 lerp33(float3 a, float3 b, float3 c, float t){
+float3 lerp3(float3 a, float3 b, float3 c, float t){
 	if (t <= 1)
 		return lerp(a, b, t);
 	else
 		return lerp(b, c, t*0.5);
 }
 
-float2 lerp32(float2 a, float2 b, float2 c, float t){
+float2 lerp3(float2 a, float2 b, float2 c, float t){
 	if (t <= 1)
 		return lerp(a, b, t);
 	else
@@ -92,6 +92,16 @@ float2 linearstep(float2 j, float2 k, float2 x) {
 	return x;
 }
 
+float3 linearstep(float3 j, float3 k, float3 x) {
+	x = clamp((x - j) / (k - j), 0.0, 1.0); 
+	return x;
+}
+
+float4 linearstep(float4 j, float4 k, float4 x) {
+	x = clamp((x - j) / (k - j), 0.0, 1.0); 
+	return x;
+}
+
 float cubicstep(float x){
 	float curve = linearstep(-1,1,1-pow(UNITY_PI * x / 2.0, 0.5));
 	return pow(curve, 5);
@@ -106,6 +116,18 @@ float smoothlerp(float x, float y, float z){
 }
 
 float smootherstep(float edge0, float edge1, float x) {
+    x = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
+    return x * x * x * (x * (x * 6 - 15) + 10);    
+}
+float2 smootherstep(float2 edge0, float2 edge1, float2 x) {
+    x = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
+    return x * x * x * (x * (x * 6 - 15) + 10);    
+}
+float3 smootherstep(float3 edge0, float3 edge1, float3 x) {
+    x = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
+    return x * x * x * (x * (x * 6 - 15) + 10);    
+}
+float4 smootherstep(float4 edge0, float4 edge1, float4 x) {
     x = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
     return x * x * x * (x * (x * 6 - 15) + 10);    
 }
@@ -154,6 +176,61 @@ float GetFalloff(int ug, float gf, float minR, float maxR, float d){
     else
         return gf;
 }
+
+#if defined(HAS_DEPTH_TEXTURE)
+
+// Clean world normals by Neitri - https://github.com/netri/Neitri-Unity-Shaders/blob/master/Wireframe%20Overlay.shader
+float4x4 inverse(float4x4 input){
+	#define minor(a,b,c) determinant(float3x3(input.a, input.b, input.c))
+	float4x4 cofactors = float4x4(
+		minor(_22_23_24, _32_33_34, _42_43_44), 
+		-minor(_21_23_24, _31_33_34, _41_43_44),
+		minor(_21_22_24, _31_32_34, _41_42_44),
+		-minor(_21_22_23, _31_32_33, _41_42_43),
+
+		-minor(_12_13_14, _32_33_34, _42_43_44),
+		minor(_11_13_14, _31_33_34, _41_43_44),
+		-minor(_11_12_14, _31_32_34, _41_42_44),
+		minor(_11_12_13, _31_32_33, _41_42_43),
+
+		minor(_12_13_14, _22_23_24, _42_43_44),
+		-minor(_11_13_14, _21_23_24, _41_43_44),
+		minor(_11_12_14, _21_22_24, _41_42_44),
+		-minor(_11_12_13, _21_22_23, _41_42_43),
+
+		-minor(_12_13_14, _22_23_24, _32_33_34),
+		minor(_11_13_14, _21_23_24, _31_33_34),
+		-minor(_11_12_14, _21_22_24, _31_32_34),
+		minor(_11_12_13, _21_22_23, _31_32_33)
+	);
+	#undef minor
+	return transpose(cofactors) / determinant(input);
+}
+
+float3 GetWorldSpacePixelPos(float4 vertex, float2 screenOffset){
+	float4 worldPos = mul(unity_ObjectToWorld, float4(vertex.xyz, 1));
+	float4 screenPos = mul(UNITY_MATRIX_VP, worldPos); 
+	screenPos.xy += screenOffset * screenPos.w;
+	worldPos = mul(inverse(UNITY_MATRIX_VP), screenPos);
+	float3 worldDir = worldPos.xyz - _WorldSpaceCameraPos;
+	float2 screenUV = screenPos.xy / screenPos.w;
+	screenUV.y *= _ProjectionParams.x;
+	screenUV = screenUV * 0.5f + 0.5f;
+	screenUV = UnityStereoTransformScreenSpaceTex(screenUV);
+	float depth = LinearEyeDepth(UNITY_SAMPLE_DEPTH(tex2D(_CameraDepthTexture, screenUV))) / screenPos.w;
+	float3 worldSpacePos = worldDir * depth + _WorldSpaceCameraPos;
+	return worldSpacePos;
+}
+
+void GetWorldNormals(float4 localPos, out float3 worldNormal, out float3 worldPos){
+	float2 offset = 1.01 / _ScreenParams.xy; 
+	worldPos = GetWorldSpacePixelPos(localPos, float2(0,0));
+	float3 worldPos1 = GetWorldSpacePixelPos(localPos, float2(0, offset.y));
+	float3 worldPos2 = GetWorldSpacePixelPos(localPos, float2(-offset.x, 0));
+	worldNormal = normalize(cross(worldPos1 - worldPos, worldPos2 - worldPos));
+}
+
+#endif
 
 float4 GetScreenspaceVertexPos(float4 vertex){
 	float4 wPos = mul(unity_CameraToWorld, vertex);
@@ -236,4 +313,41 @@ float3 FlowUV (float2 uv, float time, float phase) {
 	uv += (time - progress) * float2(0.24, 0.2083333);
 	float3 uvw = float3(uv, waveform);
 	return uvw;
+}
+
+float Dither8x8Bayer(int x, int y){
+    const float dither[ 64 ] = {
+		1, 49, 13, 61,  4, 52, 16, 64,
+		33, 17, 45, 29, 36, 20, 48, 32,
+		9, 57,  5, 53, 12, 60,  8, 56,
+		41, 25, 37, 21, 44, 28, 40, 24,
+		3, 51, 15, 63,  2, 50, 14, 62,
+		35, 19, 47, 31, 34, 18, 46, 30,
+		11, 59,  7, 55, 10, 58,  6, 54,
+		43, 27, 39, 23, 42, 26, 38, 22
+	};
+    return dither[y * 8 + x] / 64;
+}
+
+float Dither(float2 pos, float alpha) {
+	pos *= _ScreenParams.xy;
+	return alpha - Dither8x8Bayer(fmod(pos.x, 8), fmod(pos.y, 8));
+}
+
+void ApplyPBRFiltering(inout float value, float contrast, float intensity, float lightness, int shouldApply, inout float previewValue){
+	if (shouldApply == 1){
+		value = saturate(lerp(0.5, value, contrast));
+		value += saturate(value * intensity);
+		value = saturate(value + lightness);
+		previewValue = value;
+	}
+}
+
+void ApplyPBRFiltering(inout float3 value, float contrast, float intensity, float lightness, int shouldApply, inout float3 previewValue){
+	if (shouldApply == 1){
+		value = saturate(lerp(0.5, value, contrast));
+		value += saturate(value * intensity);
+		value = saturate(value + lightness);
+		previewValue = value;
+	}
 }
