@@ -79,11 +79,11 @@ float2 GetSpritesheetUV(float2 uv, float2 rowsColumns, float scrubPos, float fps
 float4 GetSpritesheetColor(g2f i, 
 		sampler2D tex, float4 spriteColor,
 		float2 pos, float2 scale, float2 rowsColumns, float2 fco, 
-		float rot, float scrubPos, float fps, int manualScrub
+		float rot, float scrubPos, float fps, float brightness, int manualScrub
 	) {
 	float2 scaledUV = ScaleUV(i.rawUV, pos, scale, rot);
 	float2 uv = GetSpritesheetUV(scaledUV, rowsColumns, scrubPos, fps, manualScrub);
-	return tex2D(tex, uv) * spriteColor * FrameClip(scaledUV, rowsColumns, fco);
+	return tex2D(tex, uv) * spriteColor * brightness * FrameClip(scaledUV, rowsColumns, fco);
 }
 
 void ApplySpritesheetBlending(g2f i, inout float3 col, float4 gifCol, int blendMode){
@@ -107,6 +107,7 @@ void ApplySpritesheet0(g2f i, inout float3 albedo){
 		_SpritesheetRot,
 		_ScrubPos,
 		_FPS,
+		_SpritesheetBrightness,
 		_ManualScrub
 	);
 	ApplySpritesheetBlending(i, albedo, spriteCol, _SpritesheetBlending);
@@ -123,27 +124,23 @@ void ApplySpritesheet1(g2f i, inout float3 albedo){
 		_SpritesheetRot1,
 		_ScrubPos1,
 		_FPS1,
+		_SpritesheetBrightness1,
 		_ManualScrub1
 	);
 	ApplySpritesheetBlending(i, albedo, spriteCol, _SpritesheetBlending1);
 }
 
 float4 GetAlbedo(g2f i, lighting l, masks m){
-	float4 mainTex =  UNITY_SAMPLE_TEX2D(_MainTex, i.uv.xy);
-	float3 detailAlbedo = UNITY_SAMPLE_TEX2D_SAMPLER(_DetailAlbedoMap, _MainTex, i.uv2.xy).rgb * unity_ColorSpaceDouble;
+	float4 mainTex =  _MainTex.Sample(sampler_MainTex, i.uv.xy); // UNITY_SAMPLE_TEX2D(_MainTex, i.uv.xy);
 	float4 albedo = 1;
+	// curvature = 1;
 	cubeMask = 1;
-
+	
 	#if !CUBEMAP_ENABLED && !COMBINED_CUBEMAP_ENABLED
 		albedo = mainTex;
 		float4 mirrorTex = UNITY_SAMPLE_TEX2D_SAMPLER(_MirrorTex, _MainTex, i.uv.xy);
-		#if !X_FEATURES
-			if (i.isReflection && _MirrorBehavior == 2)
-				albedo = mirrorTex;
-		#else
-			if (i.isReflection && _UseMirrorAlbedo == 1)
-				albedo = mirrorTex;
-		#endif
+		if (i.isReflection && _MirrorBehavior == 2)
+			albedo = mirrorTex;
 		albedo *= _Color;
 
 	#elif CUBEMAP_ENABLED
@@ -160,7 +157,10 @@ float4 GetAlbedo(g2f i, lighting l, masks m){
 	#elif COMBINED_CUBEMAP_ENABLED
 		_CubeRotate0 = lerp(_CubeRotate0, _CubeRotate0 *_Time.y, _AutoRotate0);
 		float3 vDir = Rotate(l.viewDir, _CubeRotate0);
-		float4 albedo0 = mainTex; 
+		float4 albedo0 = mainTex;
+		float4 mirrorTex = UNITY_SAMPLE_TEX2D_SAMPLER(_MirrorTex, _MainTex, i.uv.xy);
+		if (i.isReflection && _MirrorBehavior == 2)
+			albedo0 = mirrorTex;
 		float4 albedo1 = texCUBE(_MainTexCube0, vDir);
 		albedo0 *= _Color;
 		albedo1 *= _CubeColor0;
@@ -168,8 +168,15 @@ float4 GetAlbedo(g2f i, lighting l, masks m){
 		albedo.rgb = BlendCubemap(albedo0, albedo1, cubeMask, _CubeBlendMode);
 	#endif
 
-    
-    albedo.rgb = lerp(albedo.rgb, albedo.rgb*detailAlbedo, m.detailMask);
+	#if SHADING_ENABLED
+		float3 detailAlbedo = UNITY_SAMPLE_TEX2D_SAMPLER(_DetailAlbedoMap, _MainTex, i.uv2.xy).rgb * unity_ColorSpaceDouble;
+		albedo.rgb = lerp(albedo.rgb, albedo.rgb*detailAlbedo, m.detailMask);
+		// #if CURVATURE_ENABLED
+		// 	curvature = UNITY_SAMPLE_TEX2D_SAMPLER(_Curvature, _MainTex, i.uv.xy);
+		// 	ApplyPBRFiltering(curvature, _CurvatureContrast, _CurvatureIntensity, _CurvatureLightness, _CurvatureFiltering, prevCurve);
+		// 	albedo.rgb = _CurvatureTarget == 1 ? BlendCurvature(curvature, albedo.rgb) : albedo.rgb;
+		// #endif
+	#endif
 
 	#if NON_OPAQUE_RENDERING
 		float alphaMask = UNITY_SAMPLE_TEX2D_SAMPLER(_AlphaMask, _MainTex, i.uv.xy) * _Color.a;
@@ -212,9 +219,9 @@ float GetPulse(g2f i){
 	return pulse;
 }
 
-float3 GetEmission(g2f i){
+float3 GetEmission(g2f i, masks m){
 	float3 emiss = UNITY_SAMPLE_TEX2D(_EmissionMap, i.uv.zw).rgb * _EmissionColor.rgb;
-	emiss *= UNITY_SAMPLE_TEX2D_SAMPLER(_EmissMask, _MainTex, i.uv.xy);
+	emiss *= m.emissMask;
 	#if PULSE_ENABLED && !OUTLINE_PASS
 		emiss *= GetPulse(i);
 	#endif
@@ -243,11 +250,30 @@ void ApplyRimLighting(g2f i, lighting l, masks m, inout float3 diffuse){
 //----------------------------
 // Workflows
 //----------------------------
+
+float GetDetailRough(g2f i, float roughIn){
+	float detailRough = UNITY_SAMPLE_TEX2D_SAMPLER(_DetailRoughnessMap, _MainTex, i.uv2.xy);
+	float roughOut = 0;
+	switch (_DetailRoughBlending){
+		case 0: roughOut = lerp(roughIn, detailRough, 0.5); break;
+		case 1: roughOut = roughIn + detailRough; break;
+		case 2: roughOut = roughIn - detailRough; break;
+		case 3: roughOut = roughIn * detailRough; break;
+		case 4: roughOut = BlendOverlay(detailRough, roughIn); break;
+		case 5: roughOut = BlendScreen(detailRough, roughIn); break;
+		default: break;
+	}
+	return roughOut;
+}
+
 float3 GetMetallicWorkflow(g2f i, lighting l, masks m, float3 albedo){
 
 	metallic = lerp(_Metallic, UNITY_SAMPLE_TEX2D_SAMPLER(_MetallicGlossMap, _MainTex, i.uv.xy), _UseMetallicMap);
 	roughness = lerp(_Glossiness, UNITY_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, _MainTex, i.uv.xy), _UseSpecMap);
-
+	roughness = lerp(roughness, GetDetailRough(i, roughness), _DetailRoughStrength * m.detailMask);
+	#if CURVATURE_ENABLED
+		roughness = _CurvatureTarget == 2 && _UseCurvature == 1 ? BlendCurvature(curvature, roughness) : roughness;
+	#endif
 	ApplyPBRFiltering(roughness, _RoughContrast, _RoughIntensity, _RoughLightness, _RoughnessFiltering, prevRough);
 
 	smoothness = 1-roughness;
@@ -288,16 +314,21 @@ float3 GetSpecWorkflow(g2f i, lighting l, masks m, float3 albedo){
 	return albedo;
 }
 
+void InitializeModularChannels(){
+	metallic = ChannelCheck(packedTex, _MetallicChannel);
+	roughness = ChannelCheck(packedTex, _RoughnessChannel);
+}
+
+void InitializeBakedChannels(){
+	metallic = packedTex.r;
+	roughness = packedTex.g;
+}
+
 float3 GetPackedWorkflow(g2f i, lighting l, masks m, float3 albedo){
-	float4 packedTex = tex2D(_PackedMap, i.uv.xy);
-	#if !PACKED_WORKFLOW_BAKED
-		metallic = ChannelCheck(packedTex, _MetallicChannel);
-		roughness = ChannelCheck(packedTex, _RoughnessChannel);
-	#else
-		metallic = packedTex.r;
-		roughness = packedTex.g;
+	roughness = lerp(roughness, GetDetailRough(i, roughness), _DetailRoughStrength * m.detailMask);
+	#if CURVATURE_ENABLED
+		roughness = _CurvatureTarget == 2 ? BlendCurvature(curvature, roughness) : roughness;
 	#endif
-	roughness = pow(roughness, 0.454545);
 
 	ApplyPBRFiltering(roughness, _RoughContrast, _RoughIntensity, _RoughLightness, _RoughnessFiltering, prevRough);
 
@@ -321,7 +352,11 @@ float3 GetWorkflow(g2f i, lighting l, masks m, float3 albedo){
 		diffuse = GetMetallicWorkflow(i, l, m, albedo);
 	#elif SPECULAR_WORKFLOW
 		diffuse = GetSpecWorkflow(i, l, m, albedo);
-	#elif PACKED_WORKFLOW || PACKED_WORKFLOW_BAKED
+	#elif PACKED_WORKFLOW
+		InitializeModularChannels();
+		diffuse = GetPackedWorkflow(i, l, m, albedo);
+	#elif PACKED_WORKFLOW_BAKED
+		InitializeBakedChannels();
 		diffuse = GetPackedWorkflow(i, l, m, albedo);
 	#endif
 	return diffuse;
@@ -346,9 +381,23 @@ void ApplyHeightPreview(inout float3 diffuse){
 	#endif
 }
 
+void ApplyCurvePreview(inout float3 diffuse){
+	diffuse = lerp(diffuse, prevCurve, _CurvatureFiltering * _PreviewCurvature);
+}
+
 //----------------------------
 // UV Distortion
 //----------------------------
+float2 GetTorusOffset(float2 uv) {
+    // translated to hlsl and modified from https://www.shadertoy.com/view/Md3Bz7
+    // http://web.cs.ucdavis.edu/~amenta/s12/findnorm.pdf
+    float phi = UNITY_TWO_PI*uv.x;
+    float theta = UNITY_TWO_PI*uv.y;
+    float3 c = cos(float3(phi, phi + UNITY_HALF_PI, theta));
+    float2 result = float2(c.x*c.z,-c.y*c.z);
+    return result * 0.5 + 0.5;  
+}
+
 float2 GetSimplexOffset(g2f i){
 	float xOfs = GetSimplex3D(i.rawUV.xy, _NoiseScale, _Time.y*_NoiseSpeed, _NoiseOctaves) * _DistortUVStr;
 	float yOfs = GetSimplex3D(i.rawUV.xy, _NoiseScale, (_Time.y+43.423984)*_NoiseSpeed, _NoiseOctaves) * _DistortUVStr;
@@ -389,20 +438,59 @@ float2 GetParallaxOffset(g2f i){
 	float stepSize = 1.0/15.0;
 	float stepHeight = 1;
 	float2 uvDelta = i.tangentViewDir.xy * (stepSize * _Parallax);
-	float surfaceHeight = UNITY_SAMPLE_TEX2D_SAMPLER(_ParallaxMap, _MainTex, i.uv.xy);
-	surfaceHeight = clamp(surfaceHeight, 0, 0.999);
-	float prevStepHeight = stepHeight;
-	float prevSurfaceHeight = surfaceHeight;
-	[unroll(15)]
-	for (int j = 1; j < 15 && stepHeight > surfaceHeight; j++){
-		prevUVOffset = uvOffset;
-		prevStepHeight = stepHeight;
-		prevSurfaceHeight = surfaceHeight;
-		uvOffset -= uvDelta;
-		stepHeight -= stepSize;
+	float surfaceHeight = 0;
+
+	#if PACKED_WORKFLOW
+		packedTex = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy);
+		surfaceHeight = ChannelCheck(packedTex, _HeightChannel);
+		surfaceHeight = clamp(surfaceHeight, 0, 0.999);
+		float prevStepHeight = stepHeight;
+		float prevSurfaceHeight = surfaceHeight;
+		[unroll(10)]
+		for (int j = 1; j < 10 && stepHeight > surfaceHeight; j++){
+			prevUVOffset = uvOffset;
+			prevStepHeight = stepHeight;
+			prevSurfaceHeight = surfaceHeight;
+			uvOffset -= uvDelta;
+			stepHeight -= stepSize;
+			surfaceHeight = ChannelCheck(UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy+uvOffset), _HeightChannel);
+			ApplyPBRFiltering(surfaceHeight, _HeightContrast, _HeightIntensity, _HeightLightness, _HeightFiltering, prevHeight);
+		}
+
+	#elif PACKED_WORKFLOW_BAKED
+		packedTex = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy);
+		surfaceHeight = packedTex.a;
+		surfaceHeight = clamp(surfaceHeight, 0, 0.999);
+		float prevStepHeight = stepHeight;
+		float prevSurfaceHeight = surfaceHeight;
+		[unroll(10)]
+		for (int j = 1; j < 10 && stepHeight > surfaceHeight; j++){
+			prevUVOffset = uvOffset;
+			prevStepHeight = stepHeight;
+			prevSurfaceHeight = surfaceHeight;
+			uvOffset -= uvDelta;
+			stepHeight -= stepSize;
+			surfaceHeight = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy+uvOffset).a;
+			ApplyPBRFiltering(surfaceHeight, _HeightContrast, _HeightIntensity, _HeightLightness, _HeightFiltering, prevHeight);
+		}
+
+	#else
 		surfaceHeight = UNITY_SAMPLE_TEX2D_SAMPLER(_ParallaxMap, _MainTex, i.uv.xy+uvOffset);
-		ApplyPBRFiltering(surfaceHeight, _HeightContrast, _HeightIntensity, _HeightLightness, _HeightFiltering, prevHeight);
-	}
+		surfaceHeight = clamp(surfaceHeight, 0, 0.999);
+		float prevStepHeight = stepHeight;
+		float prevSurfaceHeight = surfaceHeight;
+		[unroll(10)]
+		for (int j = 1; j < 10 && stepHeight > surfaceHeight; j++){
+			prevUVOffset = uvOffset;
+			prevStepHeight = stepHeight;
+			prevSurfaceHeight = surfaceHeight;
+			uvOffset -= uvDelta;
+			stepHeight -= stepSize;
+			surfaceHeight = UNITY_SAMPLE_TEX2D_SAMPLER(_ParallaxMap, _MainTex, i.uv.xy+uvOffset);
+			ApplyPBRFiltering(surfaceHeight, _HeightContrast, _HeightIntensity, _HeightLightness, _HeightFiltering, prevHeight);
+		}
+	#endif
+
 	prevHeight = surfaceHeight;
 	float prevDifference = prevStepHeight - prevSurfaceHeight;
 	float difference = surfaceHeight - stepHeight;
@@ -434,66 +522,6 @@ void ApplyParallax(inout g2f i){
 }
 
 //----------------------------
-// Mask Sampling
-//----------------------------
-masks GetMasks(g2f i){
-	masks m = (masks)1;
-
-	m.detailMask = UNITY_SAMPLE_TEX2D_SAMPLER(_DetailMask, _MainTex, i.uv.xy);
-	m.matcapBlendMask = UNITY_SAMPLE_TEX2D_SAMPLER(_MatcapBlendMask, _MainTex, i.uv.xy);
-
-	#if FILTERING_ENABLED
-		m.filterMask = UNITY_SAMPLE_TEX2D_SAMPLER(_FilterMask, _MainTex, i.uv.xy);
-		m.teamMask = UNITY_SAMPLE_TEX2D_SAMPLER(_TeamColorMask, _MainTex, i.uv.xy);
-	#endif
-
-	#if COMBINED_SPECULAR && !OUTLINE_PASS
-		m.anisoMask = 1-UNITY_SAMPLE_TEX2D_SAMPLER(_InterpMask, _MainTex, i.uv.xy);
-	#endif
-
-	// Separate
-	#if SEPARATE_MASKING
-		#if !OUTLINE_PASS
-			#if REFLECTIONS_ENABLED
-				m.reflectionMask = UNITY_SAMPLE_TEX2D_SAMPLER(_ReflectionMask, _MainTex, i.uv.xy);
-			#endif
-			#if SPECULAR_ENABLED
-				m.specularMask = UNITY_SAMPLE_TEX2D_SAMPLER(_SpecularMask, _MainTex, i.uv.xy);
-			#endif
-			#if ENVIRONMENT_RIM_ENABLED
-				m.eRimMask = UNITY_SAMPLE_TEX2D_SAMPLER(_ERimMask, _MainTex, i.uv.xy);
-			#endif
-			#if MATCAP_ENABLED
-				m.matcapMask = UNITY_SAMPLE_TEX2D_SAMPLER(_MatcapMask, _MainTex, i.uv.xy);
-			#endif
-			m.subsurfMask = UNITY_SAMPLE_TEX2D_SAMPLER(_SubsurfaceMask, _MainTex, i.uv.xy);
-			m.rimMask = UNITY_SAMPLE_TEX2D_SAMPLER(_RimMask, _MainTex, i.uv.xy);
-		#endif
-		m.shadowMask = UNITY_SAMPLE_TEX2D_SAMPLER(_ShadowMask, _MainTex, i.uv.xy);
-		m.diffuseMask = UNITY_SAMPLE_TEX2D_SAMPLER(_DiffuseMask, _MainTex, i.uv.xy);
-
-	// Packed
-	#elif PACKED_MASKING
-		float3 mask0 = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMask0, _MainTex, i.uv.xy);
-		float3 mask1 = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMask1, _MainTex, i.uv.xy);
-		float3 mask2 = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMask2, _MainTex, i.uv.xy);
-
-		m.reflectionMask = mask0.r;
-		m.specularMask = mask0.g;
-		m.matcapMask = mask0.b;
-		
-		m.shadowMask = mask1.r;
-		m.diffuseMask = mask1.g;
-		m.subsurfMask = mask1.b;
-
-		m.rimMask = mask2.r;
-		m.eRimMask = mask2.g;
-	#endif
-
-	return m;
-}
-
-//----------------------------
 // Transparency Stuff
 //----------------------------
 float4 PremultiplyAlpha(float4 diffuse, float omr){
@@ -511,11 +539,11 @@ float GetOneMinusReflectivity(g2f i){
 		float3 specularTint = UNITY_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, _MainTex, i.uv.xy).rgb;
 		omr = 1-max(max(specularTint.r, specularTint.g), specularTint.b);
 	#elif PACKED_WORKFLOW
-		float4 packedTex = tex2D(_PackedMap, i.uv.xy);
+		float4 packedTex = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy);
 		metallic = ChannelCheck(packedTex, _MetallicChannel);
 		omr = unity_ColorSpaceDielectricSpec.a - metallic * unity_ColorSpaceDielectricSpec.a;
 	#elif PACKED_WORKFLOW_BAKED
-		metallic = tex2D(_PackedMap, i.uv.xy).r;
+		metallic = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy).r;
 		omr = unity_ColorSpaceDielectricSpec.a - metallic * unity_ColorSpaceDielectricSpec.a;
 	#endif
 	return omr;
@@ -525,4 +553,73 @@ float ShadowPremultiplyAlpha(g2f i, float alpha){
 	float omr = GetOneMinusReflectivity(i);
 	alpha = 1-omr + alpha*omr;
 	return alpha;
+}
+
+//----------------------------
+// Mask Sampling
+//----------------------------
+masks GetMasks(g2f i){
+	masks m = (masks)1;
+	
+	// Separate
+	#if SEPARATE_MASKING
+		#if SHADING_ENABLED
+			#if !OUTLINE_PASS
+				#if REFLECTIONS_ENABLED
+					m.reflectionMask = UNITY_SAMPLE_TEX2D_SAMPLER(_ReflectionMask, _MainTex, i.uv.xy);
+				#endif
+				#if SPECULAR_ENABLED
+					m.specularMask = UNITY_SAMPLE_TEX2D_SAMPLER(_SpecularMask, _MainTex, i.uv.xy);
+				#endif
+				#if ENVIRONMENT_RIM_ENABLED
+					m.eRimMask = UNITY_SAMPLE_TEX2D_SAMPLER(_ERimMask, _MainTex, i.uv.xy);
+				#endif
+				#if MATCAP_ENABLED
+					m.matcapMask = UNITY_SAMPLE_TEX2D_SAMPLER(_MatcapMask, _MainTex, i.uv.xy);
+					m.matcapBlendMask = UNITY_SAMPLE_TEX2D_SAMPLER(_MatcapBlendMask, _MainTex, i.uv.xy);
+				#endif
+				#if COMBINED_SPECULAR
+					m.anisoMask = 1-UNITY_SAMPLE_TEX2D_SAMPLER(_InterpMask, _MainTex, i.uv.xy);
+				#endif
+				m.subsurfMask = UNITY_SAMPLE_TEX2D_SAMPLER(_SubsurfaceMask, _MainTex, i.uv.xy);
+				m.rimMask = UNITY_SAMPLE_TEX2D_SAMPLER(_RimMask, _MainTex, i.uv.xy);
+			#endif
+			m.detailMask = UNITY_SAMPLE_TEX2D_SAMPLER(_DetailMask, _MainTex, i.uv.xy);
+			m.shadowMask = UNITY_SAMPLE_TEX2D_SAMPLER(_ShadowMask, _MainTex, i.uv.xy);
+			m.diffuseMask = UNITY_SAMPLE_TEX2D_SAMPLER(_DiffuseMask, _MainTex, i.uv.xy);
+		#endif
+		#if FILTERING_ENABLED
+			m.filterMask = UNITY_SAMPLE_TEX2D_SAMPLER(_FilterMask, _MainTex, i.uv.xy);
+		#endif
+		#if EMISSION_ENABLED
+			m.emissMask = UNITY_SAMPLE_TEX2D_SAMPLER(_EmissMask, _MainTex, i.uv.xy);
+			m.emissPulseMask = UNITY_SAMPLE_TEX2D_SAMPLER(_PulseMask, _MainTex, i.uv.xy);
+		#endif
+
+	// Packed
+	#elif PACKED_MASKING
+		#if SHADING_ENABLED
+			#if !OUTLINE_PASS
+				float3 mask0 = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMask0, _MainTex, i.uv.xy);
+				m.reflectionMask = mask0.r;
+				m.specularMask = mask0.g;
+				m.matcapMask = mask0.b;
+				float4 mask2 = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMask2, _MainTex, i.uv.xy);
+				m.rimMask = mask2.r;
+				m.eRimMask = mask2.g;
+				m.matcapBlendMask = mask2.b;
+				m.anisoMask = mask2.a;
+			#endif
+			float3 mask1 = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMask1, _MainTex, i.uv.xy);
+			m.shadowMask = mask1.r;
+			m.diffuseMask = mask1.g;
+			m.subsurfMask = mask1.b;
+		#endif
+		float3 mask3 = tex2D(_PackedMask3, i.uv.xy);
+		m.emissMask = mask3.r;
+		m.emissPulseMask = mask3.g;
+		m.filterMask = mask3.b;
+	#endif
+
+	return m;
 }

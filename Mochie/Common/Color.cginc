@@ -89,6 +89,7 @@ float BlendPinLight(float s, float d){ return (2.0*s - 1.0 > d) ? 2.0*s - 1.0 : 
 float BlendVividLight(float s, float d){ return (s < 0.5) ? 1.0 - (1.0 - d) / (2.0 * s) : d / (2.0 * (1.0 - s)); }
 float BlendHardLight(float s, float d){ return (s < 0.5) ? 2.0*s*d : 1.0 - 2.0*(1.0 - s)*(1.0 - d); }
 float BlendOverlay(float s, float d){ return (d < 0.5) ? 2.0*s*d : 1.0 - 2.0*(1.0 - s)*(1.0 - d); }
+float BlendScreen(float s, float d) { return s + d - s * d; }
 float BlendSoftLight(float s, float d){
     return (s < 0.5) ? d - (1.0 - 2.0*s)*d*(1.0 - d) 
                 : (d < 0.25) ? d + (2.0*s - 1.0)*d*((16.0*d - 12.0)*d + 3.0) 

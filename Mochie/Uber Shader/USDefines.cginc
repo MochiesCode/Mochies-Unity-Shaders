@@ -12,7 +12,7 @@
 	#define SHADOW_COORDS(idx1) unityShadowCoord2 _ShadowCoord : TEXCOORD##idx1;
 #endif
 
-UNITY_DECLARE_TEX2D(_MainTex); float4 _MainTex_ST, _MainTex_TexelSize;
+// UNITY_DECLARE_TEX2D(_MainTex); 
 UNITY_DECLARE_TEX2D_NOSAMPLER(_MetallicGlossMap);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_SpecGlossMap);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_BumpMap);
@@ -44,8 +44,12 @@ UNITY_DECLARE_TEX2D_NOSAMPLER(_PackedMask0);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_PackedMask1);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_PackedMask2);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_MirrorTex);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_DetailRoughnessMap);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_Curvature);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_PackedMap);
 
-sampler2D _PackedMap;
+sampler2D _PackedMask3;
+sampler2D _OutlineMask;
 sampler2D _ShadowRamp;
 samplerCUBE _MainTexCube0, _MainTexCube1;
 
@@ -69,9 +73,10 @@ int _SRampTintAO, _UseSmoothMap, _PreviewSmooth;
 int _PackedRoughPreview, _ShadowConditions, _DirectAO, _DistortUVs;
 int _DistortionStyle, _IndirectAO, _NoiseOctaves, _UseMetallicMap, _UseSpecMap;
 int _MatcapUseRough, _UseMatcap1, _UnlitMatcap1;
-int _UseMirrorAlbedo, _DissolveStyle;
+int _DissolveStyle;
 int _DistortMatcap0, _DistortMatcap1, _MatcapUseRough1, _Invert;
-int _TeamFiltering, _GeomDissolveAxis, _GeomDissolveAxisFlip, _GeomDissolveWireframe;
+int _TeamFiltering, _UVSec, _DetailRoughBlending;
+int _CurvatureBlending, _CurvatureTarget, _CurvatureChannel;
 
 float4 _Color; 
 float4 _CubeColor0, _CubeColor1;
@@ -95,7 +100,7 @@ float2 _NoiseScale;
 float _Opacity, _Cutoff;
 float _DistanceFadeMin, _DistanceFadeMax, _ClipRimStr, _ClipRimWidth;
 float _CubeBlend;
-float _BumpScale, _DetailNormalMapScale;
+float _BumpScale, _DetailNormalMapScale, _DetailRoughStrength;
 float _Metallic, _Glossiness, _GlossMapScale, _OcclusionStrength;
 float _DirectCont, _IndirectCont, _DirectContSTD, _IndirectContSTD, _RTDirectCont, _RTIndirectCont, _VLightCont, _AdditiveMax;
 float _ShadowStr, _RampWidth0, _RampWidth1, _RampWeight;
@@ -111,13 +116,14 @@ float _ERimWidth, _ERimStr, _ERimEdge, _ERimRoughness;
 float _Value;
 float _NoiseSpeed, _RampPos;
 float _MatcapRough, _MatcapRough1;
-float _GeomDissolveAmount, _GeomDissolveWidth, _GeomDissolveClip, _GeomDissolveSpread;
 
-int _PreviewRough, _PreviewAO, _PreviewHeight;
-int _AOFiltering, _HeightFiltering, _RoughnessFiltering, _SmoothnessFiltering;
+int _PreviewRough, _PreviewAO, _PreviewHeight, _PreviewCurvature;
+int _AOFiltering, _HeightFiltering, _RoughnessFiltering, _SmoothnessFiltering, _CurvatureFiltering;
 float _AOLightness, _AOIntensity, _AOContrast;
 float _RoughLightness, _RoughIntensity, _RoughContrast;
 float _SmoothLightness, _SmoothIntensity, _SmoothContrast;
+float _CurvatureLightness, _CurvatureIntensity, _CurvatureContrast;
+
 
 sampler3D _DitherMaskLOD;
 sampler2D _DitherMaskLOD2D;
@@ -136,15 +142,13 @@ float2 _FrameClipOfs1;
 float2 _SpritesheetScale1, _SpritesheetPos1;
 float _SpritesheetRot, _FPS;
 float _SpritesheetRot1, _FPS1;
-
+float _SpritesheetBrightness, _SpritesheetBrightness1;
 
 UNITY_DECLARE_TEX2D_NOSAMPLER(_OutlineTex); float4 _OutlineTex_ST;
-sampler2D _OutlineMask;
 int _OutlineToggle, _ApplyOutlineLighting, _ApplyOutlineEmiss, _ApplyAlbedoTint, _UseVertexColor;
 float4 _OutlineCol;
 float2 _OutlineScroll;
 float _OutlineThicc, _OutlineRange, _OutlineMult;
-
 
 UNITY_DECLARE_TEX2D(_EmissionMap);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_EmissMask);
@@ -153,15 +157,12 @@ int _PulseToggle, _PulseWaveform, _ReactToggle, _CrossMode;
 float _PulseSpeed, _PulseStr, _Crossfade, _ReactThresh;
 float2 _EmissScroll;
 
-
 UNITY_DECLARE_TEX2D_NOSAMPLER(_DetailNormalMap); 
 float _DetailNormalmapScale;
-
 
 UNITY_DECLARE_TEX2D_NOSAMPLER(_ParallaxMap);
 float _Parallax;
 float _HeightLightness, _HeightIntensity, _HeightContrast;
-
 
 UNITY_DECLARE_TEX2D_NOSAMPLER(_ReflectionMask);
 sampler2D_float _CameraDepthTexture;
@@ -176,10 +177,9 @@ float4 _SSRGrab_TexelSize;
 float4 _CameraDepthTexture_TexelSize;
 float _Alpha, _Blur, _EdgeFade, _RTint, _LRad, _SRad, _Step;
 
-
 UNITY_DECLARE_TEX2D_NOSAMPLER(_SpecularMask);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_InterpMask);
-int _Specular, _SharpSpecular, _SharpSpecStr, _SpecTermStep;
+int _Specular, _SharpSpecular, _SharpSpecStr, _SpecTermStep, _UVAniso;
 int _AnisoSteps, _AnisoLerp, _RippleInvert, _SpecUseRough, _ManualSpecBright;
 float4 _SpecCol, _SpecTex_ST;
 float3 _RippleSeeds;
@@ -191,6 +191,7 @@ float _DebugFloat, _DebugRange;
 float4 _DebugVector, _DebugColor, _DebugHDRColor;
 
 // Outputs
+float4 packedTex;
 float4 spec;
 float3 specularTint;
 float3 uvOffset;
@@ -200,11 +201,13 @@ float roughness;
 float smoothness;
 float occlusion;
 float height; 
+float curvature;
 float cubeMask;
 float _NaNLmao;
 float prevRough;
 float prevSmooth;
 float prevHeight;
+float prevCurve;
 float3 prevAO;
 float3 uvOffsetOut;
 
@@ -250,6 +253,7 @@ struct masks {
 	float anisoMask;
 	float filterMask;
 	float emissMask;
+	float emissPulseMask;
 	float4 teamMask;
 };
 
@@ -257,6 +261,7 @@ struct appdata {
     float4 vertex : POSITION;
     float4 uv : TEXCOORD0;
 	float4 uv1 : TEXCOORD1;
+	float4 uv2 : TEXCOORD2;
     float4 tangent : TANGENT;
     float3 normal : NORMAL;
 	float4 color : COLOR;
@@ -266,7 +271,6 @@ struct appdata {
 #include "USSampling.cginc"
 
 #if X_FEATURES
-
 UNITY_DECLARE_TEX2D_NOSAMPLER(_DissolveMask);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_DissolveTex); float4 _DissolveTex_ST;
 UNITY_DECLARE_TEX2D_NOSAMPLER(_DissolveRimTex); float4 _DissolveRimTex_ST;
@@ -281,6 +285,8 @@ int _Screenspace;
 int _DistanceFadeToggle;
 int _ShowInMirror, _ShowBase, _Connected;
 int _DissolveToggle, _DissolveChannel, _DissolveWave, _DissolveBlending;
+int _GeomDissolveAxis, _GeomDissolveAxisFlip, _GeomDissolveWireframe;
+int _GeomDissolveFilter, _GeomDissolveClamp;
 float4 _Clone1, _Clone2, _Clone3, _Clone4, _Clone5, _Clone6, _Clone7, _Clone8;
 float4 _DissolveRimCol;
 float4 _WFColor;
@@ -289,10 +295,12 @@ float3 _EntryPos;
 float3 _BaseOffset, _BaseRotation;
 float3 _ReflOffset, _ReflRotation;
 float3 _Position, _Rotation;
+float3 _GeomDissolveSpread;
 float2 _DissolveScroll0; 
 float2 _DissolveScroll1;
 float _Range;
 float _DissolveAmount, _DissolveRimWidth, _DissolveBlendSpeed;
+float _GeomDissolveAmount, _GeomDissolveWidth, _GeomDissolveClip;
 float _WFFill, _WFVisibility;
 float _ShatterMax, _ShatterMin, _ShatterSpread, _ShatterCull; 
 float _Instability, _GlitchFrequency, _GlitchIntensity, _PosPrecision, _PatternMult; 

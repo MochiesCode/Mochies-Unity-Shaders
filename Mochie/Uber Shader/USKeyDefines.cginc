@@ -173,4 +173,8 @@
 	#define CLONES_ENABLED defined(BLOOM)
 #endif
 
+// #ifndef CURVATURE_ENABLED
+// 	#define CURVATURE_ENABLED defined(BLOOM_LOW)
+// #endif
+
 #endif

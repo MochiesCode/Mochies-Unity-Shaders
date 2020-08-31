@@ -29,12 +29,15 @@ v2g vert (appdata v) {
     float3x3 objectToTangent = float3x3(v.tangent.xyz, (cross(v.normal, v.tangent.xyz) * v.tangent.w), v.normal);
     o.tangentViewDir = mul(objectToTangent, ObjSpaceViewDir(v.vertex));
 
-	o.rawUV = v.uv;
+	float2 detailUV = lerp3(v.uv, v.uv1, v.uv2, _UVSec);
 	o.uv.xy = TRANSFORM_TEX(v.uv, _MainTex) + (_Time.y * _MainTexScroll);
     o.uv.zw = TRANSFORM_TEX(v.uv, _EmissionMap) + (_Time.y * _EmissScroll);
-	o.uv2.xy = TRANSFORM_TEX(v.uv, _DetailAlbedoMap) + (_Time.y * _DetailScroll);
+	o.uv2.xy = TRANSFORM_TEX(detailUV, _DetailAlbedoMap) + (_Time.y * _DetailScroll);
 	o.uv2.zw = TRANSFORM_TEX(v.uv, _RimTex) + (_Time.y * _RimScroll);
 	o.uv3.xy = TRANSFORM_TEX(v.uv, _DistortUVMap) + (_Time.y * _DistortUVScroll);
+	float2 anisoUV = lerp3(o.uv, v.uv1, v.uv2, _UVAniso);
+	o.rawUV.xy = v.uv.xy;
+	o.rawUV.zw = anisoUV;
 
 	UNITY_TRANSFER_SHADOW(o, v.uv1);
 	UNITY_TRANSFER_FOG(o, o.pos);
@@ -60,6 +63,8 @@ float4 frag (g2f i) : SV_Target {
 
 	#if PARALLAX_ENABLED
 		ApplyParallax(i);
+	#elif PACKED_WORKFLOW || PACKED_WORKFLOW_BAKED
+		packedTex = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy);
 	#endif
 
 	i.screenPos = UNITY_PROJ_COORD(i.screenPos);
@@ -75,7 +80,7 @@ float4 frag (g2f i) : SV_Target {
 	#endif
 
 	#if EMISSION_ENABLED
-		float3 emiss = GetEmission(i);
+		float3 emiss = GetEmission(i, m);
 	#endif
 
 	float4 diffuse = albedo;
@@ -147,6 +152,7 @@ float4 frag (g2f i) : SV_Target {
 		ApplySmoothPreview(diffuse.rgb);
 		ApplyAOPreview(diffuse.rgb);
 		ApplyHeightPreview(diffuse.rgb);
+		ApplyCurvePreview(diffuse.rgb);
 	#endif
 	
 	return diffuse;
@@ -165,7 +171,12 @@ v2g vert (appdata v) {
 		o.pos = 0.0/_NaNLmao;
 	#else
 		o.isReflection = IsInMirror();
-		float thicknessMask = tex2Dlod(_OutlineMask, float4(v.uv.xy,0,0));
+		float thicknessMask = 1;
+		#if SEPARATE_MASKING
+			thicknessMask = tex2Dlod(_OutlineMask, float4(v.uv.xy,0,0));
+		#elif PACKED_MASKING
+			thicknessMask = tex2Dlod(_PackedMask3, float4(v.uv.xy,0,0)).a;
+		#endif
 		v.vertex.xyz += _OutlineThicc*v.normal*0.01*_OutlineMult*thicknessMask*lerp(1,v.color.xyz,_UseVertexColor);
 		o.objPos = mul(unity_ObjectToWorld, float4(0,0,0,1)).xyz;
 		o.cameraPos = _WorldSpaceCameraPos;
@@ -191,9 +202,10 @@ v2g vert (appdata v) {
 		o.tangentViewDir = mul(objectToTangent, ObjSpaceViewDir(v.vertex));
 		
 		o.rawUV = v.uv;
+		float2 detailUV = lerp3(v.uv, v.uv1, v.uv2, _UVSec);
 		o.uv.xy = TRANSFORM_TEX(v.uv, _MainTex) + (_Time.y * _MainTexScroll);
 		o.uv.zw = TRANSFORM_TEX(v.uv, _EmissionMap) + (_Time.y * _EmissScroll);
-		o.uv2.xy = TRANSFORM_TEX(v.uv, _DetailAlbedoMap) + (_Time.y * _DetailScroll);
+		o.uv2.xy = TRANSFORM_TEX(detailUV, _DetailAlbedoMap) + (_Time.y * _DetailScroll);
 		o.uv2.zw = TRANSFORM_TEX(v.uv, _OutlineTex) + (_Time.y * _OutlineScroll);
 		o.uv3.xy = TRANSFORM_TEX(v.uv, _DistortUVMap) + (_Time.y * _DistortUVScroll);
 		UNITY_TRANSFER_SHADOW(o, v.uv1);
@@ -226,10 +238,10 @@ float4 frag(g2f i) : SV_Target {
 	
 	if ((i.isReflection && _MirrorBehavior == 3) ||  (!i.isReflection && _MirrorBehavior == 1))
 		discard;
-	
-	// float mask = tex2D(_OutlineMask, i.uv);
-	// clip(mask-0.5);
 
+	#if PACKED_WORKFLOW || PACKED_WORKFLOW_BAKED
+		packedTex = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy);
+	#endif
 	UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos);
 	float3 attenCol = atten;
 	attenCol = FadeShadows(i, attenCol);
@@ -255,8 +267,8 @@ float4 frag(g2f i) : SV_Target {
 	if (_ApplyOutlineLighting == 1){
 		#if SHADING_ENABLED
 			attenCol = GetRamp(i, l, m, albedo.rgb, attenCol);
-			diffuse.rgb = GetWorkflow(i, l, m, albedo.rgb);
-			roughness = GetRoughness(smoothness);
+			// diffuse.rgb = GetWorkflow(i, l, m, albedo.rgb);
+			// roughness = GetRoughness(smoothness);
 			diffuse.rgb = GetMochieBRDF(i, l, m, diffuse, albedo, specularTint, 0, omr, smoothness, attenCol);
 		#else
 			diffuse = GetDiffuse(l, albedo, 1);
@@ -266,7 +278,7 @@ float4 frag(g2f i) : SV_Target {
 	col = diffuse;
 	
 	#if EMISSION_ENABLED
-		float3 emiss = lerp(_EmissionColor.rgb, GetEmission(i), _ApplyAlbedoTint);
+		float3 emiss = lerp(_EmissionColor.rgb, GetEmission(i, m), _ApplyAlbedoTint);
 		#if PULSE_ENABLED
 			emiss *= GetPulse(i);
 		#endif
@@ -354,11 +366,9 @@ float4 frag(g2f i) : SV_Target {
 		#endif
 		
 		float alpha = 1;
-		float4 albedo = UNITY_SAMPLE_TEX2D(_MainTex, i.uv.xy) * _Color;
+		float4 albedo = _MainTex.Sample(sampler_MainTex, i.uv.xy) * _Color;
 		float maskAlpha = UNITY_SAMPLE_TEX2D_SAMPLER(_AlphaMask, _MainTex, i.uv.xy) * _Color.a;
-		alpha = albedo.a;
-		if (_UseAlphaMask == 1)
-			alpha = maskAlpha;
+		alpha = lerp(albedo.a, maskAlpha, _UseAlphaMask);
 
 		#if ALPHA_PREMULTIPLY
 			alpha = ShadowPremultiplyAlpha(i, alpha);

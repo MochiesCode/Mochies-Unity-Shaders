@@ -333,21 +333,3 @@ float Dither(float2 pos, float alpha) {
 	pos *= _ScreenParams.xy;
 	return alpha - Dither8x8Bayer(fmod(pos.x, 8), fmod(pos.y, 8));
 }
-
-void ApplyPBRFiltering(inout float value, float contrast, float intensity, float lightness, int shouldApply, inout float previewValue){
-	if (shouldApply == 1){
-		value = saturate(lerp(0.5, value, contrast));
-		value += saturate(value * intensity);
-		value = saturate(value + lightness);
-		previewValue = value;
-	}
-}
-
-void ApplyPBRFiltering(inout float3 value, float contrast, float intensity, float lightness, int shouldApply, inout float3 previewValue){
-	if (shouldApply == 1){
-		value = saturate(lerp(0.5, value, contrast));
-		value += saturate(value * intensity);
-		value = saturate(value + lightness);
-		previewValue = value;
-	}
-}

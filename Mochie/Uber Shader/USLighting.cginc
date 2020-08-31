@@ -28,7 +28,6 @@ void ApplyLREmission(lighting l, inout float3 diffuse, float3 emiss){
 float3 GetAO(g2f i){
 	float3 ao = 1;
 	#if PACKED_WORKFLOW || PACKED_WORKFLOW_BAKED
-		float4 packedTex = tex2D(_PackedMap, i.uv.xy);
 		#if PACKED_WORKFLOW
 			ao = ChannelCheck(packedTex, _OcclusionChannel);
 		#else
@@ -255,7 +254,7 @@ lighting GetLighting(g2f i, masks m, float3 atten){
 		l.NdotV = abs(dot(l.normal, l.viewDir));
 		l.NdotH = DotClamped(l.normal, l.halfVector);
 		l.LdotH = DotClamped(l.lightDir, l.halfVector);
-		#if SPECULAR_ENABLED
+		#if SPECULAR_ENABLED && !OUTLINE_PASS
 			l.TdotH = dot(l.tangent, l.halfVector);
 			l.BdotH = dot(l.binormal, l.halfVector);
 		#endif

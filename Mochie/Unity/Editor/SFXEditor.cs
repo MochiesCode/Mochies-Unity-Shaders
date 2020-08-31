@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Collections.Generic;
+using Mochie;
 
 public class SFXEditor : ShaderGUI {
 
@@ -18,13 +19,7 @@ public class SFXEditor : ShaderGUI {
     
 	public static Dictionary<Material, Toggles> foldouts = new Dictionary<Material, Toggles>();
 	public static Dictionary<string, float> presetDict = new Dictionary<string, float>();
-	public static List<string> presetsList = new List<string>();
-	public static string[] presets;
-	
-	int popupIndex = -1;
-	string presetText = "";
-	string dirPath = "Assets/Mochie/Unity/Presets/ScreenFX/";
-	
+
     Toggles toggles = new Toggles(
 		new string[] {
 			"GENERAL",
@@ -46,8 +41,7 @@ public class SFXEditor : ShaderGUI {
 			"Rounding",
 			"Normal Map",
 			"Depth Buffer",
-			"Safe Zone",
-			"PRESETS"
+			"Safe Zone"
 		}
 	);
 
@@ -55,6 +49,7 @@ public class SFXEditor : ShaderGUI {
 	string header = "SFXHeader_Pro";
 	string watermark = "Watermark_Pro";
 	string patIcon = "Patreon_Icon";
+	string versionLabel = "v1.8";
 
     // Commonly used strings
     string modeLabel = "Mode";
@@ -259,26 +254,6 @@ public class SFXEditor : ShaderGUI {
             if (property.FieldType == typeof(MaterialProperty))
                 property.SetValue(this, FindProperty(property.Name, props));
         }
-
-		// Generate preset popup items (and folders if necessary)
-		if (!AssetDatabase.IsValidFolder(MGUI.parentPath))
-			AssetDatabase.CreateFolder(MGUI.presetPath, "Presets");
-		if (!AssetDatabase.IsValidFolder(MGUI.parentPath+"/ScreenFX"))
-			AssetDatabase.CreateFolder(MGUI.parentPath, "ScreenFX");
-		DirectoryInfo dir = new DirectoryInfo(dirPath);
-		FileInfo[] info = dir.GetFiles();
-		foreach (FileInfo f in info){
-			if (!f.Name.Contains(".meta") && f.Name.Contains(".mat")){
-				Material candidate = (Material)AssetDatabase.LoadAssetAtPath(dirPath + f.Name, typeof(Material));
-				if (candidate.shader.name == mat.shader.name){
-					int indOf = f.Name.IndexOf(".");
-					presetsList.Add(f.Name.Substring(0, indOf));
-				}
-			}
-		}
-		presets = presetsList.ToArray();
-		presetsList.Clear();
-
 
 		bool isSFXX = MGUI.IsXVersion(mat);
 
@@ -788,55 +763,6 @@ public class SFXEditor : ShaderGUI {
 					MGUI.Space6();
 				}
 			}
-			
-			// -----------------
-			// Presets
-			// -----------------
-			if (Foldouts.DoFoldout(foldouts, mat, me, 0, "PRESETS")){
-				MGUI.Space4();
-				float buttonWidth = EditorGUIUtility.labelWidth-5.0f;
-				if (MGUI.SimpleButton("Save", buttonWidth, 0)){
-					presetText = MGUI.ReplaceInvalidChars(presetText);
-					string filePath = dirPath + presetText + ".mat";
-					Material newMat = new Material(mat);
-					AssetDatabase.CreateAsset(newMat, filePath);
-					AssetDatabase.Refresh();
-					GUIUtility.keyboardControl = 0;
-					GUIUtility.hotControl = 0;
-					presetText = "";
-					popupIndex = -1;
-				}
-				GUILayout.Space(-17);
-
-				// Text area
-				Rect r = EditorGUILayout.GetControlRect();
-				r.x += EditorGUIUtility.labelWidth;
-				r.width = MGUI.GetPropertyWidth();
-				presetText = EditorGUI.TextArea(r, presetText);
-				
-				// Locate button
-				if (MGUI.SimpleButton("Locate", buttonWidth, 0) && popupIndex != -1){
-					string filePath = dirPath + presets[popupIndex]+".mat";
-					EditorUtility.FocusProjectWindow();
-					Selection.activeObject = AssetDatabase.LoadAssetAtPath(filePath, typeof(Material));
-				}
-				GUILayout.Space(-17);
-
-				// Popup list
-				r = EditorGUILayout.GetControlRect();
-				r.x += EditorGUIUtility.labelWidth;
-				r.width = MGUI.GetPropertyWidth();
-				popupIndex = EditorGUI.Popup(r, popupIndex, presets);
-
-				// Apply button
-				GUILayout.Space(-GUILayoutUtility.GetLastRect().height);
-				if (MGUI.SimpleButton("Apply", r.width, r.x-14f) && popupIndex != -1){
-					string presetPath = dirPath + presets[popupIndex] + ".mat";
-					Material selectedMat = (Material)AssetDatabase.LoadAssetAtPath(presetPath, typeof(Material));
-					mat.CopyPropertiesFromMaterial(selectedMat);
-					popupIndex = -1;
-				}
-			}
 		}
 		GUILayout.Space(15);
 		
@@ -848,6 +774,7 @@ public class SFXEditor : ShaderGUI {
 			Application.OpenURL("https://www.patreon.com/mochieshaders");
 		}
 		GUILayout.Space(buttonSize);
+		MGUI.VersionLabel(versionLabel, 12,-16,-20);
     }
 
     // Set blending mode

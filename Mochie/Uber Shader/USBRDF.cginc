@@ -113,12 +113,11 @@ void ApplyMatcap(g2f i, lighting l, masks m, inout float3 environment, float rou
 	matcap1.rgb *= _MatcapStr1 * m.matcapMask * isUnlit1;
 
 	if (_UseMatcap1 == 1){
-		float3 blend10 = matcap1.rgb * m.matcapBlendMask;
-		float3 blend11 = matcap1.rgb * matcap1.a * m.matcapBlendMask;
+		float blendMask = 1-m.matcapBlendMask;
+		float3 blend10 = matcap1.rgb * blendMask;
+		float3 blend11 = matcap1.rgb * matcap1.a * blendMask;
 		environment = lerp(environment + blend10, environment + blend11, _MatcapBlending1);
 	}
-
-	m.matcapBlendMask = 1-m.matcapBlendMask;
 
 	float3 blend00 = matcap.rgb * m.matcapBlendMask;
 	float3 blend01 = matcap.rgb * matcap.a * m.matcapBlendMask;
@@ -186,17 +185,19 @@ float3 GetRamp(g2f i, lighting l, masks m, float3 albedo, float3 atten){
 
 float3 GetSSS(g2f i, lighting l, masks m, float3 albedo, float3 atten){
     float3 sss = 0;
-    if (_Subsurface == 1){
-        _SPen = 1-_SPen;
-		float thickness = 1 - UNITY_SAMPLE_TEX2D_SAMPLER(_TranslucencyMap, _MainTex, i.uv.xy);
-		float3 subCol = UNITY_SAMPLE_TEX2D_SAMPLER(_SubsurfaceTex, _MainTex, i.uv.xy) * _SColor;
-        float ndl = smoothstep(_SPen-_SSharp, _SPen+_SSharp, l.NdotL);
-        atten = lerp(1, saturate(ndl * atten), _SAtten);
-        float3 vLTLight = l.directCol * l.normalDir;
-        float fLTDot = DotClamped(l.viewDir, -l.halfVector);
-        float3 fLT = (l.indirectCol + fLTDot) * thickness * _SStr * subCol * atten * m.subsurfMask;
-        sss = l.directCol * fLT * albedo;
-    }
+	#if !OUTLINE_PASS
+		if (_Subsurface == 1){
+			_SPen = 1-_SPen;
+			float thickness = 1 - UNITY_SAMPLE_TEX2D_SAMPLER(_TranslucencyMap, _MainTex, i.uv.xy);
+			float3 subCol = UNITY_SAMPLE_TEX2D_SAMPLER(_SubsurfaceTex, _MainTex, i.uv.xy) * _SColor;
+			float ndl = smoothstep(_SPen-_SSharp, _SPen+_SSharp, l.NdotL);
+			atten = lerp(1, saturate(ndl * atten), _SAtten);
+			float3 vLTLight = l.directCol * l.normalDir;
+			float fLTDot = DotClamped(l.viewDir, -l.halfVector);
+			float3 fLT = (l.indirectCol + fLTDot) * thickness * _SStr * subCol * atten * m.subsurfMask;
+			sss = l.directCol * fLT * albedo;
+		}
+	#endif
     return sss;
 }
 
@@ -233,7 +234,7 @@ float GetGGXTerm(lighting l, float roughness){
 
 float GetAnisoTerm(g2f i, lighting l, masks m){
 	_RippleAmplitude = abs(_RippleAmplitude)+1.01;
-	float rippleValue = i.uv.x*_RippleFrequency*100;
+	float rippleValue = i.rawUV.z*_RippleFrequency*100;
 	float ripple = (sin(rippleValue) + sin(rippleValue*_RippleSeeds.x) + sin(rippleValue*_RippleSeeds.y) + sin(rippleValue*_RippleSeeds.z))/3.0;
 	ripple = (ripple+_RippleAmplitude)/(2.0*_RippleAmplitude);
 	ripple = lerp(ripple, (0.01/ripple)*50, _RippleInvert);
@@ -293,9 +294,11 @@ void GetSpecFresTerm(g2f i, lighting l, masks m, inout float3 specularTerm, inou
 
 float DisneyDiffuse(lighting l, masks m, float percepRough) {
 	float dd = 1;
-	float fd90 = 0.5 + 2 * l.LdotH * l.LdotH * percepRough;
-	float viewScatter = (1 + (fd90 - 1) * Pow5(1 - l.NdotV));
-	dd = lerp(1, viewScatter, _DisneyDiffuse * m.diffuseMask);
+	#if !OUTLINE_PASS
+		float fd90 = 0.5 + 2 * l.LdotH * l.LdotH * percepRough;
+		float viewScatter = (1 + (fd90 - 1) * Pow5(1 - l.NdotV));
+		dd = lerp(1, viewScatter, _DisneyDiffuse * m.diffuseMask);
+	#endif
 	return dd;
 }
 
@@ -313,40 +316,42 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
 	float3 lighting = l.indirectCol + l.directCol * diffuseTerm;
 	float3 specular = 0;
 	float3 reflections = 0;
+	float3 environment = 0;
 
 	// Specular
-	#if SPECULAR_ENABLED
-		float3 fresnelTerm = 1;
-		float3 specularTerm = 1;
-		GetSpecFresTerm(i, l, m, specularTerm, fresnelTerm, specCol, lerp(brdfRoughness, _SpecRough, _SpecUseRough));
-		specular = lerp(lighting, 1, _ManualSpecBright) * specularTerm * fresnelTerm * m.specularMask * _SpecCol * l.ao;
-		if (_SharpSpecular == 1 && _SpecTermStep == 0){
-			roughness = saturate(roughness*2);
-			float sharpTerm = round(_SharpSpecStr*Average(specular))/_SharpSpecStr;
-			specular = lerp(specular*sharpTerm, specular, roughness);
-		}
-	#endif
-
-	// Reflections
-	// Lighting based IOR from Retro's standard mod
-	#if REFLECTIONS_ENABLED && FORWARD_PASS													
-		float surfaceReduction = (1.0 / (brdfRoughness*brdfRoughness + 1.0)) * lerp(1, (l.NdotL + 0.3), _LightingBasedIOR);
-		float grazingTerm = saturate(smoothness + (1-omr));
-		reflections = surfaceReduction * reflCol * FresnelLerp(specCol, grazingTerm, l.NdotV);
-		#if SSR_ENABLED
-			float4 SSRColor = GetSSRColor(i.worldPos, l.viewDir, l.reflectionDir, normalize(i.normal), smoothness, albedo, metallic, m.reflectionMask, l.screenUVs, i.screenPos);
-			reflections = lerp(reflections, SSRColor.rgb, SSRColor.a);
+	#if !OUTLINE_PASS
+		#if SPECULAR_ENABLED
+			float3 fresnelTerm = 1;
+			float3 specularTerm = 1;
+			GetSpecFresTerm(i, l, m, specularTerm, fresnelTerm, specCol, lerp(brdfRoughness, _SpecRough, _SpecUseRough));
+			specular = lerp(lighting, 1, _ManualSpecBright) * specularTerm * fresnelTerm * m.specularMask * _SpecCol * l.ao;
+			if (_SharpSpecular == 1 && _SpecTermStep == 0){
+				roughness = saturate(roughness*2);
+				float sharpTerm = round(_SharpSpecStr*Average(specular))/_SharpSpecStr;
+				specular = lerp(specular*sharpTerm, specular, roughness);
+			}
 		#endif
-		reflections *= m.reflectionMask * _ReflectionStr;
+
+		// Reflections
+		// Lighting based IOR from Retro's standard mod
+		#if REFLECTIONS_ENABLED && FORWARD_PASS													
+			float surfaceReduction = (1.0 / (brdfRoughness*brdfRoughness + 1.0)) * lerp(1, (l.NdotL + 0.3), _LightingBasedIOR);
+			float grazingTerm = saturate(smoothness + (1-omr));
+			reflections = surfaceReduction * reflCol * FresnelLerp(specCol, grazingTerm, l.NdotV);
+			#if SSR_ENABLED
+				float4 SSRColor = GetSSRColor(i.worldPos, l.viewDir, l.reflectionDir, normalize(i.normal), smoothness, albedo, metallic, m.reflectionMask, l.screenUVs, i.screenPos);
+				reflections = lerp(reflections, SSRColor.rgb, SSRColor.a);
+			#endif
+			reflections *= m.reflectionMask * _ReflectionStr;
+		#endif
+
+		environment = specular + reflections;
+		
+		#if MATCAP_ENABLED
+			ApplyMatcap(i, l, m, environment, GetRoughness(smoothness));
+		#endif
 	#endif
 
-	// Calculate final diffuse color
-	float3 environment = specular + reflections;
-	
-	#if MATCAP_ENABLED
-		ApplyMatcap(i, l, m, environment, GetRoughness(smoothness));
-	#endif
-	
 	float3 col = diffuse.rgb * lighting;
 
 	// Prevents being washed out by intense lighting
