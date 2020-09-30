@@ -165,16 +165,12 @@ float4 RemapClamped(float4 x, float4 minO, float4 maxO, float4 minN, float4 maxN
 	return clamp(minN + (x - minO) * (maxN - minN) / (maxO - minO), minN, maxN);
 }
 
-float SmoothFalloff(float minR, float maxR, float dist){
-	return smoothstep(maxR, clamp(minR, 0, maxR-0.001), dist);
+float SmoothFalloff(float minR, float maxR, float d){
+	return smoothstep(maxR, clamp(minR, 0, maxR-0.001), d);
 }
 
 float GetFalloff(int ug, float gf, float minR, float maxR, float d){
-    UNITY_BRANCH
-    if (ug == 0)
-        return SmoothFalloff(minR, maxR, d);
-    else
-        return gf;
+    return lerp(smoothstep(maxR, clamp(minR, 0, maxR-0.001), d), gf, ug);
 }
 
 #if defined(HAS_DEPTH_TEXTURE)
@@ -286,7 +282,7 @@ float3 Rotate(float3 coords, float3 axis){
     return coords;
 }
 
-float3 GetNoiseRGB(float2 p, float str) {
+float3 GetNoiseRGB(float2 p, float3 str) {
     float3 rgb = 0;
 	float3 p3 = frac(float3(p.xyx) * (float3(443.8975, 397.2973, 491.1871)+frac(_Time.y)));
 	p3 += dot(p3, p3.yxz + 19.19);
@@ -295,16 +291,37 @@ float3 GetNoiseRGB(float2 p, float str) {
 	return rgb;
 }
 
+float3 GetNoiseRGB(float2 p) {
+    float3 rgb = 0;
+	float3 p3 = frac(float3(p.xyx) * (float3(443.8975, 397.2973, 491.1871)+frac(_Time.y)));
+	p3 += dot(p3, p3.yxz + 19.19);
+	rgb = frac(float3((p3.x + p3.y)*p3.z, (p3.x + p3.z)*p3.y, (p3.y + p3.z)*p3.x));
+	rgb = (rgb-0.5)*2;
+	return rgb;
+}
+
 float GetNoise(float2 p){
 	float n = frac(sin(p.x*100+p.y*6574)*5647);
-	n = linearstep(-1,1,n);
+	n = linearstep(-1, 1, n);
 	return n;
 }
 
 float GetNoise(float2 p, float str){
 	float n = frac(sin(p.x*100+p.y*6574)*5647);
-	n = linearstep(-1,1,n);
-	return n*str;
+	n = linearstep(-1, 1, n)*str;
+	return n;
+}
+
+float GetNoiseSFX(float2 p, float str){
+	float n = GetNoiseRGB(p, str);
+	return n;
+}
+
+float GetScanNoise(float2 p, float str, float thickness, float speed){
+	float2 n = frac(p.yx * float2(443.8975*thickness*smoothstep(-100, 1, GetNoise(p)), 397.2973) + frac(_Time.y*speed));
+	float noise = (n + n) * 0.5;
+	noise = (noise-0.5)*2*str;
+	return noise;
 }
 
 float3 FlowUV (float2 uv, float time, float phase) {

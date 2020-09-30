@@ -1,21 +1,21 @@
 // BY MOCHIE
 // Version 1.2
 
-Shader "Mochie/Particle Shader" {
+Shader "Mochie/Particles/Particle" {
     Properties {
 
         [HideInInspector]_BlendMode("__mode", Int) = 1.0
         [HideInInspector]_SrcBlend("__src", Int) = 1
         [HideInInspector]_DstBlend("__dst", Int) = 10
         [HideInInspector]_ZT("", Int) = 2
-        [Toggle(_)]_ZTest("", Int) = 0
-        [Toggle(_)]_ZWrite("", Int) = 0
+        [ToggleUI]_ZTest("", Int) = 0
+        [ToggleUI]_ZWrite("", Int) = 0
         [Enum(Off,0, Front,1, Back,2)]_Culling("", Int) = 2
-		[Toggle(_)]_FlipbookBlending("", Int) = 0
+		[ToggleUI]_FlipbookBlending("", Int) = 0
 
         _MainTex("", 2D) = "white" {}
         [HDR]_Color("", Color) = (1,1,1,1)
-        [Toggle(_)]_Layering("", Int) = 0
+        [ToggleUI]_Layering("", Int) = 0
         [Enum(Lerp,0, Add,1, Sub,2, Mult,3)]_TexBlendMode("", Int) = 0
         _SecondTex("", 2D) = "white" {}
         [HDR]_SecondColor("", Color) = (1,1,1,1)
@@ -27,8 +27,8 @@ Shader "Mochie/Particle Shader" {
         [Toggle(_FADING_ON)]_Softening("", Int) = 0
         _SoftenStr("", Range(0, 0.999)) = 0
 
-        [Toggle(_)]_Filtering("", Int) = 0
-        [Toggle(_)]_AutoShift("", Int) = 0
+        [ToggleUI]_Filtering("", Int) = 0
+        [ToggleUI]_AutoShift("", Int) = 0
 		_AutoShiftSpeed("", Range(0,1)) = 0.25
 		_Hue("", Range(0,1)) = 0
 		_Saturation("", Range(0,2)) = 1
@@ -39,17 +39,17 @@ Shader "Mochie/Particle Shader" {
         [Toggle(EFFECT_BUMP)]_Distortion("", Int) = 0
         _NormalMap("", 2D) = "bump" {}
 		_NormalMapScale("", Vector) = (1,1,0,0)
-		[Toggle(_)]_DistortMainTex("", Int) = 0
+		[ToggleUI]_DistortMainTex("", Int) = 0
         _DistortionStr("", Float) = 0
         _DistortionBlend("", Range(0,1)) = 0.5
         _DistortionSpeed("", Vector) = (0,0,0,0)
 
-		[Toggle(_)]_Pulse("", Int) = 0
+		[ToggleUI]_Pulse("", Int) = 0
 		[Enum(Sin,0, Square,1, Triangle,2, Saw,3, Reverse Saw,4)]_Waveform("", Int) = 0
 		_PulseStr("", Range(0,1)) = 0.5
 		_PulseSpeed("", Float) = 1
 
-        [Toggle(_)]_Falloff("", Int) = 0
+        [ToggleUI]_Falloff("", Int) = 0
         _NearMinRange("", Float) = 1
         _NearMaxRange("", Float) = 5
         _MinRange("", Float) = 8

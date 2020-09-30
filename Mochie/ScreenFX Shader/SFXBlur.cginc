@@ -3,8 +3,7 @@
 
 #include "SFXKernel.cginc"
 
-#if defined(STD_BLUR)
-void StandardBlur(sampler2D tex, float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol){
+void ApplyStandardBlur(sampler2D tex, float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol){
 	float2 uv = uv0.xy/uv0.w;
 	float4 uvb = float4(uv,0,0);
 	#if UNITY_SINGLE_PASS_STEREO
@@ -17,55 +16,35 @@ void StandardBlur(sampler2D tex, float2 texelSize, float4 uv0, uint sampleCount,
 	[forcecase]
 	switch (sampleCount){
 		case 16: 
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si16 = 0; si16 < sampleCount; ++si16){
 				uvb.xy = uv.xy + (kDiskKernel16[si16] * mainStr);
 				blurCol += tex2Dlod(tex, uvb);
 			}
 			break;
 		case 22: 
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si22 = 0; si22 < sampleCount; ++si22){
 				uvb.xy = uv.xy + (kDiskKernel22[si22] * mainStr);
 				blurCol += tex2Dlod(tex, uvb);
 			}
 			break;
 		case 43:
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si43 = 0; si43 < sampleCount; ++si43){
 				uvb.xy = uv.xy + (kDiskKernel43[si43] * mainStr);
 				blurCol += tex2Dlod(tex, uvb);
 			}
 			break;
 		case 71:
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si71 = 0; si71 < sampleCount; ++si71){
 				uvb.xy = uv.xy + (kDiskKernel71[si71] * mainStr);
 				blurCol += tex2Dlod(tex, uvb);
 			}
 			break;
 		case 136:
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si136 = 0; si136 < sampleCount; ++si136){
 				uvb.xy = uv.xy + (kDiskKernel136[si136] * str136);
 				blurCol += tex2Dlod(tex, uvb);
@@ -75,9 +54,7 @@ void StandardBlur(sampler2D tex, float2 texelSize, float4 uv0, uint sampleCount,
 	}
 	blurCol /= sampleCount;
 }
-#endif
 
-#if defined(STD_BLUR_DEPTH)
 void StandardBlurWithDepth(sampler2D tex, float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol, inout float depth){
 	float2 uv = uv0.xy/uv0.w;
 	float4 uvb = float4(uv,0,0);
@@ -92,11 +69,7 @@ void StandardBlurWithDepth(sampler2D tex, float2 texelSize, float4 uv0, uint sam
 	[forcecase]
 	switch (sampleCount){
 		case 16: 
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si16 = 0; si16 < sampleCount; ++si16){
 				uvb.xy = uv.xy + (kDiskKernel16[si16] * mainStr);
 				blurCol += tex2Dlod(tex, uvb);
@@ -104,11 +77,7 @@ void StandardBlurWithDepth(sampler2D tex, float2 texelSize, float4 uv0, uint sam
 			}
 			break;
 		case 22: 
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si22 = 0; si22 < sampleCount; ++si22){
 				uvb.xy = uv.xy + (kDiskKernel22[si22] * mainStr);
 				blurCol += tex2Dlod(tex, uvb);
@@ -116,11 +85,7 @@ void StandardBlurWithDepth(sampler2D tex, float2 texelSize, float4 uv0, uint sam
 			}
 			break;
 		case 43:
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si43 = 0; si43 < sampleCount; ++si43){
 				uvb.xy = uv.xy + (kDiskKernel43[si43] * mainStr);
 				blurCol += tex2Dlod(tex, uvb);
@@ -128,11 +93,7 @@ void StandardBlurWithDepth(sampler2D tex, float2 texelSize, float4 uv0, uint sam
 			}
 			break;
 		case 71:
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si71 = 0; si71 < sampleCount; ++si71){
 				uvb.xy = uv.xy + (kDiskKernel71[si71] * mainStr);
 				blurCol += tex2Dlod(tex, uvb);
@@ -140,11 +101,7 @@ void StandardBlurWithDepth(sampler2D tex, float2 texelSize, float4 uv0, uint sam
 			}
 			break;
 		case 136:
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si136 = 0; si136 < sampleCount; ++si136){
 				uvb.xy = uv.xy + (kDiskKernel136[si136] * str136);
 				blurCol += tex2Dlod(tex, uvb);
@@ -156,10 +113,8 @@ void StandardBlurWithDepth(sampler2D tex, float2 texelSize, float4 uv0, uint sam
 	depth /= sampleCount;
 	blurCol /= sampleCount;
 }
-#endif
 
-#if defined(STD_BLUR_Y)
-void StandardBlurY(sampler2D tex, float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol){
+void ApplyStandardBlurY(sampler2D tex, float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol){
 	float2 uv = uv0.xy/uv0.w;
 	float4 uvb = float4(uv,0,0);
 	#if UNITY_SINGLE_PASS_STEREO
@@ -173,55 +128,35 @@ void StandardBlurY(sampler2D tex, float2 texelSize, float4 uv0, uint sampleCount
 	[forcecase]
 	switch (sampleCount){
 		case 16: 
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si16 = 0; si16 < sampleCount; ++si16){
 				uvb.y = uv.y + (kDiskKernel16[si16].y * mainStr);
 				blurCol += tex2Dlod(tex, uvb);
 			}
 			break;
 		case 22: 
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si22 = 0; si22 < sampleCount; ++si22){
 				uvb.y = uv.y + (kDiskKernel22[si22].y * mainStr);
 				blurCol += tex2Dlod(tex, uvb);
 			}
 			break;
 		case 43:
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si43 = 0; si43 < sampleCount; ++si43){
 				uvb.y = uv.y + (kDiskKernel43[si43].y * mainStr);
 				blurCol += tex2Dlod(tex, uvb);
 			}
 			break;
 		case 71:
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si71 = 0; si71 < sampleCount; ++si71){
 				uvb.y = uv.y + (kDiskKernel71[si71].y * mainStr);
 				blurCol += tex2Dlod(tex, uvb);
 			}
 			break;
 		case 136:
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si136 = 0; si136 < sampleCount; ++si136){
 				uvb.y = uv.y + (kDiskKernel136[si136].y * str136);
 				blurCol += tex2Dlod(tex, uvb);
@@ -231,10 +166,8 @@ void StandardBlurY(sampler2D tex, float2 texelSize, float4 uv0, uint sampleCount
 	}
 	blurCol /= sampleCount;
 }
-#endif
 
-#if defined(STD_BLUR_Y_DEPTH)
-void StandardBlurYWithDepth(sampler2D tex, float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol, inout float depth){
+void ApplyStandardBlurYWithDepth(sampler2D tex, float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol, inout float depth){
 	float2 uv = uv0.xy/uv0.w;
 	float4 uvb = float4(uv,0,0);
 	#if UNITY_SINGLE_PASS_STEREO
@@ -249,11 +182,7 @@ void StandardBlurYWithDepth(sampler2D tex, float2 texelSize, float4 uv0, uint sa
 	[forcecase]
 	switch (sampleCount){
 		case 16: 
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si16 = 0; si16 < sampleCount; ++si16){
 				uvb.y = uv.y + (kDiskKernel16[si16].y * mainStr);
 				blurCol += tex2Dlod(tex, uvb);
@@ -261,11 +190,7 @@ void StandardBlurYWithDepth(sampler2D tex, float2 texelSize, float4 uv0, uint sa
 			}
 			break;
 		case 22: 
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si22 = 0; si22 < sampleCount; ++si22){
 				uvb.y = uv.y + (kDiskKernel22[si22].y * mainStr);
 				blurCol += tex2Dlod(tex, uvb);
@@ -273,11 +198,7 @@ void StandardBlurYWithDepth(sampler2D tex, float2 texelSize, float4 uv0, uint sa
 			}
 			break;
 		case 43:
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si43 = 0; si43 < sampleCount; ++si43){
 				uvb.y = uv.y + (kDiskKernel43[si43].y * mainStr);
 				blurCol += tex2Dlod(tex, uvb);
@@ -285,11 +206,7 @@ void StandardBlurYWithDepth(sampler2D tex, float2 texelSize, float4 uv0, uint sa
 			}
 			break;
 		case 71:
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si71 = 0; si71 < sampleCount; ++si71){
 				uvb.y = uv.y + (kDiskKernel71[si71].y * mainStr);
 				blurCol += tex2Dlod(tex, uvb);
@@ -297,11 +214,7 @@ void StandardBlurYWithDepth(sampler2D tex, float2 texelSize, float4 uv0, uint sa
 			}
 			break;
 		case 136:
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si136 = 0; si136 < sampleCount; ++si136){
 				uvb.y = uv.y + (kDiskKernel136[si136].y * str136);
 				blurCol += tex2Dlod(tex, uvb);
@@ -313,10 +226,8 @@ void StandardBlurYWithDepth(sampler2D tex, float2 texelSize, float4 uv0, uint sa
 	depth /= sampleCount;
 	blurCol /= sampleCount;
 }
-#endif
 
-#if defined(STD_BLUR_ONLY_DEPTH)
-void StandardBlurDepth(float4 uv0, uint sampleCount, float str, inout float depth){
+void ApplyStandardBlurDepth(float4 uv0, uint sampleCount, float str, inout float depth){
 	float2 uv = uv0.xy/uv0.w;
 	float4 uvb = float4(uv,0,0);
 	str *= _CameraDepthTexture_TexelSize.xy;
@@ -325,55 +236,35 @@ void StandardBlurDepth(float4 uv0, uint sampleCount, float str, inout float dept
 	[forcecase]
 	switch (sampleCount){
 		case 16: 
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si16 = 0; si16 < sampleCount; ++si16){
 				uvb.xy = uv.xy + (kDiskKernel16[si16] * str);
 				depth += DecodeFloatRG(tex2Dlod(_CameraDepthTexture, uvb));
 			}
 			break;
 		case 22: 
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si22 = 0; si22 < sampleCount; ++si22){
 				uvb.xy = uv.xy + (kDiskKernel22[si22] * str);
 				depth += DecodeFloatRG(tex2Dlod(_CameraDepthTexture, uvb));
 			}
 			break;
 		case 43:
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si43 = 0; si43 < sampleCount; ++si43){
 				uvb.xy = uv.xy + (kDiskKernel43[si43] * str);
 				depth += DecodeFloatRG(tex2Dlod(_CameraDepthTexture, uvb));
 			}
 			break;
 		case 71:
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si71 = 0; si71 < sampleCount; ++si71){
 				uvb.xy = uv.xy + (kDiskKernel71[si71] * str);
 				depth += DecodeFloatRG(tex2Dlod(_CameraDepthTexture, uvb));
 			}
 			break;
 		case 136:
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si136 = 0; si136 < sampleCount; ++si136){
 				uvb.xy = uv.xy + (kDiskKernel136[si136] * str136);
 				depth += DecodeFloatRG(tex2Dlod(_CameraDepthTexture, uvb));
@@ -383,10 +274,8 @@ void StandardBlurDepth(float4 uv0, uint sampleCount, float str, inout float dept
 	}
 	depth /= sampleCount;
 }
-#endif
 
-#if defined(CHROM_AB)
-void ChromaticAbberation(sampler2D tex, float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol){
+void ApplyChromaticAbberation(sampler2D tex, float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol){
 	float2 uv = uv0.xy/uv0.w;
 	float4 uvb = float4(uv,0,0);
 	#if UNITY_SINGLE_PASS_STEREO
@@ -401,11 +290,7 @@ void ChromaticAbberation(sampler2D tex, float2 texelSize, float4 uv0, uint sampl
 	[forcecase]
 	switch (sampleCount){
 		case 16: 
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si16 = 0; si16 < sampleCount; ++si16){
 				uvb.xy = uv.xy + (kDiskKernel16[si16] * mainStr);
 				UNITY_BRANCH
@@ -418,11 +303,7 @@ void ChromaticAbberation(sampler2D tex, float2 texelSize, float4 uv0, uint sampl
 			}
 			break;
 		case 22: 
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si22 = 0; si22 < sampleCount; ++si22){
 				uvb.xy = uv.xy + (kDiskKernel22[si22] * mainStr);
 				UNITY_BRANCH
@@ -435,11 +316,7 @@ void ChromaticAbberation(sampler2D tex, float2 texelSize, float4 uv0, uint sampl
 			}
 			break;
 		case 43:
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si43 = 0; si43 < sampleCount; ++si43){
 				uvb.xy = uv.xy + (kDiskKernel43[si43] * mainStr);
 				UNITY_BRANCH
@@ -452,11 +329,7 @@ void ChromaticAbberation(sampler2D tex, float2 texelSize, float4 uv0, uint sampl
 			}
 			break;
 		case 71:
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si71 = 0; si71 < sampleCount; ++si71){
 				uvb.xy = uv.xy + (kDiskKernel71[si71] * mainStr);
 				UNITY_BRANCH
@@ -469,11 +342,7 @@ void ChromaticAbberation(sampler2D tex, float2 texelSize, float4 uv0, uint sampl
 			}
 			break;
 		case 136:
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si136 = 0; si136 < sampleCount; ++si136){
 				uvb.xy = uv.xy + (kDiskKernel136[si136] * str136);
 				UNITY_BRANCH
@@ -489,10 +358,8 @@ void ChromaticAbberation(sampler2D tex, float2 texelSize, float4 uv0, uint sampl
 	}
 	blurCol /= sampleCount/3.0;
 }
-#endif
 
-#if defined(CHROM_AB_Y)
-void ChromaticAbberationY(sampler2D tex, float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol){
+void ApplyChromaticAbberationY(sampler2D tex, float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol){
 	float2 uv = uv0.xy/uv0.w;
 	float4 uvb = float4(uv,0,0);
 	#if UNITY_SINGLE_PASS_STEREO
@@ -506,11 +373,7 @@ void ChromaticAbberationY(sampler2D tex, float2 texelSize, float4 uv0, uint samp
 	[forcecase]
 	switch (sampleCount){
 		case 16: 
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si16 = 0; si16 < sampleCount; ++si16){
 				uvb.y = uv.y + (kDiskKernel16[si16].y * mainStr);
 				UNITY_BRANCH
@@ -523,11 +386,7 @@ void ChromaticAbberationY(sampler2D tex, float2 texelSize, float4 uv0, uint samp
 			}
 			break;
 		case 22: 
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si22 = 0; si22 < sampleCount; ++si22){
 				uvb.y = uv.y + (kDiskKernel22[si22].y * mainStr);
 				UNITY_BRANCH
@@ -540,11 +399,7 @@ void ChromaticAbberationY(sampler2D tex, float2 texelSize, float4 uv0, uint samp
 			}
 			break;
 		case 43:
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si43 = 0; si43 < sampleCount; ++si43){
 				uvb.y = uv.y + (kDiskKernel43[si43].y * mainStr);
 				UNITY_BRANCH
@@ -557,11 +412,7 @@ void ChromaticAbberationY(sampler2D tex, float2 texelSize, float4 uv0, uint samp
 			}
 			break;
 		case 71:
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si71 = 0; si71 < sampleCount; ++si71){
 				uvb.y = uv.y + (kDiskKernel71[si71].y * mainStr);
 				UNITY_BRANCH
@@ -574,11 +425,7 @@ void ChromaticAbberationY(sampler2D tex, float2 texelSize, float4 uv0, uint samp
 			}
 			break;
 		case 136:
-			#if defined(FAST_BLUR_COMPILE)
-				[fastopt]
-			#else
-				[unroll]
-			#endif
+			[fastopt]
 			for (uint si136 = 0; si136 < sampleCount; ++si136){
 				uvb.y = uv.y + (kDiskKernel136[si136].y * str136);
 				UNITY_BRANCH
@@ -594,10 +441,8 @@ void ChromaticAbberationY(sampler2D tex, float2 texelSize, float4 uv0, uint samp
 	}
 	blurCol /= sampleCount/3.0;
 }
-#endif
 
-#if defined(RAD_BLUR)
-void RadialBlur(v2f i, sampler2D tex, float4 uv0, uint sampleCount, float radius, float str, inout float3 blurCol){
+void ApplyRadialBlur(v2f i, sampler2D tex, float4 uv0, uint sampleCount, float radius, float str, inout float3 blurCol){
     float3 col = 0;
     float2 uv = i.uv.xy/i.uv.w;
     float2 offset = 0.5;
@@ -617,6 +462,5 @@ void RadialBlur(v2f i, sampler2D tex, float4 uv0, uint sampleCount, float radius
     }
 	blurCol /= sampleCount+1;
 }
-#endif
 
 #endif

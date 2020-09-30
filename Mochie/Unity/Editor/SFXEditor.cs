@@ -1,14 +1,12 @@
 ﻿using UnityEditor;
 using UnityEngine;
-using System;
-using System.IO;
 using System.Reflection;
 using System.Collections.Generic;
 using Mochie;
 
 public class SFXEditor : ShaderGUI {
 
-    public enum BlendingModes {OPAQUE, ALPHA, PREMULTIPLIED, ADDITIVE, SOFT_ADDITIVE, MULTIPLY, MULTIPLY_2x}
+    public enum BlendingModes {Opaque, Alpha, Premultiplied, Additive, Soft_Additive, Multiply, Multiply_2x}
 
     // GUIContent instead of string for TexturePropertySingleLine
     GUIContent screenTexLabel = new GUIContent("Texture");
@@ -18,12 +16,15 @@ public class SFXEditor : ShaderGUI {
     GUIContent tpNoiseTexLabel = new GUIContent("Noise Texture");
     
 	public static Dictionary<Material, Toggles> foldouts = new Dictionary<Material, Toggles>();
-	public static Dictionary<string, float> presetDict = new Dictionary<string, float>();
+
+	bool displayKeywords = false;
+	List<string> keywordsList = new List<string>();
+	float buttonSize = 24.0f;
 
     Toggles toggles = new Toggles(
 		new string[] {
 			"GENERAL",
-			"COLOR",
+			"FILTERING",
 			"SHAKE",
 			"DISTORTION",
 			"BLUR",
@@ -33,7 +34,6 @@ public class SFXEditor : ShaderGUI {
 			"TRIPLANAR",
 			"OUTLINE",
 			"MISC",
-			"Framebuffer",
 			"Letterbox",
 			"Deep Fry",
 			"Pulse",
@@ -41,7 +41,8 @@ public class SFXEditor : ShaderGUI {
 			"Rounding",
 			"Normal Map",
 			"Depth Buffer",
-			"Safe Zone"
+			"Safe Zone",
+			"NOISE"
 		}
 	);
 
@@ -49,8 +50,9 @@ public class SFXEditor : ShaderGUI {
 	string header = "SFXHeader_Pro";
 	string watermark = "Watermark_Pro";
 	string patIcon = "Patreon_Icon";
-	string versionLabel = "v1.8";
-
+	string versionLabel = "v1.9";
+	string keyTex = "KeyIcon_Pro";
+	
     // Commonly used strings
     string modeLabel = "Mode";
     string strengthLabel = "Strength";
@@ -75,26 +77,28 @@ public class SFXEditor : ShaderGUI {
 
     // Color Filtering
     MaterialProperty _FilterModel = null;
+	MaterialProperty _FilterStrength = null;
     MaterialProperty _ColorUseGlobal = null;
     MaterialProperty _ColorMinRange = null;
     MaterialProperty _ColorMaxRange = null;
     MaterialProperty _Color = null;
-    MaterialProperty _SaturationRGB = null;
-    MaterialProperty _Exposure = null;
+	MaterialProperty _RGB = null;
     MaterialProperty _Contrast = null;
     MaterialProperty _HDR = null;
     MaterialProperty _Invert = null;
     MaterialProperty _InvertR = null;
     MaterialProperty _InvertG = null;
     MaterialProperty _InvertB = null;
-    MaterialProperty _Noise = null;
     MaterialProperty _AutoShift = null;
     MaterialProperty _AutoShiftSpeed = null;
     MaterialProperty _Hue = null;
-    MaterialProperty _SaturationHSL = null;
-    MaterialProperty _Luminance = null;
-    MaterialProperty _HSLMin = null;
-    MaterialProperty _HSLMax = null;
+    MaterialProperty _Saturation = null;
+    MaterialProperty _Brightness = null;
+	MaterialProperty _Value = null;
+	MaterialProperty _SaturationR = null;
+	MaterialProperty _SaturationB = null;
+	MaterialProperty _SaturationG = null;
+
     //MaterialProperty _Sobel = null;
     //MaterialProperty _SobelStr = null;
 
@@ -141,6 +145,15 @@ public class SFXEditor : ShaderGUI {
 	MaterialProperty _BlurSamples = null;
 	MaterialProperty _PixelBlurSamples = null;
 	MaterialProperty _CrushBlur = null;
+
+	// Noise
+	MaterialProperty _ScanLine = null;
+	MaterialProperty _ScanLineThick = null;
+	MaterialProperty _ScanLineSpeed = null;
+	MaterialProperty _NoiseMode = null;
+	MaterialProperty _Noise = null;
+	MaterialProperty _NoiseRGB = null;
+	MaterialProperty _NoiseStrength = null;
 
     // Fog
     MaterialProperty _Fog = null;
@@ -226,9 +239,6 @@ public class SFXEditor : ShaderGUI {
     MaterialProperty _OutlineType = null;
     MaterialProperty _OutlineThiccS = null;
 //    MaterialProperty _OutlineThiccN = null;
-	MaterialProperty _GhostingToggle = null;
-	MaterialProperty _GhostingStr = null;
-	MaterialProperty _FreezeFrame = null;
 	MaterialProperty _RoundingToggle = null;
 	MaterialProperty _Rounding = null;
 	MaterialProperty _RoundingOpacity = null;
@@ -262,6 +272,7 @@ public class SFXEditor : ShaderGUI {
 			if (!EditorGUIUtility.isProSkin){
 				header = "SFXHeaderX";
 				watermark = "Watermark";
+				keyTex = "KeyIcon";
 			}
 		}
 		else {
@@ -269,6 +280,7 @@ public class SFXEditor : ShaderGUI {
 			if (!EditorGUIUtility.isProSkin){
 				header = "SFXHeader";
 				watermark = "Watermark";
+				keyTex = "KeyIcon";
 			}
 		}
 
@@ -277,6 +289,8 @@ public class SFXEditor : ShaderGUI {
 		if (!foldouts.ContainsKey(mat))
 			foldouts.Add(mat, toggles);
 
+		ApplyMaterialSettings(mat);
+		
         Texture2D headerTex = (Texture2D)Resources.Load(header, typeof(Texture2D));
 		Texture2D watermarkTex = (Texture2D)Resources.Load(watermark, typeof(Texture2D));
 		Texture2D patIconTex = (Texture2D)Resources.Load(patIcon, typeof(Texture2D));
@@ -284,12 +298,15 @@ public class SFXEditor : ShaderGUI {
 		Texture2D collapseIconTex = (Texture2D)Resources.Load("CollapseIcon", typeof(Texture2D));
 		Texture2D expandIconTex = (Texture2D)Resources.Load("ExpandIcon", typeof(Texture2D));
 		Texture2D collapseIcon = (Texture2D)Resources.Load("CollapseIcon", typeof(Texture2D));
+		Texture2D keyIcon = (Texture2D)Resources.Load(keyTex, typeof(Texture2D));
+
+		GUIContent keyLabel = new GUIContent(keyIcon, "Toggle material keywords list.");
 
         MGUI.CenteredTexture(headerTex, 0, 0);
-		MGUI.Space4();
+		GUILayout.Space(-34);
+		ListKeywords(mat, keyLabel, this.buttonSize);
+
         EditorGUI.BeginChangeCheck(); {
-			
-			mat.SetShaderPassEnabled("Always", _GhostingToggle.floatValue == 1 || _FreezeFrame.floatValue == 1);
 
             // Global
 			bool generalTab = Foldouts.DoFoldout(foldouts, mat, me, 2, "GENERAL");
@@ -304,18 +321,10 @@ public class SFXEditor : ShaderGUI {
             if (generalTab){
 				MGUI.Space4();
 				me.RenderQueueField();
-                EditorGUI.showMixedValue = _BlendMode.hasMixedValue;
-                var mode = (BlendingModes)_BlendMode.floatValue;
                 EditorGUI.BeginChangeCheck();
-                mode = (BlendingModes)EditorGUILayout.Popup("Blending Mode", (int)mode, Enum.GetNames(typeof(BlendingModes)));
-                if (EditorGUI.EndChangeCheck()) {
-                    me.RegisterPropertyChangeUndo("Blending Mode");
-                    _BlendMode.floatValue = (float)mode;
-                    foreach (var obj in _BlendMode.targets){
-                        SetBlendMode((Material)obj, (BlendingModes)mode);
-                    }
-                    EditorGUI.showMixedValue = false;
-                }
+				me.ShaderProperty(_BlendMode, "Blending Mode");
+				if (EditorGUI.EndChangeCheck())
+					SetBlendMode(mat);
                 if (_BlendMode.floatValue > 0)
                     me.ShaderProperty(_Opacity, "Opacity");
 				
@@ -326,8 +335,8 @@ public class SFXEditor : ShaderGUI {
                 MGUI.Space8();
             }
 
-            // Color Filtering
-			bool colorTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "COLOR");
+            // Filtering
+			bool colorTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "FILTERING");
 			if (MGUI.TabButton(resetIconTex, 26f))
 				ResetColor();
 			MGUI.Space8();
@@ -335,44 +344,46 @@ public class SFXEditor : ShaderGUI {
 				MGUI.Space4();
 				me.ShaderProperty(_FilterModel, modeLabel);
 				if (_FilterModel.floatValue > 0){
+					me.ShaderProperty(_FilterStrength, "Opacity");
 					MGUI.Space6();
 					me.ShaderProperty(_ColorUseGlobal, ugfLabel);
 					if (_ColorUseGlobal.floatValue == 0){
-						me.ShaderProperty(_ColorMinRange, minLabel, 1);
-						me.ShaderProperty(_ColorMaxRange, maxLabel, 1);
+						MGUI.PropertyGroup(() => {
+							me.ShaderProperty(_ColorMinRange, minLabel);
+							me.ShaderProperty(_ColorMaxRange, maxLabel);
+						});
 					}
-					MGUI.Space6();
-				}
-				switch((int)_FilterModel.floatValue){
-					case 1: 
-						me.ShaderProperty(_Color, colorLabel);
-						break;
-					case 2: 
-						me.ShaderProperty(_AutoShift, "Auto Shift");
-						if (_AutoShift.floatValue ==1)
-							me.ShaderProperty(_AutoShiftSpeed, speedLabel);
-						else
+					else MGUI.Space6();
+					MGUI.PropertyGroup(() => {
+						me.ShaderProperty(_Color, "Tint");
+						if (_AutoShift.floatValue == 0)
 							me.ShaderProperty(_Hue, "Hue");
-						me.ShaderProperty(_SaturationHSL, "Saturation");
-						me.ShaderProperty(_Luminance, "Luminance");
-						me.ShaderProperty(_HSLMin, "Min Threshold");
-						me.ShaderProperty(_HSLMax, "Max Threshold");
-						break;
-					default: break;
-				}
-				if (_FilterModel.floatValue > 0){
-					MGUI.Space8();
-					//ToggleSlider(me, "Sobel", _Sobel, _SobelStr);
-					me.ShaderProperty(_HDR, "HDR");
-					me.ShaderProperty(_Contrast, "Contrast");
-					me.ShaderProperty(_Exposure, "Exposure");
-					if (_FilterModel.floatValue != 3)
-						me.ShaderProperty(_SaturationRGB, "Saturation");
-					me.ShaderProperty(_Noise, "Noise");
-					me.ShaderProperty(_Invert, "Invert");
-					me.ShaderProperty(_InvertR, "Red Inversion", 1);
-					me.ShaderProperty(_InvertG, "Green Inversion", 1);
-					me.ShaderProperty(_InvertB, "Blue Inversion", 1);
+						else
+							me.ShaderProperty(_AutoShiftSpeed, "Shift Speed");
+						me.ShaderProperty(_AutoShift, "Auto Shift");
+					});
+					MGUI.PropertyGroup(() => {
+						MGUI.Vector3FieldRGB(_RGB, "RGB Multiplier");
+						me.ShaderProperty(_Brightness, "Brightness");
+						me.ShaderProperty(_Contrast, "Contrast");
+						me.ShaderProperty(_HDR, "HDR");
+					});
+					MGUI.PropertyGroup(() => {
+						me.ShaderProperty(_Saturation, "Saturation");
+						MGUI.PropertyGroupLayer(() => {
+							me.ShaderProperty(_SaturationR, "Red Saturation");
+							me.ShaderProperty(_SaturationG, "Green Saturation");
+							me.ShaderProperty(_SaturationB, "Blue Saturation");
+						});
+					});
+					MGUI.PropertyGroup(() => {
+						me.ShaderProperty(_Invert, "Invert");
+						MGUI.PropertyGroupLayer(() => {
+							me.ShaderProperty(_InvertR, "Red Inversion");
+							me.ShaderProperty(_InvertG, "Green Inversion");
+							me.ShaderProperty(_InvertB, "Blue Inversion");
+						});
+					});
 				}
 				MGUI.Space8();
 			}
@@ -389,20 +400,24 @@ public class SFXEditor : ShaderGUI {
 					MGUI.Space6();
                     me.ShaderProperty(_ShakeUseGlobal, ugfLabel);
                     if (_ShakeUseGlobal.floatValue == 0){
-                        me.ShaderProperty(_ShakeMinRange, minLabel, 1);
-                        me.ShaderProperty(_ShakeMaxRange, maxLabel, 1);
+						MGUI.PropertyGroup(() => {
+							me.ShaderProperty(_ShakeMinRange, minLabel);
+							me.ShaderProperty(_ShakeMaxRange, maxLabel);
+						});
                     }
-					MGUI.Space6();
-                }
-                if (_ShakeModel.floatValue == 1 || _ShakeModel.floatValue == 2){
-                    me.ShaderProperty(_Amplitude, "Amplitude");
-                    me.ShaderProperty(_ShakeSpeedX, speedXLabel);
-                    me.ShaderProperty(_ShakeSpeedY, speedYLabel);
-                }
-                if (_ShakeModel.floatValue == 3){
-                    me.TexturePropertySingleLine(shakeNoiseTexLabel, _ShakeNoiseTex);
-                    me.ShaderProperty(_Amplitude, "Amplitude");
-                    me.ShaderProperty(_ShakeSpeedXY, speedLabel);
+					else MGUI.Space6();
+					MGUI.PropertyGroup(() => {
+						if (_ShakeModel.floatValue == 1 || _ShakeModel.floatValue == 2){
+							me.ShaderProperty(_Amplitude, "Amplitude");
+							me.ShaderProperty(_ShakeSpeedX, speedXLabel);
+							me.ShaderProperty(_ShakeSpeedY, speedYLabel);
+						}
+						if (_ShakeModel.floatValue == 3){
+							me.TexturePropertySingleLine(shakeNoiseTexLabel, _ShakeNoiseTex);
+							me.ShaderProperty(_Amplitude, "Amplitude");
+							me.ShaderProperty(_ShakeSpeedXY, speedLabel);
+						}
+					});
                 }
                 MGUI.Space8();
             }
@@ -419,22 +434,25 @@ public class SFXEditor : ShaderGUI {
 					MGUI.Space6();
                     me.ShaderProperty(_DistortionUseGlobal, ugfLabel);
                     if (_DistortionUseGlobal.floatValue == 0){
-                        me.ShaderProperty(_DistortionMinRange, minLabel, 1);
-                        me.ShaderProperty(_DistortionMaxRange, maxLabel, 1);
+						MGUI.PropertyGroup(() => {
+							me.ShaderProperty(_DistortionMinRange, minLabel);
+							me.ShaderProperty(_DistortionMaxRange, maxLabel);
+						});
                     }
-					MGUI.Space6();
-                    if (_DistortionModel.floatValue == 1 || _DistortionModel.floatValue == 2){
-                        me.TexturePropertySingleLine(normalMapLabel, _NormalMap);
-                        me.TextureScaleOffsetProperty(_NormalMap);
-                    }
-                    me.ShaderProperty(_DistortionStr, strengthLabel);
-                    me.ShaderProperty(_DistortionSpeed, speedLabel);
+					else MGUI.Space6();
+					MGUI.PropertyGroup(() => {
+						me.TexturePropertySingleLine(normalMapLabel, _NormalMap);
+						me.TextureScaleOffsetProperty(_NormalMap);
+						me.ShaderProperty(_DistortionStr, strengthLabel);
+						me.ShaderProperty(_DistortionSpeed, speedLabel);
+					});
                     if (_DistortionModel.floatValue == 2){
-                        GUILayout.Label("Triplanar", EditorStyles.boldLabel);
-						MGUI.DisplayWarning("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
-                        me.ShaderProperty(_DistortionRadius, radiusLabel);
-                        me.ShaderProperty(_DistortionFade, fadeLabel);
-                        me.ShaderProperty(_DistortionP2O, p2oLabel);
+						MGUI.PropertyGroup(() => {
+							MGUI.DisplayWarning("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
+							me.ShaderProperty(_DistortionRadius, radiusLabel);
+							me.ShaderProperty(_DistortionFade, fadeLabel);
+							me.ShaderProperty(_DistortionP2O, p2oLabel);
+						});
                     }
                 }
                 MGUI.Space8();
@@ -456,40 +474,69 @@ public class SFXEditor : ShaderGUI {
 							MGUI.DisplayWarning("High sample counts can be very laggy! If your strength value is low please consider staying at or below 43 samples.");
 						}
 					}
-					
 					MGUI.Space6();
 					me.ShaderProperty(_BlurUseGlobal, ugfLabel);
 					if (_BlurUseGlobal.floatValue == 0){
-						me.ShaderProperty(_BlurMinRange, minLabel, 1);
-						me.ShaderProperty(_BlurMaxRange, maxLabel, 1);
+						MGUI.PropertyGroup(() => {
+							me.ShaderProperty(_BlurMinRange, minLabel);
+							me.ShaderProperty(_BlurMaxRange, maxLabel);
+						});
 					}
-					MGUI.Space6();
-					me.ShaderProperty(_BlurOpacity, "Opacity");
-					me.ShaderProperty(_BlurStr, strengthLabel);
-					if (_BlurModel.floatValue == 3){
-						me.ShaderProperty(_BlurSamples, "Sample Count");
-						me.ShaderProperty(_BlurRadius, radiusLabel);
-					}
-					me.ShaderProperty(_PixelationStr, "Pixelation");
-					me.ShaderProperty(_RippleGridStr, "Ripple Grid");
-					if (_BlurModel.floatValue != 3){
-						me.ShaderProperty(_DoF, "Depth of Field");
-						if (_DoF.floatValue == 1){
-							MGUI.DisplayWarning("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
-							me.ShaderProperty(_DoFRadius, radiusLabel, 1);
-							me.ShaderProperty(_DoFFade, fadeLabel, 1);
-							me.ShaderProperty(_DoFP2O, p2oLabel, 1);
-							MGUI.Space4();
+					else MGUI.Space6();
+					MGUI.PropertyGroup(() => {
+						me.ShaderProperty(_BlurOpacity, "Opacity");
+						me.ShaderProperty(_BlurStr, strengthLabel);
+						if (_BlurModel.floatValue == 3){
+							me.ShaderProperty(_BlurSamples, "Sample Count");
+							me.ShaderProperty(_BlurRadius, radiusLabel);
 						}
-						me.ShaderProperty(_BlurY, "Y Axis Only");
-						me.ShaderProperty(_RGBSplit, "Chrom. Abberation");
-					}
-					if (_BlurModel.floatValue == 1)
-						me.ShaderProperty(_CrushBlur, "Crush");
+						me.ShaderProperty(_PixelationStr, "Pixelation");
+						me.ShaderProperty(_RippleGridStr, "Ripple Grid");
+					});
+					MGUI.PropertyGroup(_BlurModel.floatValue != 3, () => {
+						if (_BlurModel.floatValue != 3){
+							me.ShaderProperty(_DoF, "Depth of Field");
+							if (_DoF.floatValue == 1){
+								MGUI.PropertyGroupLayer(() => {
+									MGUI.DisplayWarning("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
+									me.ShaderProperty(_DoFRadius, radiusLabel);
+									me.ShaderProperty(_DoFFade, fadeLabel);
+									me.ShaderProperty(_DoFP2O, p2oLabel);
+								});
+							}
+							me.ShaderProperty(_BlurY, "Y Axis Only");
+							me.ShaderProperty(_RGBSplit, "Chrom. Abberation");
+						}
+						if (_BlurModel.floatValue == 1)
+							me.ShaderProperty(_CrushBlur, "Crush");
+					});
 				}
 				MGUI.Space8();  
 			}
-            
+
+			// Noise
+            bool noiseTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "NOISE");
+			if (MGUI.TabButton(resetIconTex, 26f))
+				ResetNoise();
+			MGUI.Space8();
+            if (noiseTab){
+				MGUI.Space4();
+				me.ShaderProperty(_NoiseMode, "Mode");
+				if (_NoiseMode.floatValue > 0){
+					me.ShaderProperty(_NoiseStrength, "Opacity");
+					MGUI.Space6();
+					MGUI.PropertyGroup(() => {
+						me.ShaderProperty(_Noise, "Noise (Grayscale)");
+						MGUI.Vector3FieldRGB(_NoiseRGB, "Noise (RGB)");
+						me.ShaderProperty(_ScanLine, "Scan Lines");
+						MGUI.PropertyGroupLayer(() => {
+							me.ShaderProperty(_ScanLineThick, "Bar Thickness");
+							me.ShaderProperty(_ScanLineSpeed, "Scroll Speed");
+						});
+					});
+				}
+				MGUI.Space8();
+			}
 			if (isSFXX){
 				bool zoomTab =Foldouts.DoFoldout(foldouts, mat, me, 1, "ZOOM");
 				if (MGUI.TabButton(resetIconTex, 26f))
@@ -503,16 +550,20 @@ public class SFXEditor : ShaderGUI {
 						MGUI.Space6();
 						me.ShaderProperty(_ZoomUseGlobal, ugfLabel);
 						if (_ZoomUseGlobal.floatValue == 0){
-							me.ShaderProperty(_ZoomMinRange, minLabel, 1);
-							me.ShaderProperty(_ZoomMaxRange, maxLabel, 1);
+							MGUI.PropertyGroup(() => {
+								me.ShaderProperty(_ZoomMinRange, minLabel);
+								me.ShaderProperty(_ZoomMaxRange, maxLabel);
+							});
 						}
-						MGUI.Space6();
-						if (_Zoom.floatValue == 2){
-							me.ShaderProperty(_ZoomStrR, "Red");
-							me.ShaderProperty(_ZoomStrG, "Green");
-							me.ShaderProperty(_ZoomStrB, "Blue");
-						}
-						else me.ShaderProperty(_ZoomStr, strengthLabel);
+						else MGUI.Space6();
+						MGUI.PropertyGroup(() => {
+							if (_Zoom.floatValue == 2){
+								me.ShaderProperty(_ZoomStrR, "Red");
+								me.ShaderProperty(_ZoomStrG, "Green");
+								me.ShaderProperty(_ZoomStrB, "Blue");
+							}
+							else me.ShaderProperty(_ZoomStr, strengthLabel);
+						});
 					}
 					MGUI.Space8();
 				}
@@ -529,29 +580,36 @@ public class SFXEditor : ShaderGUI {
 						MGUI.Space6();
 						me.ShaderProperty(_SSTUseGlobal, ugfLabel);
 						if (_SSTUseGlobal.floatValue == 0){
-							me.ShaderProperty(_SSTMinRange, minLabel, 1);
-							me.ShaderProperty(_SSTMaxRange, maxLabel, 1);
+							MGUI.PropertyGroup(() => {
+								me.ShaderProperty(_SSTMinRange, minLabel);
+								me.ShaderProperty(_SSTMaxRange, maxLabel);
+							});
 						}
-						MGUI.Space6();
-						if (_SST.floatValue != 3){
-							me.TexturePropertySingleLine(screenTexLabel, _ScreenTex, _SSTColor, _SSTBlend);
-						}
-						else
-							me.TexturePropertySingleLine(normalMapLabel, _ScreenTex, _SSTAnimatedDist);
-						if (_SST.floatValue > 1){
-							me.ShaderProperty(_SSTColumnsX, "Columns (X)");
-							me.ShaderProperty(_SSTRowsY, "Rows (Y)");
-							MGUI.CustomToggleSlider("Frame", _ManualScrub, _ScrubPos, 0f, (_SSTColumnsX.floatValue*_SSTRowsY.floatValue)-1);
-							MGUI.ToggleGroup(_ManualScrub.floatValue == 1);
-							me.ShaderProperty(_SSTAnimationSpeed, "FPS");
-							MGUI.ToggleGroupEnd();
-						}
-						GUILayout.Label(new GUIContent("UVs"), EditorStyles.boldLabel);
-						me.ShaderProperty(_SSTScale, "Scale");
-						me.ShaderProperty(_SSTWidth, "Width");
-						me.ShaderProperty(_SSTHeight, "Height");
-						me.ShaderProperty(_SSTLR, "Left / Right");
-						me.ShaderProperty(_SSTUD, "Down / Up");
+						else MGUI.Space6();
+						MGUI.PropertyGroup(() => {
+							if (_SST.floatValue != 3){
+								me.TexturePropertySingleLine(screenTexLabel, _ScreenTex, _SSTColor, _SSTBlend);
+							}
+							else {
+								me.TexturePropertySingleLine(normalMapLabel, _ScreenTex);
+								me.ShaderProperty(_SSTAnimatedDist, "Strength");
+							}
+							if (_SST.floatValue > 1){
+								me.ShaderProperty(_SSTColumnsX, "Columns (X)");
+								me.ShaderProperty(_SSTRowsY, "Rows (Y)");
+								MGUI.CustomToggleSlider("Frame", _ManualScrub, _ScrubPos, 0f, (_SSTColumnsX.floatValue*_SSTRowsY.floatValue)-1);
+								MGUI.ToggleGroup(_ManualScrub.floatValue == 1);
+								me.ShaderProperty(_SSTAnimationSpeed, "FPS");
+								MGUI.ToggleGroupEnd();
+							}
+						});
+						MGUI.PropertyGroup(() => {
+							me.ShaderProperty(_SSTScale, "Scale");
+							me.ShaderProperty(_SSTWidth, "Width");
+							me.ShaderProperty(_SSTHeight, "Height");
+							me.ShaderProperty(_SSTLR, "Left / Right");
+							me.ShaderProperty(_SSTUD, "Down / Up");
+						});
 					}
 					MGUI.Space8();
 				}
@@ -566,27 +624,29 @@ public class SFXEditor : ShaderGUI {
 					me.ShaderProperty(_Fog, modeLabel);
 					if (_Fog.floatValue == 1){
 						MGUI.Space6();
-						MGUI.DisplayWarning("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
-						MGUI.Space6();
 						me.ShaderProperty(_FogUseGlobal, ugfLabel);
 						if (_FogUseGlobal.floatValue == 0){
-							me.ShaderProperty(_FogMinRange, minLabel, 1);
-							me.ShaderProperty(_FogMaxRange, maxLabel, 1);
+							MGUI.PropertyGroup(() => {
+								me.ShaderProperty(_FogMinRange, minLabel);
+								me.ShaderProperty(_FogMaxRange, maxLabel);
+							});
 						}
-						MGUI.Space6();
-						me.ShaderProperty(_FogColor, colorLabel);
-						me.ShaderProperty(_FogRadius, radiusLabel);
-						me.ShaderProperty(_FogFade, fadeLabel);
-						me.ShaderProperty(_FogP2O, p2oLabel);
-						
-						if (Foldouts.DoMediumFoldout(foldouts, mat, me, _FogSafeZone, 1, "Safe Zone")){
-							MGUI.Space6();
-							MGUI.ToggleGroup(_FogSafeZone.floatValue == 0);
-							me.ShaderProperty(_FogSafeRadius, "Vision Radius");
-							me.ShaderProperty(_FogSafeMaxRange, "Outer Perimeter");
-							me.ShaderProperty(_FogSafeOpacity, "Opacity");
-							MGUI.ToggleGroupEnd();
-						}
+						else MGUI.Space6();
+						MGUI.PropertyGroup(() => {
+							MGUI.DisplayWarning("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
+							me.ShaderProperty(_FogColor, colorLabel);
+							me.ShaderProperty(_FogRadius, radiusLabel);
+							me.ShaderProperty(_FogFade, fadeLabel);
+							me.ShaderProperty(_FogP2O, p2oLabel);
+							me.ShaderProperty(_FogSafeZone, "Safe Zone");
+							if (_FogSafeZone.floatValue == 1){
+								MGUI.PropertyGroupLayer(() => {	
+									me.ShaderProperty(_FogSafeRadius, "Vision Radius");
+									me.ShaderProperty(_FogSafeMaxRange, "Outer Perimeter");
+									me.ShaderProperty(_FogSafeOpacity, "Opacity");
+								});
+							}
+						});
 					}
 					MGUI.Space8();
 				}
@@ -601,34 +661,38 @@ public class SFXEditor : ShaderGUI {
 					me.ShaderProperty(_Triplanar, modeLabel);
 					if (_Triplanar.floatValue > 0){				
 						MGUI.Space6();
-						MGUI.DisplayWarning("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
-						MGUI.Space6();
 						me.ShaderProperty(_TPUseGlobal, ugfLabel);
 						if (_TPUseGlobal.floatValue == 0){
-							me.ShaderProperty(_TPMinRange, minLabel, 1);
-							me.ShaderProperty(_TPMaxRange, maxLabel, 1);
+							MGUI.PropertyGroup(() => {
+								me.ShaderProperty(_TPMinRange, minLabel);
+								me.ShaderProperty(_TPMaxRange, maxLabel);
+							});
 						}
-						MGUI.Space6();
-						me.TexturePropertySingleLine(tpTexLabel, _TPTexture, _TPColor);
-						if (_TPTexture.textureValue){
-							MGUI.TextureSO(me, _TPTexture);
-							MGUI.Vector3Field(_TPScroll, "Scroll Speed");
-							MGUI.Space4();
-						}
-						me.TexturePropertySingleLine(tpNoiseTexLabel, _TPNoiseTex);
-						if (_TPNoiseTex.textureValue){          
-							MGUI.TextureSO(me, _TPNoiseTex);
-							MGUI.Vector3Field(_TPNoiseScroll, "Scroll Speed");
-						}
-						MGUI.Space8();
-						me.ShaderProperty(_TPRadius, radiusLabel);
-						if (_Triplanar.floatValue == 2){
-							me.ShaderProperty(_TPScanFade, fadeLabel);
-							me.ShaderProperty(_TPThickness, "Thickness");
-							me.ShaderProperty(_TPNoise, "Noise");
-						}
-						else me.ShaderProperty(_TPFade, fadeLabel);
-						me.ShaderProperty(_TPP2O, p2oLabel);
+						else MGUI.Space6();
+						MGUI.PropertyGroup(() => {
+							MGUI.DisplayWarning("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
+							me.TexturePropertySingleLine(tpTexLabel, _TPTexture, _TPColor);
+							if (_TPTexture.textureValue){
+								MGUI.TextureSO(me, _TPTexture);
+								MGUI.Vector3Field(_TPScroll, "Scroll Speed");
+								MGUI.Space4();
+							}
+							me.TexturePropertySingleLine(tpNoiseTexLabel, _TPNoiseTex);
+							if (_TPNoiseTex.textureValue){          
+								MGUI.TextureSO(me, _TPNoiseTex);
+								MGUI.Vector3Field(_TPNoiseScroll, "Scroll Speed");
+							}
+						});
+						MGUI.PropertyGroup(() => {
+							me.ShaderProperty(_TPRadius, radiusLabel);
+							if (_Triplanar.floatValue == 2){
+								me.ShaderProperty(_TPScanFade, fadeLabel);
+								me.ShaderProperty(_TPThickness, "Thickness");
+								me.ShaderProperty(_TPNoise, "Noise");
+							}
+							else me.ShaderProperty(_TPFade, fadeLabel);
+							me.ShaderProperty(_TPP2O, p2oLabel);
+						});
 					}
 					MGUI.Space8();
 				}
@@ -643,20 +707,21 @@ public class SFXEditor : ShaderGUI {
 					me.ShaderProperty(_OutlineType, modeLabel);
 					if (_OutlineType.floatValue > 0){
 						MGUI.Space6();
-						MGUI.DisplayWarning("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
-						MGUI.Space6();
-						if (_OutlineType.floatValue == 2)
-							me.ShaderProperty(_AuraSampleCount, "Sample Count");
-						me.ShaderProperty(_OutlineCol, "Line Tint");
-						me.ShaderProperty(_BackgroundCol, "Background Tint");
-						if (_OutlineType.floatValue == 1){
-							me.ShaderProperty(_OutlineThiccS, "Thickness");
-							me.ShaderProperty(_OutlineThresh, strengthLabel);
-						}
-						else if (_OutlineType.floatValue == 2){
-							me.ShaderProperty(_AuraStr, "Thickness");
-							me.ShaderProperty(_AuraFade, "Fade");
-						}
+						MGUI.PropertyGroup(() => {
+							MGUI.DisplayWarning("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
+							if (_OutlineType.floatValue == 2)
+								me.ShaderProperty(_AuraSampleCount, "Sample Count");
+							me.ShaderProperty(_OutlineCol, "Line Tint");
+							me.ShaderProperty(_BackgroundCol, "Background Tint");
+							if (_OutlineType.floatValue == 1){
+								me.ShaderProperty(_OutlineThiccS, "Thickness");
+								me.ShaderProperty(_OutlineThresh, strengthLabel);
+							}
+							else if (_OutlineType.floatValue == 2){
+								me.ShaderProperty(_AuraStr, "Thickness");
+								me.ShaderProperty(_AuraFade, "Fade");
+							}
+						});
 					}
 					MGUI.Space8();
 				}
@@ -669,25 +734,25 @@ public class SFXEditor : ShaderGUI {
 				MGUI.Space8();
 				if (miscTab){
 					MGUI.Space4();
-					if (Foldouts.DoMediumFoldout(foldouts, mat, me, 0, "Framebuffer")){
-						// if (_FreezeFrame.floatValue == 1 && _GhostingToggle.floatValue == 1){
-						// 	_FreezeFrame.floatValue = 0;
-						// 	_GhostingToggle.floatValue = 0;
-						// }
-						// me.ShaderProperty(_FreezeFrame, "Freeze Frame");
-						// MGUI.ToggleSlider(me, "Ghosting", _GhostingToggle, _GhostingStr);
-						MGUI.FramebufferSection(me, new MaterialProperty[] {_FreezeFrame, _GhostingToggle}, _GhostingStr);
-						MGUI.Space6();
-					}
-					else MGUI.SpaceN2();
+					// if (Foldouts.DoMediumFoldout(foldouts, mat, me, 0, "Framebuffer")){
+					// 	if (_FreezeFrame.floatValue == 1 && _GhostingToggle.floatValue == 1){
+					// 		_FreezeFrame.floatValue = 0;
+					// 		_GhostingToggle.floatValue = 0;
+					// 	}
+					// 	me.ShaderProperty(_FreezeFrame, "Freeze Frame");
+					// 	MGUI.ToggleSlider(me, "Ghosting", _GhostingToggle, _GhostingStr);
+					// 	MGUI.FramebufferSection(me, new MaterialProperty[] {_FreezeFrame, _GhostingToggle}, _GhostingStr);
+					// 	MGUI.Space6();
+					// }
+					// else MGUI.SpaceN2();
 
 					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _Letterbox, 0, "Letterbox")){
-						MGUI.Space6();
-						MGUI.ToggleGroup(_Letterbox.floatValue == 0);
-						me.ShaderProperty(_UseZoomFalloff, "Use Zoom Falloff");
-						me.ShaderProperty(_LetterboxStr, "Bar Width");
-						MGUI.ToggleGroupEnd();
-						MGUI.Space6();
+						MGUI.PropertyGroup(() => {
+							MGUI.ToggleGroup(_Letterbox.floatValue == 0);
+							me.ShaderProperty(_UseZoomFalloff, "Use Zoom Falloff");
+							me.ShaderProperty(_LetterboxStr, "Bar Width");
+							MGUI.ToggleGroupEnd();
+						});
 					}
 					else MGUI.SpaceN4();
 
@@ -703,61 +768,60 @@ public class SFXEditor : ShaderGUI {
 					// else MGUI.SpaceN2();
 
 					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _Pulse, 0, "Pulse")){
-						MGUI.Space6();
-						MGUI.ToggleGroup(_Pulse.floatValue == 0);
-						me.ShaderProperty(_WaveForm, "Waveform");
-						MGUI.ToggleGroup(_WaveForm.floatValue == 0);
-						me.ShaderProperty(_PulseColor, "Include Color");
-						me.ShaderProperty(_PulseSpeed, speedLabel);
-						MGUI.ToggleGroupEnd();
-						MGUI.ToggleGroupEnd();
-						MGUI.Space6();
+						MGUI.PropertyGroup(() => {
+							MGUI.ToggleGroup(_Pulse.floatValue == 0);
+							me.ShaderProperty(_WaveForm, "Waveform");
+							MGUI.ToggleGroup(_WaveForm.floatValue == 0);
+							me.ShaderProperty(_PulseColor, "Include Color");
+							me.ShaderProperty(_PulseSpeed, speedLabel);
+							MGUI.ToggleGroupEnd();
+							MGUI.ToggleGroupEnd();
+						});
 					}
 					else MGUI.SpaceN4();
 
 					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _Shift, 0, "UV Manipulation")){
-						MGUI.Space6();
-						MGUI.ToggleGroup(_Shift.floatValue == 0);
-						me.ShaderProperty(_InvertX, "Invert X");
-						me.ShaderProperty(_InvertY, "Invert Y");
-						me.ShaderProperty(_ShiftX, "Shift X");
-						me.ShaderProperty(_ShiftY, "Shift Y");
-						MGUI.ToggleGroupEnd();
-						MGUI.Space6();
+						MGUI.PropertyGroup(() => {
+							MGUI.ToggleGroup(_Shift.floatValue == 0);
+							me.ShaderProperty(_InvertX, "Invert X");
+							me.ShaderProperty(_InvertY, "Invert Y");
+							me.ShaderProperty(_ShiftX, "Shift X");
+							me.ShaderProperty(_ShiftY, "Shift Y");
+							MGUI.ToggleGroupEnd();
+						});
 					}
 					else MGUI.SpaceN4();
 
 					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _RoundingToggle, 0, "Rounding")){
-						MGUI.Space6();
-						MGUI.ToggleGroup(_RoundingToggle.floatValue == 0);
-						me.ShaderProperty(_RoundingOpacity, "Opacity");
-						me.ShaderProperty(_Rounding, "Precision");
-						MGUI.ToggleGroupEnd();
-						MGUI.Space6();
+						MGUI.PropertyGroup(() => {
+							MGUI.ToggleGroup(_RoundingToggle.floatValue == 0);
+							me.ShaderProperty(_RoundingOpacity, "Opacity");
+							me.ShaderProperty(_Rounding, "Precision");
+							MGUI.ToggleGroupEnd();
+						});
 					}
 					else MGUI.SpaceN4();
 
 					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _NMFToggle, 0, "Normal Map")){
-						MGUI.Space6();
-						MGUI.ToggleGroup(_NMFToggle.floatValue == 0);
-						me.ShaderProperty(_NMFOpacity, "Opacity");
-						me.ShaderProperty(_NormalMapFilter, "Strength");
-						MGUI.ToggleGroupEnd();
-						MGUI.Space6();
+						MGUI.PropertyGroup(() => {
+							MGUI.ToggleGroup(_NMFToggle.floatValue == 0);
+							me.ShaderProperty(_NMFOpacity, "Opacity");
+							me.ShaderProperty(_NormalMapFilter, "Strength");
+							MGUI.ToggleGroupEnd();
+						});
 					}
 					else MGUI.SpaceN4();
 					
 					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _DepthBufferToggle, 0, "Depth Buffer")){
-						MGUI.Space6();
 						if (_DepthBufferToggle.floatValue == 1){
 							MGUI.DisplayWarning("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
-							MGUI.Space6();
 						}
-						MGUI.ToggleGroup(_DepthBufferToggle.floatValue == 0);
-						me.ShaderProperty(_DBOpacity, "Opacity");
-						me.ShaderProperty(_DBColor, "Tint");
-						MGUI.ToggleGroupEnd();
-						MGUI.Space6();
+						MGUI.PropertyGroup(() => {
+							MGUI.ToggleGroup(_DepthBufferToggle.floatValue == 0);
+							me.ShaderProperty(_DBOpacity, "Opacity");
+							me.ShaderProperty(_DBColor, "Tint");
+							MGUI.ToggleGroupEnd();
+						});
 					}
 					else MGUI.SpaceN2();
 					MGUI.Space6();
@@ -777,37 +841,125 @@ public class SFXEditor : ShaderGUI {
 		MGUI.VersionLabel(versionLabel, 12,-16,-20);
     }
 
-    // Set blending mode
-    public static void SetBlendMode(Material material, BlendingModes mode) {
-        EditorGUI.BeginChangeCheck();
+	void ListKeywords(Material mat, GUIContent label, float buttonSize){
+		keywordsList.Clear();
+		foreach (string s in mat.shaderKeywords)
+			keywordsList.Add(s);
+		
+		if (MGUI.LinkButton(label, buttonSize, buttonSize, (MGUI.GetInspectorWidth()/2.0f)-11.0f))
+			displayKeywords = !displayKeywords;
+		
+		if (displayKeywords){
+			MGUI.Space8();
+			string infoString = "";
+			if (keywordsList.Capacity == 0){
+				infoString = "NO KEYWORDS FOUND";
+			}
+			else {
+				infoString = "\nKeywords Used:\n\n";
+				foreach (string s in keywordsList){
+					infoString += " " + s + "\n";
+				}
+			}
+			MGUI.DisplayText(infoString);
+			MGUI.SpaceN8();
+		}
+		GUILayout.Space(buttonSize-10);
+	}
+
+	void SetKeyword(Material m, string keyword, bool state) {
+		if (state)
+			m.EnableKeyword(keyword);
+		else
+			m.DisableKeyword(keyword);
+	}
+
+	void ApplyMaterialSettings(Material mat){
+		int filterMode = mat.GetInt("_FilterModel");
+		int shakeMode = mat.GetInt("_ShakeModel");
+		int distMode = mat.GetInt("_DistortionModel");
+		int blurMode = mat.GetInt("_BlurModel");
+		int blurY = mat.GetInt("_BlurY");
+		int blurChrom = mat.GetInt("_RGBSplit");
+		int dof = mat.GetInt("_DoF");
+		int fogMode = mat.GetInt("_Fog");
+		int zoomMode = mat.GetInt("_Zoom");
+		int sstMode = mat.GetInt("_SST");
+		int tpMode = mat.GetInt("_Triplanar");
+		int outlineMode = mat.GetInt("_OutlineType");
+		int noiseMode = mat.GetInt("_NoiseMode");
+
+		bool isXVersion = MGUI.IsXVersion(mat);
+		bool filteringEnabled = filterMode > 0;
+		bool shakeEnabled = shakeMode > 0;
+		bool distortionEnabled = distMode == 1;
+		bool distortionTriEnabled = distMode == 2;
+		bool blurPixelEnabled = blurMode == 1;
+		bool blurDitherEnabled = blurMode == 2;
+		bool blurRadEnabled = blurMode == 3;
+		bool blurYEnabled = blurY == 1;
+		bool blurChromEnabled = blurChrom == 1;
+		bool blurEnabled = blurMode > 0;
+		bool noiseEnabled = noiseMode == 1;
+		bool dofEnabled = dof == 1;
+		bool fogEnabled = fogMode == 1 && isXVersion;
+		bool zoomEnabled = zoomMode == 1 && isXVersion;
+		bool zoomRGBEnabled = zoomMode == 2 && isXVersion;
+		bool sstEnabled = sstMode < 3 && sstMode > 0 && isXVersion;
+		bool sstDistEnabled = sstMode == 3 && isXVersion;
+		bool tpEnabled = tpMode > 0 && isXVersion;
+		bool outlineEnabled = outlineMode > 0 && isXVersion;
+		
+		SetKeyword(mat, "_COLORCOLOR_ON", filteringEnabled);
+		SetKeyword(mat, "FXAA", shakeEnabled);
+		SetKeyword(mat, "EFFECT_BUMP", distortionEnabled);
+		SetKeyword(mat, "_TERRAIN_NORMAL_MAP", distortionTriEnabled);
+		SetKeyword(mat, "BLOOM", blurPixelEnabled);
+		SetKeyword(mat, "GRAIN", blurDitherEnabled);
+		SetKeyword(mat, "_SUNDISK_SIMPLE", blurRadEnabled);
+		SetKeyword(mat, "BLOOM_LENS_DIRT", blurYEnabled);
+		SetKeyword(mat, "CHROMATIC_ABBERATION_LOW", blurChromEnabled);
+		SetKeyword(mat, "DEPTH_OF_FIELD", dofEnabled);
+		SetKeyword(mat, "_DETAIL_MULX2", zoomEnabled);
+		SetKeyword(mat, "_MAPPING_6_FRAMES_LAYOUT", zoomRGBEnabled);
+		SetKeyword(mat, "_COLOROVERLAY_ON", sstEnabled);
+		SetKeyword(mat, "_PARALLAXMAP", sstDistEnabled);
+		SetKeyword(mat, "_FADING_ON", fogEnabled);
+		SetKeyword(mat, "PIXELSNAP_ON", tpEnabled);
+		SetKeyword(mat, "_COLORADDSUBDIFF_ON", outlineEnabled);
+		SetKeyword(mat, "_REQUIRE_UV2", noiseEnabled);
+	}
+
+    public static void SetBlendMode(Material mat) {
+        int mode = mat.GetInt("_BlendMode");
         switch (mode) {
-             case BlendingModes.OPAQUE:
-                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
+             case 0: // Opaque:
+                mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+                mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
                 break;
-             case BlendingModes.ALPHA:
-                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+             case 1: // Alpha:
+                mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
                 break;
-            case BlendingModes.PREMULTIPLIED:
-                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            case 2: // Premultiplied:
+                mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+                mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
                 break;
-            case BlendingModes.ADDITIVE:
-                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);
+            case 3: // Additive:
+                mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+                mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);
                 break;
-            case BlendingModes.SOFT_ADDITIVE:
-                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusDstColor);
-                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);
+            case 4: // Soft_Additive:
+                mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusDstColor);
+                mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);
                 break;
-            case BlendingModes.MULTIPLY:
-                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.DstColor);
-                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
+            case 5: // Multiply:
+                mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.DstColor);
+                mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
                 break;
-            case BlendingModes.MULTIPLY_2x:
-                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.DstColor);
-                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.SrcColor);
+            case 6: // Multiply_2x:
+                mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.DstColor);
+                mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.SrcColor);
                 break;
         }
     }
@@ -828,26 +980,25 @@ public class SFXEditor : ShaderGUI {
 		_ColorMaxRange.floatValue = 15f;
 		_AutoShift.floatValue = 0f;
 		_Color.colorValue = Color.white;
-		_SaturationRGB.floatValue = 1f;
 		_AutoShiftSpeed.floatValue = 0.25f;
 		_Hue.floatValue = 0f;
-		_SaturationHSL.floatValue = 0f;
-		_Luminance.floatValue = 0f;
-		_HSLMin.floatValue = 0f;
-		_HSLMax.floatValue = 1f;
+		_Saturation.floatValue = 1f;
+		_Value.floatValue = 0f;
+		_Brightness.floatValue = 1f;
 		_HDR.floatValue = 0f;
-		_Exposure.floatValue = 0f;
 		_Contrast.floatValue = 1f;
 		_Invert.floatValue = 0f;
 		_InvertR.floatValue = 0f;
 		_InvertG.floatValue = 0f;
 		_InvertB.floatValue = 0f;
-		_Noise.floatValue = 0f;
+		_SaturationR.floatValue = 1f;
+		_SaturationG.floatValue = 1f;
+		_SaturationB.floatValue = 1f;
 	}
 
 	void ResetShake(){
 		_ShakeModel.floatValue = 0f;
-		_ShakeUseGlobal.floatValue = 0f;
+		_ShakeUseGlobal.floatValue = 1f;
 		_ShakeMinRange.floatValue = 8f;
 		_ShakeMaxRange.floatValue = 15f;
 		_Amplitude.floatValue = 0f;
@@ -889,6 +1040,14 @@ public class SFXEditor : ShaderGUI {
 		_CrushBlur.floatValue = 0f;
 	}
 
+	void ResetNoise(){
+		_NoiseMode.floatValue = 0f;
+		_Noise.floatValue = 0f;
+		_NoiseRGB.vectorValue = Vector4.zero;
+		_ScanLine.floatValue = 0f;
+		_ScanLineThick.floatValue = 1f;
+		_ScanLineSpeed.floatValue = 1f;
+	}
 	void ResetFog(){
 		_Fog.floatValue = 0f;
 		_FogUseGlobal.floatValue = 0f;
@@ -975,9 +1134,6 @@ public class SFXEditor : ShaderGUI {
 		_InvertY.floatValue = 0f;
 		_ShiftX.floatValue = 0f;
 		_ShiftY.floatValue = 0f;
-		_GhostingToggle.floatValue = 0f;
-		_GhostingStr.floatValue = 0.7f;
-		_FreezeFrame.floatValue = 0f;
 		_RoundingToggle.floatValue = 0f;
 		_Rounding.floatValue = 1f;
 		_RoundingOpacity.floatValue = 1f;
@@ -985,5 +1141,6 @@ public class SFXEditor : ShaderGUI {
 		_NMFToggle.floatValue = 0f;
 		_NMFOpacity.floatValue = 1f;
 		_DBColor.colorValue = Color.white;
+		_DepthBufferToggle.floatValue = 0f;
 	}
 }

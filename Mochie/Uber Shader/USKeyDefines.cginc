@@ -1,5 +1,5 @@
-#ifndef KEY_TRANSLATIONS
-#define KEY_TRANSLATIONS
+#ifndef US_KEYWORD_DEFINES
+#define US_KEYWORD_DEFINES
 
 #ifndef X_FEATURES
 	#define X_FEATURES defined(UBERX)

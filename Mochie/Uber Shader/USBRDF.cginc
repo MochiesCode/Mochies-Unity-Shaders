@@ -310,7 +310,7 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
 
 	l.directCol *= atten;
 	l.directCol += l.vLightCol;
-	l.directCol += subsurfCol;
+	// l.directCol += subsurfCol;
 
 	float diffuseTerm = DisneyDiffuse(l, m, percepRough);
 	float3 lighting = l.indirectCol + l.directCol * diffuseTerm;
@@ -345,7 +345,7 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
 			reflections *= m.reflectionMask * _ReflectionStr;
 		#endif
 
-		environment = specular + reflections;
+		environment = specular + reflections  + subsurfCol;
 		
 		#if MATCAP_ENABLED
 			ApplyMatcap(i, l, m, environment, GetRoughness(smoothness));
@@ -355,7 +355,7 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
 	float3 col = diffuse.rgb * lighting;
 
 	// Prevents being washed out by intense lighting
-	float3 maxCol = (diffuse.rgb + environment + subsurfCol) * diffuseTerm;
+	float3 maxCol = (diffuse.rgb + environment) * diffuseTerm;
 	col = lerp(col, clamp(col, 0, maxCol), _ColorPreservation);
 
     return col + environment;

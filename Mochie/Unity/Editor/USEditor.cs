@@ -80,7 +80,7 @@ internal class USEditor : ShaderGUI {
 	string watermark = "Watermark_Pro";
 	string patIcon = "Patreon_Icon";
 	string keyTex = "KeyIcon_Pro";
-	string versionLabel = "v1.10";
+	string versionLabel = "v1.10.1";
 
 	GUIContent maskLabel = new GUIContent("Mask");
     GUIContent albedoLabel = new GUIContent("Base Color");
@@ -520,7 +520,7 @@ internal class USEditor : ShaderGUI {
 		// Using this to mercilessly murder verts when necessary (must be 0)
 		_NaNLmao.floatValue = 0.0f;
 
-		// Generate preset popup items and other path sensitive folders if necessary
+		// Generate path sensitive folders if necessary
 		if (!AssetDatabase.IsValidFolder(MGUI.presetPath+"/Textures/Ramps"))
 			AssetDatabase.CreateFolder(MGUI.presetPath+"/Textures", "Ramps");
 
@@ -1968,7 +1968,7 @@ internal class USEditor : ShaderGUI {
 			Application.OpenURL("https://www.patreon.com/mochieshaders");
 		}
 		GUILayout.Space(buttonSize);
-		MGUI.VersionLabel(versionLabel, 12,-16,-20);
+		MGUI.VersionLabel(versionLabel, 12,-16,-30);
 
 		mat.DisableKeyword("_");
     }

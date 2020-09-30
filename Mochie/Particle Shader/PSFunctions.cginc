@@ -18,7 +18,8 @@ float4 GetTexture(v2f i){
 		if (_DistortMainTex == 1)
 			texCol = tex2D(_MainTex, i.uv0.xy);
 		float4 grabCol = float4(tex2Dproj(_PSGrab, i.uv1).rgb, texCol.a);
-		texCol = lerp(texCol, grabCol*lerp(1,texCol.a,_BlendMode == 1), _DistortionBlend);
+		// texCol = lerp(texCol, grabCol*lerp(1,texCol.a,_BlendMode == 1), _DistortionBlend);
+		texCol = grabCol;
 	#else
 		float4 texCol = tex2D(_MainTex, i.uv0.xy) * _Color;
 	#endif
@@ -81,10 +82,10 @@ float4 GetColor(v2f i){
 
 		// Alpha Blended
 		case 0:
-			col = i.color * GetTexture(i);
+			col = GetTexture(i);
 			col.a = saturate(col.a);
 			col.a *= i.falloff;
-			col *= _Color;
+			// col *= _Color;
 			col *= i.pulse;
 			#if defined(PSX)
 				col.rgb = GetHSVFilter(col);

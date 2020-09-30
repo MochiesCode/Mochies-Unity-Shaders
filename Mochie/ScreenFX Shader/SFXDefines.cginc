@@ -2,6 +2,7 @@
 #define SFX_DEFINES_INCLUDED
 
 #include "UnityCG.cginc"
+#include "SFXKeyDefines.cginc"
 
 // Global
 sampler2D _MSFXGrab; float4 _MSFXGrab_TexelSize, _MSFXGrab_ST;
@@ -13,11 +14,14 @@ float _Opacity;
 // Color Filtering
 int _FilterModel, _AutoShift, _ColorUseGlobal, _RoundingToggle;
 float4 _Color;
+float3 _RGB, _NoiseRGB;
+float _FilterStrength, _Noise, _NoiseStrength;
 float _ColorMinRange, _ColorMaxRange, _Rounding, _RoundingOpacity;
-float _RAmt, _GAmt, _BAmt;
-float _Exposure, _Contrast, _HDR;
-float _Invert, _InvertR, _InvertG, _InvertB, _Noise, _SaturationRGB;
-float _Hue, _AutoShiftSpeed, _SaturationHSL, _Luminance, _HSLMin, _HSLMax;
+float _Contrast, _HDR;
+float _Invert, _InvertR, _InvertG, _InvertB, _Saturation;
+float _Hue, _AutoShiftSpeed, _Brightness;
+float _SaturationR, _SaturationG, _SaturationB;
+float _ScanLine, _ScanLineThick, _ScanLineSpeed;
 
 // Shake
 int _ShakeModel, _ShakeUseGlobal;
@@ -47,7 +51,7 @@ float3 wPos;
 float3 wNorm;
 float depth;
 
-#if defined(SFXX)
+#if X_FEATURES
 // Fog
 	int _Fog, _FogSafeZone, _FogUseGlobal;
 	float4 _FogColor;
@@ -100,7 +104,6 @@ float depth;
 struct appdata {
     float4 vertex : POSITION;
     float4 uv : TEXCOORD0;
-	float4 tangent : TANGENT;
 };
 
 struct v2f {
@@ -130,20 +133,11 @@ struct v2f {
 	float olF : TEXCOORD22;
 };
 
-#define STD_BLUR
-#define STD_BLUR_Y
-// #define STD_BLUR_DEPTH
-// #define STD_BLUR_Y_DEPTH
-#define STD_BLUR_ONLY_DEPTH
-#define CHROM_AB
-#define CHROM_AB_Y
-#define RAD_BLUR
-#define FAST_BLUR_COMPILE
 #include "../Common/Utilities.cginc"
 #include "../Common/Color.cginc"
 #include "SFXBlur.cginc"
 #include "SFXFunctions.cginc"
-#if defined(SFXX)
+#if X_FEATURES
 	#include "SFXXFeatures.cginc"
 #endif
 #include "SFXPass.cginc"

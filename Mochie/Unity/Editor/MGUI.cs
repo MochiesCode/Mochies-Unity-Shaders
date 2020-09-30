@@ -715,6 +715,17 @@ namespace Mochie {
 			Space2();
 		}
 
+		public static void PropertyGroup(bool shouldDisplay, Action action){
+			if (shouldDisplay){
+				EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+				Space2();
+				action();
+				Space2();
+				EditorGUILayout.EndVertical();
+				Space2();
+			}
+		}
+
 		public static void PropertyGroupLayer(Action action){
 			Color col = GUI.backgroundColor;
 			GUI.backgroundColor = new Color(0.85f,0.85f,0.85f,1);
