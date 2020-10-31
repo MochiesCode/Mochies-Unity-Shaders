@@ -1,5 +1,5 @@
 // By Mochie#8794
-// Version 1.9
+// Version 1.11
 
 Shader "Mochie/Uber/Uber" {
     Properties {
@@ -87,6 +87,7 @@ Shader "Mochie/Uber/Uber" {
 		_MatcapBlendMask("tex", 2D) = "gray" {}
 		_EmissMask("tex", 2D) = "white" {}
 		_FilterMask("tex", 2D) = "white" {}
+		_RefractionMask("tex", 2D) = "white" {}
 		_OutlineMask("tex", 2D) = "white" {}
 		_PackedMask0("tex", 2D) = "white" {}
 		_PackedMask1("tex", 2D) = "white" {}
@@ -251,16 +252,26 @@ Shader "Mochie/Uber/Uber" {
 		_ERimRoughness("ra", Range(0,2)) = 0.5
 		[ToggleUI]_ERimUseRough("tog", Int) = 0
 
+		// REFRACTION
+		[ToggleUI]_Refraction("tog", Int) = 0
+		_RefractionTint("col", Color) = (1,1,1)
+		_RefractionOpac("ra", Range(0,1)) = 0
+		_RefractionIOR("fl", Float) = 1.3
+		[ToggleUI]_UnlitRefraction("tog", Int) = 1
+		[ToggleUI]_RefractionCA("tog", Int) = 0
+		_RefractionCAStr("ra", Range(0,1)) = 0.1
+
 		// NORMALS
 		[ToggleUI]_HardenNormals("tog", Int) = 0
 		[ToggleUI]_ClearCoat("tog", Int) = 0
+		[ToggleUI]_GSAA("tog", Int) = 0
 
 		//----------------------------
 		// EMISSION
 		//----------------------------
 		[ToggleUI]_EmissionToggle("tog", Int) = 0
 		_EmissionMap("tex", 2D) = "white" {}
-		[HDR]_EmissionColor("col", Color) = (0,0,0,1)
+		[HDR]_EmissionColor("col", Color) = (0,0,0)
 		_EmissScroll("vec", Vector) = (0,0,0,0)
 
 		// LIGHT REACTIVITY
@@ -268,6 +279,11 @@ Shader "Mochie/Uber/Uber" {
 		[ToggleUI]_CrossMode("tog", Int) = 0
 		_Crossfade("ra", Range(0,0.2)) = 0.1
 		_ReactThresh("ra", Range(0,1)) = 0.5
+
+		// REFRACTION
+		[ToggleUI]_Refraction("tog", Int) = 0
+		_RefractionStr("fl", Float) = 1
+		_RefractionOpac("ra", Range(0,1)) = 0.5
 
 		// PULSE
 		[ToggleUI]_PulseToggle("tog", Int) = 0
@@ -320,6 +336,7 @@ Shader "Mochie/Uber/Uber" {
 		_FPS("ra", Range(1,120)) = 30
 		[ToggleUI]_ManualScrub("tog", Int) = 0
 		_ScrubPos("tog", Int) = 1
+		[ToggleUI]_UseSpritesheetAlpha("tog", Int) = 0
 
 		// SHEET 2
 		[ToggleUI]_EnableSpritesheet1("tog", Int) = 0
@@ -373,6 +390,17 @@ Shader "Mochie/Uber/Uber" {
 		[ToggleUI]_DistortMatcap1("tog", Int) = 0
 
 		//----------------------------
+		// VERTEX MANIPULATION
+		//----------------------------
+		[ToggleUI]_VertexManipulationToggle("tog", Int) = 0
+		_VertexExpansion("vec", Vector) = (0,0,0,0)
+		[ToggleUI]_VertexExpansionClamp("tog", Int) = 0
+		_VertexRounding("ra", Range(0,0.99)) = 0
+		_VertexRoundingPrecision("fl", Float) = 100
+		_VertexExpansionMask("tex", 2D) = "white" {}
+		_VertexRoundingMask("tex", 2D) = "white" {}
+		
+		//----------------------------
 		// SPECIAL FEATURES
 		//----------------------------
 		// DISTANCE FADE
@@ -386,7 +414,7 @@ Shader "Mochie/Uber/Uber" {
 
 		// DISSOLVE
 		[Enum(Off,0, Texture,1, Simplex,2, Geometry,3)]_DissolveStyle("en4", Int) = 0
-		[Enum(X,0, Y,1, Z,2)]_GeomDissolveAxis("en3", Int) = 1
+		[Enum(X,0, Y,1, Z,2, Point to Point,3)]_GeomDissolveAxis("en4", Int) = 1
 		[ToggleUI]_GeomDissolveAxisFlip("tog", Int) = 0
 		[ToggleUI]_GeomDissolveWireframe("tog", Int) = 0
 		[ToggleUI]_DissolveClones("tog", Int) = 0
@@ -396,6 +424,8 @@ Shader "Mochie/Uber/Uber" {
 		_GeomDissolveWidth("fl", Float) = 0.25
 		_GeomDissolveClip("fl", Float) = 0
 		_GeomDissolveSpread("vec", Vector) = (0.1,0.1,0.1,1)
+		_DissolvePoint0("vec", Vector) = (0,0,0,0)
+		_DissolvePoint1("vec", Vector) = (1,1,1,1)
 		_DissolveNoiseScale("vec", Vector) = (10,10,10,0)
 		_DissolveAmount("ra", Range(0,1)) = 0
 		[ToggleUI]_DissolveBlending("tog", Int) = 0
@@ -534,6 +564,9 @@ Shader "Mochie/Uber/Uber" {
 			#pragma shader_feature BLOOM_LENS_DIRT			// Emission pulse toggle
 			#pragma shader_feature PIXELSNAP_ON				// Environment rim Toggle
 			#pragma shader_feature EFFECT_HUE_VARIATION		// Spritesheet toggle
+			#pragma shader_feature DISTORT					// Refraction toggle
+			#pragma shader_feature CHROMATIC_ABBERATION		// Refraction CA toggle
+			#pragma shader_feature GEOM_TYPE_MESH			// Vertex manip toggle
 			#pragma multi_compile _ VERTEXLIGHT_ON			// Vertex lighting
 			#pragma multi_compile _ _FOG_EXP2				// Fog
 			#pragma multi_compile_fwdbase
@@ -581,6 +614,9 @@ Shader "Mochie/Uber/Uber" {
 			#pragma shader_feature EFFECT_BUMP				// UV Distortion toggle
 			#pragma shader_feature GRAIN					// Normal map UV distortion
 			#pragma shader_feature EFFECT_HUE_VARIATION		// Spritesheet toggle
+			#pragma shader_feature DISTORT					// Refraction toggle
+			#pragma shader_feature CHROMATIC_ABBERATION		// Refraction CA toggle
+			#pragma shader_feature GEOM_TYPE_MESH			// Vertex manip toggle
 			#pragma multi_compile _ _FOG_EXP2				// Fog
 			#pragma multi_compile_fwdadd_fullshadows
 			#pragma skip_variants DIRLIGHTMAP_COMBINED DIRLIGHTMAP_SEPARATE 
@@ -617,6 +653,8 @@ Shader "Mochie/Uber/Uber" {
 			#pragma shader_feature _COLORADDSUBDIFF_ON		// Separate masking
 			#pragma shader_feature _SUNDISK_NONE			// Main shading toggle
 			#pragma shader_feature USER_LUT					// PBR filtering previews
+			#pragma shader_feature DISTORT					// Refraction toggle
+			#pragma shader_feature GEOM_TYPE_MESH			// Vertex manip toggle
 			#pragma multi_compile _ _FOG_EXP2				// Fog
 			#pragma multi_compile_shadowcaster
 			#pragma skip_variants DIRLIGHTMAP_COMBINED DIRLIGHTMAP_SEPARATE 

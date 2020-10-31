@@ -3,6 +3,15 @@
 
 #if SHADING_ENABLED
 
+float GSAARoughness(float3 normal, float roughness){
+	float3 normalDDX = ddx_fine(normal);
+	float3 normalDDY = ddy_fine(normal); 
+	float dotX = dot(normalDDX, normalDDX);
+	float dotY = dot(normalDDY, normalDDY);
+	float base = saturate(max(dotX, dotY));
+	return max(roughness, pow(base, 0.333));
+}
+
 float GetRoughness(float smoothness){
 	float rough = 1-smoothness;
     rough *= 1.7-0.7*rough;

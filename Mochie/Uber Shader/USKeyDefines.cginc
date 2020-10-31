@@ -173,6 +173,18 @@
 	#define CLONES_ENABLED defined(BLOOM)
 #endif
 
+#ifndef REFRACTION_ENABLED
+	#define REFRACTION_ENABLED defined(DISTORT)
+#endif
+
+#ifndef REFRACTION_CA_ENABLED
+	#define REFRACTION_CA_ENABLED defined(CHROMATIC_ABBERATION)
+#endif
+
+#ifndef VERTEX_MANIP_ENABLED
+	#define VERTEX_MANIP_ENABLED defined(GEOM_TYPE_MESH)
+#endif
+
 // #ifndef CURVATURE_ENABLED
 // 	#define CURVATURE_ENABLED defined(BLOOM_LOW)
 // #endif

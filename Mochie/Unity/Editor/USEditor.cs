@@ -62,7 +62,9 @@ internal class USEditor : ShaderGUI {
 			"Diffuse Shading",
 			"Realtime Lighting",
 			"Baked Lighting",
-			"MASKS"
+			"MASKS",
+			"Refraction",
+			"VERTEX MANIPULATION"
 		}
 	);
 
@@ -80,7 +82,7 @@ internal class USEditor : ShaderGUI {
 	string watermark = "Watermark_Pro";
 	string patIcon = "Patreon_Icon";
 	string keyTex = "KeyIcon_Pro";
-	string versionLabel = "v1.10.1";
+	string versionLabel = "v1.11";
 
 	GUIContent maskLabel = new GUIContent("Mask");
     GUIContent albedoLabel = new GUIContent("Base Color");
@@ -479,7 +481,25 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _SpritesheetBrightness = null;
 	MaterialProperty _SpritesheetBrightness1 = null;
 	MaterialProperty _UVAniso = null;
-
+	MaterialProperty _Refraction = null;
+	MaterialProperty _RefractionOpac = null;
+	MaterialProperty _UnlitRefraction = null;
+	MaterialProperty _RefractionIOR = null;
+	MaterialProperty _RefractionMask = null;
+	MaterialProperty _RefractionCA = null;
+	MaterialProperty _RefractionCAStr = null;
+	MaterialProperty _RefractionTint = null;
+	MaterialProperty _GSAA = null;
+	MaterialProperty _DissolvePoint0 = null;
+	MaterialProperty _DissolvePoint1 = null;
+	MaterialProperty _VertexExpansion = null;
+	MaterialProperty _VertexExpansionClamp = null;
+	MaterialProperty _VertexRounding = null;
+	MaterialProperty _VertexRoundingPrecision = null;
+	MaterialProperty _VertexExpansionMask = null;
+	MaterialProperty _VertexRoundingMask = null;
+	MaterialProperty _UseSpritesheetAlpha = null;
+	MaterialProperty _VertexManipulationToggle = null;
 
 	MaterialProperty _NaNLmao = null;
 	MaterialProperty _DebugEnum = null;
@@ -794,7 +814,8 @@ internal class USEditor : ShaderGUI {
 							me.TexturePropertySingleLine(new GUIContent("Emission"), _EmissMask);
 							me.TexturePropertySingleLine(new GUIContent("Emission Pulse"), _PulseMask);
 							me.TexturePropertySingleLine(new GUIContent("Filtering"), _FilterMask);	
-							me.TexturePropertySingleLine(new GUIContent("Outline Thickness"), _OutlineMask);	
+							me.TexturePropertySingleLine(new GUIContent("Outline Thickness"), _OutlineMask);
+							me.TexturePropertySingleLine(new GUIContent("Refraction"), _RefractionMask);
 						});
 						MGUI.Space2();
 					}
@@ -802,7 +823,7 @@ internal class USEditor : ShaderGUI {
 						MGUI.Space2();
 						MGUI.PropertyGroup(() => {
 							me.TexturePropertySingleLine(new GUIContent("Mask 0"), _PackedMask0);
-							GUILayout.Label("Red:	Reflections\nGreen:	Specular\nBlue:	Matcap");
+							GUILayout.Label("Red:	Reflections\nGreen:	Specular\nBlue:	Matcap\nAlpha:	Refraction");
 							MGUI.Space8();
 							me.TexturePropertySingleLine(new GUIContent("Mask 1"), _PackedMask1);
 							GUILayout.Label("Red:	Shadows\nGreen:	Diffuse Shading\nBlue:	Subsurface");
@@ -958,9 +979,13 @@ internal class USEditor : ShaderGUI {
 				MGUI.Space8();
 			}
 
+			// -----------------
+			// Shading
+			// -----------------
 			bool queueError = mat.renderQueue < 2501;
 			bool reflError = _Reflections.floatValue > 0 && _SSR.floatValue == 1;
-			bool[] shadingErrors = {reflError && queueError};
+			bool refracError = _Refraction.floatValue > 0 && queueError;
+			bool[] shadingErrors = {reflError && queueError, refracError};
 			bool shadingTab = Foldouts.DoFoldoutError(foldouts, mat, me, shadingErrors, 1, "SHADING");
 			if (MGUI.TabButton(resetIcon, 26f)){
 				DoShadingReset(mat);
@@ -1316,6 +1341,28 @@ internal class USEditor : ShaderGUI {
 				}
 				else MGUI.SpaceN2();
 
+				// Refraction
+				bool refracTab = Foldouts.DoMediumFoldoutError(foldouts, mat, me, _Refraction, refracError && queueError, 1, "Refraction");
+				if (MGUI.MedTabButton(resetIcon, 23f))
+					DoRefracReset();
+				GUILayout.Space(5);
+				if (refracTab){
+					MGUI.Space2();
+					MGUI.PropertyGroup(() => {
+						if (refracError)
+							MGUI.DisplayError("Refractions require a render queue of 2501 or above to function correctly.");
+						MGUI.ToggleGroup(_Refraction.floatValue == 0);
+						me.ShaderProperty(_RefractionTint, "Tint");
+						me.ShaderProperty(_RefractionIOR, "IOR");
+						me.ShaderProperty(_RefractionOpac, "Opacity");
+						MGUI.ToggleSlider(me, "Chromatic Abberation", _RefractionCA, _RefractionCAStr);
+						me.ShaderProperty(_UnlitRefraction, "Unlit");
+						MGUI.ToggleGroupEnd();
+					});
+					MGUI.Space2();
+				}
+				else MGUI.SpaceN2();
+
 				// Normals
 				bool normalTab = Foldouts.DoMediumFoldout(foldouts, mat, me, 1, "Normals");
 				if (MGUI.MedTabButton(resetIcon, 23f))
@@ -1326,6 +1373,7 @@ internal class USEditor : ShaderGUI {
 					MGUI.PropertyGroup(() => {
 						me.ShaderProperty(_HardenNormals, "Hard Edges");
 						me.ShaderProperty(_ClearCoat, "Clearcoat Mode");
+						me.ShaderProperty(_GSAA, "GSAA");
 					});
 					MGUI.Space4();
 				}
@@ -1491,6 +1539,7 @@ internal class USEditor : ShaderGUI {
 					MGUI.TexPropLabel("Blending", blendingLabelPos);
 					me.ShaderProperty(_SpritesheetBrightness, "Brightness");
 					me.ShaderProperty(_UnlitSpritesheet, "Unlit");
+					me.ShaderProperty(_UseSpritesheetAlpha, "Use Alpha");
 					MGUI.Space6();
 					MGUI.Vector2Field(_RowsColumns, "Columns / Rows");
 					MGUI.Vector2Field(_FrameClipOfs, "Frame Size");
@@ -1526,6 +1575,7 @@ internal class USEditor : ShaderGUI {
 					MGUI.TexPropLabel("Blending", blendingLabelPos);
 					me.ShaderProperty(_SpritesheetBrightness1, "Brightness");
 					me.ShaderProperty(_UnlitSpritesheet1, "Unlit");
+					me.ShaderProperty(_UseSpritesheetAlpha, "Use Alpha");
 					MGUI.Space6();
 					MGUI.Vector2Field(_RowsColumns1, "Columns / Rows");
 					MGUI.Vector2Field(_FrameClipOfs1, "Frame Size");
@@ -1641,6 +1691,33 @@ internal class USEditor : ShaderGUI {
 		}
 
 		// -----------------
+		// Vertex Manip
+		// -----------------
+		bool vertexTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "VERTEX MANIPULATION");
+		if (MGUI.TabButton(resetIcon, 26f)){
+			DoVertexReset();
+		}
+		MGUI.Space8();
+		if (vertexTab){
+			MGUI.Space4();
+			me.ShaderProperty(_VertexManipulationToggle, "Enable");
+			MGUI.Space4();
+			MGUI.ToggleGroup(_VertexManipulationToggle.floatValue == 0);
+			MGUI.PropertyGroup(() => {
+				me.TexturePropertySingleLine(maskLabel, _VertexExpansionMask);
+				MGUI.Vector3Field(_VertexExpansion, "Expansion");
+				me.ShaderProperty(_VertexExpansionClamp, "Clamp Direction");
+			});
+			MGUI.PropertyGroup(() => {
+				me.TexturePropertySingleLine(maskLabel, _VertexRoundingMask);
+				me.ShaderProperty(_VertexRounding, "Position Rounding");
+				me.ShaderProperty(_VertexRoundingPrecision, "Precision");
+			});
+			MGUI.ToggleGroupEnd();
+			MGUI.Space8();
+		}
+
+		// -----------------
 		// X Features
 		// -----------------
 		if (isUberX){
@@ -1715,15 +1792,20 @@ internal class USEditor : ShaderGUI {
 							}
 							else {
 								me.ShaderProperty(_GeomDissolveAxis, "Axis");
-								me.ShaderProperty(_GeomDissolveAxisFlip, "Invert Axis");
+								if (_GeomDissolveAxis.floatValue <= 2)
+									me.ShaderProperty(_GeomDissolveAxisFlip, "Invert Axis");
 								me.ShaderProperty(_GeomDissolveWireframe, "Apply Wireframe");
 								me.ShaderProperty(_GeomDissolveClamp, "Clamp Offset Direction");
 								MGUI.ToggleGroup(_CloneToggle.floatValue == 0);
 								me.ShaderProperty(_DissolveClones, "Clones Only");
 								MGUI.ToggleGroupEnd();
 								MGUI.Space4();
-								me.ShaderProperty(_GeomDissolveAmount, "Strength");
+								me.ShaderProperty(_GeomDissolveAmount, "Clip Position");
 								me.ShaderProperty(_GeomDissolveWidth, "Falloff Size");
+								if (_GeomDissolveAxis.floatValue > 2){
+									MGUI.Vector3Field(_DissolvePoint0, "Point 1");
+									MGUI.Vector3Field(_DissolvePoint1, "Point 2");
+								}
 								MGUI.Vector3Field(_GeomDissolveSpread, "Offset Amount");
 								me.ShaderProperty(_GeomDissolveClip, "Offset Clip");
 								me.ShaderProperty(_GeomDissolveFilter, "Offset Filter");
@@ -2012,6 +2094,9 @@ internal class USEditor : ShaderGUI {
 		int screenspace = mat.GetInt("_Screenspace");
 		int cloneToggle = mat.GetInt("_CloneToggle");
 		int dissolveWireframe = mat.GetInt("_GeomDissolveWireframe");
+		int refracToggle = mat.GetInt("_Refraction");
+		int caToggle = mat.GetInt("_RefractionCA");
+		int vManipToggle = mat.GetInt("_VertexManipulationToggle");
 		bool isUberX = MGUI.IsXVersion(mat);
 		bool isOutline = MGUI.IsOutline(mat);
 		bool usingNormal = mat.GetTexture("_BumpMap");
@@ -2090,7 +2175,7 @@ internal class USEditor : ShaderGUI {
 		// bool prevCurv = mat.GetInt("_CurvatureFiltering") == 1 && mat.GetInt("_PreviewCurvature") == 1;
 
 		// Begone grabpass
-		mat.SetShaderPassEnabled("Always", ssr == 1 && reflToggle == 1 && renderMode == 1);
+		mat.SetShaderPassEnabled("Always", ((ssr == 1 && reflToggle == 1) || refracToggle == 1) && renderMode == 1);
 
 		SetKeyword(mat, "_METALLICGLOSSMAP", workflow >= 3 && renderMode == 1);
 		SetKeyword(mat, "_SPECGLOSSMAP", (workflow == 1 || workflow == 2) && renderMode == 1);
@@ -2125,6 +2210,9 @@ internal class USEditor : ShaderGUI {
 		SetKeyword(mat, "PIXELSNAP_ON", eRimToggle == 1 && renderMode == 1);
 		SetKeyword(mat, "EFFECT_HUE_VARIATION", spriteToggle0 == 1 || spriteToggle1 == 1);
 		SetKeyword(mat, "_SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A", reflToggle == 2 && renderMode == 1);
+		SetKeyword(mat, "DISTORT", refracToggle == 1 && renderMode == 1);
+		SetKeyword(mat, "CHROMATIC_ABBERATION", refracToggle == 1 && caToggle == 1 && renderMode == 1);
+		SetKeyword(mat, "GEOM_TYPE_MESH", vManipToggle == 1);
 		// SetKeyword(mat, "BLOOM_LOW", usingCurve && renderMode == 1);
 	}
 
@@ -2260,6 +2348,7 @@ internal class USEditor : ShaderGUI {
 		ClearOutlineMaps();
 		ClearUVDMaps();
 		ClearSpecialMaps();
+		ClearVertMaps();
 	}
 
 	void ClearBaseMaps(float cubeMode){
@@ -2318,6 +2407,13 @@ internal class USEditor : ShaderGUI {
 		if (clearNormal)
 			_BumpMap.textureValue = null;
 		// _Curvature.textureValue = null;
+	}
+
+	void ClearVertMaps(){
+		if (_VertexManipulationToggle.floatValue == 0){
+			_VertexExpansionMask.textureValue = null;
+			_VertexRoundingMask.textureValue = null;
+		}
 	}
 
 	void ClearDetailMaps(){
@@ -2699,9 +2795,19 @@ internal class USEditor : ShaderGUI {
 		_ERimRoughness.floatValue = 0.5f;
 	}
 
+	void DoRefracReset(){
+		_RefractionOpac.floatValue = 0f;
+		_UnlitRefraction.floatValue = 1f;
+		_RefractionIOR.floatValue = 1.3f;
+		_RefractionCA.floatValue = 0f;
+		_RefractionCAStr.floatValue = 0.1f;
+		_RefractionTint.colorValue = Color.white;
+	}
+
 	void DoNormalReset(){
 		_HardenNormals.floatValue = 0f;
 		_ClearCoat.floatValue = 0f;
+		_GSAA.floatValue = 0f;
 	}
 
 	void DoEmissionReset(){
@@ -2751,6 +2857,7 @@ internal class USEditor : ShaderGUI {
 		_EnableSpritesheet1.floatValue = 0f;
 		_UnlitSpritesheet.floatValue = 0f;
 		_UnlitSpritesheet1.floatValue = 0f;
+		_UseSpritesheetAlpha.floatValue = 0f;
 		DoSheet1Reset();
 		DoSheet2Reset();
 	}
@@ -2811,6 +2918,16 @@ internal class USEditor : ShaderGUI {
 		_OutlineMult.floatValue = 1f;
 		_UseVertexColor.floatValue = 0f;
 	}
+	
+	void DoVertexReset(){
+		_VertexExpansion.vectorValue = Vector4.zero;
+		_VertexExpansionClamp.floatValue = 0f;
+		_VertexRounding.floatValue = 0f;
+		_VertexRoundingPrecision.floatValue = 100f;
+		_VertexExpansionMask.textureValue = null;
+		_VertexRoundingMask.textureValue = null;
+		_VertexManipulationToggle.floatValue = 0f;
+	}
 
 	void DoSpecialReset(){
 		_DistanceFadeToggle.floatValue = 0f;
@@ -2857,6 +2974,8 @@ internal class USEditor : ShaderGUI {
 		_GeomDissolveClip.floatValue = 0f;
 		_GeomDissolveFilter.floatValue = 1f;
 		_GeomDissolveClamp.floatValue = 0f;
+		_DissolvePoint0.vectorValue = new Vector4(0f,1f,0f,0f);
+		_DissolvePoint1.vectorValue = Vector4.zero;
 	}
 
 	void DoScreenReset(){

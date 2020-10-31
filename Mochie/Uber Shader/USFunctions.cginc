@@ -86,7 +86,7 @@ float4 GetSpritesheetColor(g2f i,
 	return tex2D(tex, uv) * spriteColor * brightness * FrameClip(scaledUV, rowsColumns, fco);
 }
 
-void ApplySpritesheetBlending(g2f i, inout float3 col, float4 gifCol, int blendMode){
+void ApplySpritesheetBlending(g2f i, inout float4 col, float4 gifCol, int blendMode){
 	if (blendMode == 0){
 		col.rgb += (gifCol.rgb * gifCol.a); 
 	}
@@ -94,9 +94,12 @@ void ApplySpritesheetBlending(g2f i, inout float3 col, float4 gifCol, int blendM
 		col.rgb *= lerp(1, gifCol.rgb, gifCol.a);
 	}
 	else col.rgb = lerp(col.rgb, gifCol.rgb, gifCol.a);
+
+	if (_UseSpritesheetAlpha == 1)
+		col.a = gifCol.a;
 }
 
-void ApplySpritesheet0(g2f i, inout float3 albedo){
+void ApplySpritesheet0(g2f i, inout float4 albedo){
 	float4 spriteCol = GetSpritesheetColor(i, 
 		_Spritesheet,
 		_SpritesheetCol,
@@ -113,7 +116,7 @@ void ApplySpritesheet0(g2f i, inout float3 albedo){
 	ApplySpritesheetBlending(i, albedo, spriteCol, _SpritesheetBlending);
 }
 
-void ApplySpritesheet1(g2f i, inout float3 albedo){
+void ApplySpritesheet1(g2f i, inout float4 albedo){
 	float4 spriteCol = GetSpritesheetColor(i, 
 		_Spritesheet1,
 		_SpritesheetCol1,
@@ -130,10 +133,36 @@ void ApplySpritesheet1(g2f i, inout float3 albedo){
 	ApplySpritesheetBlending(i, albedo, spriteCol, _SpritesheetBlending1);
 }
 
+void ApplyRefractionColor(g2f i, lighting l, masks m, inout float3 albedo, float2 offset){
+	float2 refractUV = l.screenUVs + offset;
+	#if REFRACTION_CA_ENABLED
+		float2 uvG = l.screenUVs + (offset * (1 + _RefractionCAStr));
+		float2 uvB = l.screenUVs + (offset * (1 - _RefractionCAStr));
+		float3 base = tex2Dlod(_SSRGrab, float4(refractUV,0,0));
+		float chromG = tex2Dlod(_SSRGrab, float4(uvG,0,0)).g;
+		float chromB = tex2Dlod(_SSRGrab, float4(uvB,0,0)).b;
+		float3 refractionCol = float3(base.r, chromG, chromB);
+	#else
+		float3 refractionCol = tex2Dlod(_SSRGrab, float4(refractUV,0,0));
+	#endif
+	refractionCol = lerp(albedo, refractionCol * _RefractionTint, m.refractMask);
+	albedo = lerp(refractionCol, albedo, _RefractionOpac);
+}
+
+void ApplyRefraction(g2f i, lighting l, masks m, inout float3 albedo){
+	float2 IOR = (_RefractionIOR-1) * mul(UNITY_MATRIX_V, float4(l.normal, 0));
+	float2 offset = ((1/(i.screenPos.z + 1) * IOR)) * (1-dot(l.normal, l.viewDir));
+	offset = float2(offset.x, -(offset.y * _ProjectionParams.x));
+	ApplyRefractionColor(i, l, m, albedo, offset);
+}
+
 float4 GetAlbedo(g2f i, lighting l, masks m){
 	float4 mainTex =  _MainTex.Sample(sampler_MainTex, i.uv.xy); // UNITY_SAMPLE_TEX2D(_MainTex, i.uv.xy);
+	#if REFRACTION_ENABLED
+		if (_UnlitRefraction == 0)
+			ApplyRefraction(i, l, m, mainTex.rgb);
+	#endif
 	float4 albedo = 1;
-	// curvature = 1;
 	cubeMask = 1;
 	
 	#if !CUBEMAP_ENABLED && !COMBINED_CUBEMAP_ENABLED
@@ -186,9 +215,9 @@ float4 GetAlbedo(g2f i, lighting l, masks m){
 
 	#if SPRITESHEETS_ENABLED
 		if (_EnableSpritesheet == 1 && _UnlitSpritesheet == 0)
-			ApplySpritesheet0(i, albedo.rgb);
+			ApplySpritesheet0(i, albedo);
 		if (_EnableSpritesheet1 == 1 && _UnlitSpritesheet1 == 0)
-			ApplySpritesheet1(i, albedo.rgb);
+			ApplySpritesheet1(i, albedo);
 	#endif
 
 	#if FILTERING_ENABLED
@@ -230,9 +259,7 @@ float3 GetEmission(g2f i, masks m){
 
 void ApplyRimLighting(g2f i, lighting l, masks m, inout float3 diffuse){
 	if (_RimLighting == 1){
-		float VdotL = abs(dot(l.viewDir, l.normal));
-		float rim = pow((1-VdotL), (1-_RimWidth) * 10);
-		rim = smoothstep(_RimEdge, (1-_RimEdge), rim);
+		float rim = GetRimValue(l.viewDir, l.normal, _RimWidth, _RimEdge);
 		rim *= m.rimMask;
 		float3 rimCol = UNITY_SAMPLE_TEX2D_SAMPLER(_RimTex, _MainTex, i.uv2.zw).rgb * _RimCol.rgb;
 		float interpolator = rim*_RimStr*lerp(l.worldBrightness, 1, _UnlitRim);
@@ -581,6 +608,9 @@ masks GetMasks(g2f i){
 				#if COMBINED_SPECULAR
 					m.anisoMask = 1-UNITY_SAMPLE_TEX2D_SAMPLER(_InterpMask, _MainTex, i.uv.xy);
 				#endif
+				#if REFRACTION_ENABLED
+					m.refractMask = UNITY_SAMPLE_TEX2D_SAMPLER(_RefractionMask, _MainTex, i.uv.xy);
+				#endif
 				m.subsurfMask = UNITY_SAMPLE_TEX2D_SAMPLER(_SubsurfaceMask, _MainTex, i.uv.xy);
 				m.rimMask = UNITY_SAMPLE_TEX2D_SAMPLER(_RimMask, _MainTex, i.uv.xy);
 			#endif
@@ -600,10 +630,11 @@ masks GetMasks(g2f i){
 	#elif PACKED_MASKING
 		#if SHADING_ENABLED
 			#if !OUTLINE_PASS
-				float3 mask0 = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMask0, _MainTex, i.uv.xy);
+				float4 mask0 = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMask0, _MainTex, i.uv.xy);
 				m.reflectionMask = mask0.r;
 				m.specularMask = mask0.g;
 				m.matcapMask = mask0.b;
+				m.refractMask = mask0.a;
 				float4 mask2 = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMask2, _MainTex, i.uv.xy);
 				m.rimMask = mask2.r;
 				m.eRimMask = mask2.g;

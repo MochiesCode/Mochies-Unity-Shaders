@@ -56,7 +56,7 @@ namespace Mochie {
 			displayList = "";
 			List<Material> materials = FindAssetsByType<Material>();
 			foreach (Material mat in materials){
-				if (mat.shader.name.Contains("Uber Shader")){
+				if (mat.shader.name.Contains("Uber")){
 					int renderMode = mat.GetInt("_RenderMode");
 					int blendMode = mat.GetInt("_BlendMode");
 					int cullingMode = mat.GetInt("_CullingMode");
@@ -80,6 +80,9 @@ namespace Mochie {
 					int screenspace = mat.GetInt("_Screenspace");
 					int cloneToggle = mat.GetInt("_CloneToggle");
 					int dissolveWireframe = mat.GetInt("_GeomDissolveWireframe");
+					int refracToggle = mat.GetInt("_Refraction");
+					int caToggle = mat.GetInt("_RefractionCA");
+					int vManipToggle = mat.GetInt("_VertexManipulationToggle");
 					bool isUberX = MGUI.IsXVersion(mat);
 					bool isOutline = MGUI.IsOutline(mat);
 					bool usingNormal = mat.GetTexture("_BumpMap");
@@ -158,7 +161,7 @@ namespace Mochie {
 					// bool prevCurv = mat.GetInt("_CurvatureFiltering") == 1 && mat.GetInt("_PreviewCurvature") == 1;
 
 					// Begone grabpass
-					mat.SetShaderPassEnabled("Always", ssr == 1 && reflToggle == 1 && renderMode == 1);
+					mat.SetShaderPassEnabled("Always", ((ssr == 1 && reflToggle == 1) || refracToggle == 1) && renderMode == 1);
 
 					SetKeyword(mat, "_METALLICGLOSSMAP", workflow >= 3 && renderMode == 1);
 					SetKeyword(mat, "_SPECGLOSSMAP", (workflow == 1 || workflow == 2) && renderMode == 1);
@@ -193,7 +196,10 @@ namespace Mochie {
 					SetKeyword(mat, "PIXELSNAP_ON", eRimToggle == 1 && renderMode == 1);
 					SetKeyword(mat, "EFFECT_HUE_VARIATION", spriteToggle0 == 1 || spriteToggle1 == 1);
 					SetKeyword(mat, "_SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A", reflToggle == 2 && renderMode == 1);
-
+					SetKeyword(mat, "DISTORT", refracToggle == 1 && renderMode == 1);
+					SetKeyword(mat, "CHROMATIC_ABBERATION", refracToggle == 1 && caToggle == 1 && renderMode == 1);
+					SetKeyword(mat, "GEOM_TYPE_MESH", vManipToggle == 1);
+					
 					// Debug.Log("Applied settings to: " + mat.name);
 					EditorUtility.SetDirty(mat);
 					matList.Add(mat.name);

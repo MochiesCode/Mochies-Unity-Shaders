@@ -12,7 +12,7 @@ float _MinRange, _MaxRange;
 float _Opacity;
 
 // Color Filtering
-int _FilterModel, _AutoShift, _ColorUseGlobal, _RoundingToggle;
+int _FilterModel, _AutoShift, _ColorUseGlobal, _NoiseUseGlobal, _RoundingToggle;
 float4 _Color;
 float3 _RGB, _NoiseRGB;
 float _FilterStrength, _Noise, _NoiseStrength;
@@ -22,6 +22,7 @@ float _Invert, _InvertR, _InvertG, _InvertB, _Saturation;
 float _Hue, _AutoShiftSpeed, _Brightness;
 float _SaturationR, _SaturationG, _SaturationB;
 float _ScanLine, _ScanLineThick, _ScanLineSpeed;
+float _NoiseMinRange, _NoiseMaxRange;
 
 // Shake
 int _ShakeModel, _ShakeUseGlobal;
@@ -131,6 +132,7 @@ struct v2f {
 	float luv : TEXCOORD20;
 	float letterbF : TEXCOORD21;
 	float olF : TEXCOORD22;
+	float noiseF : TEXCOORD23;
 };
 
 #include "../Common/Utilities.cginc"

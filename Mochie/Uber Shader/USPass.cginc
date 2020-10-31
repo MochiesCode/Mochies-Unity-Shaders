@@ -12,22 +12,35 @@ v2g vert (appdata v) {
 		o.cameraPos = (unity_StereoWorldSpaceCameraPos[0] + unity_StereoWorldSpaceCameraPos[1])*0.5;
 	#endif
 
+	float roundingMask = 0;
+	#if VERTEX_MANIP_ENABLED
+		roundingMask = tex2Dlod(_VertexRoundingMask, float4(v.uv.xy,0,0));
+		float expansionMask = tex2Dlod(_VertexExpansionMask, float4(v.uv.xy,0,0));
+		v.vertex.xyz += _VertexExpansion * lerp(v.normal.xyz, abs(v.normal.xyz), _VertexExpansionClamp) * expansionMask * 0.001;
+	#endif
+	float4 localPos = v.vertex;
+
 	#if X_FEATURES
+		o.roundingMask = roundingMask;
 		VertX(o, v);
 	#else
-		o.pos = UnityObjectToClipPos(v.vertex);
-		o.worldPos = mul(unity_ObjectToWorld, v.vertex);
+		o.worldPos = mul(unity_ObjectToWorld, localPos);
+		#if VERTEX_MANIP_ENABLED
+			if (_VertexRounding > 0)
+				ApplyVertRounding(o.worldPos, localPos, _VertexRoundingPrecision, _VertexRounding, roundingMask);
+		#endif
+		o.pos = UnityObjectToClipPos(localPos);
 		o.normal = UnityObjectToWorldNormal(v.normal);
 		o.tangent.xyz = UnityObjectToWorldDir(v.tangent.xyz);
 		o.screenPos = ComputeGrabScreenPos(o.pos);
 	#endif
 	
-	o.localPos = v.vertex.xyz;
+	o.localPos = localPos;
 	o.tangent.w = v.tangent.w;
     v.tangent.xyz = normalize(v.tangent.xyz);
     v.normal = normalize(v.normal);
     float3x3 objectToTangent = float3x3(v.tangent.xyz, (cross(v.normal, v.tangent.xyz) * v.tangent.w), v.normal);
-    o.tangentViewDir = mul(objectToTangent, ObjSpaceViewDir(v.vertex));
+    o.tangentViewDir = mul(objectToTangent, ObjSpaceViewDir(localPos));
 
 	float2 detailUV = lerp3(v.uv, v.uv1, v.uv2, _UVSec);
 	o.uv.xy = TRANSFORM_TEX(v.uv, _MainTex) + (_Time.y * _MainTexScroll);
@@ -90,7 +103,8 @@ float4 frag (g2f i) : SV_Target {
 		attenCol = GetRamp(i, l, m, albedo.rgb, attenCol);
 		diffuse.rgb = GetWorkflow(i, l, m, albedo.rgb);
 		roughness = GetRoughness(smoothness);
-
+		roughness = lerp(roughness, GSAARoughness(l.normal, roughness), _GSAA);
+		
 		float3 reflCol = 1;
 		#if REFLECTIONS_ENABLED
 			reflCol = GetReflections(i, l, lerp(roughness, _ReflRough, _ReflUseRough)) * _ReflCol.rgb;
@@ -126,9 +140,9 @@ float4 frag (g2f i) : SV_Target {
 
 	#if SPRITESHEETS_ENABLED
 		if (_EnableSpritesheet == 1 && _UnlitSpritesheet == 1)
-			ApplySpritesheet0(i, diffuse.rgb);
+			ApplySpritesheet0(i, diffuse);
 		if (_EnableSpritesheet1 == 1 && _UnlitSpritesheet1 == 1)
-			ApplySpritesheet1(i, diffuse.rgb);
+			ApplySpritesheet1(i, diffuse);
 	#endif
 
 	#if X_FEATURES
@@ -141,6 +155,11 @@ float4 frag (g2f i) : SV_Target {
 		ApplyWireframe(i, diffuse.rgb);
 	#endif
 	
+	#if REFRACTION_ENABLED
+		if (_UnlitRefraction == 1)
+			ApplyRefraction(i, l, m, diffuse.rgb);
+	#endif
+
 	#if POST_FILTERING_ENABLED
 		ApplyFiltering(i, m, diffuse.rgb);
 	#endif
@@ -184,22 +203,35 @@ v2g vert (appdata v) {
 			o.cameraPos = (unity_StereoWorldSpaceCameraPos[0] + unity_StereoWorldSpaceCameraPos[1])*0.5;
 		#endif
 
+		float roundingMask = 0;
+		#if VERTEX_MANIP_ENABLED
+			roundingMask = tex2Dlod(_VertexRoundingMask, float4(v.uv.xy,0,0));
+			float expansionMask = tex2Dlod(_VertexExpansionMask, float4(v.uv.xy,0,0));
+			v.vertex.xyz += _VertexExpansion * lerp(v.normal.xyz, abs(v.normal.xyz), _VertexExpansionClamp) * expansionMask * 0.001;
+		#endif
+		float4 localPos = v.vertex;
+
 		#if X_FEATURES
+			o.roundingMask = roundingMask;
 			VertX(o, v);
 		#else
-			o.pos = UnityObjectToClipPos(v.vertex);
-			o.worldPos = mul(unity_ObjectToWorld, v.vertex);
+			o.worldPos = mul(unity_ObjectToWorld, localPos);
+			#if VERTEX_MANIP_ENABLED
+				if (_VertexRounding > 0)
+					ApplyVertRounding(o.worldPos, localPos, _VertexRoundingPrecision, _VertexRounding, roundingMask);
+			#endif
+			o.pos = UnityObjectToClipPos(localPos);
 			o.normal = UnityObjectToWorldNormal(v.normal);
 			o.tangent.xyz = UnityObjectToWorldDir(v.tangent.xyz);
 			o.screenPos = ComputeGrabScreenPos(o.pos);
 		#endif
-		o.localPos = v.vertex.xyz;
-		
+
+		o.localPos = localPos;
 		o.tangent.w = v.tangent.w;
 		v.tangent.xyz = normalize(v.tangent.xyz);
 		v.normal = normalize(v.normal);
 		float3x3 objectToTangent = float3x3(v.tangent.xyz, (cross(v.normal, v.tangent.xyz) * v.tangent.w), v.normal);
-		o.tangentViewDir = mul(objectToTangent, ObjSpaceViewDir(v.vertex));
+		o.tangentViewDir = mul(objectToTangent, ObjSpaceViewDir(localPos));
 		
 		o.rawUV = v.uv;
 		float2 detailUV = lerp3(v.uv, v.uv1, v.uv2, _UVSec);
@@ -332,15 +364,29 @@ v2g vert (appdata v) {
 	#if UNITY_SINGLE_PASS_STEREO
 		o.cameraPos = (unity_StereoWorldSpaceCameraPos[0] + unity_StereoWorldSpaceCameraPos[1])*0.5;
 	#endif
-	
+
+	float roundingMask = 0;
+	#if VERTEX_MANIP_ENABLED
+		roundingMask = tex2Dlod(_VertexRoundingMask, float4(v.uv.xy,0,0));
+		float expansionMask = tex2Dlod(_VertexExpansionMask, float4(v.uv.xy,0,0));
+		v.vertex.xyz += _VertexExpansion * lerp(v.normal.xyz, abs(v.normal.xyz), _VertexExpansionClamp) * expansionMask * 0.001;
+	#endif
+	float4 localPos = v.vertex;
+
 	#if X_FEATURES
+		o.roundingMask = roundingMask;
 		VertX(o, v);
 	#else
-		o.pos = UnityObjectToClipPos(v.vertex);
-		o.worldPos = mul(unity_ObjectToWorld, v.vertex);
-		o.screenPos = ComputeScreenPos(v.vertex);
+		o.worldPos = mul(unity_ObjectToWorld, localPos);
+		#if VERTEX_MANIP_ENABLED
+			if (_VertexRounding > 0)
+				ApplyVertRounding(o.worldPos, localPos, _VertexRoundingPrecision, _VertexRounding, roundingMask);
+		#endif
+		o.pos = UnityObjectToClipPos(localPos);
+		o.screenPos = ComputeScreenPos(localPos);
 	#endif
-	o.localPos = v.vertex.xyz;
+
+	o.localPos = localPos;
 	o.rawUV = v.uv;
 	o.uv.xy = TRANSFORM_TEX(v.uv, _MainTex) + (_Time.y * _MainTexScroll);
 	TRANSFER_SHADOW_CASTER(o)
@@ -369,6 +415,10 @@ float4 frag(g2f i) : SV_Target {
 		float4 albedo = _MainTex.Sample(sampler_MainTex, i.uv.xy) * _Color;
 		float maskAlpha = UNITY_SAMPLE_TEX2D_SAMPLER(_AlphaMask, _MainTex, i.uv.xy) * _Color.a;
 		alpha = lerp(albedo.a, maskAlpha, _UseAlphaMask);
+		
+		#if REFRACTION_ENABLED
+			alpha *= _RefractionOpac;
+		#endif
 
 		#if ALPHA_PREMULTIPLY
 			alpha = ShadowPremultiplyAlpha(i, alpha);

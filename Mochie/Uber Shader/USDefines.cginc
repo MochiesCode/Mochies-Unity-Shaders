@@ -47,6 +47,7 @@ UNITY_DECLARE_TEX2D_NOSAMPLER(_MirrorTex);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_DetailRoughnessMap);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_Curvature);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_PackedMap);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_RefractionMask);
 
 sampler2D _PackedMask3;
 sampler2D _OutlineMask;
@@ -130,7 +131,7 @@ sampler2D _DitherMaskLOD2D;
 
 sampler2D _Spritesheet;
 sampler2D _Spritesheet1;
-int _UnlitSpritesheet, _UnlitSpritesheet1;
+int _UnlitSpritesheet, _UnlitSpritesheet1, _UseSpritesheetAlpha;
 int _ManualScrub, _ScrubPos, _EnableSpritesheet, _SpritesheetBlending;
 int _ManualScrub1, _ScrubPos1, _EnableSpritesheet1, _SpritesheetBlending1;
 float4 _SpritesheetCol, _SpritesheetCol1;
@@ -189,6 +190,18 @@ float _SpecStr, _AnisoStr, _AnisoLayerStr, _RippleFrequency, _RippleAmplitude, _
 int _DebugIntRange, _DebugToggle, _DebugEnum;
 float _DebugFloat, _DebugRange;
 float4 _DebugVector, _DebugColor, _DebugHDRColor;
+
+int _Refraction, _UnlitRefraction, _RefractionCA;
+float3 _RefractionTint;
+float _RefractionOpac, _RefractionIOR, _RefractionCAStr;
+
+int _GSAA;
+
+sampler2D _VertexExpansionMask;
+sampler2D _VertexRoundingMask;
+int _VertexExpansionClamp;
+float3 _VertexExpansion;
+float _VertexRounding, _VertexRoundingPrecision;
 
 // Outputs
 float4 packedTex;
@@ -254,6 +267,7 @@ struct masks {
 	float filterMask;
 	float emissMask;
 	float emissPulseMask;
+	float refractMask;
 	float4 teamMask;
 };
 
@@ -295,7 +309,7 @@ float3 _EntryPos;
 float3 _BaseOffset, _BaseRotation;
 float3 _ReflOffset, _ReflRotation;
 float3 _Position, _Rotation;
-float3 _GeomDissolveSpread;
+float3 _GeomDissolveSpread, _DissolvePoint0, _DissolvePoint1;
 float2 _DissolveScroll0; 
 float2 _DissolveScroll1;
 float _Range;
@@ -320,13 +334,14 @@ struct v2g {
 	float3 objPos : TEXCOORD9;
 	float4 screenPos : TEXCOORD10;
 	bool isReflection : TEXCOORD11;
-	float3 localPos : TEXCOORD12;
+	float4 localPos : TEXCOORD12;
+	float roundingMask : TEXCOORD13;
 
 	float4 tangent : TANGENT;
 	float3 normal : NORMAL;
 
-	UNITY_SHADOW_COORDS(15)
-	UNITY_FOG_COORDS(16)
+	UNITY_SHADOW_COORDS(16)
+	UNITY_FOG_COORDS(17)
 };
 
 struct g2f {
@@ -346,7 +361,7 @@ struct g2f {
 	uint instID : TEXCOORD12;
 	float4 screenPos : TEXCOORD13;
 	bool isReflection : TEXCOORD14;
-	float3 localPos : TEXCOORD15;
+	float4 localPos : TEXCOORD15;
 	float wfOpac : TEXCOORD16;
 
 	float4 tangent : TANGENT;
@@ -377,7 +392,7 @@ struct v2f {
 	float3 objPos : TEXCOORD9;
 	float4 screenPos : TEXCOORD10;
 	bool isReflection : TEXCOORD11;
-	float3 localPos : TEXCOORD12;
+	float4 localPos : TEXCOORD12;
 
 	float4 tangent : TANGENT;
 	float3 normal : NORMAL;

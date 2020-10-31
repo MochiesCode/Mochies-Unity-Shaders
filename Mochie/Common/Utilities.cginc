@@ -229,7 +229,16 @@ void GetWorldNormals(float4 localPos, out float3 worldNormal, out float3 worldPo
 #endif
 
 float4 GetScreenspaceVertexPos(float4 vertex){
-	float4 wPos = mul(unity_CameraToWorld, vertex);
+
+	#if UNITY_SINGLE_PASS_STEREO           
+		float ipd = length(mul(unity_WorldToObject, 
+							float4(unity_StereoWorldSpaceCameraPos[0].xyz - unity_StereoWorldSpaceCameraPos[1].xyz, 0)));
+		float4 absPos = vertex + float4(ipd*(0.5-unity_StereoEyeIndex), 0, 0, 0);
+	#else
+		float ipd = 0.0;
+		float4 absPos = vertex;
+	#endif
+	float4 wPos = mul(unity_CameraToWorld, absPos);
 	float4 oPos = mul(unity_WorldToObject, wPos);
 	return UnityObjectToClipPos(oPos);
 }
@@ -332,6 +341,13 @@ float3 FlowUV (float2 uv, float time, float phase) {
 	return uvw;
 }
 
+float GetRimValue(float3 viewDir, float3 normal, float rimWidth, float rimEdge){
+	float VdotL = abs(dot(viewDir, normal));
+	float rim = pow((1-VdotL), (1-rimWidth) * 10);
+	rim = smoothstep(rimEdge, 1-rimEdge, rim);
+	return rim;
+}
+
 float Dither8x8Bayer(int x, int y){
     const float dither[ 64 ] = {
 		1, 49, 13, 61,  4, 52, 16, 64,
@@ -349,4 +365,9 @@ float Dither8x8Bayer(int x, int y){
 float Dither(float2 pos, float alpha) {
 	pos *= _ScreenParams.xy;
 	return alpha - Dither8x8Bayer(fmod(pos.x, 8), fmod(pos.y, 8));
+}
+
+void ApplyVertRounding(inout float4 worldPos, inout float4 localPos, float precision, float strength, float mask){
+   	worldPos = lerp(worldPos, ceil(worldPos*precision)/precision, strength * mask);
+	localPos = mul(unity_WorldToObject, worldPos);
 }

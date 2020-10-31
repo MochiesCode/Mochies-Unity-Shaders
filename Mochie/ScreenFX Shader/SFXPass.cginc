@@ -21,6 +21,7 @@ v2f vert (appdata v){
     o.shakeF = GetFalloff(_ShakeUseGlobal, gf, _ShakeMinRange, _ShakeMaxRange, o.objDist);
     o.distortionF = GetFalloff(_DistortionUseGlobal, gf, _DistortionMinRange, _DistortionMaxRange, o.objDist);
     o.blurF = GetFalloff(_BlurUseGlobal, gf, _BlurMinRange, _BlurMaxRange, o.objDist);
+	o.noiseF = GetFalloff(_NoiseUseGlobal, gf, _NoiseMinRange, _NoiseMaxRange, o.objDist);
 	#if X_FEATURES
 		o.fogF = GetFalloff(_FogUseGlobal, gf, _FogMinRange, _FogMaxRange, o.objDist);
 		o.sstF = GetFalloff(_SSTUseGlobal, gf, _SSTMinRange, _SSTMaxRange, o.objDist);

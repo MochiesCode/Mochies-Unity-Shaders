@@ -50,7 +50,7 @@ public class SFXEditor : ShaderGUI {
 	string header = "SFXHeader_Pro";
 	string watermark = "Watermark_Pro";
 	string patIcon = "Patreon_Icon";
-	string versionLabel = "v1.9";
+	string versionLabel = "v1.10";
 	string keyTex = "KeyIcon_Pro";
 	
     // Commonly used strings
@@ -238,6 +238,9 @@ public class SFXEditor : ShaderGUI {
     MaterialProperty _BackgroundCol = null;
     MaterialProperty _OutlineType = null;
     MaterialProperty _OutlineThiccS = null;
+	MaterialProperty _OLUseGlobal = null;
+	MaterialProperty _OLMinRange = null;
+	MaterialProperty _OLMaxRange = null;
 //    MaterialProperty _OutlineThiccN = null;
 	MaterialProperty _RoundingToggle = null;
 	MaterialProperty _Rounding = null;
@@ -251,6 +254,9 @@ public class SFXEditor : ShaderGUI {
 	MaterialProperty _AuraFade = null;
 	MaterialProperty _AuraSampleCount = null;
 	MaterialProperty _AuraStr = null;
+	MaterialProperty _NoiseUseGlobal = null;
+	MaterialProperty _NoiseMinRange = null;
+	MaterialProperty _NoiseMaxRange = null;
 
     BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
@@ -525,6 +531,14 @@ public class SFXEditor : ShaderGUI {
 				if (_NoiseMode.floatValue > 0){
 					me.ShaderProperty(_NoiseStrength, "Opacity");
 					MGUI.Space6();
+					me.ShaderProperty(_NoiseUseGlobal, ugfLabel);
+					if (_NoiseUseGlobal.floatValue == 0){
+						MGUI.PropertyGroup(() => {
+							me.ShaderProperty(_NoiseMinRange, minLabel);
+							me.ShaderProperty(_NoiseMaxRange, maxLabel);
+						});
+					}
+					else MGUI.Space6();
 					MGUI.PropertyGroup(() => {
 						me.ShaderProperty(_Noise, "Noise (Grayscale)");
 						MGUI.Vector3FieldRGB(_NoiseRGB, "Noise (RGB)");
@@ -707,6 +721,14 @@ public class SFXEditor : ShaderGUI {
 					me.ShaderProperty(_OutlineType, modeLabel);
 					if (_OutlineType.floatValue > 0){
 						MGUI.Space6();
+						me.ShaderProperty(_OLUseGlobal, ugfLabel);
+						if (_OLUseGlobal.floatValue == 0){
+							MGUI.PropertyGroup(() => {
+								me.ShaderProperty(_OLMinRange, minLabel);
+								me.ShaderProperty(_OLMaxRange, maxLabel);
+							});
+						}
+						else MGUI.Space6();
 						MGUI.PropertyGroup(() => {
 							MGUI.DisplayWarning("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
 							if (_OutlineType.floatValue == 2)
@@ -1047,6 +1069,9 @@ public class SFXEditor : ShaderGUI {
 		_ScanLine.floatValue = 0f;
 		_ScanLineThick.floatValue = 1f;
 		_ScanLineSpeed.floatValue = 1f;
+		_NoiseUseGlobal.floatValue = 1f;
+		_NoiseMinRange.floatValue = 8f;
+		_NoiseMaxRange.floatValue = 15f;
 	}
 	void ResetFog(){
 		_Fog.floatValue = 0f;
@@ -1119,6 +1144,9 @@ public class SFXEditor : ShaderGUI {
 		_OutlineThiccS.floatValue = 0.49f;
 		_AuraFade.floatValue = 0.5f;
 		_AuraStr.floatValue = 0.25f;
+		_OLUseGlobal.floatValue = 1f;
+		_OLMinRange.floatValue = 8f;
+		_OLMaxRange.floatValue = 15f;
 	}
 
 	void ResetExtras(){

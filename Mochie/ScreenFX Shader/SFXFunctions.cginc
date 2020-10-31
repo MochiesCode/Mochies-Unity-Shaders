@@ -109,7 +109,7 @@ void ApplyNoise(v2f i, inout float3 col){
 	noiseCol += GetScanNoise(i.uv, _ScanLine, _ScanLineThick, _ScanLineSpeed);
 	noiseCol += GetNoiseRGB(i.uv, _NoiseRGB);
 	noiseCol += GetNoiseSFX(i.uv, _Noise);
-	col = lerp(col, noiseCol, _NoiseStrength);
+	col = lerp(col, noiseCol, _NoiseStrength * i.noiseF * i.pulseSpeed);
 }
 
 void ApplyColor(v2f i, inout float3 col){
@@ -118,7 +118,7 @@ void ApplyColor(v2f i, inout float3 col){
 	float3 hsv = HSVShift(rgb, _Hue, 0, 0);
 	hsv *= _RGB;
 	ApplyGeneralFilters(hsv);
-	col = lerp(col, hsv, _FilterStrength);
+	col = lerp(col, hsv, _FilterStrength * i.colorF * i.pulseSpeed);
 }
 
 void ApplyTransparency(v2f i, inout float4 col){
