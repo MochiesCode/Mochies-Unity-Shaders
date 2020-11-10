@@ -259,6 +259,11 @@ float4 frag(g2f i) : SV_Target {
 			discard;
 	#endif
 
+	#if SPRITESHEETS_ENABLED
+		if (_UseSpritesheetAlpha == 1)
+			discard;
+	#endif
+
 	if (distance(i.cameraPos, i.worldPos) < _OutlineRange)
 		discard;
 		
@@ -401,6 +406,11 @@ float4 frag(g2f i) : SV_Target {
 		discard;
 	#endif
 
+	#if SPRITESHEETS_ENABLED
+		if (_UseSpritesheetAlpha == 1)
+			discard;
+	#endif
+	
 	if ((i.isReflection && _MirrorBehavior == 3) ||  (!i.isReflection && _MirrorBehavior == 1))
 		discard;
 

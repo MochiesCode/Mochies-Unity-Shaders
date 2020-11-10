@@ -82,7 +82,7 @@ internal class USEditor : ShaderGUI {
 	string watermark = "Watermark_Pro";
 	string patIcon = "Patreon_Icon";
 	string keyTex = "KeyIcon_Pro";
-	string versionLabel = "v1.11";
+	string versionLabel = "v1.11.1";
 
 	GUIContent maskLabel = new GUIContent("Mask");
     GUIContent albedoLabel = new GUIContent("Base Color");

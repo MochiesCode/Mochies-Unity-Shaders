@@ -655,6 +655,7 @@ Shader "Mochie/Uber/Uber" {
 			#pragma shader_feature USER_LUT					// PBR filtering previews
 			#pragma shader_feature DISTORT					// Refraction toggle
 			#pragma shader_feature GEOM_TYPE_MESH			// Vertex manip toggle
+			#pragma shader_feature EFFECT_HUE_VARIATION		// Spritesheet toggle
 			#pragma multi_compile _ _FOG_EXP2				// Fog
 			#pragma multi_compile_shadowcaster
 			#pragma skip_variants DIRLIGHTMAP_COMBINED DIRLIGHTMAP_SEPARATE 

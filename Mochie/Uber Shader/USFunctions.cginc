@@ -87,6 +87,7 @@ float4 GetSpritesheetColor(g2f i,
 }
 
 void ApplySpritesheetBlending(g2f i, inout float4 col, float4 gifCol, int blendMode){
+
 	if (blendMode == 0){
 		col.rgb += (gifCol.rgb * gifCol.a); 
 	}
@@ -95,11 +96,16 @@ void ApplySpritesheetBlending(g2f i, inout float4 col, float4 gifCol, int blendM
 	}
 	else col.rgb = lerp(col.rgb, gifCol.rgb, gifCol.a);
 
-	if (_UseSpritesheetAlpha == 1)
+	if (_UseSpritesheetAlpha == 1){
 		col.a = gifCol.a;
+		#if ALPHA_TEST
+			if (_BlendMode != 2)
+				clip(col.a - _Cutoff);
+		#endif
+	}
 }
 
-void ApplySpritesheet0(g2f i, inout float4 albedo){
+void ApplySpritesheet0(g2f i, inout float4 col){
 	float4 spriteCol = GetSpritesheetColor(i, 
 		_Spritesheet,
 		_SpritesheetCol,
@@ -113,10 +119,10 @@ void ApplySpritesheet0(g2f i, inout float4 albedo){
 		_SpritesheetBrightness,
 		_ManualScrub
 	);
-	ApplySpritesheetBlending(i, albedo, spriteCol, _SpritesheetBlending);
+	ApplySpritesheetBlending(i, col, spriteCol, _SpritesheetBlending);
 }
 
-void ApplySpritesheet1(g2f i, inout float4 albedo){
+void ApplySpritesheet1(g2f i, inout float4 col){
 	float4 spriteCol = GetSpritesheetColor(i, 
 		_Spritesheet1,
 		_SpritesheetCol1,
@@ -130,7 +136,7 @@ void ApplySpritesheet1(g2f i, inout float4 albedo){
 		_SpritesheetBrightness1,
 		_ManualScrub1
 	);
-	ApplySpritesheetBlending(i, albedo, spriteCol, _SpritesheetBlending1);
+	ApplySpritesheetBlending(i, col, spriteCol, _SpritesheetBlending1);
 }
 
 void ApplyRefractionColor(g2f i, lighting l, masks m, inout float3 albedo, float2 offset){
@@ -200,11 +206,6 @@ float4 GetAlbedo(g2f i, lighting l, masks m){
 	#if SHADING_ENABLED
 		float3 detailAlbedo = UNITY_SAMPLE_TEX2D_SAMPLER(_DetailAlbedoMap, _MainTex, i.uv2.xy).rgb * unity_ColorSpaceDouble;
 		albedo.rgb = lerp(albedo.rgb, albedo.rgb*detailAlbedo, m.detailMask);
-		// #if CURVATURE_ENABLED
-		// 	curvature = UNITY_SAMPLE_TEX2D_SAMPLER(_Curvature, _MainTex, i.uv.xy);
-		// 	ApplyPBRFiltering(curvature, _CurvatureContrast, _CurvatureIntensity, _CurvatureLightness, _CurvatureFiltering, prevCurve);
-		// 	albedo.rgb = _CurvatureTarget == 1 ? BlendCurvature(curvature, albedo.rgb) : albedo.rgb;
-		// #endif
 	#endif
 
 	#if NON_OPAQUE_RENDERING
@@ -353,9 +354,6 @@ void InitializeBakedChannels(){
 
 float3 GetPackedWorkflow(g2f i, lighting l, masks m, float3 albedo){
 	roughness = lerp(roughness, GetDetailRough(i, roughness), _DetailRoughStrength * m.detailMask);
-	#if CURVATURE_ENABLED
-		roughness = _CurvatureTarget == 2 ? BlendCurvature(curvature, roughness) : roughness;
-	#endif
 
 	ApplyPBRFiltering(roughness, _RoughContrast, _RoughIntensity, _RoughLightness, _RoughnessFiltering, prevRough);
 
