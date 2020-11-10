@@ -620,6 +620,7 @@ masks GetMasks(g2f i){
 		#endif
 		#if FILTERING_ENABLED
 			m.filterMask = UNITY_SAMPLE_TEX2D_SAMPLER(_FilterMask, _MainTex, i.uv.xy);
+			m.teamMask = UNITY_SAMPLE_TEX2D_SAMPLER(_TeamColorMask, _MainTex, i.uv.xy);
 		#endif
 		#if EMISSION_ENABLED
 			m.emissMask = UNITY_SAMPLE_TEX2D_SAMPLER(_EmissMask, _MainTex, i.uv.xy);
@@ -650,6 +651,11 @@ masks GetMasks(g2f i){
 		m.emissMask = mask3.r;
 		m.emissPulseMask = mask3.g;
 		m.filterMask = mask3.b;
+		#if FILTERING_ENABLED
+			m.teamMask = UNITY_SAMPLE_TEX2D_SAMPLER(_TeamColorMask, _MainTex, i.uv.xy);
+		#endif
+	#elif FILTERING_ENABLED
+		m.teamMask = UNITY_SAMPLE_TEX2D_SAMPLER(_TeamColorMask, _MainTex, i.uv.xy);
 	#endif
 
 	return m;
