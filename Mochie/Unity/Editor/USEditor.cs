@@ -50,21 +50,37 @@ internal class USEditor : ShaderGUI {
 			"Environment Rim",
 			"DEBUG",
 			"Smoothness Filter",
-			"ADVANCED SETTINGS",
+			"RENDER SETTINGS",
 			"Curvature Filter",
 			"Primary Maps",
 			"Detail Maps",
 			"Matcap 1",
 			"Matcap 2",
-			"Rendering",
-			"Stencil",
 			"General",
 			"Diffuse Shading",
 			"Realtime Lighting",
 			"Baked Lighting",
 			"MASKS",
 			"Refraction",
-			"VERTEX MANIPULATION"
+			"VERTEX MANIPULATION",
+			"Refraction Mask",
+			"Reflection Mask",
+			"Specular Mask",
+			"Specular Blend Mask",
+			"Env. Rim Mask",
+			"Matcap Mask",
+			"Matcap Blend Mask",
+			"Aniso Blend Mask",
+			"Subsurface Mask",
+			"Rim Mask",
+			"Detail Mask",
+			"Shadow Mask",
+			"Diffuse Mask",
+			"Filter Mask",
+			"Color Mask",
+			"Emission Mask",
+			"Emission Pulse Mask",
+			"Outline Thickness Mask"
 		}
 	);
 
@@ -82,7 +98,7 @@ internal class USEditor : ShaderGUI {
 	string watermark = "Watermark_Pro";
 	string patIcon = "Patreon_Icon";
 	string keyTex = "KeyIcon_Pro";
-	string versionLabel = "v1.11.1";
+	string versionLabel = "v1.12";
 
 	GUIContent maskLabel = new GUIContent("Mask");
     GUIContent albedoLabel = new GUIContent("Base Color");
@@ -120,6 +136,11 @@ internal class USEditor : ShaderGUI {
 	GUIContent reflLabel = new GUIContent("Reflections");
 	GUIContent matcapBlendLabel = new GUIContent("Matcap Blend");
 	GUIContent anisoBlendLabel = new GUIContent("Specular Blend");
+	GUIContent emissLabel = new GUIContent("Emission");
+	GUIContent emissPulseLabel = new GUIContent("Emission Pulse");
+	GUIContent filterLabel = new GUIContent("Filtering");
+	GUIContent olThickLabel = new GUIContent("Outline Thickness");
+	GUIContent refractLabel = new GUIContent("Refraction");
 
 	MaterialProperty _RenderMode = null; 
     MaterialProperty _CullingMode = null;
@@ -296,7 +317,6 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _RippleInvert = null;
 	MaterialProperty _ReflStepping = null;
 	MaterialProperty _ReflSteps = null;
-	MaterialProperty _SpecTermStep = null;
 	MaterialProperty _PackedMask2 = null;
 	MaterialProperty _AnisoStr = null;
 	MaterialProperty _MatcapUseRough1 = null;
@@ -500,6 +520,29 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _VertexRoundingMask = null;
 	MaterialProperty _UseSpritesheetAlpha = null;
 	MaterialProperty _VertexManipulationToggle = null;
+	MaterialProperty _RefractionMaskScroll = null;
+	MaterialProperty _SpecBiasOverrideToggle = null;
+	MaterialProperty _SpecBiasOverride = null;
+
+	MaterialProperty _EnableMaskTransform = null;
+	MaterialProperty _ReflectionMaskScroll = null;
+	MaterialProperty _SpecularMaskScroll = null;
+	MaterialProperty _ERimMaskScroll = null;
+	MaterialProperty _MatcapMaskScroll = null;
+	MaterialProperty _MatcapBlendMaskScroll = null;
+	MaterialProperty _InterpMaskScroll = null;
+	MaterialProperty _SubsurfaceMaskScroll = null;
+	MaterialProperty _RimMaskScroll = null;
+	MaterialProperty _DetailMaskScroll = null;
+	MaterialProperty _ShadowMaskScroll = null;
+	MaterialProperty _DiffuseMaskScroll = null;
+	MaterialProperty _FilterMaskScroll = null;
+	MaterialProperty _EmissMaskScroll = null;
+	MaterialProperty _EmissPulseMaskScroll = null; 
+	MaterialProperty _RefractionDissolveMask = null;
+	MaterialProperty _RefractionDissolveMaskScroll = null;
+	MaterialProperty _RefractionDissolveMaskStr = null;
+	MaterialProperty _OutlineMaskScroll = null;
 
 	MaterialProperty _NaNLmao = null;
 	MaterialProperty _DebugEnum = null;
@@ -630,9 +673,13 @@ internal class USEditor : ShaderGUI {
 			me.ShaderProperty(_RenderMode, "Shading");
 			EditorGUI.BeginChangeCheck();
 			me.ShaderProperty(_BlendMode, "Blending Mode");
+			me.ShaderProperty(_MirrorBehavior, "Mirror Behavior");
+			me.ShaderProperty(_CubeMode, "Main Texture Type");
 			if (EditorGUI.EndChangeCheck())
 				SetBlendMode(mat);
 			me.ShaderProperty(_CullingMode, "Culling");
+			if (isCutout || isTransparent)
+				me.ShaderProperty(_UseAlphaMask, "Alpha Source");
 			if (blendMode == 1)
 				me.ShaderProperty(_Cutoff, "Cutout");
 			GUILayout.Space(8);
@@ -644,8 +691,6 @@ internal class USEditor : ShaderGUI {
 					if (renderMode == 1) MGUI.TexPropLabel("Tint Clamp", 123);
 					if (_MirrorBehavior.floatValue == 2)
 						me.TexturePropertySingleLine(mirrorTexLabel, _MirrorTex);
-					if (_UseAlphaMask.floatValue == 1 && (isCutout || isTransparent))
-						me.TexturePropertySingleLine(alphaMaskLabel, _AlphaMask);
 					MGUI.TextureSOScroll(me, _MainTex, _MainTexScroll);
 					break;
 				
@@ -654,8 +699,6 @@ internal class USEditor : ShaderGUI {
 					me.TexturePropertySingleLine(reflCubeLabel, _MainTexCube0, _CubeColor0, renderMode == 1 ? _ColorPreservation : null);
 					if (renderMode == 1) 
 						MGUI.TexPropLabel("Tint Clamp", 123);
-					if (_UseAlphaMask.floatValue == 1 && (isCutout || isTransparent))
-						me.TexturePropertySingleLine(alphaMaskLabel, _AlphaMask);
 					MGUI.Space4();
 					MGUI.Vector3Field(_CubeRotate0, "Rotation");
 					me.ShaderProperty(_AutoRotate0, "Auto Rotate");
@@ -668,8 +711,6 @@ internal class USEditor : ShaderGUI {
 						MGUI.TexPropLabel("Tint Clamp", 123);
 					if (_MirrorBehavior.floatValue == 2)
 						me.TexturePropertySingleLine(mirrorTexLabel, _MirrorTex);
-					if (_UseAlphaMask.floatValue == 1 && (isCutout || isTransparent))
-						me.TexturePropertySingleLine(alphaMaskLabel, _AlphaMask);
 					MGUI.TextureSOScroll(me, _MainTex, _MainTexScroll);
 
 					GUILayout.Space(12);
@@ -683,6 +724,11 @@ internal class USEditor : ShaderGUI {
 					me.ShaderProperty(_AutoRotate0, "Auto Rotate");
 					break;
 				default: break;
+			}
+			if (_UseAlphaMask.floatValue == 1 && (isCutout || isTransparent)){
+				MGUI.Space8();
+				me.TexturePropertySingleLine(alphaMaskLabel, _AlphaMask);
+				MGUI.TextureSO(me, _AlphaMask);
 			}
 			MGUI.Space8();
 		}
@@ -798,40 +844,80 @@ internal class USEditor : ShaderGUI {
 					MGUI.Space4();
 					me.ShaderProperty(_MaskingMode, "Mode");
 					if (_MaskingMode.floatValue == 1){
-						MGUI.Space2();
+						MGUI.Space4();
+						me.ShaderProperty(_EnableMaskTransform, "Enable Transforms");
 						MGUI.PropertyGroup(() => {
-							me.TexturePropertySingleLine(reflLabel, _ReflectionMask);
-							me.TexturePropertySingleLine(specLabel, _SpecularMask);
-							me.TexturePropertySingleLine(anisoBlendLabel, _InterpMask); 
-							me.TexturePropertySingleLine(matcapLabel, _MatcapMask);
-							me.TexturePropertySingleLine(matcapBlendLabel, _MatcapBlendMask);
-							me.TexturePropertySingleLine(shadowLabel, _ShadowMask);
-							me.TexturePropertySingleLine(basicRimLabel, _RimMask);
-							me.TexturePropertySingleLine(eRimLabel, _ERimMask);
-							me.TexturePropertySingleLine(diffuseLabel, _DiffuseMask);
-							me.TexturePropertySingleLine(subsurfLabel, _SubsurfaceMask);
-							me.TexturePropertySingleLine(detailLabel, _DetailMask);
-							me.TexturePropertySingleLine(new GUIContent("Emission"), _EmissMask);
-							me.TexturePropertySingleLine(new GUIContent("Emission Pulse"), _PulseMask);
-							me.TexturePropertySingleLine(new GUIContent("Filtering"), _FilterMask);	
-							me.TexturePropertySingleLine(new GUIContent("Outline Thickness"), _OutlineMask);
-							me.TexturePropertySingleLine(new GUIContent("Refraction"), _RefractionMask);
+							if (_EnableMaskTransform.floatValue == 0){
+								me.TexturePropertySingleLine(reflLabel, _ReflectionMask);
+								me.TexturePropertySingleLine(specLabel, _SpecularMask);
+								me.TexturePropertySingleLine(anisoBlendLabel, _InterpMask); 
+								me.TexturePropertySingleLine(matcapLabel, _MatcapMask);
+								me.TexturePropertySingleLine(matcapBlendLabel, _MatcapBlendMask);
+								me.TexturePropertySingleLine(shadowLabel, _ShadowMask);
+								me.TexturePropertySingleLine(basicRimLabel, _RimMask);
+								me.TexturePropertySingleLine(eRimLabel, _ERimMask);
+								me.TexturePropertySingleLine(diffuseLabel, _DiffuseMask);
+								me.TexturePropertySingleLine(subsurfLabel, _SubsurfaceMask);
+								me.TexturePropertySingleLine(detailLabel, _DetailMask);
+								me.TexturePropertySingleLine(emissLabel, _EmissMask);
+								me.TexturePropertySingleLine(emissPulseLabel, _PulseMask);
+								me.TexturePropertySingleLine(filterLabel, _FilterMask);	
+								me.TexturePropertySingleLine(refractLabel, _RefractionMask);
+								if (isOutline)
+									me.TexturePropertySingleLine(olThickLabel, _OutlineMask);
+							}
+							else {
+								bool reflMask = Foldouts.DoMaskFoldout(foldouts, mat, me, reflLabel, "Reflection Mask");
+								MGUI.MaskProperty(mat, me, reflMask, _ReflectionMask, _ReflectionMaskScroll);
+								bool specMask = Foldouts.DoMaskFoldout(foldouts, mat, me, specLabel, "Specular Mask");
+								MGUI.MaskProperty(mat, me, specMask, _SpecularMask, _SpecularMaskScroll);
+								bool interpMask = Foldouts.DoMaskFoldout(foldouts, mat, me, anisoBlendLabel, "Specular Blend Mask");
+								MGUI.MaskProperty(mat, me, interpMask, _InterpMask, _InterpMaskScroll);
+								bool matcapMask = Foldouts.DoMaskFoldout(foldouts, mat, me, matcapLabel, "Matcap Mask");
+								MGUI.MaskProperty(mat, me, matcapMask, _MatcapMask, _MatcapMaskScroll);
+								bool matcapBlendMask = Foldouts.DoMaskFoldout(foldouts, mat, me, matcapBlendLabel, "Matcap Blend Mask");
+								MGUI.MaskProperty(mat, me, matcapBlendMask, _MatcapBlendMask, _MatcapBlendMaskScroll);
+								bool shadowMask = Foldouts.DoMaskFoldout(foldouts, mat, me, shadowLabel, "Shadow Mask");
+								MGUI.MaskProperty(mat, me, shadowMask, _ShadowMask, _ShadowMaskScroll);
+								bool rimMask = Foldouts.DoMaskFoldout(foldouts, mat, me, basicRimLabel, "Rim Mask");
+								MGUI.MaskProperty(mat, me, rimMask, _RimMask, _RimMaskScroll);
+								bool eRimMask = Foldouts.DoMaskFoldout(foldouts, mat, me, eRimLabel, "Env. Rim Mask");
+								MGUI.MaskProperty(mat, me, eRimMask, _ERimMask, _ERimMaskScroll);
+								bool diffuseMask = Foldouts.DoMaskFoldout(foldouts, mat, me, diffuseLabel, "Diffuse Mask");
+								MGUI.MaskProperty(mat, me, diffuseMask, _DiffuseMask, _DiffuseMaskScroll);
+								bool subsurfMask = Foldouts.DoMaskFoldout(foldouts, mat, me, subsurfLabel, "Subsurface Mask");
+								MGUI.MaskProperty(mat, me, subsurfMask, _SubsurfaceMask, _SubsurfaceMaskScroll);
+								bool detailMask = Foldouts.DoMaskFoldout(foldouts, mat, me, detailLabel, "Detail Mask");
+								MGUI.MaskProperty(mat, me, detailMask, _DetailMask, _DetailMaskScroll);
+								bool emissMask = Foldouts.DoMaskFoldout(foldouts, mat, me, emissLabel, "Emission Mask");
+								MGUI.MaskProperty(mat, me, emissMask, _EmissMask, _EmissMaskScroll);
+								bool emissPulseMask = Foldouts.DoMaskFoldout(foldouts, mat, me, emissPulseLabel, "Emission Pulse Mask");
+								MGUI.MaskProperty(mat, me, emissPulseMask, _PulseMask, _EmissPulseMaskScroll);
+								bool filterMask = Foldouts.DoMaskFoldout(foldouts, mat, me, filterLabel, "Filter Mask");
+								MGUI.MaskProperty(mat, me, filterMask, _FilterMask, _FilterMaskScroll);
+								bool refractMask = Foldouts.DoMaskFoldout(foldouts, mat, me, refractLabel, "Refraction Mask");
+								MGUI.MaskProperty(mat, me, refractMask, _RefractionMask, _RefractionMaskScroll);
+								if (isOutline){
+									bool olThickMask = Foldouts.DoMaskFoldout(foldouts, mat, me, olThickLabel, "Outline Thickness Mask");
+									MGUI.MaskProperty(mat, me, olThickMask, _OutlineMask, _OutlineMaskScroll);
+								}
+							}
 						});
 						MGUI.Space2();
 					}
 					else if (_MaskingMode.floatValue == 2){
 						MGUI.Space2();
 						MGUI.PropertyGroup(() => {
-							me.TexturePropertySingleLine(new GUIContent("Mask 0"), _PackedMask0);
+							me.TexturePropertySingleLine(new GUIContent("Mask 1"), _PackedMask0);
 							GUILayout.Label("Red:	Reflections\nGreen:	Specular\nBlue:	Matcap\nAlpha:	Refraction");
 							MGUI.Space8();
-							me.TexturePropertySingleLine(new GUIContent("Mask 1"), _PackedMask1);
-							GUILayout.Label("Red:	Shadows\nGreen:	Diffuse Shading\nBlue:	Subsurface");
+							me.TexturePropertySingleLine(new GUIContent("Mask 2"), _PackedMask1);
+							GUILayout.Label("Red:	Shadows\nGreen:	Diffuse Shading\nBlue:	Subsurface\nAlpha:	Detail Maps");
 							MGUI.Space8();
-							me.TexturePropertySingleLine(new GUIContent("Mask 2"), _PackedMask2);
+							me.TexturePropertySingleLine(new GUIContent("Mask 3"), _PackedMask2);
 							GUILayout.Label("Red:	Basic Rim\nGreen:	Environment Rim\nBlue:	Matcap Blend\nAlpha:	Specular Blend");
 							MGUI.Space8();
-							me.TexturePropertySingleLine(new GUIContent("Mask 3"), _PackedMask3);
+							me.TexturePropertySingleLine(new GUIContent("Mask 4"), _PackedMask3);
 							GUILayout.Label("Red:	Emission\nGreen:	Emission Pulse\nBlue:	Filtering\nAlpha:	Outline Thickness");
 						});
 						MGUI.Space2();
@@ -1177,6 +1263,7 @@ internal class USEditor : ShaderGUI {
 							if (_Specular.floatValue == 1){
 								me.ShaderProperty(_SpecStr, "Strength");
 								MGUI.ToggleSlider(me, "Manual Roughness", _SpecUseRough, _SpecRough);
+								MGUI.ToggleSlider(me, "Manual Bias", _SpecBiasOverrideToggle, _SpecBiasOverride);
 								MGUI.ToggleIntSlider(me, "Stepping", _SharpSpecular, _SharpSpecStr);
 							}
 							else if (_Specular.floatValue == 2){
@@ -1190,14 +1277,12 @@ internal class USEditor : ShaderGUI {
 								MGUI.Space6();
 								me.ShaderProperty(_SharpSpecular, "Stepping");
 								MGUI.ToggleGroup(_SharpSpecular.floatValue == 0);
-								me.ShaderProperty(_SpecTermStep, "Step Term");
 								me.ShaderProperty(_SharpSpecStr, "GGX Steps");
 								me.ShaderProperty(_AnisoSteps, "Aniso Steps");
 								MGUI.ToggleGroupEnd();
 							}
 							if (_Specular.floatValue != 3){
 								MGUI.ToggleGroup(_SharpSpecular.floatValue == 0);
-								me.ShaderProperty(_SpecTermStep, "Step Term");
 								MGUI.ToggleGroupEnd();
 								me.ShaderProperty(_ManualSpecBright, "Ignore Environment");
 							}
@@ -1348,17 +1433,22 @@ internal class USEditor : ShaderGUI {
 				GUILayout.Space(5);
 				if (refracTab){
 					MGUI.Space2();
+					MGUI.ToggleGroup(_Refraction.floatValue == 0);
 					MGUI.PropertyGroup(() => {
 						if (refracError)
 							MGUI.DisplayError("Refractions require a render queue of 2501 or above to function correctly.");
-						MGUI.ToggleGroup(_Refraction.floatValue == 0);
 						me.ShaderProperty(_RefractionTint, "Tint");
 						me.ShaderProperty(_RefractionIOR, "IOR");
 						me.ShaderProperty(_RefractionOpac, "Opacity");
 						MGUI.ToggleSlider(me, "Chromatic Abberation", _RefractionCA, _RefractionCAStr);
 						me.ShaderProperty(_UnlitRefraction, "Unlit");
-						MGUI.ToggleGroupEnd();
+						
 					});
+					MGUI.PropertyGroup(() => {
+						me.TexturePropertySingleLine(new GUIContent("Dissolve Mask"), _RefractionDissolveMask, _RefractionDissolveMaskStr);
+						MGUI.TextureSOScroll(me, _RefractionDissolveMask, _RefractionDissolveMaskScroll);
+					});
+					MGUI.ToggleGroupEnd();
 					MGUI.Space2();
 				}
 				else MGUI.SpaceN2();
@@ -1972,56 +2062,44 @@ internal class USEditor : ShaderGUI {
 		}
 
 		// -----------------
-		// Advanced
+		// Rendering
 		// -----------------
-		bool advancedTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "ADVANCED SETTINGS");
+		bool advancedTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "RENDER SETTINGS");
 		if (MGUI.TabButton(resetIcon, 26f)){
 			DoAdvancedReset();
 		}
 		MGUI.Space8();
 		if (advancedTab){
-			MGUI.Space4();
-			bool renderTab = Foldouts.DoMediumFoldout(foldouts, mat, me, 1, "Rendering");
+			GUILayout.Space(30);
 			if (MGUI.MedTabButton(resetIcon, 23f)){
 				DoRenderingReset();
 			}
-			GUILayout.Space(5);
-			if (renderTab){
-				MGUI.Space2();
-				MGUI.PropertyGroup(() => {
-					me.ShaderProperty(_MirrorBehavior, "Mirror Behavior");
-					me.ShaderProperty(_CubeMode, "Main Texture Type");
-					MGUI.ToggleGroup(!(isCutout || isTransparent));
-					me.ShaderProperty(_UseAlphaMask, "Alpha Source");
-					MGUI.ToggleGroupEnd();
-					me.ShaderProperty(_ZWrite, "ZWrite");
-					me.ShaderProperty(_ZTest, "ZTest");
-				});
-				MGUI.Space2();
-			}
-			else MGUI.SpaceN2();
-			bool stencilTab = Foldouts.DoMediumFoldout(foldouts, mat, me, 1, "Stencil");
+			GUILayout.Space(-18);
+			MGUI.BoldLabel("General");
+			MGUI.PropertyGroup(() => {
+				me.ShaderProperty(_ZWrite, "ZWrite");
+				me.ShaderProperty(_ZTest, "ZTest");
+			});
+			GUILayout.Space(30);
 			if (MGUI.MedTabButton(resetIcon, 23f)){
 				DoStencilReset();
 			}
-			GUILayout.Space(5);
-			if (stencilTab){
-				MGUI.Space2();
-				MGUI.PropertyGroup(() => {
-					me.ShaderProperty(_StencilRef, "Reference Value");
-					me.ShaderProperty(_StencilPass, "Pass Operation");
-					me.ShaderProperty(_StencilFail, "Fail Operation");
-					me.ShaderProperty(_StencilZFail, "Z Fail Operation");
-					me.ShaderProperty(_StencilCompare, "Compare Function");
-					if (isOutline){
-						MGUI.ToggleGroup(_StencilToggle.floatValue == 0);
-						if (MGUI.SimpleButton("Reapply Outline Configuration", MGUI.GetPropertyWidth(), EditorGUIUtility.labelWidth)){
-							ApplyOutlineStencilConfig(mat);
-						}
-						MGUI.ToggleGroupEnd();
+			GUILayout.Space(-18);
+			MGUI.BoldLabel("Stencil");
+			MGUI.PropertyGroup(() => {
+				me.ShaderProperty(_StencilRef, "Reference Value");
+				me.ShaderProperty(_StencilPass, "Pass Operation");
+				me.ShaderProperty(_StencilFail, "Fail Operation");
+				me.ShaderProperty(_StencilZFail, "Z Fail Operation");
+				me.ShaderProperty(_StencilCompare, "Compare Function");
+				if (isOutline){
+					MGUI.ToggleGroup(_StencilToggle.floatValue == 0);
+					if (MGUI.SimpleButton("Reapply Outline Configuration", MGUI.GetPropertyWidth(), EditorGUIUtility.labelWidth)){
+						ApplyOutlineStencilConfig(mat);
 					}
-				});
-			}
+					MGUI.ToggleGroupEnd();
+				}
+			});
 			MGUI.Space2();
 		}
 		GUILayout.Space(15);
@@ -2097,11 +2175,13 @@ internal class USEditor : ShaderGUI {
 		int refracToggle = mat.GetInt("_Refraction");
 		int caToggle = mat.GetInt("_RefractionCA");
 		int vManipToggle = mat.GetInt("_VertexManipulationToggle");
+		int maskTransToggle = mat.GetInt("_EnableMaskTransform");
 		bool isUberX = MGUI.IsXVersion(mat);
 		bool isOutline = MGUI.IsOutline(mat);
 		bool usingNormal = mat.GetTexture("_BumpMap");
 		bool usingParallax = workflow < 3 ? mat.GetTexture("_ParallaxMap") : (mat.GetTexture("_PackedMap") && mat.GetInt("_EnablePackedHeight") == 1);
 		bool usingDetail = mat.GetTexture("_DetailNormalMap");
+		
 		// bool usingCurve = mat.GetTexture("_Curvature");
 
 		// Setting floats based on render mode/texture presence/etc
@@ -2213,6 +2293,7 @@ internal class USEditor : ShaderGUI {
 		SetKeyword(mat, "DISTORT", refracToggle == 1 && renderMode == 1);
 		SetKeyword(mat, "CHROMATIC_ABBERATION", refracToggle == 1 && caToggle == 1 && renderMode == 1);
 		SetKeyword(mat, "GEOM_TYPE_MESH", vManipToggle == 1);
+		SetKeyword(mat, "GEOM_TYPE_BRANCH", maskingMode == 1 && maskTransToggle == 1);
 		// SetKeyword(mat, "BLOOM_LOW", usingCurve && renderMode == 1);
 	}
 
@@ -2445,6 +2526,7 @@ internal class USEditor : ShaderGUI {
 		_MatcapBlendMask.textureValue = null;
 		_InterpMask.textureValue = null;
 		_OutlineMask.textureValue = null;
+		_RefractionMask.textureValue = null;
 	}
 
 	void ClearShadingMaps(){
@@ -2714,7 +2796,7 @@ internal class USEditor : ShaderGUI {
 	}
 	
 	void DoSpecReset(){
-		_Specular.floatValue = 0f;
+		_Specular.floatValue = 1f;
 		_SpecStr.floatValue = 1f;
 		_SpecCol.colorValue = Color.white;
 		_SharpSpecular.floatValue = 0f;
@@ -2724,7 +2806,7 @@ internal class USEditor : ShaderGUI {
 		_AnisoLayerY.floatValue = 10f;
 		_AnisoLayerStr.floatValue = 0.1f;
 		_AnisoLerp.floatValue = 0f;
-		_SharpSpecStr.floatValue = 0f;
+		_SharpSpecStr.floatValue = 1f;
 		_SpecUseRough.floatValue = 0f;
 		_SpecRough.floatValue = 0.5f;
 		_RippleFrequency.floatValue = 0f;
@@ -2732,6 +2814,8 @@ internal class USEditor : ShaderGUI {
 		_RippleSeeds.vectorValue = new Vector4(5.213f, 8.7622f, 12.9f, 0);
 		_RippleInvert.floatValue = 1f;
 		_ManualSpecBright.floatValue = 0f;
+		_SpecBiasOverrideToggle.floatValue = 0f;
+		_SpecBiasOverride.floatValue = 0.5f;
 	}
 
 	void DoMatcapReset(){
@@ -2797,11 +2881,14 @@ internal class USEditor : ShaderGUI {
 
 	void DoRefracReset(){
 		_RefractionOpac.floatValue = 0f;
-		_UnlitRefraction.floatValue = 1f;
+		_UnlitRefraction.floatValue = 0f;
 		_RefractionIOR.floatValue = 1.3f;
 		_RefractionCA.floatValue = 0f;
 		_RefractionCAStr.floatValue = 0.1f;
 		_RefractionTint.colorValue = Color.white;
+		_RefractionDissolveMask.textureValue = null;
+		_RefractionDissolveMaskScroll.vectorValue = Vector4.zero;
+		_RefractionDissolveMaskStr.floatValue = 0.5f;
 	}
 
 	void DoNormalReset(){
@@ -3029,13 +3116,10 @@ internal class USEditor : ShaderGUI {
 	}
 
 	void DoRenderingReset(){
-		_MirrorBehavior.floatValue = 0f;
-		_CubeMode.floatValue = 0f;
 		if (_BlendMode.floatValue != 5)
 			_ZWrite.floatValue = 1f;
 		else
 			_ZWrite.floatValue = 0f;
-		_UseAlphaMask.floatValue = 0f;
 		_ZTest.floatValue = 4f;
 	}
 

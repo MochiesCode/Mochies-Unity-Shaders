@@ -45,9 +45,9 @@ UNITY_DECLARE_TEX2D_NOSAMPLER(_PackedMask1);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_PackedMask2);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_MirrorTex);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_DetailRoughnessMap);
-UNITY_DECLARE_TEX2D_NOSAMPLER(_Curvature);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_PackedMap);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_RefractionMask);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_RefractionDissolveMask);
 
 sampler2D _PackedMask3;
 sampler2D _OutlineMask;
@@ -77,7 +77,7 @@ int _MatcapUseRough, _UseMatcap1, _UnlitMatcap1;
 int _DissolveStyle;
 int _DistortMatcap0, _DistortMatcap1, _MatcapUseRough1, _Invert;
 int _TeamFiltering, _UVSec, _DetailRoughBlending;
-int _CurvatureBlending, _CurvatureTarget, _CurvatureChannel;
+int _SpecBiasOverrideToggle;
 
 float4 _Color; 
 float4 _CubeColor0, _CubeColor1;
@@ -85,6 +85,26 @@ float4 _MatcapColor, _MatcapColor1;
 float4 _RimCol, _ERimTint;
 float4 _TeamColor0, _TeamColor1, _TeamColor2, _TeamColor3;
 float4 _SColor, _ShadowTint;
+
+float4 _RefractionMask_ST;
+float4 _AlphaMask_ST;
+float4 _ReflectionMask_ST;
+float4 _SpecularMask_ST;
+float4 _ERimMask_ST;
+float4 _MatcapMask_ST;
+float4 _MatcapBlendMask_ST;
+float4 _InterpMask_ST;
+float4 _SubsurfaceMask_ST;
+float4 _RimMask_ST;
+float4 _DetailMask_ST;
+float4 _ShadowMask_ST;
+float4 _DiffuseMask_ST;
+float4 _FilterMask_ST;
+float4 _TeamColorMask_ST;
+float4 _EmissMask_ST;
+float4 _EmissPulseMask_ST;
+float4 _RefractionDissolveMask_ST;
+float4 _OutlineMask_ST;
 
 float3 _CubeRotate0, _CubeRotate1;
 float3 _StaticLightDir;
@@ -97,8 +117,27 @@ float2 _DetailScroll;
 float2 _RimScroll;
 float2 _DistortUVScroll;
 float2 _NoiseScale;
+float2 _RefractionMaskScroll;
+float2 _ReflectionMaskScroll;
+float2 _SpecularMaskScroll;
+float2 _ERimMaskScroll;
+float2 _MatcapMaskScroll;
+float2 _MatcapBlendMaskScroll;
+float2 _InterpMaskScroll;
+float2 _SubsurfaceMaskScroll;
+float2 _RimMaskScroll;
+float2 _DetailMaskScroll;
+float2 _ShadowMaskScroll;
+float2 _DiffuseMaskScroll;
+float2 _FilterMaskScroll;
+float2 _TeamColorMaskScroll;
+float2 _EmissMaskScroll;
+float2 _EmissPulseMaskScroll; 
+float2 _RefractionDissolveMaskScroll;
+float2 _OutlineMaskScroll;
 
 float _Opacity, _Cutoff;
+float _RefractionDissolveMaskStr;
 float _DistanceFadeMin, _DistanceFadeMax, _ClipRimStr, _ClipRimWidth;
 float _CubeBlend;
 float _BumpScale, _DetailNormalMapScale, _DetailRoughStrength;
@@ -117,13 +156,13 @@ float _ERimWidth, _ERimStr, _ERimEdge, _ERimRoughness;
 float _Value;
 float _NoiseSpeed, _RampPos;
 float _MatcapRough, _MatcapRough1;
+float _SpecBiasOverride;
 
 int _PreviewRough, _PreviewAO, _PreviewHeight, _PreviewCurvature;
 int _AOFiltering, _HeightFiltering, _RoughnessFiltering, _SmoothnessFiltering, _CurvatureFiltering;
 float _AOLightness, _AOIntensity, _AOContrast;
 float _RoughLightness, _RoughIntensity, _RoughContrast;
 float _SmoothLightness, _SmoothIntensity, _SmoothContrast;
-float _CurvatureLightness, _CurvatureIntensity, _CurvatureContrast;
 
 
 sampler3D _DitherMaskLOD;
@@ -268,6 +307,7 @@ struct masks {
 	float emissMask;
 	float emissPulseMask;
 	float refractMask;
+	float refractDissolveMask;
 	float4 teamMask;
 };
 

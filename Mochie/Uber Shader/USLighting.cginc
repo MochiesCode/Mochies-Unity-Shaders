@@ -223,6 +223,10 @@ void GetLightColor(g2f i, inout lighting l, masks m){
 	#endif
 }
 
+float Safe_DotClamped(float3 a, float3 b){
+	return max(0.00001, dot(a,b));
+}
+
 lighting GetLighting(g2f i, masks m, float3 atten){
     lighting l = (lighting)0;
 	l.ao = 1;
@@ -250,10 +254,10 @@ lighting GetLighting(g2f i, masks m, float3 atten){
 		l.lightDir = GetLightDir(i, l);
 		l.halfVector = normalize(l.lightDir + l.viewDir);
 
-		l.NdotL = DotClamped(l.normalDir, l.lightDir);
+		l.NdotL = Safe_DotClamped(l.normalDir, l.lightDir);
 		l.NdotV = abs(dot(l.normal, l.viewDir));
-		l.NdotH = DotClamped(l.normal, l.halfVector);
-		l.LdotH = DotClamped(l.lightDir, l.halfVector);
+		l.NdotH = Safe_DotClamped(l.normal, l.halfVector);
+		l.LdotH = Safe_DotClamped(l.lightDir, l.halfVector);
 		#if SPECULAR_ENABLED && !OUTLINE_PASS
 			l.TdotH = dot(l.tangent, l.halfVector);
 			l.BdotH = dot(l.binormal, l.halfVector);
@@ -265,7 +269,7 @@ lighting GetLighting(g2f i, masks m, float3 atten){
 		#if ADDITIVE_PASS
 			l.lightDir = normalize(UnityWorldSpaceLightDir(i.worldPos));
 			l.normal = normalize(i.normal);
-			l.NdotL = DotClamped(l.normal, l.lightDir);
+			l.NdotL = Safe_DotClamped(l.normal, l.lightDir);
 		#endif
 	#endif
 

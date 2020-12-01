@@ -50,7 +50,7 @@ public class SFXEditor : ShaderGUI {
 	string header = "SFXHeader_Pro";
 	string watermark = "Watermark_Pro";
 	string patIcon = "Patreon_Icon";
-	string versionLabel = "v1.10";
+	string versionLabel = "v1.10.1";
 	string keyTex = "KeyIcon_Pro";
 	
     // Commonly used strings

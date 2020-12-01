@@ -192,7 +192,11 @@ v2g vert (appdata v) {
 		o.isReflection = IsInMirror();
 		float thicknessMask = 1;
 		#if SEPARATE_MASKING
-			thicknessMask = tex2Dlod(_OutlineMask, float4(v.uv.xy,0,0));
+			float2 thickMaskUV = v.uv.xy;
+			#if MASK_SOS_ENABLED
+				thickMaskUV = TRANSFORM_TEX(v.uv, _OutlineMask) + (_Time.y * _OutlineMaskScroll);
+			#endif
+			thicknessMask = tex2Dlod(_OutlineMask, float4(thickMaskUV,0,0));
 		#elif PACKED_MASKING
 			thicknessMask = tex2Dlod(_PackedMask3, float4(v.uv.xy,0,0)).a;
 		#endif
@@ -402,7 +406,7 @@ v2g vert (appdata v) {
 
 float4 frag(g2f i) : SV_Target {
 
-	#if PBR_PREVIEW_ENABLED
+	#if PBR_PREVIEW_ENABLED || REFRACTION_ENABLED
 		discard;
 	#endif
 
@@ -425,10 +429,6 @@ float4 frag(g2f i) : SV_Target {
 		float4 albedo = _MainTex.Sample(sampler_MainTex, i.uv.xy) * _Color;
 		float maskAlpha = UNITY_SAMPLE_TEX2D_SAMPLER(_AlphaMask, _MainTex, i.uv.xy) * _Color.a;
 		alpha = lerp(albedo.a, maskAlpha, _UseAlphaMask);
-		
-		#if REFRACTION_ENABLED
-			alpha *= _RefractionOpac;
-		#endif
 
 		#if ALPHA_PREMULTIPLY
 			alpha = ShadowPremultiplyAlpha(i, alpha);

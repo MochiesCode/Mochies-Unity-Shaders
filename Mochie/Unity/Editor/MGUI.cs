@@ -12,7 +12,6 @@ namespace Mochie {
 
 		public enum BlendMode {Opaque, Cutout, Dithered, A2C, Fade, Transparent}
 
-		private static int chanOfs = 105;
 		public static string parentPath = "Assets/Mochie/Unity/Presets";
 		public static string presetPath = "Assets/Mochie/Unity";
 
@@ -177,35 +176,11 @@ namespace Mochie {
 			EditorGUILayout.HelpBox(message, MessageType.None);
 		}
 
-		public static void MaskProperty(MaterialEditor me, MaterialProperty mask, MaterialProperty maskChannel){
-			bool hasTex = mask.textureValue;
-			me.TexturePropertySingleLine(new GUIContent("Mask"), mask, hasTex ? maskChannel : null);
-			if (hasTex){
-				TexPropLabel("Channel", chanOfs);
-			}
-		}
-
-		public static void MaskProperty(MaterialEditor me, string label, MaterialProperty mask, MaterialProperty maskStr, MaterialProperty maskChannel){
-			bool hasTex = mask.textureValue;
-			me.TexturePropertySingleLine(new GUIContent(label), mask, !hasTex ? maskStr : null, hasTex ? maskChannel : null);
-			if (hasTex){
-				TexPropLabel("Channel", chanOfs);
-			}
-		}
-
-		public static void MaskProperty(MaterialEditor me, string label, MaterialProperty mask, MaterialProperty maskChannel){
-			bool hasTex = mask.textureValue;
-			me.TexturePropertySingleLine(new GUIContent(label), mask, hasTex ? maskChannel : null);
-			if (hasTex){
-				TexPropLabel("Channel", chanOfs);
-			}
-		}
-
-		public static void MaskProperty(MaterialEditor me, string label, MaterialProperty mask, MaterialProperty maskChannel, bool isToggled){
-			bool displayProps = isToggled && mask.textureValue;
-			me.TexturePropertySingleLine(new GUIContent(label), mask, displayProps ? maskChannel : null);
-			if (displayProps){
-				TexPropLabel("Channel", chanOfs);
+		public static void MaskProperty(Material mat, MaterialEditor me, bool display, MaterialProperty mask, MaterialProperty scroll){
+			if (display){
+				me.TexturePropertySingleLine(new GUIContent("Mask Texture"), mask);
+				TextureSOScroll(me, mask, scroll, mask.textureValue);
+				MGUI.Space4();
 			}
 		}
 
@@ -755,6 +730,10 @@ namespace Mochie {
 			EditorGUI.EndDisabledGroup();
 		}
 
+		public static void BoldLabel(string text){
+			EditorGUILayout.LabelField(text, EditorStyles.boldLabel);
+		}
+		
 		// Shorthand spacing funcs
 		public static void SpaceN16(){ GUILayout.Space(-16); }
 		public static void SpaceN14(){ GUILayout.Space(-14); }

@@ -185,8 +185,8 @@
 	#define VERTEX_MANIP_ENABLED defined(GEOM_TYPE_MESH)
 #endif
 
-// #ifndef CURVATURE_ENABLED
-// 	#define CURVATURE_ENABLED defined(BLOOM_LOW)
-// #endif
+#ifndef MASK_SOS_ENABLED
+	#define MASK_SOS_ENABLED defined(GEOM_TYPE_BRANCH)
+#endif
 
 #endif

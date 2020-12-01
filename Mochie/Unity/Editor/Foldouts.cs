@@ -270,5 +270,34 @@ namespace Mochie {
 			GUILayout.Space(-18);
 			return display;
 		}
+
+		public static bool DoMaskFoldout(Dictionary<Material, Toggles> foldouts, Material mat, MaterialEditor me, GUIContent dispHeader, string header){
+			foldouts[mat].SetState(header, MaskFoldout(dispHeader.text, foldouts[mat].GetState(header)));
+			return foldouts[mat].GetState(header);
+		}
+
+		public static bool MaskFoldout(string header, bool display){
+			float lw = EditorGUIUtility.labelWidth-13;
+			GUILayoutOption clickArea = GUILayout.MaxWidth(lw);
+			Rect rect = GUILayoutUtility.GetRect(0, 18f, clickArea);
+			GUILayout.Space(-20);
+			header = "    " + header;
+			EditorGUILayout.LabelField(header);
+			GUILayout.Space(20);
+			return DoMaskToggle(display, rect);
+		}
+
+		public static bool DoMaskToggle(bool display, Rect rect){
+			Event evt = Event.current;
+			Rect arrowRect = new Rect(rect.x+2f, rect.y, 0f, 0f);
+			if (evt.rawType == EventType.Repaint)
+				EditorStyles.foldout.Draw(arrowRect, false, false, display, false);
+			if (evt.rawType == EventType.MouseDown && rect.Contains(evt.mousePosition)){
+				display = !display;
+				evt.Use();
+			}
+			GUILayout.Space(-18);
+			return display;
+		}
 	}
 }

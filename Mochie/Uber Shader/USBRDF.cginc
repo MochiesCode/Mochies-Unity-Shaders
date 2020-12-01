@@ -232,12 +232,6 @@ float GetGGXTerm(lighting l, float roughness){
 
 	visibilityTerm *= dotTerm * UNITY_PI;
 
-	if (_SharpSpecular == 1 && _SpecTermStep == 1){
-		roughness = saturate(roughness*2);
-		float3 sharpTerm = round(_SharpSpecStr*visibilityTerm)/_SharpSpecStr;
-		visibilityTerm = lerp(sharpTerm, visibilityTerm, roughness);
-	}
-
 	return visibilityTerm;
 }
 
@@ -258,20 +252,10 @@ float GetAnisoTerm(g2f i, lighting l, masks m){
 	float layer1 = saturate(1.0 / (_AnisoAngleX * _AnisoAngleY * f1 * f1));
 	float visibilityTerm = 1;
 
-	if (_AnisoLerp == 1){
-		if (_SharpSpecular == 1 && _SpecTermStep == 1){
-			layer1 = lerp(layer1-layer0, round(_AnisoSteps*layer1)/_AnisoSteps, 1-layer1);
-			layer0 = round(_AnisoSteps*layer0)/_AnisoSteps;
-		}
+	if (_AnisoLerp == 1)
 		visibilityTerm = lerp(layer1*_AnisoLayerStr, layer0, layer0);
-	}
-	else {
+	else
 		visibilityTerm = saturate(layer0 + (layer1*_AnisoLayerStr));
-		if (_SharpSpecular == 1 && _SpecTermStep == 1){
-			_AnisoSteps += 1;
-			visibilityTerm = round(_AnisoSteps*visibilityTerm)/_AnisoSteps;
-		}
-	}
 
 	return visibilityTerm;
 }
@@ -319,7 +303,6 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
 
 	l.directCol *= atten;
 	l.directCol += l.vLightCol;
-	// l.directCol += subsurfCol;
 
 	float diffuseTerm = DisneyDiffuse(l, m, percepRough);
 	float3 lighting = l.indirectCol + l.directCol * diffuseTerm;
@@ -332,9 +315,10 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
 		#if SPECULAR_ENABLED
 			float3 fresnelTerm = 1;
 			float3 specularTerm = 1;
-			GetSpecFresTerm(i, l, m, specularTerm, fresnelTerm, specCol, lerp(brdfRoughness, _SpecRough, _SpecUseRough));
+			float3 specBiasCol = lerp(specCol, albedo, _SpecBiasOverride*_SpecBiasOverrideToggle);
+			GetSpecFresTerm(i, l, m, specularTerm, fresnelTerm, specBiasCol, lerp(brdfRoughness, _SpecRough, _SpecUseRough));
 			specular = lerp(lighting, 1, _ManualSpecBright) * specularTerm * fresnelTerm * m.specularMask * _SpecCol * l.ao;
-			if (_SharpSpecular == 1 && _SpecTermStep == 0){
+			if (_SharpSpecular == 1){
 				roughness = saturate(roughness*2);
 				float sharpTerm = round(_SharpSpecStr*Average(specular))/_SharpSpecStr;
 				specular = lerp(specular*sharpTerm, specular, roughness);
@@ -361,7 +345,11 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
 		#endif
 	#endif
 
-	float3 col = diffuse.rgb * lighting;
+	#if REFRACTION_ENABLED
+		float3 col = diffuse.rgb * lerp(lighting, 1, step(m.refractDissolveMask, _RefractionDissolveMaskStr) * (1-_RefractionOpac));
+	#else
+		float3 col = diffuse.rgb * lighting;
+	#endif
 
 	// Prevents being washed out by intense lighting
 	float3 maxCol = (diffuse.rgb + environment) * diffuseTerm;

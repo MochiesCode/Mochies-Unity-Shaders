@@ -54,35 +54,6 @@ float3 BlendCubemap(float3 baseCol, float3 cubeCol, float blend, int blendMode){
 	return baseCol;
 }
 
-float3 BlendCurvature(float curvature, float3 blendTarget){
-	switch(_CurvatureBlending){
-		case 0: 
-			curvature = 1-curvature;
-			blendTarget = lerp(blendTarget, blendTarget*curvature, 0.5); 
-			break;
-		case 1: 
-			blendTarget = blendTarget + curvature;
-			break;
-		case 2:
-			blendTarget = blendTarget - (1-curvature);
-			break;
-		case 3:
-			// curvature = (curvature + 0.5) * 0.5;
-			blendTarget = blendTarget * curvature;
-			break;
-		case 4:
-			curvature = curvature;
-			blendTarget = BlendOverlay(curvature, blendTarget);
-			break;
-		case 5:
-			curvature = 1-curvature;
-			blendTarget = BlendScreen(curvature, blendTarget);
-			break;
-		default: break;
-	}
-	return blendTarget;
-}
-
 void ApplyPBRFiltering(inout float value, float contrast, float intensity, float lightness, int shouldApply, inout float previewValue){
 	if (shouldApply == 1){
 		value = saturate(lerp(0.5, value, contrast));

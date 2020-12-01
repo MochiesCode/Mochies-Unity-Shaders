@@ -144,14 +144,14 @@ void ApplyRefractionColor(g2f i, lighting l, masks m, inout float3 albedo, float
 	#if REFRACTION_CA_ENABLED
 		float2 uvG = l.screenUVs + (offset * (1 + _RefractionCAStr));
 		float2 uvB = l.screenUVs + (offset * (1 - _RefractionCAStr));
-		float3 base = tex2Dlod(_SSRGrab, float4(refractUV,0,0));
+		float chromR = tex2Dlod(_SSRGrab, float4(refractUV,0,0)).r;
 		float chromG = tex2Dlod(_SSRGrab, float4(uvG,0,0)).g;
 		float chromB = tex2Dlod(_SSRGrab, float4(uvB,0,0)).b;
-		float3 refractionCol = float3(base.r, chromG, chromB);
+		float3 refractionCol = float3(chromR, chromG, chromB);
 	#else
 		float3 refractionCol = tex2Dlod(_SSRGrab, float4(refractUV,0,0));
 	#endif
-	refractionCol = lerp(albedo, refractionCol * _RefractionTint, m.refractMask);
+	refractionCol = lerp(albedo, refractionCol * _RefractionTint, step(m.refractDissolveMask, _RefractionDissolveMaskStr));
 	albedo = lerp(refractionCol, albedo, _RefractionOpac);
 }
 
@@ -209,9 +209,11 @@ float4 GetAlbedo(g2f i, lighting l, masks m){
 	#endif
 
 	#if NON_OPAQUE_RENDERING
-		float alphaMask = UNITY_SAMPLE_TEX2D_SAMPLER(_AlphaMask, _MainTex, i.uv.xy) * _Color.a;
-		if (_UseAlphaMask == 1)
+		if (_UseAlphaMask == 1){
+			float2 alphaMaskUV = TRANSFORM_TEX(i.rawUV, _AlphaMask);
+			float alphaMask = UNITY_SAMPLE_TEX2D_SAMPLER(_AlphaMask, _MainTex, alphaMaskUV) * _Color.a;
 			albedo.a = alphaMask;
+		}
 	#endif
 
 	#if SPRITESHEETS_ENABLED
@@ -460,7 +462,7 @@ void ApplyUVDistortion(inout g2f i, inout float3 uvOffset){
 float2 GetParallaxOffset(g2f i){
     float2 uvOffset = 0;
 	float2 prevUVOffset = 0;
-	float stepSize = 1.0/15.0;
+	float stepSize = 1.0/10.0;
 	float stepHeight = 1;
 	float2 uvDelta = i.tangentViewDir.xy * (stepSize * _Parallax);
 	float surfaceHeight = 0;
@@ -472,7 +474,7 @@ float2 GetParallaxOffset(g2f i){
 		float prevStepHeight = stepHeight;
 		float prevSurfaceHeight = surfaceHeight;
 		[unroll(10)]
-		for (int j = 1; j < 10 && stepHeight > surfaceHeight; j++){
+		for (int j = 1; j <= 10 && stepHeight > surfaceHeight; j++){
 			prevUVOffset = uvOffset;
 			prevStepHeight = stepHeight;
 			prevSurfaceHeight = surfaceHeight;
@@ -481,7 +483,22 @@ float2 GetParallaxOffset(g2f i){
 			surfaceHeight = ChannelCheck(UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy+uvOffset), _HeightChannel);
 			ApplyPBRFiltering(surfaceHeight, _HeightContrast, _HeightIntensity, _HeightLightness, _HeightFiltering, prevHeight);
 		}
+		[unroll(3)]
+		for (int k = 0; k < 3; k++) {
+			uvDelta *= 0.5;
+			stepSize *= 0.5;
 
+			if (stepHeight < surfaceHeight) {
+				uvOffset += uvDelta;
+				stepHeight += stepSize;
+			}
+			else {
+				uvOffset -= uvDelta;
+				stepHeight -= stepSize;
+			}
+			surfaceHeight = ChannelCheck(UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy+uvOffset), _HeightChannel);
+			ApplyPBRFiltering(surfaceHeight, _HeightContrast, _HeightIntensity, _HeightLightness, _HeightFiltering, prevHeight);
+		}
 	#elif PACKED_WORKFLOW_BAKED
 		packedTex = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy);
 		surfaceHeight = packedTex.a;
@@ -489,7 +506,7 @@ float2 GetParallaxOffset(g2f i){
 		float prevStepHeight = stepHeight;
 		float prevSurfaceHeight = surfaceHeight;
 		[unroll(10)]
-		for (int j = 1; j < 10 && stepHeight > surfaceHeight; j++){
+		for (int j = 1; j <= 10 && stepHeight > surfaceHeight; j++){
 			prevUVOffset = uvOffset;
 			prevStepHeight = stepHeight;
 			prevSurfaceHeight = surfaceHeight;
@@ -498,14 +515,29 @@ float2 GetParallaxOffset(g2f i){
 			surfaceHeight = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy+uvOffset).a;
 			ApplyPBRFiltering(surfaceHeight, _HeightContrast, _HeightIntensity, _HeightLightness, _HeightFiltering, prevHeight);
 		}
+		[unroll(3)]
+		for (int k = 0; k < 3; k++) {
+			uvDelta *= 0.5;
+			stepSize *= 0.5;
 
+			if (stepHeight < surfaceHeight) {
+				uvOffset += uvDelta;
+				stepHeight += stepSize;
+			}
+			else {
+				uvOffset -= uvDelta;
+				stepHeight -= stepSize;
+			}
+			surfaceHeight = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy+uvOffset).a;
+			ApplyPBRFiltering(surfaceHeight, _HeightContrast, _HeightIntensity, _HeightLightness, _HeightFiltering, prevHeight);
+		}
 	#else
 		surfaceHeight = UNITY_SAMPLE_TEX2D_SAMPLER(_ParallaxMap, _MainTex, i.uv.xy+uvOffset);
 		surfaceHeight = clamp(surfaceHeight, 0, 0.999);
 		float prevStepHeight = stepHeight;
 		float prevSurfaceHeight = surfaceHeight;
 		[unroll(10)]
-		for (int j = 1; j < 10 && stepHeight > surfaceHeight; j++){
+		for (int j = 1; j <= 10 && stepHeight > surfaceHeight; j++){
 			prevUVOffset = uvOffset;
 			prevStepHeight = stepHeight;
 			prevSurfaceHeight = surfaceHeight;
@@ -514,13 +546,30 @@ float2 GetParallaxOffset(g2f i){
 			surfaceHeight = UNITY_SAMPLE_TEX2D_SAMPLER(_ParallaxMap, _MainTex, i.uv.xy+uvOffset);
 			ApplyPBRFiltering(surfaceHeight, _HeightContrast, _HeightIntensity, _HeightLightness, _HeightFiltering, prevHeight);
 		}
+		[unroll(3)]
+		for (int k = 0; k < 3; k++) {
+			uvDelta *= 0.5;
+			stepSize *= 0.5;
+
+			if (stepHeight < surfaceHeight) {
+				uvOffset += uvDelta;
+				stepHeight += stepSize;
+			}
+			else {
+				uvOffset -= uvDelta;
+				stepHeight -= stepSize;
+			}
+			surfaceHeight = UNITY_SAMPLE_TEX2D_SAMPLER(_ParallaxMap, _MainTex, i.uv.xy+uvOffset);
+			ApplyPBRFiltering(surfaceHeight, _HeightContrast, _HeightIntensity, _HeightLightness, _HeightFiltering, prevHeight);
+		}
 	#endif
 
-	prevHeight = surfaceHeight;
-	float prevDifference = prevStepHeight - prevSurfaceHeight;
-	float difference = surfaceHeight - stepHeight;
-	float t = prevDifference / (prevDifference + difference);
-	uvOffset = lerp(prevUVOffset, uvOffset, t);
+	// prevHeight = surfaceHeight;
+	// float prevDifference = prevStepHeight - prevSurfaceHeight;
+	// float difference = surfaceHeight - stepHeight;
+	// float t = prevDifference / (prevDifference + difference);
+	// uvOffset = lerp(prevUVOffset, uvOffset, t);
+	
     return uvOffset;
 }
 
@@ -542,7 +591,6 @@ void ApplyParallax(inout g2f i){
 		i.uv2.xy += parallaxOffset;
 		i.uv3.xy += parallaxOffset;
 		i.uv3.zw += parallaxOffset;
-		i.normal.xy += parallaxOffset;
     }
 }
 
@@ -585,44 +633,71 @@ float ShadowPremultiplyAlpha(g2f i, float alpha){
 //----------------------------
 masks GetMasks(g2f i){
 	masks m = (masks)1;
-	
+	float2 refractDissUV = i.uv.xy;
+
 	// Separate
 	#if SEPARATE_MASKING
+		float2 reflUV, specUV, refractUV, erimUV, matcapUV, matcapBlendUV, anisoUV, subsurfUV, rimUV;
+		float2 detailUV, shadowUV, diffuseUV, filterUV, teamUV, emissUV, emissPulseUV;
+		reflUV = refractUV = specUV = erimUV = matcapUV = matcapBlendUV = anisoUV = subsurfUV = rimUV = i.uv.xy;
+		detailUV = shadowUV = diffuseUV = filterUV = teamUV = emissUV = emissPulseUV = i.uv.xy;
 		#if SHADING_ENABLED
 			#if !OUTLINE_PASS
+				#if MASK_SOS_ENABLED
+					reflUV = TRANSFORM_TEX(i.rawUV, _ReflectionMask) + (_Time.y*_ReflectionMaskScroll);
+					specUV = TRANSFORM_TEX(i.rawUV, _SpecularMask) + (_Time.y*_SpecularMaskScroll);
+					erimUV = TRANSFORM_TEX(i.rawUV, _ERimMask) + (_Time.y*_ERimMaskScroll);
+					matcapUV = TRANSFORM_TEX(i.rawUV, _MatcapMask) + (_Time.y*_MatcapMaskScroll);
+					matcapBlendUV = TRANSFORM_TEX(i.rawUV, _MatcapBlendMask) + (_Time.y*_MatcapBlendMaskScroll);
+					anisoUV = TRANSFORM_TEX(i.rawUV, _InterpMask) + (_Time.y*_InterpMaskScroll);
+					subsurfUV = TRANSFORM_TEX(i.rawUV, _SubsurfaceMask) + (_Time.y*_SubsurfaceMaskScroll);
+					rimUV = TRANSFORM_TEX(i.rawUV, _RimMask) + (_Time.y*_RimMaskScroll);
+					refractUV = TRANSFORM_TEX(i.rawUV, _RefractionMask) + (_Time.y*_RefractionMaskScroll);
+				#endif
 				#if REFLECTIONS_ENABLED
-					m.reflectionMask = UNITY_SAMPLE_TEX2D_SAMPLER(_ReflectionMask, _MainTex, i.uv.xy);
+					m.reflectionMask = UNITY_SAMPLE_TEX2D_SAMPLER(_ReflectionMask, _MainTex, reflUV);
 				#endif
 				#if SPECULAR_ENABLED
-					m.specularMask = UNITY_SAMPLE_TEX2D_SAMPLER(_SpecularMask, _MainTex, i.uv.xy);
+					m.specularMask = UNITY_SAMPLE_TEX2D_SAMPLER(_SpecularMask, _MainTex, specUV);
 				#endif
 				#if ENVIRONMENT_RIM_ENABLED
-					m.eRimMask = UNITY_SAMPLE_TEX2D_SAMPLER(_ERimMask, _MainTex, i.uv.xy);
+					m.eRimMask = UNITY_SAMPLE_TEX2D_SAMPLER(_ERimMask, _MainTex, erimUV);
 				#endif
 				#if MATCAP_ENABLED
-					m.matcapMask = UNITY_SAMPLE_TEX2D_SAMPLER(_MatcapMask, _MainTex, i.uv.xy);
-					m.matcapBlendMask = UNITY_SAMPLE_TEX2D_SAMPLER(_MatcapBlendMask, _MainTex, i.uv.xy);
+					m.matcapMask = UNITY_SAMPLE_TEX2D_SAMPLER(_MatcapMask, _MainTex, matcapUV);
+					m.matcapBlendMask = UNITY_SAMPLE_TEX2D_SAMPLER(_MatcapBlendMask, _MainTex, matcapBlendUV);
 				#endif
 				#if COMBINED_SPECULAR
-					m.anisoMask = 1-UNITY_SAMPLE_TEX2D_SAMPLER(_InterpMask, _MainTex, i.uv.xy);
+					m.anisoMask = 1-UNITY_SAMPLE_TEX2D_SAMPLER(_InterpMask, _MainTex, anisoUV);
 				#endif
 				#if REFRACTION_ENABLED
-					m.refractMask = UNITY_SAMPLE_TEX2D_SAMPLER(_RefractionMask, _MainTex, i.uv.xy);
+					refractDissUV = TRANSFORM_TEX(i.rawUV, _RefractionDissolveMask) + (_Time.y*_RefractionDissolveMaskScroll);
+					m.refractMask = UNITY_SAMPLE_TEX2D_SAMPLER(_RefractionMask, _MainTex, refractUV);
+					m.refractDissolveMask = UNITY_SAMPLE_TEX2D_SAMPLER(_RefractionDissolveMask, _MainTex, refractDissUV);
 				#endif
-				m.subsurfMask = UNITY_SAMPLE_TEX2D_SAMPLER(_SubsurfaceMask, _MainTex, i.uv.xy);
-				m.rimMask = UNITY_SAMPLE_TEX2D_SAMPLER(_RimMask, _MainTex, i.uv.xy);
+				m.subsurfMask = UNITY_SAMPLE_TEX2D_SAMPLER(_SubsurfaceMask, _MainTex, subsurfUV);
+				m.rimMask = UNITY_SAMPLE_TEX2D_SAMPLER(_RimMask, _MainTex, rimUV);
 			#endif
-			m.detailMask = UNITY_SAMPLE_TEX2D_SAMPLER(_DetailMask, _MainTex, i.uv.xy);
-			m.shadowMask = UNITY_SAMPLE_TEX2D_SAMPLER(_ShadowMask, _MainTex, i.uv.xy);
-			m.diffuseMask = UNITY_SAMPLE_TEX2D_SAMPLER(_DiffuseMask, _MainTex, i.uv.xy);
+			#if MASK_SOS_ENABLED
+				detailUV = TRANSFORM_TEX(i.rawUV, _DetailMask) + (_Time.y*_DetailMaskScroll);
+				shadowUV = TRANSFORM_TEX(i.rawUV, _ShadowMask) + (_Time.y*_ShadowMaskScroll);
+				diffuseUV = TRANSFORM_TEX(i.rawUV, _DiffuseMask) + (_Time.y*_DiffuseMaskScroll);
+				filterUV = TRANSFORM_TEX(i.rawUV, _FilterMask) + (_Time.y*_FilterMaskScroll);
+				teamUV = TRANSFORM_TEX(i.rawUV, _TeamColorMask) + (_Time.y*_TeamColorMaskScroll);
+				emissUV = TRANSFORM_TEX(i.rawUV, _EmissMask) + (_Time.y*_EmissMaskScroll);
+				emissPulseUV = TRANSFORM_TEX(i.rawUV, _EmissPulseMask) + (_Time.y*_EmissPulseMaskScroll);
+			#endif
+			m.detailMask = UNITY_SAMPLE_TEX2D_SAMPLER(_DetailMask, _MainTex, detailUV);
+			m.shadowMask = UNITY_SAMPLE_TEX2D_SAMPLER(_ShadowMask, _MainTex, shadowUV);
+			m.diffuseMask = UNITY_SAMPLE_TEX2D_SAMPLER(_DiffuseMask, _MainTex, diffuseUV);
 		#endif
 		#if FILTERING_ENABLED
-			m.filterMask = UNITY_SAMPLE_TEX2D_SAMPLER(_FilterMask, _MainTex, i.uv.xy);
-			m.teamMask = UNITY_SAMPLE_TEX2D_SAMPLER(_TeamColorMask, _MainTex, i.uv.xy);
+			m.filterMask = UNITY_SAMPLE_TEX2D_SAMPLER(_FilterMask, _MainTex, filterUV);
+			m.teamMask = UNITY_SAMPLE_TEX2D_SAMPLER(_TeamColorMask, _MainTex, teamUV);
 		#endif
 		#if EMISSION_ENABLED
-			m.emissMask = UNITY_SAMPLE_TEX2D_SAMPLER(_EmissMask, _MainTex, i.uv.xy);
-			m.emissPulseMask = UNITY_SAMPLE_TEX2D_SAMPLER(_PulseMask, _MainTex, i.uv.xy);
+			m.emissMask = UNITY_SAMPLE_TEX2D_SAMPLER(_EmissMask, _MainTex, emissUV);
+			m.emissPulseMask = UNITY_SAMPLE_TEX2D_SAMPLER(_PulseMask, _MainTex, emissPulseUV);
 		#endif
 
 	// Packed
@@ -640,12 +715,13 @@ masks GetMasks(g2f i){
 				m.matcapBlendMask = mask2.b;
 				m.anisoMask = mask2.a;
 			#endif
-			float3 mask1 = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMask1, _MainTex, i.uv.xy);
+			float4 mask1 = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMask1, _MainTex, i.uv.xy);
 			m.shadowMask = mask1.r;
 			m.diffuseMask = mask1.g;
 			m.subsurfMask = mask1.b;
+			m.detailMask = mask1.a;
 		#endif
-		float3 mask3 = tex2D(_PackedMask3, i.uv.xy);
+		float4 mask3 = tex2D(_PackedMask3, i.uv.xy);
 		m.emissMask = mask3.r;
 		m.emissPulseMask = mask3.g;
 		m.filterMask = mask3.b;
@@ -654,6 +730,11 @@ masks GetMasks(g2f i){
 		#endif
 	#elif FILTERING_ENABLED
 		m.teamMask = UNITY_SAMPLE_TEX2D_SAMPLER(_TeamColorMask, _MainTex, i.uv.xy);
+	#endif
+
+	#if REFRACTION_ENABLED
+		refractDissUV = TRANSFORM_TEX(i.rawUV, _RefractionDissolveMask) + (_Time.y*_RefractionDissolveMaskScroll);
+		m.refractDissolveMask = UNITY_SAMPLE_TEX2D_SAMPLER(_RefractionDissolveMask, _MainTex, refractDissUV);
 	#endif
 
 	return m;

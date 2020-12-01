@@ -1,5 +1,4 @@
 ﻿// BY MOCHIE
-// Version 1.9
 
 Shader "Mochie/Screen FX/Screen FX" {
     Properties {

@@ -1,5 +1,4 @@
 // By Mochie#8794
-// Version 1.11
 
 Shader "Mochie/Uber/Uber (Outline)" {
     Properties {
@@ -74,6 +73,7 @@ Shader "Mochie/Uber/Uber (Outline)" {
 
 		// MASKING
 		[Enum(Off,0, Separate,1, Packed,2)]_MaskingMode("en3", Int) = 0
+		[ToggleUI]_EnableMaskTransform("tog", Int) = 0
 		_ReflectionMask("tex", 2D) = "white" {}	
 		_SpecularMask("tex", 2D) = "white" {}
 		_MatcapMask("tex", 2D) = "white" {}
@@ -93,6 +93,22 @@ Shader "Mochie/Uber/Uber (Outline)" {
 		_PackedMask1("tex", 2D) = "white" {}
 		_PackedMask2("tex", 2D) = "white" {}
 		_PackedMask3("tex", 2D) = "white" {}
+		
+		_ReflectionMaskScroll("vec", Vector) = (0,0,0,0)
+		_SpecularMaskScroll("vec", Vector) = (0,0,0,0)
+		_ERimMaskScroll("vec", Vector) = (0,0,0,0)
+		_MatcapMaskScroll("vec", Vector) = (0,0,0,0)
+		_MatcapBlendMaskScroll("vec", Vector) = (0,0,0,0)
+		_InterpMaskScroll("vec", Vector) = (0,0,0,0)
+		_SubsurfaceMaskScroll("vec", Vector) = (0,0,0,0)
+		_RimMaskScroll("vec", Vector) = (0,0,0,0)
+		_DetailMaskScroll("vec", Vector) = (0,0,0,0)
+		_ShadowMaskScroll("vec", Vector) = (0,0,0,0)
+		_DiffuseMaskScroll("vec", Vector) = (0,0,0,0)
+		_FilterMaskScroll("vec", Vector) = (0,0,0,0)
+		_EmissMaskScroll("vec", Vector) = (0,0,0,0)
+		_EmissPulseMaskScroll("vec", Vector) = (0,0,0,0)
+		_OutlineMaskScroll("vec", Vector) = (0,0,0,0)
 
 		// PBR FILTERING
 		[ToggleUI]_RoughnessFiltering("tog", Int) = 0 // Roughness
@@ -171,7 +187,6 @@ Shader "Mochie/Uber/Uber (Outline)" {
 		[ToggleUI]_ManualSpecBright("tog", Int) = 0
 		[ToggleUI]_SharpSpecular("tog", Int) = 0
 		[IntRange]_SharpSpecStr("ra", Range(1,15)) = 1
-		[ToggleUI]_SpecTermStep("tog", Int) = 1
 		[IntRange]_AnisoSteps("ra", Range(1,15)) = 2
 		_AnisoAngleX("ra", Float) = 1
         _AnisoAngleY("ra", Float) = 1
@@ -185,6 +200,8 @@ Shader "Mochie/Uber/Uber (Outline)" {
 		[ToggleUI]_RippleInvert("tog", Int) = 1
 		[ToggleUI]_SpecUseRough("tog", Int) = 0
 		_SpecRough("ra", Range(0,2)) = 0.5
+		[ToggleUI]_SpecBiasOverrideToggle("tog", Int) = 0
+		_SpecBiasOverride("ra",  Range(0,1)) = 0.5
 
 		// MATCAP
 		[ToggleUI]_MatcapToggle("tog", Int) = 0
@@ -255,11 +272,16 @@ Shader "Mochie/Uber/Uber (Outline)" {
 		// REFRACTION
 		[ToggleUI]_Refraction("tog", Int) = 0
 		_RefractionTint("col", Color) = (1,1,1)
+		_RefractionMaskScroll("vec", Vector) = (0,0,0,0)
+		_RefractionMaskStr("ra", Range(0,1)) = 1
 		_RefractionOpac("ra", Range(0,1)) = 0
 		_RefractionIOR("fl", Float) = 1.3
-		[ToggleUI]_UnlitRefraction("tog", Int) = 1
+		[ToggleUI]_UnlitRefraction("tog", Int) = 0
 		[ToggleUI]_RefractionCA("tog", Int) = 0
 		_RefractionCAStr("ra", Range(0,1)) = 0.1
+		_RefractionDissolveMask("tex", 2D) = "white" {}
+		_RefractionDissolveMaskScroll("vec", Vector) = (0,0,0,0)
+		_RefractionDissolveMaskStr("ra", Range(0,1)) = 0.5
 
 		// NORMALS
 		[ToggleUI]_HardenNormals("tog", Int) = 0
@@ -564,6 +586,7 @@ Shader "Mochie/Uber/Uber (Outline)" {
 			#pragma shader_feature DISTORT					// Refraction toggle
 			#pragma shader_feature CHROMATIC_ABBERATION		// Refraction CA toggle
 			#pragma shader_feature GEOM_TYPE_MESH			// Vertex manip toggle
+			#pragma shader_feature GEOM_TYPE_BRANCH		// Mask SOS toggle
 			#pragma multi_compile _ VERTEXLIGHT_ON			// Vertex lighting
 			#pragma multi_compile _ _FOG_EXP2				// Fog
 			#pragma multi_compile_fwdbase
@@ -614,6 +637,7 @@ Shader "Mochie/Uber/Uber (Outline)" {
 			#pragma shader_feature DISTORT					// Refraction toggle
 			#pragma shader_feature CHROMATIC_ABBERATION		// Refraction CA toggle
 			#pragma shader_feature GEOM_TYPE_MESH			// Vertex manip toggle
+			#pragma shader_feature GEOM_TYPE_BRANCH		// Mask SOS toggle
 			#pragma multi_compile _ _FOG_EXP2				// Fog
 			#pragma multi_compile_fwdadd_fullshadows
 			#pragma skip_variants DIRLIGHTMAP_COMBINED DIRLIGHTMAP_SEPARATE 
@@ -657,6 +681,7 @@ Shader "Mochie/Uber/Uber (Outline)" {
 			#pragma shader_feature BLOOM					// Main outline toggle
 			#pragma shader_feature GEOM_TYPE_MESH			// Vertex manip toggle
 			#pragma shader_feature EFFECT_HUE_VARIATION		// Spritesheet toggle
+			#pragma shader_feature GEOM_TYPE_BRANCH		// Mask SOS toggle
 			#pragma multi_compile _ _FOG_EXP2				// Fog
 			#pragma multi_compile_fwdbase
 			#pragma skip_variants DIRLIGHTMAP_COMBINED DIRLIGHTMAP_SEPARATE 
@@ -696,6 +721,7 @@ Shader "Mochie/Uber/Uber (Outline)" {
 			#pragma shader_feature DISTORT					// Refraction toggle
 			#pragma shader_feature GEOM_TYPE_MESH			// Vertex manip toggle
 			#pragma shader_feature EFFECT_HUE_VARIATION		// Spritesheet toggle
+			#pragma shader_feature GEOM_TYPE_BRANCH		// Mask SOS toggle
 			#pragma multi_compile _ _FOG_EXP2				// Fog
 			#pragma multi_compile_shadowcaster
 			#pragma skip_variants DIRLIGHTMAP_COMBINED DIRLIGHTMAP_SEPARATE 
