@@ -139,11 +139,17 @@ void ApplySpritesheet1(g2f i, inout float4 col){
 	ApplySpritesheetBlending(i, col, spriteCol, _SpritesheetBlending1);
 }
 
-void ApplyRefractionColor(g2f i, lighting l, masks m, inout float3 albedo, float2 offset){
-	float2 refractUV = l.screenUVs + offset;
+
+void ApplyRefraction(g2f i, lighting l, masks m, inout float3 albedo){
+	float2 screenUV = GetGrabPos(i.grabPos);
+	float2 IOR = (_RefractionIOR-1) * mul(UNITY_MATRIX_V, float4(l.normal, 0));
+	float2 offset = ((1/(i.grabPos.z + 1) * IOR)) * (1-dot(l.normal, l.viewDir));
+	offset = float2(offset.x, -(offset.y * _ProjectionParams.x));
+
+	float2 refractUV = screenUV + offset;
 	#if REFRACTION_CA_ENABLED
-		float2 uvG = l.screenUVs + (offset * (1 + _RefractionCAStr));
-		float2 uvB = l.screenUVs + (offset * (1 - _RefractionCAStr));
+		float2 uvG = screenUV + (offset * (1 + _RefractionCAStr));
+		float2 uvB = screenUV + (offset * (1 - _RefractionCAStr));
 		float chromR = tex2Dlod(_SSRGrab, float4(refractUV,0,0)).r;
 		float chromG = tex2Dlod(_SSRGrab, float4(uvG,0,0)).g;
 		float chromB = tex2Dlod(_SSRGrab, float4(uvB,0,0)).b;
@@ -153,13 +159,6 @@ void ApplyRefractionColor(g2f i, lighting l, masks m, inout float3 albedo, float
 	#endif
 	refractionCol = lerp(albedo, refractionCol * _RefractionTint, step(m.refractDissolveMask, _RefractionDissolveMaskStr));
 	albedo = lerp(refractionCol, albedo, _RefractionOpac);
-}
-
-void ApplyRefraction(g2f i, lighting l, masks m, inout float3 albedo){
-	float2 IOR = (_RefractionIOR-1) * mul(UNITY_MATRIX_V, float4(l.normal, 0));
-	float2 offset = ((1/(i.screenPos.z + 1) * IOR)) * (1-dot(l.normal, l.viewDir));
-	offset = float2(offset.x, -(offset.y * _ProjectionParams.x));
-	ApplyRefractionColor(i, l, m, albedo, offset);
 }
 
 float4 GetAlbedo(g2f i, lighting l, masks m){

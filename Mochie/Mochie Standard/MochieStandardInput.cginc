@@ -47,15 +47,28 @@ sampler2D   _OcclusionMap;
 half        _OcclusionStrength;
 
 sampler2D   _ParallaxMap;
+sampler2D	_ParallaxMask;
+float2		_ParallaxMaskScroll;
+float4		_ParallaxMask_ST;
 half        _Parallax;
 int			_ParallaxSteps;
 float2 		uvOffset;
+float2		lightmapOffset;
 half        _UVSec;
 half		_UV0Rotate;
 half		_UV1Rotate;
+float2		_UV0Scroll;
+float2		_UV1Scroll;
 
 half4       _EmissionColor;
 sampler2D   _EmissionMap;
+sampler2D   _EmissionMask;
+int _SpectrumInput;
+float _SpectrumValue, _SpectrumStrength;
+
+int _DoubleBoxMode;
+float3 _BoxOffset;
+float _ReflectionStrength, _SpecularStrength;
 
 sampler2D _PackedMap;
 UNITY_DECLARE_TEXCUBE(_ReflCube);
@@ -64,7 +77,8 @@ int _RoughnessMult, _MetallicMult, _OcclusionMult, _HeightMult;
 
 #define REFLECTION_FALLBACK defined(_MAPPING_6_FRAMES_LAYOUT)
 #define GSAA_ENABLED defined(FXAA)
-#define SSR_ENABLED defined(CHROMATIC_ABBERATION_LOW)
+#define SSR_ENABLED defined(GRAIN)
+// #define WORKFLOW_PACKED defined(BLOOM_LENS_DIRT)
 #if SSR_ENABLED
 	sampler2D _MSSRGrab; 
 	sampler2D _NoiseTexSSR;
@@ -72,7 +86,7 @@ int _RoughnessMult, _MetallicMult, _OcclusionMult, _HeightMult;
 	float4 _MSSRGrab_TexelSize;
 	float4 _NoiseTexSSR_TexelSize;
 	float _EdgeFade;
-	int _Dith;
+	float _SSRStrength;
 #endif
 #if REFLECTION_FALLBACK
 	UNITY_DECLARE_TEXCUBE(_ReflCubeMask);
@@ -109,6 +123,16 @@ float2 Rotate2D(float2 coords, float rot){
 	return mul(coords, mat);
 }
 
+float RoundTo(float value, uint fraction){
+	return round(value * fraction) / fraction;
+}
+
+float2 RoundTo(float2 value, uint fraction0, uint fraction1){
+	float x = round(value.x * fraction0) / fraction0;
+	float y = round(value.y * fraction0) / fraction1;
+	return float2(x,y);
+}
+
 float4 TexCoords(VertexInput v)
 {
     float4 texcoord;
@@ -116,6 +140,8 @@ float4 TexCoords(VertexInput v)
     texcoord.zw = TRANSFORM_TEX(((_UVSec == 0) ? v.uv0 : v.uv1), _DetailAlbedoMap);
 	texcoord.xy = Rotate2D(texcoord.xy, _UV0Rotate);
 	texcoord.zw = Rotate2D(texcoord.zw, _UV1Rotate);
+	texcoord.xy += _Time.y * _UV0Scroll;
+	texcoord.zw += _Time.y * _UV1Scroll;
     return texcoord;
 }
 
@@ -232,13 +258,13 @@ half2 MetallicRough(float2 uv)
 	half2 mg;
 	#ifndef BLOOM_LENS_DIRT
 		#ifdef _METALLICGLOSSMAP
-			mg.r = tex2D(_MetallicGlossMap, uv).r;
+			mg.r = tex2D(_MetallicGlossMap, uv).r * _Metallic;
 		#else
 			mg.r = _Metallic;
 		#endif
 
 		#ifdef _SPECGLOSSMAP
-			mg.g = 1.0f - tex2D(_SpecGlossMap, uv).r;
+			mg.g = 1.0f - (tex2D(_SpecGlossMap, uv).r * _Glossiness);
 		#else
 			mg.g = 1.0f - _Glossiness;
 		#endif
@@ -258,7 +284,9 @@ half3 Emission(float2 uv)
 #ifndef _EMISSION
     return 0;
 #else
-    return tex2D(_EmissionMap, uv).rgb * _EmissionColor.rgb;
+	float3 emissTex = tex2D(_EmissionMap, uv).rgb * _EmissionColor.rgb;
+	emissTex = lerp(emissTex, lerp(0, emissTex, _SpectrumValue), _SpectrumStrength * _SpectrumInput);
+    return emissTex * tex2D(_EmissionMask, uv).r;
 #endif
 }
 
@@ -365,8 +393,11 @@ float4 Parallax (float4 texcoords, half3 viewDir, out float2 offset)
 			return texcoords;
 		#else
 			half h = tex2D(_ParallaxMap, texcoords.xy).g;
+			float2 maskUV = TRANSFORM_TEX(texcoords, _ParallaxMask) + (_Time.y*_ParallaxMaskScroll);
+			half m = tex2D(_ParallaxMask, maskUV);
+			// _Parallax = lerp(_Parallax, lerp(0, _Parallax, _SpectrumValue), _SpectrumStrength * _SpectrumInput);
 			h = clamp(h, 0, 0.999);
-			offset = ParallaxOffsetMultiStep(h, _Parallax, texcoords.xy, viewDir);
+			offset = ParallaxOffsetMultiStep(h, _Parallax * m, texcoords.xy, viewDir);
 			return float4(texcoords.xy + offset, texcoords.zw + offset);
 		#endif
 	#else
@@ -374,8 +405,11 @@ float4 Parallax (float4 texcoords, half3 viewDir, out float2 offset)
 			return texcoords;
 		#else
 			half h = tex2D(_PackedMap, texcoords.xy).a;
+			float2 maskUV = TRANSFORM_TEX(texcoords, _ParallaxMask) + (_Time.y*_ParallaxMaskScroll);
+			half m = tex2D(_ParallaxMask, maskUV);
+			// _Parallax = lerp(_Parallax, lerp(0, _Parallax, _SpectrumValue), _SpectrumStrength * _SpectrumInput);
 			h = clamp(h, 0, 0.999);
-			offset = ParallaxOffsetMultiStep(h, _Parallax, texcoords.xy, viewDir);
+			offset = ParallaxOffsetMultiStep(h, _Parallax * m, texcoords.xy, viewDir);
 			return float4(texcoords.xy + offset, texcoords.zw + offset);
 		#endif
 	#endif

@@ -186,6 +186,7 @@ Shader "Mochie/Uber/Uber" {
 		_AnisoStr("fl", Float) = 1
 		[ToggleUI]_ManualSpecBright("tog", Int) = 0
 		[ToggleUI]_SharpSpecular("tog", Int) = 0
+		[ToggleUI]_RealtimeSpec("tog", Int) = 0
 		[IntRange]_SharpSpecStr("ra", Range(1,15)) = 1
 		[IntRange]_AnisoSteps("ra", Range(1,15)) = 2
 		_AnisoAngleX("ra", Float) = 1
@@ -281,7 +282,7 @@ Shader "Mochie/Uber/Uber" {
 		_RefractionCAStr("ra", Range(0,1)) = 0.1
 		_RefractionDissolveMask("tex", 2D) = "white" {}
 		_RefractionDissolveMaskScroll("vec", Vector) = (0,0,0,0)
-		_RefractionDissolveMaskStr("ra", Range(0,1)) = 0.5
+		_RefractionDissolveMaskStr("ra", Range(0,1)) = 1
 
 		// NORMALS
 		[ToggleUI]_HardenNormals("tog", Int) = 0
@@ -584,7 +585,8 @@ Shader "Mochie/Uber/Uber" {
 			#pragma shader_feature DISTORT					// Refraction toggle
 			#pragma shader_feature CHROMATIC_ABBERATION		// Refraction CA toggle
 			#pragma shader_feature GEOM_TYPE_MESH			// Vertex manip toggle
-			#pragma shader_feature GEOM_TYPE_BRANCH		// Mask SOS toggle
+			#pragma shader_feature GEOM_TYPE_BRANCH			// Mask SOS toggle
+			#pragma shader_feature VIGNETTE_MASKED			// Reflection cubemap check
 			#pragma multi_compile _ VERTEXLIGHT_ON			// Vertex lighting
 			#pragma multi_compile _ _FOG_EXP2				// Fog
 			#pragma multi_compile_fwdbase
@@ -653,6 +655,7 @@ Shader "Mochie/Uber/Uber" {
             Name "ShadowCaster"
             Tags {"LightMode"="ShadowCaster"}
 			AlphaToMask Off
+			ZWrite On ZTest LEqual
 			Stencil {
                 Ref [_StencilRef]
                 Comp [_StencilCompare]
@@ -660,7 +663,6 @@ Shader "Mochie/Uber/Uber" {
                 Fail [_StencilFail]
                 ZFail [_StencilZFail]
             }
-
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag

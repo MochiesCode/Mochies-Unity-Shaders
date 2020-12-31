@@ -235,7 +235,7 @@ lighting GetLighting(g2f i, masks m, float3 atten){
 		l.lightEnv = any(_WorldSpaceLightPos0);
 	#endif
 
-	l.screenUVs = i.screenPos.xy / (i.screenPos.w+0.0000000001);
+	l.screenUVs = i.grabPos.xy / (i.grabPos.w+0.0000000001);
 	#if UNITY_SINGLE_PASS_STEREO
 		l.screenUVs.x *= 2;
 	#endif

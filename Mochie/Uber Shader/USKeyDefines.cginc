@@ -189,4 +189,8 @@
 	#define MASK_SOS_ENABLED defined(GEOM_TYPE_BRANCH)
 #endif
 
+#ifndef REFLCUBE_EXISTS
+	#define REFLCUBE_EXISTS defined(VIGNETTE_MASKED)
+#endif
+
 #endif

@@ -1,5 +1,4 @@
 // BY MOCHIE
-// Version 1.2
 
 Shader "Mochie/Particles/Particle" {
     Properties {

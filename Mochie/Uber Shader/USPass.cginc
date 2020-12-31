@@ -32,7 +32,8 @@ v2g vert (appdata v) {
 		o.pos = UnityObjectToClipPos(localPos);
 		o.normal = UnityObjectToWorldNormal(v.normal);
 		o.tangent.xyz = UnityObjectToWorldDir(v.tangent.xyz);
-		o.screenPos = ComputeGrabScreenPos(o.pos);
+		o.grabPos = ComputeGrabScreenPos(o.pos);
+		o.screenPos = ComputeScreenPos(o.pos);
 	#endif
 	
 	o.localPos = localPos;
@@ -80,7 +81,7 @@ float4 frag (g2f i) : SV_Target {
 		packedTex = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy);
 	#endif
 
-	i.screenPos = UNITY_PROJ_COORD(i.screenPos);
+	i.grabPos = UNITY_PROJ_COORD(i.grabPos);
 	UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos.xyz);
 	float3 attenCol = atten;
 	attenCol = FadeShadows(i, attenCol);
@@ -227,7 +228,8 @@ v2g vert (appdata v) {
 			o.pos = UnityObjectToClipPos(localPos);
 			o.normal = UnityObjectToWorldNormal(v.normal);
 			o.tangent.xyz = UnityObjectToWorldDir(v.tangent.xyz);
-			o.screenPos = ComputeGrabScreenPos(o.pos);
+			o.grabPos = ComputeGrabScreenPos(o.pos);
+			o.screenPos = ComputeScreenPos(o.pos);
 		#endif
 
 		o.localPos = localPos;
@@ -253,7 +255,7 @@ v2g vert (appdata v) {
 
 #include "USXGeom.cginc"
 
-float4 frag(g2f i) : SV_Target {
+float4 frag(g2f i, uint facing : SV_IsFrontFace) : SV_Target {
 	float4 col = 0;
 
 	#if PBR_PREVIEW_ENABLED
@@ -298,7 +300,7 @@ float4 frag(g2f i) : SV_Target {
 			albedo.a = UNITY_SAMPLE_TEX2D_SAMPLER(_AlphaMask, _MainTex, i.uv.xy);
 		ApplyCutout(l.screenUVs, baseColor.a);
 		#if X_FEATURES && !DISSOLVE_GEOMETRY
-			if (_DissolveToggle == 1)
+			if (_DissolveStyle > 0)
 				clip(GetDissolveValue(i) - _DissolveAmount);
 		#endif
 	#endif
@@ -308,8 +310,6 @@ float4 frag(g2f i) : SV_Target {
 	if (_ApplyOutlineLighting == 1){
 		#if SHADING_ENABLED
 			attenCol = GetRamp(i, l, m, albedo.rgb, attenCol);
-			// diffuse.rgb = GetWorkflow(i, l, m, albedo.rgb);
-			// roughness = GetRoughness(smoothness);
 			diffuse.rgb = GetMochieBRDF(i, l, m, diffuse, albedo, specularTint, 0, omr, smoothness, attenCol);
 		#else
 			diffuse = GetDiffuse(l, albedo, 1);
@@ -368,6 +368,19 @@ float4 frag(g2f i) : SV_Target {
 v2g vert (appdata v) {
     v2g o = (v2g)0;
 	o.isReflection = IsInMirror();
+	#if defined(OUTLINE_VARIANT)
+		float thicknessMask = 1;
+		#if SEPARATE_MASKING
+			float2 thickMaskUV = v.uv.xy;
+			#if MASK_SOS_ENABLED
+				thickMaskUV = TRANSFORM_TEX(v.uv, _OutlineMask) + (_Time.y * _OutlineMaskScroll);
+			#endif
+			thicknessMask = tex2Dlod(_OutlineMask, float4(thickMaskUV,0,0));
+		#elif PACKED_MASKING
+			thicknessMask = tex2Dlod(_PackedMask3, float4(v.uv.xy,0,0)).a;
+		#endif
+		v.vertex.xyz += _OutlineThicc*v.normal*0.01*_OutlineMult*thicknessMask*lerp(1,v.color.xyz,_UseVertexColor);
+	#endif
 	o.objPos = mul(unity_ObjectToWorld, float4(0,0,0,1)).xyz;
 	o.cameraPos = _WorldSpaceCameraPos;
 	#if UNITY_SINGLE_PASS_STEREO
@@ -392,7 +405,8 @@ v2g vert (appdata v) {
 				ApplyVertRounding(o.worldPos, localPos, _VertexRoundingPrecision, _VertexRounding, roundingMask);
 		#endif
 		o.pos = UnityObjectToClipPos(localPos);
-		o.screenPos = ComputeScreenPos(localPos);
+		o.grabPos = ComputeGrabScreenPos(o.pos);
+		o.screenPos = ComputeScreenPos(o.pos);
 	#endif
 
 	o.localPos = localPos;
@@ -443,7 +457,7 @@ float4 frag(g2f i) : SV_Target {
     #endif
 
 	#if X_FEATURES && (NON_OPAQUE_RENDERING)
-		if (_DissolveToggle == 1)
+		if (_DissolveStyle > 0)
 			clip(GetDissolveValue(i) - _DissolveAmount);
 	#endif
 

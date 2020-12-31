@@ -371,3 +371,17 @@ void ApplyVertRounding(inout float4 worldPos, inout float4 localPos, float preci
    	worldPos = lerp(worldPos, ceil(worldPos*precision)/precision, strength * mask);
 	localPos = mul(unity_WorldToObject, worldPos);
 }
+
+float2 GetGrabPos(float4 grabPos){
+	#if UNITY_UV_STARTS_AT_TOP
+		float scale = -1.0;
+	#else
+		float scale = 1.0;
+	#endif
+	float halfPosW = grabPos.w * 0.5;
+	grabPos.y = (grabPos.y - halfPosW) * _ProjectionParams.x * scale + halfPosW;
+	#if SHADER_API_D3D9 || SHADER_API_D3D11
+		grabPos.w += 0.00000000001;
+	#endif
+	return(grabPos / grabPos.w).xy;
+}

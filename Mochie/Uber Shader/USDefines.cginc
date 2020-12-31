@@ -209,7 +209,7 @@ sampler2D_float _CameraDepthTexture;
 sampler2D _SSRGrab;
 samplerCUBE _ReflCube;
 sampler2D _NoiseTexSSR;
-float4 _ReflCol, _ReflTex_ST, _NoiseTexSSR_TexelSize;
+float4 _ReflCol, _ReflTex_ST, _ReflCube_HDR, _NoiseTexSSR_TexelSize;
 float _ReflectionStr, _ReflRough;
 int _Reflections, _ReflUseRough, _ReflStepping, _ReflSteps;
 int _Dith, _MaxSteps, _SSR, _LightingBasedIOR;
@@ -219,7 +219,7 @@ float _Alpha, _Blur, _EdgeFade, _RTint, _LRad, _SRad, _Step;
 
 UNITY_DECLARE_TEX2D_NOSAMPLER(_SpecularMask);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_InterpMask);
-int _Specular, _SharpSpecular, _SharpSpecStr, _SpecTermStep, _UVAniso;
+int _Specular, _SharpSpecular, _SharpSpecStr, _SpecTermStep, _UVAniso, _RealtimeSpec;
 int _AnisoSteps, _AnisoLerp, _RippleInvert, _SpecUseRough, _ManualSpecBright;
 float4 _SpecCol, _SpecTex_ST;
 float3 _RippleSeeds;
@@ -338,7 +338,7 @@ int _CloneToggle, _ClonePattern, _ClonePosition, _SaturateEP;
 int _Screenspace;
 int _DistanceFadeToggle;
 int _ShowInMirror, _ShowBase, _Connected;
-int _DissolveToggle, _DissolveChannel, _DissolveWave, _DissolveBlending;
+int _DissolveChannel, _DissolveWave, _DissolveBlending;
 int _GeomDissolveAxis, _GeomDissolveAxisFlip, _GeomDissolveWireframe;
 int _GeomDissolveFilter, _GeomDissolveClamp;
 float4 _Clone1, _Clone2, _Clone3, _Clone4, _Clone5, _Clone6, _Clone7, _Clone8;
@@ -360,6 +360,8 @@ float _ShatterMax, _ShatterMin, _ShatterSpread, _ShatterCull;
 float _Instability, _GlitchFrequency, _GlitchIntensity, _PosPrecision, _PatternMult; 
 float _Visibility, _CloneSize;
 
+
+
 struct v2g {
 	float4 pos : POSITION;
 	centroid float4 uv : TEXCOORD0;
@@ -372,16 +374,17 @@ struct v2g {
 	float3 tangentViewDir : TEXCOORD7;
 	float3 cameraPos : TEXCOORD8;
 	float3 objPos : TEXCOORD9;
-	float4 screenPos : TEXCOORD10;
+	float4 grabPos : TEXCOORD10;
 	bool isReflection : TEXCOORD11;
 	float4 localPos : TEXCOORD12;
 	float roundingMask : TEXCOORD13;
+	float4 screenPos : TEXCOORD14;
 
 	float4 tangent : TANGENT;
 	float3 normal : NORMAL;
 
-	UNITY_SHADOW_COORDS(16)
-	UNITY_FOG_COORDS(17)
+	UNITY_SHADOW_COORDS(17)
+	UNITY_FOG_COORDS(18)
 };
 
 struct g2f {
@@ -399,16 +402,17 @@ struct g2f {
 	float3 bCoords : TEXCOORD10;
 	float WFStr : TEXCOORD11;
 	uint instID : TEXCOORD12;
-	float4 screenPos : TEXCOORD13;
+	float4 grabPos : TEXCOORD13;
 	bool isReflection : TEXCOORD14;
 	float4 localPos : TEXCOORD15;
 	float wfOpac : TEXCOORD16;
+	float4 screenPos : TEXCOORD17;
 
 	float4 tangent : TANGENT;
 	float3 normal : NORMAL;
 
-	UNITY_SHADOW_COORDS(19)
-	UNITY_FOG_COORDS(20)
+	UNITY_SHADOW_COORDS(20)
+	UNITY_FOG_COORDS(21)
 };
 
 #include "USXFeatures.cginc"
@@ -430,15 +434,16 @@ struct v2f {
 	float3 tangentViewDir : TEXCOOR78;
 	float3 cameraPos : TEXCOORD8;
 	float3 objPos : TEXCOORD9;
-	float4 screenPos : TEXCOORD10;
+	float4 grabPos : TEXCOORD10;
 	bool isReflection : TEXCOORD11;
 	float4 localPos : TEXCOORD12;
+	float4 screenPos : TEXCOORD13;
 
 	float4 tangent : TANGENT;
 	float3 normal : NORMAL;
 
-	UNITY_SHADOW_COORDS(15)
-	UNITY_FOG_COORDS(16)
+	UNITY_SHADOW_COORDS(16)
+	UNITY_FOG_COORDS(17)
 };
 #endif
 

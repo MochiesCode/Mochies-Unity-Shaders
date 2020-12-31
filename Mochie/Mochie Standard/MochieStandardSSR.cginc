@@ -1,11 +1,15 @@
 //-----------------------------------------------------------------------------------
 // SCREEN SPACE REFLECTIONS
 // 
-// Made by error.mdl, Toocanzs, and Xiexe.
-// Edits by Mochie
+// Original made by error.mdl, Toocanzs, and Xiexe.
+// Reworked and updated by Mochie
 //-----------------------------------------------------------------------------------
 
 #if SSR_ENABLED
+
+bool IsInMirror(){
+	return unity_CameraProjection[2][0] != 0.f || unity_CameraProjection[2][1] != 0.f;
+}
 
 float3 GetBlurredGP(const sampler2D ssrg, const float2 texelSize, const float2 uvs, const float dim){
 	float2 pixSize = 2/texelSize;
@@ -23,7 +27,7 @@ float3 GetBlurredGP(const sampler2D ssrg, const float2 texelSize, const float2 u
 }
 
 float4 ReflectRay(float3 reflectedRay, float3 rayDir, float _LRad, float _SRad, float _Step, float noise, const int maxIterations){
-	
+
 	#if UNITY_SINGLE_PASS_STEREO
 		half x_min = 0.5*unity_StereoEyeIndex;
 		half x_max = 0.5 + 0.5*unity_StereoEyeIndex;
@@ -32,9 +36,8 @@ float4 ReflectRay(float3 reflectedRay, float3 rayDir, float _LRad, float _SRad, 
 		half x_max = 1.0;
 	#endif
 	
-	static const float4x4 worldToDepth = mul(UNITY_MATRIX_MV, unity_WorldToObject);
-	reflectedRay = mul(worldToDepth, float4(reflectedRay, 1));
-	rayDir = mul(worldToDepth, float4(rayDir, 0));
+	reflectedRay = mul(UNITY_MATRIX_V, float4(reflectedRay, 1));
+	rayDir = mul(UNITY_MATRIX_V, float4(rayDir, 0));
 	int totalIterations = 0;
 	int direction = 1;
 	float3 finalPos = 0;
@@ -84,19 +87,12 @@ float4 ReflectRay(float3 reflectedRay, float3 rayDir, float _LRad, float _SRad, 
 	return float4(finalPos, totalIterations);
 }
 
-float4 GetSSRColor(
-	const float3 wPos, const float3 viewDir, float3 rayDir, const half3 faceNormal, float smoothness, float3 albedo, float metallic, float2 screenUVs, float4 screenPos
-){
+float4 GetSSRColor(const float3 wPos, const float3 viewDir, float3 rayDir, const half3 faceNormal, float smoothness, float3 albedo, float metallic, float2 screenUVs, float4 screenPos){
 	
 	float FdotR = dot(faceNormal, rayDir.xyz);
 
-	// Changed dithering to skip 4x4 blocks and moved it up to avoid unnecessary noise texture samples - Mochie
-	float2 ditherUV = floor((_MSSRGrab_TexelSize.zw*screenUVs.xy) * 0.5) * 0.5;
-	float dither = frac(ditherUV.x + ditherUV.y);
-	dither *= _Dith;
-
 	UNITY_BRANCH
-	if (dither != 0) {
+	if (IsInMirror() || FdotR < 0){
 		return 0;
 	}
 	else {
@@ -106,53 +102,42 @@ float4 GetSSRColor(
 		float noise = noiseRGBA.r;
 		
 		float3 reflectedRay = wPos + (0.2*0.09/FdotR + noise*0.09)*rayDir;
-		
-		// scatter rays based on roughness. WARNING. CAN BE EXTREMELY EXPENSIVE. RANDOM AND SPREAD OUT TEXTURE SAMPLES ARE VERY INEFFCIENT
-		// YOU MAY WANT TO REMOVE THIS.
-		float scatterMult = 0.2;
-		float4 scatter = float4(0.5 - noiseRGBA.rgb,0);
-		rayDir = normalize(rayDir + scatterMult*scatter*(1-smoothness)*sqrt(FdotR));
+		float4 finalPos = ReflectRay(reflectedRay, rayDir, 0.2, 0.02, 0.09, noise, 50);
+		float totalSteps = finalPos.w;
+		finalPos.w = 1;
 
-		if (FdotR < 0){
+		UNITY_BRANCH
+		if (!any(finalPos.xyz)){
 			return 0;
 		}
-		else {
-			
-			float4 finalPos = ReflectRay(reflectedRay, rayDir, 0.2, 0.02, 0.09, noise, 50);
-			float totalSteps = finalPos.w;
-			finalPos.w = 1;
-			if (finalPos.x == 0 && finalPos.y == 0 && finalPos.z == 0){
-				return 0;
-			}
-			
-			float4 uvs = UNITY_PROJ_COORD(ComputeGrabScreenPos(mul(UNITY_MATRIX_P, finalPos)));
-			uvs.xy = uvs.xy / uvs.w;
-
-			#if UNITY_SINGLE_PASS_STEREO
-				float xfade = 1;
-			#else
-				float xfade = smoothstep(0, _EdgeFade, uvs.x)*smoothstep(1, 1-_EdgeFade, uvs.x); //Fade x uvs out towards the edges
-			#endif
-			float yfade = smoothstep(0, _EdgeFade, uvs.y)*smoothstep(1, 1-_EdgeFade, uvs.y); //Same for y
-			float lengthFade = smoothstep(1, 0, 2*(totalSteps / 50)-1);
 		
-			float fade = xfade * yfade * lengthFade;
-		
-			// Get the color of the grabpass at the ray's screen uv location, applying
-			// an (expensive) _Blur effect to partially simulate roughness
-			// Second input for GetBlurredGP is some math to make it so the max _Blurring
-			// occurs at 0.5 smoothness.
-			float blurFac = max(1,min(12, 12 * (-2)*(smoothness-1)));
-			float4 reflection = float4(GetBlurredGP(_MSSRGrab, _MSSRGrab_TexelSize.zw, uvs.xy, blurFac),1);
-			
-			// If you're alpha-blending the reflection, then multiplying the alpha by the reflection
-			// strength and fade is enough. If you're adding the reflection, then you'll need to
-			// also multiply the color by those terms.
-			reflection.rgb = lerp(reflection.rgb, reflection.rgb*albedo.rgb, metallic);
+		float4 uvs = UNITY_PROJ_COORD(ComputeGrabScreenPos(mul(UNITY_MATRIX_P, finalPos)));
+		uvs.xy = uvs.xy / uvs.w;
 
-			reflection.a = FdotR*fade*smoothness;
-			return max(0,reflection);
-		}
+		#if UNITY_SINGLE_PASS_STEREO
+			float xfade = 1;
+		#else
+			float xfade = smoothstep(0, _EdgeFade, uvs.x) * smoothstep(1, 1-_EdgeFade, uvs.x); //Fade x uvs out towards the edges
+		#endif
+		float yfade = smoothstep(0, _EdgeFade, uvs.y)*smoothstep(1, 1-_EdgeFade, uvs.y); //Same for y
+		float lengthFade = smoothstep(1, 0, 2*(totalSteps / 50)-1);
+	
+		float fade = xfade * yfade * lengthFade;
+	
+		// Get the color of the grabpass at the ray's screen uv location, applying
+		// an (expensive) _Blur effect to partially simulate roughness
+		// Second input for GetBlurredGP is some math to make it so the max _Blurring
+		// occurs at 0.5 smoothness.
+		float blurFac = max(1,min(12, 12 * (-2)*(smoothness-1)));
+		float4 reflection = float4(GetBlurredGP(_MSSRGrab, _MSSRGrab_TexelSize.zw, uvs.xy, blurFac*1.5),1);
+		
+		// If you're alpha-blending the reflection, then multiplying the alpha by the reflection
+		// strength and fade is enough. If you're adding the reflection, then you'll need to
+		// also multiply the color by those terms.
+		reflection.rgb = lerp(reflection.rgb, reflection.rgb*albedo.rgb, metallic);
+
+		reflection.a = FdotR*fade;
+		return max(0,reflection);
 	}	
 }
 

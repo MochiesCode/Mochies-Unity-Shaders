@@ -457,7 +457,7 @@ namespace Mochie {
 			float labelWidth = EditorGUIUtility.labelWidth;
 			float fieldWidth = GetPropertyWidth()/3;
 
-			EditorGUILayout.LabelField(label);
+			EditorGUILayout.LabelField("        "+ label);
 			GUILayout.Space(-18);
 			Rect r = EditorGUILayout.GetControlRect();
 			r.x += labelWidth;

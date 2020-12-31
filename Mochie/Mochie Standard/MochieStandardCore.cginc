@@ -1,3 +1,5 @@
+// Upgrade NOTE: replaced tex2D unity_Lightmap with UNITY_SAMPLE_TEX2D
+
 // Unity built-in shader source. Copyright (c) 2016 Unity Technologies. MIT license (see license.txt)
 
 #ifndef MOCHIE_STANDARD_CORE_INCLUDED
@@ -36,6 +38,38 @@ float3 NormalizePerPixelNormal (float3 n)
 
 // MOCHIE ADDITIONS
 //-------------------------------------------------------------------------------------
+inline float3 BoxProjectedCubemapDirectionOffset(float3 worldRefl, float3 worldPos, float4 cubemapCenter, float4 boxMin, float4 boxMax, float3 offset) {
+    // Do we have a valid reflection probe?
+    UNITY_BRANCH
+    if (cubemapCenter.w > 0.0)
+    {
+        float3 nrdir = normalize(worldRefl);
+
+        #if 1
+			boxMin.xyz += offset;
+			boxMax.y += offset.y;
+            float3 rbmax = (boxMax.xyz - worldPos) / nrdir;
+            float3 rbmin = (boxMin.xyz - worldPos) / nrdir;
+
+            float3 rbminmax = (nrdir > 0.0f) ? rbmax : rbmin;
+
+        #else // Optimized version
+            float3 rbmax = (boxMax.xyz - worldPos);
+            float3 rbmin = (boxMin.xyz - worldPos);
+
+            float3 select = step (float3(0,0,0), nrdir);
+            float3 rbminmax = lerp (rbmax, rbmin, select);
+            rbminmax /= nrdir;
+        #endif
+
+        float fa = min(min(rbminmax.x, rbminmax.y), rbminmax.z);
+
+        worldPos -= cubemapCenter.xyz;
+        worldRefl = worldPos + nrdir * fa;
+    }
+    return worldRefl;
+}
+
 float GSAARoughness(float3 normal, float roughness){
 	float3 normalDDX = ddx_fine(normal);
 	float3 normalDDY = ddy_fine(normal); 
@@ -65,6 +99,10 @@ half3 Mochie_GlossyEnvironment (UNITY_ARGS_TEXCUBE(tex), half4 hdr, Unity_Glossy
     return DecodeHDR(rgbm, hdr);
 }
 
+float Remap(float x, float minO, float maxO, float minN, float maxN){
+	return minN + (x - minO) * (maxN - minN) / (maxO - minO);
+}
+
 inline half3 MochieGI_IndirectSpecular(UnityGIInput data, half occlusion, Unity_GlossyEnvironmentData glossIn, float3 normal)
 {
     half3 specular;
@@ -73,7 +111,7 @@ inline half3 MochieGI_IndirectSpecular(UnityGIInput data, half occlusion, Unity_
 		glossIn.roughness = GSAARoughness(normal, glossIn.roughness);
 	#endif
     #ifdef UNITY_SPECCUBE_BOX_PROJECTION
-        glossIn.reflUVW = BoxProjectedCubemapDirection (originalReflUVW, data.worldPos, data.probePosition[0], data.boxMin[0], data.boxMax[0]);
+        glossIn.reflUVW = BoxProjectedCubemapDirection(originalReflUVW, data.worldPos, data.probePosition[0], data.boxMin[0], data.boxMax[0]);
     #endif
 
     #ifdef _GLOSSYREFLECTIONS_OFF
@@ -81,8 +119,9 @@ inline half3 MochieGI_IndirectSpecular(UnityGIInput data, half occlusion, Unity_
     #else
         half3 env0 = Mochie_GlossyEnvironment(UNITY_PASS_TEXCUBE(unity_SpecCube0), data.probeHDR[0], glossIn);
 		#if REFLECTION_FALLBACK
-			half3 env2 = Mochie_GlossyEnvironment(UNITY_PASS_TEXCUBE(_ReflCube), data.probeHDR[0], glossIn, originalReflUVW);
-			half envMask = Mochie_GlossyEnvironment(UNITY_PASS_TEXCUBE(_ReflCubeMask), data.probeHDR[0], glossIn);
+			float3 maskedUVW = BoxProjectedCubemapDirectionOffset(originalReflUVW, data.worldPos, data.probePosition[0], data.boxMin[0], data.boxMax[0], _BoxOffset);
+			half3 env2 = Mochie_GlossyEnvironment(UNITY_PASS_TEXCUBE(_ReflCube), data.probeHDR[0], glossIn, lerp(originalReflUVW, maskedUVW, _DoubleBoxMode));
+			half envMask = Mochie_GlossyEnvironment(UNITY_PASS_TEXCUBE(_ReflCubeMask), data.probeHDR[0], glossIn, maskedUVW);
 		#endif
         #ifdef UNITY_SPECCUBE_BLENDING
             const float kBlendFactor = 0.99999;
@@ -91,7 +130,7 @@ inline half3 MochieGI_IndirectSpecular(UnityGIInput data, half occlusion, Unity_
             if (blendLerp < kBlendFactor)
             {
                 #ifdef UNITY_SPECCUBE_BOX_PROJECTION
-                    glossIn.reflUVW = BoxProjectedCubemapDirection (originalReflUVW, data.worldPos, data.probePosition[1], data.boxMin[1], data.boxMax[1]);
+                    glossIn.reflUVW = BoxProjectedCubemapDirection(originalReflUVW, data.worldPos, data.probePosition[1], data.boxMin[1], data.boxMax[1]);
                 #endif
 
                 half3 env1 = Mochie_GlossyEnvironment(UNITY_PASS_TEXCUBE_SAMPLER(unity_SpecCube1,unity_SpecCube0), data.probeHDR[1], glossIn);
@@ -102,14 +141,14 @@ inline half3 MochieGI_IndirectSpecular(UnityGIInput data, half occlusion, Unity_
                 specular = env0;
             }
 			#if REFLECTION_FALLBACK
-				specular = lerp(env2, specular, envMask);
+				specular = _DoubleBoxMode ? lerp(specular, env2, smoothstep(0, 0.9, envMask)) : lerp(env2, specular, envMask);
 			#endif
         #else
             specular = env0;
         #endif
     #endif
-
-    return specular * occlusion;
+	
+    return specular * occlusion * _ReflectionStrength;
 }
 
 inline UnityGI MochieGlobalIllumination (UnityGIInput data, half occlusion, half3 normalWorld, Unity_GlossyEnvironmentData glossIn)
@@ -548,7 +587,7 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i)
 		#endif
 		screenPos = i.screenPos;
 	#endif
-    half4 c = BRDF1_Mochie_PBS (s.diffColor, s.specColor, s.oneMinusReflectivity, 
+    half4 c = MOCHIE_BRDF (s.diffColor, s.specColor, s.oneMinusReflectivity, 
 								s.smoothness, s.normalWorld, -s.eyeVec, s.posWorld, screenUVs, screenPos,
 								s.metallic, gi.light, gi.indirect);
     c.rgb += Emission(i.tex.xy);
@@ -641,8 +680,10 @@ half4 fragForwardAddInternal (VertexOutputForwardAdd i)
     UnityLight light = AdditiveLight (IN_LIGHTDIR_FWDADD(i), atten);
     UnityIndirect noIndirect = ZeroIndirect ();
 
-    half4 c = UNITY_BRDF_PBS (s.diffColor, s.specColor, s.oneMinusReflectivity, s.smoothness, s.normalWorld, -s.eyeVec, light, noIndirect);
-
+	half4 c = MOCHIE_BRDF (s.diffColor, s.specColor, s.oneMinusReflectivity, 
+								s.smoothness, s.normalWorld, -s.eyeVec, s.posWorld, 0, 0,
+								s.metallic, light, noIndirect);
+								
     UNITY_EXTRACT_FOG_FROM_EYE_VEC(i);
     UNITY_APPLY_FOG_COLOR(_unity_fogCoord, c.rgb, half4(0,0,0,0)); // fog towards black in additive pass
     return OutputForward (c, s.alpha);

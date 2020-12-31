@@ -18,6 +18,12 @@ float GetRoughness(float smoothness){
     return rough;
 }
 
+bool SceneHasReflections(){
+	float width, height;
+	unity_SpecCube0.GetDimensions(width, height);
+	return !(width * height < 2);
+}
+
 float3 BoxProjection(float3 dir, float3 pos, float4 cubePos, float3 boxMin, float3 boxMax){
     #if UNITY_SPECCUBE_BOX_PROJECTION
         UNITY_BRANCH
@@ -29,23 +35,6 @@ float3 BoxProjection(float3 dir, float3 pos, float4 cubePos, float3 boxMin, floa
     #endif
     return dir;
 }
-
-// Not sure how to incorporate this yet - https://www.youtube.com/watch?v=xWCZiksqCGA&feature=emb_title
-// float3 GetIBL(float3 normal, float3 worldPos, float roughness){
-//     float3 baseReflDir = normal;
-//     normal = BoxProjection(normal, worldPos, unity_SpecCube0_ProbePosition, unity_SpecCube0_BoxMin, unity_SpecCube0_BoxMax);
-//     float4 envSample0 = UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, normal, roughness * UNITY_SPECCUBE_LOD_STEPS);
-//     float3 p0 = DecodeHDR(envSample0, unity_SpecCube0_HDR);
-//     float interpolator = unity_SpecCube0_BoxMin.w;
-//     UNITY_BRANCH
-//     if (interpolator < 0.99999){
-//         float3 refDirBlend = BoxProjection(baseReflDir, worldPos, unity_SpecCube1_ProbePosition, unity_SpecCube1_BoxMin, unity_SpecCube1_BoxMax);
-//         float4 envSample1 = UNITY_SAMPLE_TEXCUBE_SAMPLER_LOD(unity_SpecCube1, unity_SpecCube0, refDirBlend, roughness * UNITY_SPECCUBE_LOD_STEPS);
-//         float3 p1 = DecodeHDR(envSample1, unity_SpecCube1_HDR);
-//         p0 = lerp(p1, p0, interpolator);
-//     }
-//     return p0;
-// }
 
 float3 GetWorldReflections(float3 reflDir, float3 worldPos, float roughness){
     float3 baseReflDir = reflDir;
@@ -66,9 +55,23 @@ float3 GetWorldReflections(float3 reflDir, float3 worldPos, float roughness){
 float3 GetReflections(g2f i, lighting l, float roughness){
     float3 reflections = 0;
 	#if !CUBEMAP_REFLECTIONS
-		reflections = GetWorldReflections(l.reflectionDir, i.worldPos.xyz, roughness);
+		#if REFLCUBE_EXISTS
+			UNITY_BRANCH
+			if (SceneHasReflections()){
+				reflections = GetWorldReflections(l.reflectionDir, i.worldPos.xyz, roughness);
+			}
+			else {
+				reflections = texCUBElod(_ReflCube, float4(l.reflectionDir, roughness * UNITY_SPECCUBE_LOD_STEPS))*l.worldBrightness;
+				reflections = DecodeHDR(float4(reflections,1), _ReflCube_HDR);
+			}
+		#else
+			reflections = GetWorldReflections(l.reflectionDir, i.worldPos.xyz, roughness);
+		#endif
 	#else
-		reflections = texCUBElod(_ReflCube, float4(l.reflectionDir, roughness * UNITY_SPECCUBE_LOD_STEPS))*l.worldBrightness;
+		#if REFLCUBE_EXISTS
+			reflections = texCUBElod(_ReflCube, float4(l.reflectionDir, roughness * UNITY_SPECCUBE_LOD_STEPS))*l.worldBrightness;
+			reflections = DecodeHDR(float4(reflections,1), _ReflCube_HDR);
+		#endif
 	#endif
 	reflections *= l.ao;
 	if (_ReflStepping == 1){
@@ -149,6 +152,10 @@ float3 GetForwardRamp(g2f i, lighting l, masks m, float3 albedo, float3 atten){
 		ramp = lerp3(ramp, lerp(1, ramp, l.lightEnv), lerp(ramp,1,l.lightEnv), _ShadowConditions);
 	}
 	else if (_ShadowMode == 2){
+		if (!l.lightEnv || _RTSelfShadow == 1){
+			atten = lerp(atten, smootherstep(0,1,atten), _AttenSmoothing);
+			l.NdotL *= atten;
+		}
 		float rampUV = l.NdotL * 0.5 + 0.5;
 		ramp = tex2D(_ShadowRamp, rampUV.xx).rgb;
 		float3 interpolator = _ShadowStr*m.shadowMask;
@@ -313,16 +320,22 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
 	// Specular
 	#if !OUTLINE_PASS
 		#if SPECULAR_ENABLED
-			float3 fresnelTerm = 1;
-			float3 specularTerm = 1;
-			float3 specBiasCol = lerp(specCol, albedo, _SpecBiasOverride*_SpecBiasOverrideToggle);
-			GetSpecFresTerm(i, l, m, specularTerm, fresnelTerm, specBiasCol, lerp(brdfRoughness, _SpecRough, _SpecUseRough));
-			specular = lerp(lighting, 1, _ManualSpecBright) * specularTerm * fresnelTerm * m.specularMask * _SpecCol * l.ao;
-			if (_SharpSpecular == 1){
-				roughness = saturate(roughness*2);
-				float sharpTerm = round(_SharpSpecStr*Average(specular))/_SharpSpecStr;
-				specular = lerp(specular*sharpTerm, specular, roughness);
+			#if !ADDITIVE_PASS
+			if (!(!l.lightEnv && _RealtimeSpec == 1)){
+			#endif
+				float3 fresnelTerm = 1;
+				float3 specularTerm = 1;
+				float3 specBiasCol = lerp(specCol, albedo, _SpecBiasOverride*_SpecBiasOverrideToggle);
+				GetSpecFresTerm(i, l, m, specularTerm, fresnelTerm, specBiasCol, lerp(brdfRoughness, _SpecRough, _SpecUseRough));
+				specular = lerp(lighting, 1, _ManualSpecBright) * specularTerm * fresnelTerm * m.specularMask * _SpecCol * l.ao;
+				if (_SharpSpecular == 1){
+					roughness = saturate(roughness*2);
+					float sharpTerm = round(_SharpSpecStr*Average(specular))/_SharpSpecStr;
+					specular = lerp(specular*sharpTerm, specular, roughness);
+				}
+			#if !ADDITIVE_PASS
 			}
+			#endif
 		#endif
 
 		// Reflections
@@ -332,7 +345,7 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
 			float grazingTerm = saturate(smoothness + (1-omr));
 			reflections = surfaceReduction * reflCol * FresnelLerp(specCol, grazingTerm, l.NdotV);
 			#if SSR_ENABLED
-				float4 SSRColor = GetSSRColor(i.worldPos, l.viewDir, l.reflectionDir, normalize(i.normal), smoothness, albedo, metallic, m.reflectionMask, l.screenUVs, i.screenPos);
+				float4 SSRColor = GetSSRColor(i.worldPos, l.viewDir, l.reflectionDir, normalize(i.normal), smoothness, albedo, metallic, m.reflectionMask, l.screenUVs, i.grabPos);
 				reflections = lerp(reflections, SSRColor.rgb, SSRColor.a);
 			#endif
 			reflections *= m.reflectionMask * _ReflectionStr;

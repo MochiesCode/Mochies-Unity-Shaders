@@ -98,7 +98,7 @@ internal class USEditor : ShaderGUI {
 	string watermark = "Watermark_Pro";
 	string patIcon = "Patreon_Icon";
 	string keyTex = "KeyIcon_Pro";
-	string versionLabel = "v1.12";
+	string versionLabel = "v1.13";
 
 	GUIContent maskLabel = new GUIContent("Mask");
     GUIContent albedoLabel = new GUIContent("Base Color");
@@ -161,6 +161,7 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _MirrorBehavior = null;
     MaterialProperty _FilterMask = null;
     MaterialProperty _Saturation = null; 
+	MaterialProperty _RealtimeSpec = null;
     MaterialProperty _Contrast = null; 
     MaterialProperty _RGB = null;
     MaterialProperty _Hue = null;
@@ -296,7 +297,6 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _TranslucencyMap = null;
 	MaterialProperty _SubsurfaceTex = null;
 	MaterialProperty _SAtten = null;
-	MaterialProperty _Dith = null;
 	MaterialProperty _Alpha = null;
 	MaterialProperty _MaxSteps = null;
 	MaterialProperty _Step = null;
@@ -618,8 +618,9 @@ internal class USEditor : ShaderGUI {
 		// Add mat to foldout dictionary if it isn't in there yet
 		if (!foldouts.ContainsKey(mat))
 			foldouts.Add(mat, toggles);
-		
-		ApplyMaterialSettings(mat);
+			
+		foreach (var obj in _BlendMode.targets)
+			ApplyMaterialSettings((Material)obj);
 		
         Texture2D headerTex = (Texture2D)Resources.Load(header, typeof(Texture2D));
 		Texture2D watermarkTex = (Texture2D)Resources.Load(watermark, typeof(Texture2D));
@@ -1040,28 +1041,6 @@ internal class USEditor : ShaderGUI {
 				}
 				else MGUI.SpaceN2();
 				MGUI.ToggleGroupEnd();
-
-				// // Curvature Filtering
-				// if (workflow < 3)
-				// 	MGUI.ToggleGroup(!_Curvature.textureValue);
-				// else
-				// 	MGUI.ToggleGroup(!_PackedMap.textureValue);
-				// bool curveFilterTab = Foldouts.DoMediumFoldout(foldouts, mat, me, _CurvatureFiltering, 1, "Curvature Filter");
-				// if (MGUI.MedTabButton(resetIcon, 23f))
-				// 	DoCurveFilterReset();
-				// GUILayout.Space(5);
-				// if (curveFilterTab){
-				// 	MGUI.PropertyGroup(() => {
-				// 		MGUI.ToggleGroup(_CurvatureFiltering.floatValue == 0);
-				// 		me.ShaderProperty(_PreviewCurvature, "Preview");
-				// 		me.ShaderProperty(_CurvatureLightness, "Lightness");
-				// 		me.ShaderProperty(_CurvatureIntensity, "Intensity");
-				// 		me.ShaderProperty(_CurvatureContrast, "Contrast");
-				// 		MGUI.ToggleGroupEnd();
-				// 	});
-				// }
-				// else MGUI.SpaceN2();
-				// MGUI.ToggleGroupEnd();
 				MGUI.Space8();
 			}
 
@@ -1219,8 +1198,11 @@ internal class USEditor : ShaderGUI {
 					if (_Reflections.floatValue > 0){
 						MGUI.Space2();
 						MGUI.PropertyGroup(() => {
-							if (_Reflections.floatValue == 2)
-								me.TexturePropertySingleLine(reflCubeLabel, _ReflCube);
+							if (_Reflections.floatValue == 1)
+								reflCubeLabel.text = "Fallback Cubemap";
+							else
+								reflCubeLabel.text = "Cubemap";
+							me.TexturePropertySingleLine(reflCubeLabel, _ReflCube);
 							me.ShaderProperty(_ReflCol, "Tint");
 							me.ShaderProperty(_ReflectionStr, "Strength");
 							MGUI.ToggleSlider(me, "Manual Roughness", _ReflUseRough, _ReflRough);
@@ -1232,7 +1214,6 @@ internal class USEditor : ShaderGUI {
 									if (queueError)
 										MGUI.DisplayError("SSR requires a render queue of 2501 or above to function correctly.");
 									MGUI.DisplayInfo("\nSSR in VRChat requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs\nAnd can only be used on 1 material per scene/avatar.\n\nIt is also is VERY expensive, please use it sparingly!\n");
-									me.ShaderProperty(_Dith, "Dithering");
 									me.ShaderProperty(_Alpha, "Strength");
 									me.ShaderProperty(_MaxSteps, "Max Steps");
 									me.ShaderProperty(_Step, "Step Size");
@@ -1258,6 +1239,11 @@ internal class USEditor : ShaderGUI {
 					me.ShaderProperty(_Specular, "Mode");
 					if (_Specular.floatValue > 0){
 						MGUI.Space2();
+						if (_Specular.floatValue == 3){
+							MGUI.Space6();
+							GUILayout.Label("Note: Use Specular Blend mask in the masks tab to interpolate between GGX and Anisotropic");
+							MGUI.Space6();
+						}
 						MGUI.PropertyGroup(() => {
 							me.ShaderProperty(_SpecCol, "Tint");
 							if (_Specular.floatValue == 1){
@@ -1265,6 +1251,7 @@ internal class USEditor : ShaderGUI {
 								MGUI.ToggleSlider(me, "Manual Roughness", _SpecUseRough, _SpecRough);
 								MGUI.ToggleSlider(me, "Manual Bias", _SpecBiasOverrideToggle, _SpecBiasOverride);
 								MGUI.ToggleIntSlider(me, "Stepping", _SharpSpecular, _SharpSpecStr);
+								me.ShaderProperty(_RealtimeSpec, "Realtime Lighting Only");
 							}
 							else if (_Specular.floatValue == 2){
 								me.ShaderProperty(_AnisoStr, "Strength");
@@ -1273,17 +1260,16 @@ internal class USEditor : ShaderGUI {
 							else {
 								me.ShaderProperty(_SpecStr, "GGX Strength");
 								me.ShaderProperty(_AnisoStr, "Aniso Strength");
+								me.ShaderProperty(_RealtimeSpec, "GGX Realtime Lighting Only");
 								me.ShaderProperty(_ManualSpecBright, "Ignore Environment");
-								MGUI.Space6();
 								me.ShaderProperty(_SharpSpecular, "Stepping");
-								MGUI.ToggleGroup(_SharpSpecular.floatValue == 0);
-								me.ShaderProperty(_SharpSpecStr, "GGX Steps");
-								me.ShaderProperty(_AnisoSteps, "Aniso Steps");
+								if (_SharpSpecular.floatValue == 1){
+									me.ShaderProperty(_SharpSpecStr, "GGX Steps");
+									me.ShaderProperty(_AnisoSteps, "Aniso Steps");
+								}
 								MGUI.ToggleGroupEnd();
 							}
 							if (_Specular.floatValue != 3){
-								MGUI.ToggleGroup(_SharpSpecular.floatValue == 0);
-								MGUI.ToggleGroupEnd();
 								me.ShaderProperty(_ManualSpecBright, "Ignore Environment");
 							}
 							if (_Specular.floatValue == 2 || _Specular.floatValue == 3){
@@ -2176,13 +2162,12 @@ internal class USEditor : ShaderGUI {
 		int caToggle = mat.GetInt("_RefractionCA");
 		int vManipToggle = mat.GetInt("_VertexManipulationToggle");
 		int maskTransToggle = mat.GetInt("_EnableMaskTransform");
+		bool reflFallback = mat.GetTexture("_ReflCube");
 		bool isUberX = MGUI.IsXVersion(mat);
 		bool isOutline = MGUI.IsOutline(mat);
 		bool usingNormal = mat.GetTexture("_BumpMap");
 		bool usingParallax = workflow < 3 ? mat.GetTexture("_ParallaxMap") : (mat.GetTexture("_PackedMap") && mat.GetInt("_EnablePackedHeight") == 1);
 		bool usingDetail = mat.GetTexture("_DetailNormalMap");
-		
-		// bool usingCurve = mat.GetTexture("_Curvature");
 
 		// Setting floats based on render mode/texture presence/etc
 		mat.SetInt("_IsCubeBlendMask", mat.GetTexture("_CubeBlendMask") ? 1 : 0);
@@ -2233,9 +2218,6 @@ internal class USEditor : ShaderGUI {
 		else
 			mat.SetInt("_PackedRoughPreview", 0);
 
-		// if (!mat.GetTexture("_Curvature"))
-		// 	mat.SetInt("_CurvatureFiltering", 0);
-
 		if (workflow >= 3){
 			if (!mat.GetTexture("_PackedMap")){
 				mat.SetInt("_AOFiltering", 0);
@@ -2252,7 +2234,6 @@ internal class USEditor : ShaderGUI {
 		bool prevSmooth = mat.GetInt("_SmoothnessFiltering") == 1 && mat.GetInt("_PreviewSmooth") == 1;
 		prevSmooth = prevSmooth && (workflow == 1 || workflow == 2);
 		bool prevHeight = mat.GetInt("_HeightFiltering") == 1 && mat.GetInt("_PreviewHeight") == 1;
-		// bool prevCurv = mat.GetInt("_CurvatureFiltering") == 1 && mat.GetInt("_PreviewCurvature") == 1;
 
 		// Begone grabpass
 		mat.SetShaderPassEnabled("Always", ((ssr == 1 && reflToggle == 1) || refracToggle == 1) && renderMode == 1);
@@ -2294,7 +2275,7 @@ internal class USEditor : ShaderGUI {
 		SetKeyword(mat, "CHROMATIC_ABBERATION", refracToggle == 1 && caToggle == 1 && renderMode == 1);
 		SetKeyword(mat, "GEOM_TYPE_MESH", vManipToggle == 1);
 		SetKeyword(mat, "GEOM_TYPE_BRANCH", maskingMode == 1 && maskTransToggle == 1);
-		// SetKeyword(mat, "BLOOM_LOW", usingCurve && renderMode == 1);
+		SetKeyword(mat, "VIGNETTE_MASKED", reflFallback && reflToggle > 0 && renderMode > 0);
 	}
 
 	void SetBlendMode(Material mat){
@@ -2888,7 +2869,7 @@ internal class USEditor : ShaderGUI {
 		_RefractionTint.colorValue = Color.white;
 		_RefractionDissolveMask.textureValue = null;
 		_RefractionDissolveMaskScroll.vectorValue = Vector4.zero;
-		_RefractionDissolveMaskStr.floatValue = 0.5f;
+		_RefractionDissolveMaskStr.floatValue = 1f;
 	}
 
 	void DoNormalReset(){
