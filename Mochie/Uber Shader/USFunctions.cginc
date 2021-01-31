@@ -60,7 +60,7 @@ bool FrameClip(float2 uv, float2 rowsColumns, float2 fco){
 	return !(xClip || yClip);
 }
 
-float2 GetSpritesheetUV(float2 uv, float2 rowsColumns, float scrubPos, float fps, int manualScrub){
+float3 GetSpritesheetUV(float2 uv, float2 rowsColumns, float scrubPos, float fps, int manualScrub){
 	float2 size = float2(1/rowsColumns.x, 1/rowsColumns.y);
 	uint totalFrames = rowsColumns.x * rowsColumns.y;
 	uint index = 0;
@@ -73,17 +73,37 @@ float2 GetSpritesheetUV(float2 uv, float2 rowsColumns, float scrubPos, float fps
 	float2 uv1 = uv*size;
 	uv1.y = uv1.y + size.y*(rowsColumns.y - 1);
 	uv = uv1 + offset;
-	return uv;
+	return float3(uv,0);
+}
+
+float3 GetFlipbookUV(Texture2DArray tex2da, float2 uv, float scrubPos, float fps, int manualScrub){
+	float width, height, elements;
+	tex2da.GetDimensions(width, height, elements);
+	uint arrayIndex = frac(_Time.y*fps*(1/elements))*elements;
+	uint index = lerp(arrayIndex, scrubPos, manualScrub);
+	return float3(uv, index);
 }
 
 float4 GetSpritesheetColor(g2f i, 
-		sampler2D tex, float4 spriteColor,
+		sampler2D tex, UNITY_ARGS_TEX2DARRAY(tex2da), float4 spriteColor,
 		float2 pos, float2 scale, float2 rowsColumns, float2 fco, 
-		float rot, float scrubPos, float fps, float brightness, int manualScrub
+		float rot, float scrubPos, float fps, float brightness, int manualScrub, int mode
 	) {
 	float2 scaledUV = ScaleUV(i.rawUV, pos, scale, rot);
-	float2 uv = GetSpritesheetUV(scaledUV, rowsColumns, scrubPos, fps, manualScrub);
-	return tex2D(tex, uv) * spriteColor * brightness * FrameClip(scaledUV, rowsColumns, fco);
+	float3 uv = lerp(
+		GetFlipbookUV(tex2da, scaledUV, scrubPos, fps, manualScrub), 
+		GetSpritesheetUV(scaledUV, rowsColumns, scrubPos, fps, manualScrub), 
+		mode
+	);
+	float4 col = 0;
+	UNITY_BRANCH
+	if (mode == 1){
+		col = tex2D(tex, uv.xy) * spriteColor * brightness * FrameClip(scaledUV, rowsColumns, fco);
+	}
+	else {
+		col = UNITY_SAMPLE_TEX2DARRAY(tex2da, uv) * spriteColor * brightness;
+	}
+	return col;
 }
 
 void ApplySpritesheetBlending(g2f i, inout float4 col, float4 gifCol, int blendMode){
@@ -108,6 +128,7 @@ void ApplySpritesheetBlending(g2f i, inout float4 col, float4 gifCol, int blendM
 void ApplySpritesheet0(g2f i, inout float4 col){
 	float4 spriteCol = GetSpritesheetColor(i, 
 		_Spritesheet,
+		UNITY_PASS_TEX2DARRAY(_Flipbook0),
 		_SpritesheetCol,
 		_SpritesheetPos,
 		_SpritesheetScale,
@@ -117,7 +138,8 @@ void ApplySpritesheet0(g2f i, inout float4 col){
 		_ScrubPos,
 		_FPS,
 		_SpritesheetBrightness,
-		_ManualScrub
+		_ManualScrub,
+		_SpritesheetMode0
 	);
 	ApplySpritesheetBlending(i, col, spriteCol, _SpritesheetBlending);
 }
@@ -125,6 +147,7 @@ void ApplySpritesheet0(g2f i, inout float4 col){
 void ApplySpritesheet1(g2f i, inout float4 col){
 	float4 spriteCol = GetSpritesheetColor(i, 
 		_Spritesheet1,
+		UNITY_PASS_TEX2DARRAY(_Flipbook1),
 		_SpritesheetCol1,
 		_SpritesheetPos1,
 		_SpritesheetScale1,
@@ -134,7 +157,8 @@ void ApplySpritesheet1(g2f i, inout float4 col){
 		_ScrubPos1,
 		_FPS1,
 		_SpritesheetBrightness1,
-		_ManualScrub1
+		_ManualScrub1,
+		_SpritesheetMode1
 	);
 	ApplySpritesheetBlending(i, col, spriteCol, _SpritesheetBlending1);
 }
@@ -157,8 +181,23 @@ void ApplyRefraction(g2f i, lighting l, masks m, inout float3 albedo){
 	#else
 		float3 refractionCol = tex2Dlod(_SSRGrab, float4(refractUV,0,0));
 	#endif
-	refractionCol = lerp(albedo, refractionCol * _RefractionTint, step(m.refractDissolveMask, _RefractionDissolveMaskStr));
+	refractionCol = lerp(albedo, refractionCol * _RefractionTint, step(m.refractDissolveMask, _RefractionDissolveMaskStr) * m.refractMask);
 	albedo = lerp(refractionCol, albedo, _RefractionOpac);
+}
+
+float3 GetDetailAlbedo(g2f i, float3 alIn){
+	float3 detailAlbedo = UNITY_SAMPLE_TEX2D_SAMPLER(_DetailAlbedoMap, _MainTex, i.uv2.xy);
+	float3 alOut = 0;
+	switch (_DetailAlbedoBlending){
+		case 0: alOut = lerp(alIn, detailAlbedo, 0.5); break;
+		case 1: alOut = alIn + detailAlbedo; break;
+		case 2: alOut = alIn - detailAlbedo; break;
+		case 3: alOut = alIn * detailAlbedo; break;
+		case 4: alOut = alIn * detailAlbedo * unity_ColorSpaceDouble; break;
+		case 5: alOut = BlendOverlay(detailAlbedo, alIn); break;
+		case 6: alOut = BlendScreen(detailAlbedo, alIn); break;		
+	}
+	return alOut;
 }
 
 float4 GetAlbedo(g2f i, lighting l, masks m){
@@ -203,8 +242,7 @@ float4 GetAlbedo(g2f i, lighting l, masks m){
 	#endif
 
 	#if SHADING_ENABLED
-		float3 detailAlbedo = UNITY_SAMPLE_TEX2D_SAMPLER(_DetailAlbedoMap, _MainTex, i.uv2.xy).rgb * unity_ColorSpaceDouble;
-		albedo.rgb = lerp(albedo.rgb, albedo.rgb*detailAlbedo, m.detailMask);
+		albedo.rgb = lerp(albedo.rgb, GetDetailAlbedo(i, albedo.rgb), _DetailAlbedoStrength * m.detailMask * _UsingDetailAlbedo);
 	#endif
 
 	#if NON_OPAQUE_RENDERING
@@ -299,7 +337,7 @@ float3 GetMetallicWorkflow(g2f i, lighting l, masks m, float3 albedo){
 
 	metallic = lerp(_Metallic, UNITY_SAMPLE_TEX2D_SAMPLER(_MetallicGlossMap, _MainTex, i.uv.xy), _UseMetallicMap);
 	roughness = lerp(_Glossiness, UNITY_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, _MainTex, i.uv.xy), _UseSpecMap);
-	roughness = lerp(roughness, GetDetailRough(i, roughness), _DetailRoughStrength * m.detailMask);
+	roughness = lerp(roughness, GetDetailRough(i, roughness), _DetailRoughStrength * m.detailMask * _UsingDetailRough);
 	#if CURVATURE_ENABLED
 		roughness = _CurvatureTarget == 2 && _UseCurvature == 1 ? BlendCurvature(curvature, roughness) : roughness;
 	#endif
@@ -405,10 +443,6 @@ void ApplyHeightPreview(inout float3 diffuse){
 	#if PARALLAX_ENABLED
 		diffuse = lerp(diffuse, prevHeight, _HeightFiltering * _PreviewHeight);
 	#endif
-}
-
-void ApplyCurvePreview(inout float3 diffuse){
-	diffuse = lerp(diffuse, prevCurve, _CurvatureFiltering * _PreviewCurvature);
 }
 
 //----------------------------
@@ -691,7 +725,11 @@ masks GetMasks(g2f i){
 			m.diffuseMask = UNITY_SAMPLE_TEX2D_SAMPLER(_DiffuseMask, _MainTex, diffuseUV);
 		#endif
 		#if FILTERING_ENABLED
-			m.filterMask = UNITY_SAMPLE_TEX2D_SAMPLER(_FilterMask, _MainTex, filterUV);
+			#if OUTLINE_PASS
+				m.filterMask = lerp(UNITY_SAMPLE_TEX2D_SAMPLER(_FilterMask, _MainTex, filterUV), 1, _IgnoreFilterMask);
+			#else
+				m.filterMask = UNITY_SAMPLE_TEX2D_SAMPLER(_FilterMask, _MainTex, filterUV);
+			#endif
 			m.teamMask = UNITY_SAMPLE_TEX2D_SAMPLER(_TeamColorMask, _MainTex, teamUV);
 		#endif
 		#if EMISSION_ENABLED
@@ -723,7 +761,11 @@ masks GetMasks(g2f i){
 		float4 mask3 = tex2D(_PackedMask3, i.uv.xy);
 		m.emissMask = mask3.r;
 		m.emissPulseMask = mask3.g;
-		m.filterMask = mask3.b;
+		#if OUTLINE_PASS
+			m.filterMask = lerp(mask3.b, 1, _IgnoreFilterMask);
+		#else
+			m.filterMask = mask3.b;
+		#endif
 		#if FILTERING_ENABLED
 			m.teamMask = UNITY_SAMPLE_TEX2D_SAMPLER(_TeamColorMask, _MainTex, i.uv.xy);
 		#endif

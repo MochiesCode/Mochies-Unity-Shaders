@@ -65,6 +65,7 @@ Material:
     - _DBOpacity: 1
     - _DeepFry: 0
     - _DepthBufferToggle: 0
+    - _DisplayGlobalGizmo: 0
     - _DistortionFade: 1
     - _DistortionMaxRange: 15
     - _DistortionMinRange: 8
@@ -114,7 +115,7 @@ Material:
     - _NoiseMinRange: 8
     - _NoiseMode: 0
     - _NoiseStrength: 1
-    - _NoiseUseGlobal: 0
+    - _NoiseUseGlobal: 1
     - _NormalMapFilter: 0.75
     - _OLMaxRange: 15
     - _OLMinRange: 8

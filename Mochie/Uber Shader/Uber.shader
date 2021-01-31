@@ -50,9 +50,6 @@ Shader "Mochie/Uber/Uber" {
 		_BumpScale("ra", Range(-2,2)) = 1
 		_ParallaxMap("tex", 2D) = "white" {}
 		_Parallax("ra", Range(0,0.1)) = 0.01
-		// _Curvature("tex", 2D) = "white" {}
-		// [Enum(Lerp,0, Add,1, Sub,2, Mult,3, Overlay,4, Screen,5)]_CurvatureBlending("en6", Int) = 0
-		// [Enum(None,0, Base Color,1, Roughness,2)]_CurvatureTarget("en3", Int) = 0
 		_DetailMask("tex", 2D) = "white" {}
 		_PackedMap("tex", 2D) = "white" {} // Packed workflow
 		[Enum(Red,0, Green,1, Blue,2, Alpha,3)]_MetallicChannel("en4", Int) = 0 
@@ -63,9 +60,17 @@ Shader "Mochie/Uber/Uber" {
 
 		// DETAIL MAPS
 		_DetailAlbedoMap("tex", 2D) = "gray" {}
+		_DetailAlbedoStrength("ra", Range(0,1)) = 1
+		[Enum(Lerp,0, Add,1, Sub,2, Mul,3, Mulx2,4, Overlay,5, Screen,6)]_DetailAlbedoBlending("en6", Int) = 4
+		_UsingDetailAlbedo("tog", Int) = 0
 		_DetailRoughnessMap("tex", 2D) = "white" {}
-		_DetailRoughStrength("ra", Range(0,1)) = 0
-		[Enum(Lerp,0, Add,1, Sub,2, Mult,3, Overlay,4, Screen,5)]_DetailRoughBlending("en6", Int) = 0
+		_DetailRoughStrength("ra", Range(0,1)) = 1
+		[Enum(Lerp,0, Add,1, Sub,2, Mul,3, Overlay,4, Screen,5)]_DetailRoughBlending("en6", Int) = 0
+		_UsingDetailRough("tog", Int) = 0
+		_DetailOcclusionMap("tex", 2D) = "white" {}
+		_DetailOcclusionStrength("ra", Range(0,1)) = 1
+		[Enum(Lerp,0, Add,1, Sub,2, Mul,3, Overlay,4, Screen,5)]_DetailOcclusionBlending("en6", Int) = 3
+		_UsingDetailOcclusion("tog", Int) = 0
 		_DetailNormalMap("tex", 2D) = "bump" {}
 		_DetailNormalMapScale("ra", Range(-2,2)) = 1
 		_DetailScroll("vec", Vector) = (0,0,0,0)
@@ -236,6 +241,7 @@ Shader "Mochie/Uber/Uber" {
 		[ToggleUI]_ShadowDithering("tog", Int) = 0
 		[ToggleUI]_RTSelfShadow("tog", Int) = 1
 		[ToggleUI]_AttenSmoothing("tog", Int) = 1
+		[ToggleUI]_DitheredShadows("tog", Int) = 0
 		
 		// SUBSURFACE SCATTERING
 		[ToggleUI]_Subsurface("tog", Int) = 0
@@ -337,12 +343,14 @@ Shader "Mochie/Uber/Uber" {
 
 		
 		//----------------------------
-		// SPRITE SHEETS
+		// FLIPBOOK
 		//----------------------------
 		// SHEET 1
 		[ToggleUI]_EnableSpritesheet("tog", Int) = 0
+		[Enum(Flipbook,0, Sprite Sheet,1)]_SpritesheetMode0("en2", Int) = 0
 		[ToggleUI]_UnlitSpritesheet("tog", Int) = 0
 		_Spritesheet("tex", 2D) = "white" {}
+		_Flipbook0("tex", 2DArray) = "white" {}
 		_SpritesheetCol("col", Color) = (1,1,1,1)
 		_SpritesheetBrightness("fl", Float) = 1
 		[Enum(Add,0, Mult,1, Alpha,2)]_SpritesheetBlending("en3", Int) = 2
@@ -358,8 +366,10 @@ Shader "Mochie/Uber/Uber" {
 
 		// SHEET 2
 		[ToggleUI]_EnableSpritesheet1("tog", Int) = 0
+		[Enum(Flipbook,0, Sprite Sheet,1)]_SpritesheetMode1("en2", Int) = 0
 		[ToggleUI]_UnlitSpritesheet1("tog", Int) = 0
 		_Spritesheet1("tex", 2D) = "white" {}
+		_Flipbook1("tex", 2DArray) = "white" {}
 		_SpritesheetCol1("col", Color) = (1,1,1,1)
 		_SpritesheetBrightness1("fl", Float) = 1
 		[Enum(Add,0, Mult,1, Alpha,2)]_SpritesheetBlending1("en3", Int) = 2
@@ -381,6 +391,7 @@ Shader "Mochie/Uber/Uber" {
 		[ToggleUI]_ApplyOutlineEmiss("tog", Int) = 0
 		[ToggleUI]_ApplyAlbedoTint("tog", Int) = 0
 		[ToggleUI]_UseVertexColor("tog", Int) = 0
+		[ToggleUI]_IgnoreFilterMask("tog", Int) = 0
 		_OutlineTex("tex", 2D) = "white" {}
 		[HDR]_OutlineCol("col", Color) = (0.75,0.75,0.75,1)
 		_OutlineScroll("vec", Vector) = (0,0,0,0)

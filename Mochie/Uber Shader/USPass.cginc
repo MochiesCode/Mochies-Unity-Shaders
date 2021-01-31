@@ -98,9 +98,8 @@ float4 frag (g2f i) : SV_Target {
 	#endif
 
 	float4 diffuse = albedo;
-
+	
 	#if SHADING_ENABLED
-
 		attenCol = GetRamp(i, l, m, albedo.rgb, attenCol);
 		diffuse.rgb = GetWorkflow(i, l, m, albedo.rgb);
 		roughness = GetRoughness(smoothness);
@@ -265,7 +264,7 @@ float4 frag(g2f i, uint facing : SV_IsFrontFace) : SV_Target {
 			discard;
 	#endif
 
-	#if SPRITESHEETS_ENABLED
+	#if (SPRITESHEETS_ENABLED) && (NON_OPAQUE_RENDERING)
 		if (_UseSpritesheetAlpha == 1)
 			discard;
 	#endif

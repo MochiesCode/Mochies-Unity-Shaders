@@ -25,7 +25,21 @@ void ApplyLREmission(lighting l, inout float3 diffuse, float3 emiss){
 	diffuse = lerp(diffuse+emiss, diffuse, interpolator);
 }
 
-float3 GetAO(g2f i){
+float3 GetDetailAO(g2f i, float3 aoIn){
+	float3 detailAO = UNITY_SAMPLE_TEX2D_SAMPLER(_DetailOcclusionMap, _MainTex, i.uv2.xy);
+	float3 aoOut = 0;
+	switch (_DetailOcclusionBlending){
+		case 0: aoOut = lerp(aoIn, detailAO, 0.5); break;
+		case 1: aoOut = aoIn + detailAO; break;
+		case 2: aoOut = aoIn - detailAO; break;
+		case 3: aoOut = aoIn * detailAO; break;
+		case 4: aoOut = BlendOverlay(detailAO, aoIn); break;
+		case 5: aoOut = BlendScreen(detailAO, aoIn); break;		
+	}
+	return aoOut;
+}
+
+float3 GetAO(g2f i, masks m){
 	float3 ao = 1;
 	#if PACKED_WORKFLOW || PACKED_WORKFLOW_BAKED
 		#if PACKED_WORKFLOW
@@ -36,7 +50,7 @@ float3 GetAO(g2f i){
 	#else
 		ao = UNITY_SAMPLE_TEX2D_SAMPLER(_OcclusionMap, _MainTex, i.uv.xy).g;
 	#endif
-
+	ao = lerp(ao, GetDetailAO(i, ao), _DetailOcclusionStrength * m.detailMask * _UsingDetailOcclusion);
 	float3 tintTex = UNITY_SAMPLE_TEX2D_SAMPLER(_AOTintTex, _MainTex, i.uv.xy).rgb;
 
 	if (_AOFiltering == 1){
@@ -241,7 +255,7 @@ lighting GetLighting(g2f i, masks m, float3 atten){
 	#endif
 
     #if SHADING_ENABLED
-		l.ao = GetAO(i);
+		l.ao = GetAO(i, m);
 		l.viewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPos);
 		l.tangent = i.tangent;
 		l.binormal = cross(i.normal, i.tangent.xyz) * (i.tangent.w * unity_WorldTransformParams.w);

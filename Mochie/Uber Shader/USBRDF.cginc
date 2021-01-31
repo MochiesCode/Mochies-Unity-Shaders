@@ -136,6 +136,14 @@ void ApplyMatcap(g2f i, lighting l, masks m, inout float3 environment, float rou
 	environment = lerp(environment + blend00, environment + blend01, _MatcapBlending);
 }
 
+void ApplyDithering(g2f i, inout float3 ramp){
+	if (_DitheredShadows == 1){
+		float slice = Average(ramp) * 0.9375;
+		float3 dither = tex3D(_DitherMaskLOD, float3(i.pos.xy*0.25, slice)).a - 0.01;
+		ramp = lerp(dither, 1, ramp);
+	}
+}
+
 float3 GetForwardRamp(g2f i, lighting l, masks m, float3 albedo, float3 atten){
 	float3 ramp = 1;
 	if (_ShadowMode == 1){
@@ -144,11 +152,13 @@ float3 GetForwardRamp(g2f i, lighting l, masks m, float3 albedo, float3 atten){
 			atten = lerp(atten, smootherstep(0,1,atten), _AttenSmoothing);
 			l.NdotL *= atten;
 		}
-		float3 ramp0 = smootherstep(0, _RampWidth0, l.NdotL-_RampPos);
-		float3 ramp1 = smootherstep(0, _RampWidth1, l.NdotL-_RampPos);
+		float3 ramp0 = linearstep(0, _RampWidth0, l.NdotL-_RampPos);
+		float3 ramp1 = linearstep(0, _RampWidth1, l.NdotL-_RampPos);
 		ramp = lerp(ramp0, ramp1, _RampWeight);
+		
 		ramp = lerp(1, ramp, _ShadowStr*m.shadowMask); 
 		ramp = lerp(tint, 1, ramp);
+		ApplyDithering(i, ramp);
 		ramp = lerp3(ramp, lerp(1, ramp, l.lightEnv), lerp(ramp,1,l.lightEnv), _ShadowConditions);
 	}
 	else if (_ShadowMode == 2){
@@ -158,10 +168,9 @@ float3 GetForwardRamp(g2f i, lighting l, masks m, float3 albedo, float3 atten){
 		}
 		float rampUV = l.NdotL * 0.5 + 0.5;
 		ramp = tex2D(_ShadowRamp, rampUV.xx).rgb;
-		float3 interpolator = _ShadowStr*m.shadowMask;
-		ramp = lerp(1, ramp, interpolator);
-		ramp *= atten;
-		ramp = lerp3(ramp, lerp(1, ramp, l.lightEnv), lerp(ramp,1,l.lightEnv), _ShadowConditions);
+		ramp = lerp(1, ramp, _ShadowStr*m.shadowMask);
+		ApplyDithering(i, ramp);
+		ramp = lerp3(ramp, lerp(1, ramp, l.lightEnv), lerp(1, ramp, !l.lightEnv), _ShadowConditions);
 	}
 	return ramp;
 }
@@ -173,24 +182,23 @@ float3 GetAddRamp(g2f i, lighting l, masks m, float3 albedo, float3 atten){
 	}
 	else if (_ShadowMode == 1){
 		float3 tint = _ShadowTint.rgb;
-		float3 ramp0 = smootherstep(0, _RampWidth0, l.NdotL-_RampPos);
-		float3 ramp1 = smootherstep(0, _RampWidth1, l.NdotL-_RampPos);
+		float3 ramp0 = linearstep(0, _RampWidth0, l.NdotL-_RampPos);
+		float3 ramp1 = linearstep(0, _RampWidth1, l.NdotL-_RampPos);
 		ramp = lerp(ramp0, ramp1, _RampWeight) * atten;
 		ramp = lerp(tint*atten, 1, ramp);
+		ApplyDithering(i, ramp);
 	}
 	else {
 		float rampUV = l.NdotL * 0.5 + 0.5;
 		ramp = tex2D(_ShadowRamp, rampUV.xx).rgb;
-		float3 interpolator = _ShadowStr*m.shadowMask;
-		ramp = lerp(1, ramp, interpolator) * atten;
+		ramp = lerp(1, ramp, _ShadowStr*m.shadowMask) * atten;
+		ApplyDithering(i, ramp);
 	}
 	return ramp;
 }
 
 float3 GetRamp(g2f i, lighting l, masks m, float3 albedo, float3 atten){
 	float3 ramp = 1;
-	// float dither = normalize(tex3D(_DitherMaskLOD, float3(i.pos.xy*0.25, l.NdotL * 0.9375)).a - 0.01);
-	// l.NdotL *= lerp(dither, 1, l.NdotL);
 	#if FORWARD_PASS
 		ramp = GetForwardRamp(i, l, m, albedo, atten);
 	#else
@@ -359,7 +367,7 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
 	#endif
 
 	#if REFRACTION_ENABLED
-		float3 col = diffuse.rgb * lerp(lighting, 1, step(m.refractDissolveMask, _RefractionDissolveMaskStr) * (1-_RefractionOpac));
+		float3 col = diffuse.rgb * lerp(lighting, 1, step(m.refractDissolveMask, _RefractionDissolveMaskStr) * (1-_RefractionOpac) * m.refractMask);
 	#else
 		float3 col = diffuse.rgb * lighting;
 	#endif

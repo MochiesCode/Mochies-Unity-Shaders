@@ -8,6 +8,7 @@ Shader "Mochie/Screen FX/Screen FX" {
 		_SrcBlend("", Int) = 1
 		_DstBlend("", Int) = 0
 		_Opacity("", Range(-1,1)) = 1
+		[ToggleUI]_DisplayGlobalGizmo("", Int) = 0
 		_MinRange("", Float) = 8
 		_MaxRange("", Float) = 15
 

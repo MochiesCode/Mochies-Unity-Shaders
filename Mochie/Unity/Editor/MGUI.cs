@@ -37,7 +37,7 @@ namespace Mochie {
 				}
 			}
 		}
-
+		
 		public static void ClearKeywords(Material mat){
 			foreach (string s in mat.shaderKeywords){
 				mat.DisableKeyword(s);

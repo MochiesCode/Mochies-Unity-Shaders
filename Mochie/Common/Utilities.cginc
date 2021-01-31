@@ -275,6 +275,13 @@ float2x2 GetRotationMatrix(float axis){
 	return mat;
 }
 
+float2 GetPolarCoords(float2 uv, float2 center, float radialScale, float lengthScale) {
+    float2 delta = uv - center;
+    float radius = length(delta) * 2 * radialScale;
+    float angle = atan2(delta.x, delta.y) * 1.0/6.28 * lengthScale;
+    return float2(radius, angle);
+}
+
 float2 Rotate2D(float2 coords, float rot){
 	rot *= (UNITY_PI/180.0);
 	float sinVal = sin(rot);

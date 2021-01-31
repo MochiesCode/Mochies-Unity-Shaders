@@ -48,6 +48,9 @@ UNITY_DECLARE_TEX2D_NOSAMPLER(_DetailRoughnessMap);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_PackedMap);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_RefractionMask);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_RefractionDissolveMask);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_DetailOcclusionMap);
+UNITY_DECLARE_TEX2DARRAY(_Flipbook0);
+UNITY_DECLARE_TEX2DARRAY(_Flipbook1);
 
 sampler2D _PackedMask3;
 sampler2D _OutlineMask;
@@ -77,7 +80,12 @@ int _MatcapUseRough, _UseMatcap1, _UnlitMatcap1;
 int _DissolveStyle;
 int _DistortMatcap0, _DistortMatcap1, _MatcapUseRough1, _Invert;
 int _TeamFiltering, _UVSec, _DetailRoughBlending;
-int _SpecBiasOverrideToggle;
+int _SpecBiasOverrideToggle, _IgnoreFilterMask;
+int _SpritesheetMode0, _SpritesheetMode1;
+int _DitheredShadows;
+int _UsingDetailRough, _UsingDetailOcclusion;
+int _DetailOcclusionBlending;
+int _UsingDetailAlbedo, _DetailAlbedoBlending;
 
 float4 _Color; 
 float4 _CubeColor0, _CubeColor1;
@@ -157,9 +165,10 @@ float _Value;
 float _NoiseSpeed, _RampPos;
 float _MatcapRough, _MatcapRough1;
 float _SpecBiasOverride;
+float _DetailOcclusionStrength, _DetailAlbedoStrength;
 
-int _PreviewRough, _PreviewAO, _PreviewHeight, _PreviewCurvature;
-int _AOFiltering, _HeightFiltering, _RoughnessFiltering, _SmoothnessFiltering, _CurvatureFiltering;
+int _PreviewRough, _PreviewAO, _PreviewHeight;
+int _AOFiltering, _HeightFiltering, _RoughnessFiltering, _SmoothnessFiltering;
 float _AOLightness, _AOIntensity, _AOContrast;
 float _RoughLightness, _RoughIntensity, _RoughContrast;
 float _SmoothLightness, _SmoothIntensity, _SmoothContrast;
@@ -359,8 +368,6 @@ float _WFFill, _WFVisibility;
 float _ShatterMax, _ShatterMin, _ShatterSpread, _ShatterCull; 
 float _Instability, _GlitchFrequency, _GlitchIntensity, _PosPrecision, _PatternMult; 
 float _Visibility, _CloneSize;
-
-
 
 struct v2g {
 	float4 pos : POSITION;
