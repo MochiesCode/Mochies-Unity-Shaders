@@ -37,7 +37,7 @@ Shader "Mochie/Uber/Uber (Outline)" {
 		// TEXTURE MAPPING
 		//----------------------------
 		//PRIMARY MAPS
-		[Enum(Metallic,0, Specular,1, Specular (Alpha Smoothness),2, Packed (Modular),3, Packed (Baked),4)]_PBRWorkflow("en5", Int) = 0
+		[Enum(Metallic,0, Specular,1, Specular (Alpha Smoothness),2, Packed (Modular),3, Packed (Performant),4)]_PBRWorkflow("en5", Int) = 0
 		_MetallicGlossMap("tex", 2D) = "white" {}
 		_Metallic("ra", Range(0,1)) = 0
 		_SpecGlossMap("tex", 2D) = "white" {}
@@ -194,16 +194,14 @@ Shader "Mochie/Uber/Uber (Outline)" {
 		[ToggleUI]_RealtimeSpec("tog", Int) = 0
 		[IntRange]_SharpSpecStr("ra", Range(1,15)) = 1
 		[IntRange]_AnisoSteps("ra", Range(1,15)) = 2
-		_AnisoAngleX("ra", Float) = 1
         _AnisoAngleY("ra", Float) = 1
-		_AnisoLayerX("fl", Float) = 1
 		_AnisoLayerY("fl", Float) = 1
 		_AnisoLayerStr("ra", Range(0,1)) = 0.1
 		[ToggleUI]_AnisoLerp("tog", Int) = 0
-		_RippleFrequency("fl", Float) = 0
-		_RippleAmplitude("fl", Float) = 1
-		_RippleSeeds("vec", Vector) = (5.213, 8.7622, 12.9, 0)
-		[ToggleUI]_RippleInvert("tog", Int) = 1
+		_RippleFrequency("fl", Float) = 1
+		_RippleAmplitude("fl", Float) = 0.5
+		_RippleStrength("ra", Range(0,1)) = 0
+		_RippleContinuity("ra", Range(0,1)) = 1
 		[ToggleUI]_SpecUseRough("tog", Int) = 0
 		_SpecRough("ra", Range(0,2)) = 0.5
 		[ToggleUI]_SpecBiasOverrideToggle("tog", Int) = 0
@@ -232,7 +230,7 @@ Shader "Mochie/Uber/Uber (Outline)" {
 		[Enum(Always,0, Realtime Lighting Only,1, Baked Lighting Only,2)]_ShadowConditions("en3", Int) = 0
 		[ToggleUI]_MainTexTint("tog", Int) = 0
 		_ShadowTint("col", Color) = (0,0,0,1)
-		_RampPos("ra", Range(0,1)) = 0
+		_RampPos("ra", Range(-1,1)) = 0
 		_RampWidth0("ra", Range(0.005,1)) = 0.005
 		_RampWidth1("ra", Range(0.005,1)) = 0.5
 		_RampWeight("ra", Range(0,1)) = 0
@@ -604,6 +602,7 @@ Shader "Mochie/Uber/Uber (Outline)" {
 			#pragma multi_compile _ VERTEXLIGHT_ON			// Vertex lighting
 			#pragma multi_compile_fog						// Fog
 			#pragma multi_compile_fwdbase
+			#pragma multi_compile_istancing
 			#pragma skip_variants DIRLIGHTMAP_COMBINED DIRLIGHTMAP_SEPARATE 
 			#pragma skip_variants DYNAMICLIGHTMAP_ON LIGHTMAP_ON LIGHTMAP_SHADOW_MIXING
 			#ifndef UNITY_PASS_FORWARDBASE
@@ -655,6 +654,7 @@ Shader "Mochie/Uber/Uber (Outline)" {
 			#pragma shader_feature GEOM_TYPE_BRANCH			// Mask SOS toggle
 			#pragma multi_compile_fog						// Fog
 			#pragma multi_compile_fwdadd_fullshadows
+			#pragma multi_compile_istancing
 			#pragma skip_variants DIRLIGHTMAP_COMBINED DIRLIGHTMAP_SEPARATE 
 			#pragma skip_variants DYNAMICLIGHTMAP_ON LIGHTMAP_ON LIGHTMAP_SHADOW_MIXING 
 			#ifndef UNITY_PASS_FORWARDADD
@@ -698,8 +698,10 @@ Shader "Mochie/Uber/Uber (Outline)" {
 			#pragma shader_feature GEOM_TYPE_MESH			// Vertex manip toggle
 			#pragma shader_feature EFFECT_HUE_VARIATION		// Spritesheet toggle
 			#pragma shader_feature GEOM_TYPE_BRANCH			// Mask SOS toggle
+			#pragma multi_compile _ VERTEXLIGHT_ON			// Vertex lighting
 			#pragma multi_compile_fog						// Fog
 			#pragma multi_compile_fwdbase
+			#pragma multi_compile_istancing
 			#pragma skip_variants DIRLIGHTMAP_COMBINED DIRLIGHTMAP_SEPARATE 
 			#pragma skip_variants DYNAMICLIGHTMAP_ON LIGHTMAP_ON LIGHTMAP_SHADOW_MIXING 
 			#define OUTLINE
@@ -742,6 +744,7 @@ Shader "Mochie/Uber/Uber (Outline)" {
 			#pragma shader_feature GEOM_TYPE_BRANCH			// Mask SOS toggle
 			#pragma multi_compile_fog						// Fog
 			#pragma multi_compile_shadowcaster
+			#pragma multi_compile_istancing
 			#pragma skip_variants DIRLIGHTMAP_COMBINED DIRLIGHTMAP_SEPARATE 
 			#pragma skip_variants DYNAMICLIGHTMAP_ON LIGHTMAP_ON LIGHTMAP_SHADOW_MIXING 
 			#ifndef UNITY_PASS_SHADOWCASTER

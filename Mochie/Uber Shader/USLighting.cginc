@@ -1,7 +1,7 @@
 #ifndef LIGHTING_INCLUDED
 #define LIGHTING_INCLUDED
 
-float FadeShadows (g2f i, float3 atten) {
+float FadeShadows (g2f i, float atten) {
     #if HANDLE_SHADOWS_BLENDING_IN_GI
         float viewZ = dot(_WorldSpaceCameraPos - i.worldPos, UNITY_MATRIX_V[2].xyz);
         float shadowFadeDistance = UnityComputeShadowFadeDistance(i.worldPos, viewZ);
@@ -141,8 +141,8 @@ void GetVertexLightData(g2f i, inout lighting l){
 	NdotL += toLightZ * l.normal.z;
 
 	if (_ShadowMode == 1){
-		float4 ramp0 = smootherstep(float4(0,0,0,0), _RampWidth0, NdotL);
-		float4 ramp1 = smootherstep(float4(0,0,0,0), _RampWidth1, NdotL);
+		float4 ramp0 = smootherstep(float4(0,0,0,0), _RampWidth0, NdotL-_RampPos);
+		float4 ramp1 = smootherstep(float4(0,0,0,0), _RampWidth1, NdotL-_RampPos);
 		atten = lerp(ramp0, ramp1, _RampWeight) * atten;
 	}
 	else if (_ShadowMode == 2){
@@ -241,7 +241,7 @@ float Safe_DotClamped(float3 a, float3 b){
 	return max(0.00001, dot(a,b));
 }
 
-lighting GetLighting(g2f i, masks m, float3 atten){
+lighting GetLighting(g2f i, masks m, float3 atten, bool frontFace){
     lighting l = (lighting)0;
 	l.ao = 1;
 
@@ -257,18 +257,25 @@ lighting GetLighting(g2f i, masks m, float3 atten){
     #if SHADING_ENABLED
 		l.ao = GetAO(i, m);
 		l.viewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPos);
-		l.tangent = i.tangent;
+		l.tangent = lerp(-i.tangent, i.tangent, frontFace);
 		l.binormal = cross(i.normal, i.tangent.xyz) * (i.tangent.w * unity_WorldTransformParams.w);
+		l.binormal = lerp(-l.binormal, l.binormal, frontFace);
 		l.normalDir = GetNormalDir(i,l,m);
 		l.normal = lerp(l.normalDir, normalize(i.normal), _ClearCoat);
+		l.normal = lerp(-l.normal, l.normal, frontFace);
 		l.reflectionDir = reflect(-l.viewDir, l.normal);
+		// #if ANISO_SPECULAR
+		// 	l.reflectionDir = GetAnisoReflDir(l);
+		// #else
+		// 	l.reflectionDir = reflect(-l.viewDir, l.normal);
+		// #endif
 		#if VERTEX_LIGHT
 			GetVertexLightData(i, l);
 		#endif
 		l.lightDir = GetLightDir(i, l);
 		l.halfVector = normalize(l.lightDir + l.viewDir);
 
-		l.NdotL = Safe_DotClamped(l.normalDir, l.lightDir);
+		l.NdotL = dot(l.normalDir, l.lightDir);
 		l.NdotV = abs(dot(l.normal, l.viewDir));
 		l.NdotH = Safe_DotClamped(l.normal, l.halfVector);
 		l.LdotH = Safe_DotClamped(l.lightDir, l.halfVector);
@@ -283,7 +290,7 @@ lighting GetLighting(g2f i, masks m, float3 atten){
 		#if ADDITIVE_PASS
 			l.lightDir = normalize(UnityWorldSpaceLightDir(i.worldPos));
 			l.normal = normalize(i.normal);
-			l.NdotL = Safe_DotClamped(l.normal, l.lightDir);
+			l.NdotL = dot(l.normal, l.lightDir);
 		#endif
 	#endif
 

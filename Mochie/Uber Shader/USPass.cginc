@@ -5,6 +5,12 @@
 
 v2g vert (appdata v) {
     v2g o = (v2g)0;
+	UNITY_SETUP_INSTANCE_ID(v);
+	UNITY_TRANSFER_INSTANCE_ID(v, o);
+	#if !X_FEATURES
+		UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+	#endif
+
 	o.isReflection = IsInMirror();
 	o.objPos = mul(unity_ObjectToWorld, float4(0,0,0,1)).xyz;
 	o.cameraPos = _WorldSpaceCameraPos;
@@ -49,7 +55,7 @@ v2g vert (appdata v) {
 	o.uv2.xy = TRANSFORM_TEX(detailUV, _DetailAlbedoMap) + (_Time.y * _DetailScroll);
 	o.uv2.zw = TRANSFORM_TEX(v.uv, _RimTex) + (_Time.y * _RimScroll);
 	o.uv3.xy = TRANSFORM_TEX(v.uv, _DistortUVMap) + (_Time.y * _DistortUVScroll);
-	float2 anisoUV = lerp3(o.uv, v.uv1, v.uv2, _UVAniso);
+	float2 anisoUV = lerp3(v.uv, v.uv1, v.uv2, _UVAniso);
 	o.rawUV.xy = v.uv.xy;
 	o.rawUV.zw = anisoUV;
 
@@ -60,8 +66,10 @@ v2g vert (appdata v) {
 
 #include "USXGeom.cginc"
 
-float4 frag (g2f i) : SV_Target {
+float4 frag (g2f i, bool frontFace : SV_IsFrontFace) : SV_Target {
 	
+		
+
 	#if X_FEATURES && (NON_OPAQUE_RENDERING)
 		float falloff, falloffRim;
 		GetFalloff(i, falloff, falloffRim);
@@ -82,11 +90,16 @@ float4 frag (g2f i) : SV_Target {
 	#endif
 
 	i.grabPos = UNITY_PROJ_COORD(i.grabPos);
-	UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos.xyz);
-	float3 attenCol = atten;
-	attenCol = FadeShadows(i, attenCol);
+
+	#if defined(POINT) || defined(SPOT) || defined(POINT_COOKIE)
+		POI_LIGHT_ATTENUATION(atten, shadows, i, i.worldPos.xyz);
+	#else
+		UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos.xyz);
+	#endif
+
+	atten = FadeShadows(i, atten);
 	masks m = GetMasks(i);
-    lighting l = GetLighting(i, m, attenCol);
+    lighting l = GetLighting(i, m, atten, frontFace);
 	float4 albedo = GetAlbedo(i, l, m);
 
 	#if ALPHA_TEST
@@ -100,7 +113,11 @@ float4 frag (g2f i) : SV_Target {
 	float4 diffuse = albedo;
 	
 	#if SHADING_ENABLED
-		attenCol = GetRamp(i, l, m, albedo.rgb, attenCol);
+		#if defined(POINT) || defined(SPOT) || defined(POINT_COOKIE)
+			float3 shadowCol = GetAddRamp(i, l, m, shadows, atten);
+		#else
+			float3 shadowCol = GetForwardRamp(i, l, m, atten);
+		#endif
 		diffuse.rgb = GetWorkflow(i, l, m, albedo.rgb);
 		roughness = GetRoughness(smoothness);
 		roughness = lerp(roughness, GSAARoughness(l.normal, roughness), _GSAA);
@@ -114,7 +131,7 @@ float4 frag (g2f i) : SV_Target {
 			diffuse = PremultiplyAlpha(diffuse, omr);
 		#endif
 
-		diffuse.rgb = GetMochieBRDF(i, l, m, diffuse, albedo, specularTint, reflCol, omr, smoothness, attenCol);
+		diffuse.rgb = GetMochieBRDF(i, l, m, diffuse, albedo, specularTint, reflCol, omr, smoothness, shadowCol);
 		
 		#if FORWARD_PASS
 			ApplyRimLighting(i, l, m, diffuse.rgb);	
@@ -171,7 +188,6 @@ float4 frag (g2f i) : SV_Target {
 		ApplySmoothPreview(diffuse.rgb);
 		ApplyAOPreview(diffuse.rgb);
 		ApplyHeightPreview(diffuse.rgb);
-		ApplyCurvePreview(diffuse.rgb);
 	#endif
 	
 	return diffuse;
@@ -185,6 +201,12 @@ float4 frag (g2f i) : SV_Target {
 
 v2g vert (appdata v) {
     v2g o = (v2g)0;
+
+	UNITY_SETUP_INSTANCE_ID(v);
+	UNITY_TRANSFER_INSTANCE_ID(v, o);
+	#if !X_FEATURES
+		UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+	#endif
 
 	#if TRANSPARENT_RENDERING
 		o.pos = 0.0/_NaNLmao;
@@ -254,7 +276,10 @@ v2g vert (appdata v) {
 
 #include "USXGeom.cginc"
 
-float4 frag(g2f i, uint facing : SV_IsFrontFace) : SV_Target {
+float4 frag(g2f i) : SV_Target {
+
+	UNITY_SETUP_INSTANCE_ID(i);
+
 	float4 col = 0;
 
 	#if PBR_PREVIEW_ENABLED
@@ -284,11 +309,11 @@ float4 frag(g2f i, uint facing : SV_IsFrontFace) : SV_Target {
 	#if PACKED_WORKFLOW || PACKED_WORKFLOW_BAKED
 		packedTex = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy);
 	#endif
-	UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos);
-	float3 attenCol = atten;
-	attenCol = FadeShadows(i, attenCol);
+
+	UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos.xyz);
+	atten = FadeShadows(i, atten);
 	masks m = GetMasks(i);
-	lighting l = GetLighting(i, m, attenCol);
+	lighting l = GetLighting(i, m, atten, false);
 	
 	float4 baseColor = GetAlbedo(i, l, m);
 	float4 outlineTex = UNITY_SAMPLE_TEX2D_SAMPLER(_OutlineTex, _MainTex, i.uv2.zw) * _OutlineCol;
@@ -308,8 +333,8 @@ float4 frag(g2f i, uint facing : SV_IsFrontFace) : SV_Target {
 
 	if (_ApplyOutlineLighting == 1){
 		#if SHADING_ENABLED
-			attenCol = GetRamp(i, l, m, albedo.rgb, attenCol);
-			diffuse.rgb = GetMochieBRDF(i, l, m, diffuse, albedo, specularTint, 0, omr, smoothness, attenCol);
+			float3 shadowCol = GetForwardRamp(i, l, m, atten);
+			diffuse.rgb = GetMochieBRDF(i, l, m, diffuse, albedo, specularTint, 0, omr, smoothness, shadowCol);
 		#else
 			diffuse = GetDiffuse(l, albedo, 1);
 		#endif
@@ -366,6 +391,13 @@ float4 frag(g2f i, uint facing : SV_IsFrontFace) : SV_Target {
 
 v2g vert (appdata v) {
     v2g o = (v2g)0;
+
+	UNITY_SETUP_INSTANCE_ID(v);
+	UNITY_TRANSFER_INSTANCE_ID(v, o);
+	#if !X_FEATURES
+		UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+	#endif
+	
 	o.isReflection = IsInMirror();
 	#if defined(OUTLINE_VARIANT)
 		float thicknessMask = 1;
@@ -418,6 +450,8 @@ v2g vert (appdata v) {
 #include "USXGeom.cginc"
 
 float4 frag(g2f i) : SV_Target {
+	
+	UNITY_SETUP_INSTANCE_ID(i);
 
 	#if PBR_PREVIEW_ENABLED || REFRACTION_ENABLED
 		discard;

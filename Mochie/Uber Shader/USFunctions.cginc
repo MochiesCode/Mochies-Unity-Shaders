@@ -181,7 +181,9 @@ void ApplyRefraction(g2f i, lighting l, masks m, inout float3 albedo){
 	#else
 		float3 refractionCol = tex2Dlod(_SSRGrab, float4(refractUV,0,0));
 	#endif
-	refractionCol = lerp(albedo, refractionCol * _RefractionTint, step(m.refractDissolveMask, _RefractionDissolveMaskStr) * m.refractMask);
+	// float alpha = tex3D(_DitherMaskLOD, float3(i.pos.xy*0.25, m.refractDissolveMask * _RefractionDissolveMaskStr * 0.9375)).a - 0.01;
+	float alpha = step(m.refractDissolveMask, _RefractionDissolveMaskStr);
+	refractionCol = lerp(albedo, refractionCol * _RefractionTint, alpha * m.refractMask);
 	albedo = lerp(refractionCol, albedo, _RefractionOpac);
 }
 
@@ -392,7 +394,7 @@ void InitializeBakedChannels(){
 }
 
 float3 GetPackedWorkflow(g2f i, lighting l, masks m, float3 albedo){
-	roughness = lerp(roughness, GetDetailRough(i, roughness), _DetailRoughStrength * m.detailMask);
+	roughness = lerp(roughness, GetDetailRough(i, roughness), _DetailRoughStrength * m.detailMask * _UsingDetailRough);
 
 	ApplyPBRFiltering(roughness, _RoughContrast, _RoughIntensity, _RoughLightness, _RoughnessFiltering, prevRough);
 
@@ -495,7 +497,7 @@ void ApplyUVDistortion(inout g2f i, inout float3 uvOffset){
 float2 GetParallaxOffset(g2f i){
     float2 uvOffset = 0;
 	float2 prevUVOffset = 0;
-	float stepSize = 1.0/10.0;
+	float stepSize = 1.0/15.0;
 	float stepHeight = 1;
 	float2 uvDelta = i.tangentViewDir.xy * (stepSize * _Parallax);
 	float surfaceHeight = 0;
@@ -506,8 +508,9 @@ float2 GetParallaxOffset(g2f i){
 		surfaceHeight = clamp(surfaceHeight, 0, 0.999);
 		float prevStepHeight = stepHeight;
 		float prevSurfaceHeight = surfaceHeight;
-		[unroll(10)]
-		for (int j = 1; j <= 10 && stepHeight > surfaceHeight; j++){
+
+		[unroll(15)]
+		for (int j = 1; j <= 15 && stepHeight > surfaceHeight; j++){
 			prevUVOffset = uvOffset;
 			prevStepHeight = stepHeight;
 			prevSurfaceHeight = surfaceHeight;
@@ -516,8 +519,9 @@ float2 GetParallaxOffset(g2f i){
 			surfaceHeight = ChannelCheck(UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy+uvOffset), _HeightChannel);
 			ApplyPBRFiltering(surfaceHeight, _HeightContrast, _HeightIntensity, _HeightLightness, _HeightFiltering, prevHeight);
 		}
-		[unroll(3)]
-		for (int k = 0; k < 3; k++) {
+
+		[unroll(4)]
+		for (int k = 0; k < 4; k++) {
 			uvDelta *= 0.5;
 			stepSize *= 0.5;
 
@@ -532,14 +536,16 @@ float2 GetParallaxOffset(g2f i){
 			surfaceHeight = ChannelCheck(UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy+uvOffset), _HeightChannel);
 			ApplyPBRFiltering(surfaceHeight, _HeightContrast, _HeightIntensity, _HeightLightness, _HeightFiltering, prevHeight);
 		}
+
 	#elif PACKED_WORKFLOW_BAKED
 		packedTex = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy);
 		surfaceHeight = packedTex.a;
 		surfaceHeight = clamp(surfaceHeight, 0, 0.999);
 		float prevStepHeight = stepHeight;
 		float prevSurfaceHeight = surfaceHeight;
-		[unroll(10)]
-		for (int j = 1; j <= 10 && stepHeight > surfaceHeight; j++){
+
+		[unroll(15)]
+		for (int j = 1; j <= 15 && stepHeight > surfaceHeight; j++){
 			prevUVOffset = uvOffset;
 			prevStepHeight = stepHeight;
 			prevSurfaceHeight = surfaceHeight;
@@ -548,8 +554,9 @@ float2 GetParallaxOffset(g2f i){
 			surfaceHeight = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy+uvOffset).a;
 			ApplyPBRFiltering(surfaceHeight, _HeightContrast, _HeightIntensity, _HeightLightness, _HeightFiltering, prevHeight);
 		}
-		[unroll(3)]
-		for (int k = 0; k < 3; k++) {
+
+		[unroll(4)]
+		for (int k = 0; k < 4; k++) {
 			uvDelta *= 0.5;
 			stepSize *= 0.5;
 
@@ -569,8 +576,9 @@ float2 GetParallaxOffset(g2f i){
 		surfaceHeight = clamp(surfaceHeight, 0, 0.999);
 		float prevStepHeight = stepHeight;
 		float prevSurfaceHeight = surfaceHeight;
-		[unroll(10)]
-		for (int j = 1; j <= 10 && stepHeight > surfaceHeight; j++){
+
+		[unroll(15)]
+		for (int j = 1; j <= 15 && stepHeight > surfaceHeight; j++){
 			prevUVOffset = uvOffset;
 			prevStepHeight = stepHeight;
 			prevSurfaceHeight = surfaceHeight;
@@ -579,8 +587,9 @@ float2 GetParallaxOffset(g2f i){
 			surfaceHeight = UNITY_SAMPLE_TEX2D_SAMPLER(_ParallaxMap, _MainTex, i.uv.xy+uvOffset);
 			ApplyPBRFiltering(surfaceHeight, _HeightContrast, _HeightIntensity, _HeightLightness, _HeightFiltering, prevHeight);
 		}
-		[unroll(3)]
-		for (int k = 0; k < 3; k++) {
+		
+		[unroll(4)]
+		for (int k = 0; k < 4; k++) {
 			uvDelta *= 0.5;
 			stepSize *= 0.5;
 
@@ -666,6 +675,7 @@ float ShadowPremultiplyAlpha(g2f i, float alpha){
 //----------------------------
 masks GetMasks(g2f i){
 	masks m = (masks)1;
+	m.anisoMask = 0;
 	float2 refractDissUV = i.uv.xy;
 
 	// Separate

@@ -263,97 +263,99 @@ public class SFXEditor : ShaderGUI {
 
 	[DrawGizmo(GizmoType.Selected | GizmoType.Active)]
     static void DrawGizmo(MeshRenderer meshRenderer, GizmoType gizmoType){
-		Material material = meshRenderer.sharedMaterial;
-		if (!material.shader.name.Contains("Mochie/Screen FX")) return;
-		if (!foldouts.ContainsKey(material)) return;
-		if (material.GetFloat("_DisplayGlobalGizmo") > 0){
-			Vector3 position = meshRenderer.transform.position;
-			Toggles toggles = foldouts[material];
+		if (meshRenderer.sharedMaterial != null){
+			Material material = meshRenderer.sharedMaterial;
+			if (!material.shader.name.Contains("Mochie/Screen FX")) return;
+			if (!foldouts.ContainsKey(material)) return;
+			if (material.GetFloat("_DisplayGlobalGizmo") > 0){
+				Vector3 position = meshRenderer.transform.position;
+				Toggles toggles = foldouts[material];
 
-			if (toggles.GetState("GENERAL")){
-				Gizmos.color = Color.yellow;
-				Gizmos.DrawWireSphere(position, material.GetFloat("_ColorMinRange"));
-				Gizmos.color = new Color(0.9f, 0.9f, 0.3f, 1f);
-				Gizmos.DrawWireSphere(position, material.GetFloat("_ColorMaxRange"));
-			}
-			if (toggles.GetState("FILTERING")){
-				if (material.GetFloat("_FilterModel") > 0 && material.GetFloat("_ColorUseGlobal") == 0) {
-					Gizmos.color = Color.white;
-					Gizmos.DrawWireSphere(position, material.GetFloat("_ColorMinRange"));
-					Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
-					Gizmos.DrawWireSphere(position, material.GetFloat("_ColorMaxRange"));
+				if (toggles.GetState("GENERAL")){
+					Gizmos.color = Color.yellow;
+					Gizmos.DrawWireSphere(position, material.GetFloat("_MinRange"));
+					Gizmos.color = new Color(0.9f, 0.9f, 0.3f, 1f);
+					Gizmos.DrawWireSphere(position, material.GetFloat("_MaxRange"));
 				}
-			}
-			if (toggles.GetState("SHAKE")){
-				if (material.GetFloat("_ShakeModel") > 0 && material.GetFloat("_ShakeUseGlobal") == 0) {
-					Gizmos.color = Color.white;
-					Gizmos.DrawWireSphere(position, material.GetFloat("_ShakeMinRange"));
-					Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
-					Gizmos.DrawWireSphere(position, material.GetFloat("_ShakeMaxRange"));
+				if (toggles.GetState("FILTERING")){
+					if (material.GetFloat("_FilterModel") > 0 && material.GetFloat("_ColorUseGlobal") == 0) {
+						Gizmos.color = Color.white;
+						Gizmos.DrawWireSphere(position, material.GetFloat("_ColorMinRange"));
+						Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
+						Gizmos.DrawWireSphere(position, material.GetFloat("_ColorMaxRange"));
+					}
 				}
-			}
-			if (toggles.GetState("DISTORTION")){
-				if (material.GetFloat("_DistortionModel") > 0 && material.GetFloat("_DistortionUseGlobal") == 0) {
-					Gizmos.color = Color.white;
-					Gizmos.DrawWireSphere(position, material.GetFloat("_DistortionMinRange"));
-					Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
-					Gizmos.DrawWireSphere(position, material.GetFloat("_DistortionMaxRange"));
+				if (toggles.GetState("SHAKE")){
+					if (material.GetFloat("_ShakeModel") > 0 && material.GetFloat("_ShakeUseGlobal") == 0) {
+						Gizmos.color = Color.white;
+						Gizmos.DrawWireSphere(position, material.GetFloat("_ShakeMinRange"));
+						Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
+						Gizmos.DrawWireSphere(position, material.GetFloat("_ShakeMaxRange"));
+					}
 				}
-			}
-			if (toggles.GetState("BLUR")){
-				if (material.GetFloat("_BlurModel") > 0 && material.GetFloat("_BlurUseGlobal") == 0) {
-					Gizmos.color = Color.white;
-					Gizmos.DrawWireSphere(position, material.GetFloat("_BlurMinRange"));
-					Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
-					Gizmos.DrawWireSphere(position, material.GetFloat("_BlurMaxRange"));
+				if (toggles.GetState("DISTORTION")){
+					if (material.GetFloat("_DistortionModel") > 0 && material.GetFloat("_DistortionUseGlobal") == 0) {
+						Gizmos.color = Color.white;
+						Gizmos.DrawWireSphere(position, material.GetFloat("_DistortionMinRange"));
+						Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
+						Gizmos.DrawWireSphere(position, material.GetFloat("_DistortionMaxRange"));
+					}
 				}
-			}
-			if (toggles.GetState("NOISE")){
-				if (material.GetFloat("_NoiseMode") > 0 && material.GetFloat("_NoiseUseGlobal") == 0) {
-					Gizmos.color = Color.white;
-					Gizmos.DrawWireSphere(position, material.GetFloat("_NoiseMinRange"));
-					Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
-					Gizmos.DrawWireSphere(position, material.GetFloat("_NoiseMaxRange"));
+				if (toggles.GetState("BLUR")){
+					if (material.GetFloat("_BlurModel") > 0 && material.GetFloat("_BlurUseGlobal") == 0) {
+						Gizmos.color = Color.white;
+						Gizmos.DrawWireSphere(position, material.GetFloat("_BlurMinRange"));
+						Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
+						Gizmos.DrawWireSphere(position, material.GetFloat("_BlurMaxRange"));
+					}
 				}
-			}
-			if (toggles.GetState("ZOOM")){
-				if (material.GetFloat("_Zoom") > 0 && material.GetFloat("_ZoomUseGlobal") == 0) {
-					Gizmos.color = Color.white;
-					Gizmos.DrawWireSphere(position, material.GetFloat("_ZoomMinRange"));
-					Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
-					Gizmos.DrawWireSphere(position, material.GetFloat("_ZoomMaxRange"));
+				if (toggles.GetState("NOISE")){
+					if (material.GetFloat("_NoiseMode") > 0 && material.GetFloat("_NoiseUseGlobal") == 0) {
+						Gizmos.color = Color.white;
+						Gizmos.DrawWireSphere(position, material.GetFloat("_NoiseMinRange"));
+						Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
+						Gizmos.DrawWireSphere(position, material.GetFloat("_NoiseMaxRange"));
+					}
 				}
-			}
-			if (toggles.GetState("IMAGE OVERLAY")){
-				if (material.GetFloat("_SST") > 0 && material.GetFloat("_SSTUseGlobal") == 0) {
-					Gizmos.color = Color.white;
-					Gizmos.DrawWireSphere(position, material.GetFloat("_SSTMinRange"));
-					Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
-					Gizmos.DrawWireSphere(position, material.GetFloat("_SSTMaxRange"));
+				if (toggles.GetState("ZOOM")){
+					if (material.GetFloat("_Zoom") > 0 && material.GetFloat("_ZoomUseGlobal") == 0) {
+						Gizmos.color = Color.white;
+						Gizmos.DrawWireSphere(position, material.GetFloat("_ZoomMinRange"));
+						Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
+						Gizmos.DrawWireSphere(position, material.GetFloat("_ZoomMaxRange"));
+					}
 				}
-			}
-			if (toggles.GetState("FOG")){
-				if (material.GetFloat("_Fog") > 0 && material.GetFloat("_FogUseGlobal") == 0) {
-					Gizmos.color = Color.white;
-					Gizmos.DrawWireSphere(position, material.GetFloat("_FogMinRange"));
-					Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
-					Gizmos.DrawWireSphere(position, material.GetFloat("_FogMaxRange"));
+				if (toggles.GetState("IMAGE OVERLAY")){
+					if (material.GetFloat("_SST") > 0 && material.GetFloat("_SSTUseGlobal") == 0) {
+						Gizmos.color = Color.white;
+						Gizmos.DrawWireSphere(position, material.GetFloat("_SSTMinRange"));
+						Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
+						Gizmos.DrawWireSphere(position, material.GetFloat("_SSTMaxRange"));
+					}
 				}
-			}
-			if (toggles.GetState("TRIPLANAR")){
-				if (material.GetFloat("_Triplanar") > 0 && material.GetFloat("_TPUseGlobal") == 0) {
-					Gizmos.color = Color.white;
-					Gizmos.DrawWireSphere(position, material.GetFloat("_TPMinRange"));
-					Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
-					Gizmos.DrawWireSphere(position, material.GetFloat("_TPMaxRange"));
+				if (toggles.GetState("FOG")){
+					if (material.GetFloat("_Fog") > 0 && material.GetFloat("_FogUseGlobal") == 0) {
+						Gizmos.color = Color.white;
+						Gizmos.DrawWireSphere(position, material.GetFloat("_FogMinRange"));
+						Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
+						Gizmos.DrawWireSphere(position, material.GetFloat("_FogMaxRange"));
+					}
 				}
-			}
-			if (toggles.GetState("OUTLINE")){
-				if (material.GetFloat("_OutlineType") > 0 && material.GetFloat("_OLUseGlobal") == 0) {
-					Gizmos.color = new Color(1f, 0.647f, 0f, 1f);
-					Gizmos.DrawWireSphere(position, material.GetFloat("_OLMinRange"));
-					Gizmos.color = new Color(1f, 0.847f, 0.2f, 1f);
-					Gizmos.DrawWireSphere(position, material.GetFloat("_OLMaxRange"));
+				if (toggles.GetState("TRIPLANAR")){
+					if (material.GetFloat("_Triplanar") > 0 && material.GetFloat("_TPUseGlobal") == 0) {
+						Gizmos.color = Color.white;
+						Gizmos.DrawWireSphere(position, material.GetFloat("_TPMinRange"));
+						Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
+						Gizmos.DrawWireSphere(position, material.GetFloat("_TPMaxRange"));
+					}
+				}
+				if (toggles.GetState("OUTLINE")){
+					if (material.GetFloat("_OutlineType") > 0 && material.GetFloat("_OLUseGlobal") == 0) {
+						Gizmos.color = new Color(1f, 0.647f, 0f, 1f);
+						Gizmos.DrawWireSphere(position, material.GetFloat("_OLMinRange"));
+						Gizmos.color = new Color(1f, 0.847f, 0.2f, 1f);
+						Gizmos.DrawWireSphere(position, material.GetFloat("_OLMaxRange"));
+					}
 				}
 			}
 		}

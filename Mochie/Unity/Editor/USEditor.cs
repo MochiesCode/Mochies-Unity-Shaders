@@ -98,7 +98,7 @@ internal class USEditor : ShaderGUI {
 	string watermark = "Watermark_Pro";
 	string patIcon = "Patreon_Icon";
 	string keyTex = "KeyIcon_Pro";
-	string versionLabel = "v1.14";
+	string versionLabel = "v1.15";
 	// β
 	
 	GUIContent maskLabel = new GUIContent("Mask");
@@ -314,8 +314,8 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _ZWrite = null;
 	MaterialProperty _RippleFrequency = null;
 	MaterialProperty _RippleAmplitude = null;
-	MaterialProperty _RippleSeeds = null;
-	MaterialProperty _RippleInvert = null;
+	MaterialProperty _RippleStrength = null;
+	MaterialProperty _RippleContinuity = null;
 	MaterialProperty _ReflStepping = null;
 	MaterialProperty _ReflSteps = null;
 	MaterialProperty _PackedMask2 = null;
@@ -351,9 +351,7 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _IndirectCont = null;
 	MaterialProperty _RTDirectCont = null;
 	MaterialProperty _RTIndirectCont = null;
-	MaterialProperty _AnisoAngleX = null;
 	MaterialProperty _AnisoAngleY = null;
-	MaterialProperty _AnisoLayerX = null;
 	MaterialProperty _AnisoLayerY = null;
 	MaterialProperty _AnisoLayerStr = null;
 	MaterialProperty _ReflCol = null;
@@ -501,7 +499,7 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _PackedMask3 = null;
 	MaterialProperty _SpritesheetBrightness = null;
 	MaterialProperty _SpritesheetBrightness1 = null;
-	MaterialProperty _UVAniso = null;
+	// MaterialProperty _UVAniso = null;
 	MaterialProperty _Refraction = null;
 	MaterialProperty _RefractionOpac = null;
 	MaterialProperty _UnlitRefraction = null;
@@ -759,98 +757,100 @@ internal class USEditor : ShaderGUI {
 				MGUI.Space6();
 
 				// Primary Maps
-				bool primaryMapsTab = Foldouts.DoMediumFoldout(foldouts, mat, me, 1, "Primary Maps");
-				if (MGUI.MedTabButton(resetIcon, 23f)){
-					DoPrimaryMapsReset();
-				}
-				GUILayout.Space(5);
-				if (primaryMapsTab){
-					MGUI.Space4();
-					me.ShaderProperty(_PBRWorkflow, "Workflow");
-					MGUI.Space2();
-					MGUI.PropertyGroup(() => {
-						switch ((int)workflow){
+				// bool primaryMapsTab = Foldouts.DoMediumFoldout(foldouts, mat, me, 1, "Primary Maps");
+				// if (MGUI.MedTabButton(resetIcon, 23f)){
+				// 	DoPrimaryMapsReset();
+				// }
+				// GUILayout.Space(5);
+				// if (primaryMapsTab){
+				// 	MGUI.Space4();
+				MGUI.BoldLabel("Primary Maps");
+				me.ShaderProperty(_PBRWorkflow, "Workflow");
+				MGUI.Space2();
+				MGUI.PropertyGroup(() => {
+					switch ((int)workflow){
 
-							// Metallic
-							case 0:
-								me.TexturePropertySingleLine(metallicTexLabel, _MetallicGlossMap, _MetallicGlossMap.textureValue ? null : _Metallic);
-								me.TexturePropertySingleLine(roughnessTexLabel, _SpecGlossMap, _SpecGlossMap.textureValue ? null : _Glossiness);
-								break;
+						// Metallic
+						case 0:
+							me.TexturePropertySingleLine(metallicTexLabel, _MetallicGlossMap, _MetallicGlossMap.textureValue ? null : _Metallic);
+							me.TexturePropertySingleLine(roughnessTexLabel, _SpecGlossMap, _SpecGlossMap.textureValue ? null : _Glossiness);
+							break;
 
-							// Specular (RGB)
-							case 1: 
-								me.TexturePropertySingleLine(specularTexLabel, _SpecGlossMap, _SpecCol);
-								me.TexturePropertySingleLine(smoothTexLabel, _SmoothnessMap, _GlossMapScale);
-								break;
+						// Specular (RGB)
+						case 1: 
+							me.TexturePropertySingleLine(specularTexLabel, _SpecGlossMap, _SpecCol);
+							me.TexturePropertySingleLine(smoothTexLabel, _SmoothnessMap, _GlossMapScale);
+							break;
 
-							// Specular (RGBA)
-							case 2: 
-								me.TexturePropertySingleLine(specularTexLabel, _SpecGlossMap, _SpecCol);
-								me.ShaderProperty(_GlossMapScale, "Smoothness", 2);
-								MGUI.Space2();
-								break;
+						// Specular (RGBA)
+						case 2: 
+							me.TexturePropertySingleLine(specularTexLabel, _SpecGlossMap, _SpecCol);
+							me.ShaderProperty(_GlossMapScale, "Smoothness", 2);
+							MGUI.Space2();
+							break;
 
-							// Packed (Modular)
-							case 3:
-								me.TexturePropertySingleLine(packedTexLabel, _PackedMap);
-								me.ShaderProperty(_MetallicChannel, "Metallic");
-								me.ShaderProperty(_RoughnessChannel, "Roughness");
-								me.ShaderProperty(_OcclusionChannel, "Occlusion");
-								me.ShaderProperty(_HeightChannel, "Height");
-								MGUI.Space8();
-								me.ShaderProperty(_OcclusionStrength, "Occlusion Strength");
-								MGUI.ToggleSlider(me, "Height Strength", _EnablePackedHeight, _Parallax);
-								MGUI.Space8();
-								break;
-							
-							// Packed (Baked)
-							case 4:
-								me.TexturePropertySingleLine(packedTexLabel, _PackedMap);
-								GUILayout.Label("Red:	Metallic\nGreen:	Roughness\nBlue:	Occlusion\nAlpha:	Height");
-								me.ShaderProperty(_OcclusionStrength, "Occlusion Strength");
-								MGUI.ToggleSlider(me, "Height Strength", _EnablePackedHeight, _Parallax);
-								MGUI.Space8();
-								break;	
-							default: break;
-						}
-						if (workflow < 3)
-							me.TexturePropertySingleLine(occlusionTexLabel, _OcclusionMap, _OcclusionMap.textureValue ? _OcclusionStrength : null);
-						me.TexturePropertySingleLine(normalTexLabel, _BumpMap, _BumpMap.textureValue ? _BumpScale : null);
-						if (workflow < 3)
-							me.TexturePropertySingleLine(heightTexLabel, _ParallaxMap, _ParallaxMap.textureValue ? _Parallax : null);
-						// me.TexturePropertySingleLine(curveTexLabel, _Curvature, _Curvature.textureValue ? _CurvatureTarget : null, _Curvature.textureValue ? _CurvatureBlending : null);
-					});
-					MGUI.Space4();
-				}
-				else MGUI.SpaceN2();
+						// Packed (Modular)
+						case 3:
+							me.TexturePropertySingleLine(packedTexLabel, _PackedMap);
+							me.ShaderProperty(_MetallicChannel, "Metallic");
+							me.ShaderProperty(_RoughnessChannel, "Roughness");
+							me.ShaderProperty(_OcclusionChannel, "Occlusion");
+							me.ShaderProperty(_HeightChannel, "Height");
+							MGUI.Space8();
+							me.ShaderProperty(_OcclusionStrength, "Occlusion Strength");
+							MGUI.ToggleSlider(me, "Height Strength", _EnablePackedHeight, _Parallax);
+							MGUI.Space8();
+							break;
+						
+						// Packed (Baked)
+						case 4:
+							me.TexturePropertySingleLine(packedTexLabel, _PackedMap);
+							GUILayout.Label("Red:	Metallic\nGreen:	Roughness\nBlue:	Occlusion\nAlpha:	Height");
+							me.ShaderProperty(_OcclusionStrength, "Occlusion Strength");
+							MGUI.ToggleSlider(me, "Height Strength", _EnablePackedHeight, _Parallax);
+							MGUI.Space8();
+							break;	
+						default: break;
+					}
+					if (workflow < 3)
+						me.TexturePropertySingleLine(occlusionTexLabel, _OcclusionMap, _OcclusionMap.textureValue ? _OcclusionStrength : null);
+					me.TexturePropertySingleLine(normalTexLabel, _BumpMap, _BumpMap.textureValue ? _BumpScale : null);
+					if (workflow < 3)
+						me.TexturePropertySingleLine(heightTexLabel, _ParallaxMap, _ParallaxMap.textureValue ? _Parallax : null);
+					// me.TexturePropertySingleLine(curveTexLabel, _Curvature, _Curvature.textureValue ? _CurvatureTarget : null, _Curvature.textureValue ? _CurvatureBlending : null);
+				});
+				MGUI.Space4();
+				// }
+				// else MGUI.SpaceN2();
 
 				// Detail Maps
-				bool detailMapsTab = Foldouts.DoMediumFoldout(foldouts, mat, me, 1, "Detail Maps");
-				if (MGUI.MedTabButton(resetIcon, 23f)){
-					DoDetailMapsReset();
-				}
-				GUILayout.Space(5);
-				if (detailMapsTab){
-					MGUI.Space4();
-					me.ShaderProperty(_UVSec, "UV Set");
-					MGUI.Space2();
-					MGUI.PropertyGroup(() => {
-						bool usingDetRough = _DetailRoughnessMap.textureValue;
-						bool usingDetOcc = _DetailOcclusionMap.textureValue;
-						bool usingDetAlbedo = _DetailAlbedoMap.textureValue;
-						bool usingDetNormal = _DetailNormalMap.textureValue;
-						me.TexturePropertySingleLine(albedoLabel, _DetailAlbedoMap, usingDetAlbedo ? _DetailAlbedoStrength : null, usingDetAlbedo ? _DetailAlbedoBlending : null);
-						me.TexturePropertySingleLine(normalTexLabel, _DetailNormalMap, usingDetNormal ? _DetailNormalMapScale : null);
-						if (workflow == 0 || workflow >= 3)
-							me.TexturePropertySingleLine(roughnessTexLabel, _DetailRoughnessMap, usingDetRough ? _DetailRoughStrength : null, usingDetRough ? _DetailRoughBlending : null);
-						me.TexturePropertySingleLine(occlusionTexLabel, _DetailOcclusionMap, usingDetOcc ? _DetailOcclusionStrength : null, usingDetOcc ? _DetailOcclusionBlending : null);
-						if (usingDetAlbedo || usingDetNormal || usingDetRough || usingDetOcc) {
-							MGUI.TextureSOScroll(me, _DetailAlbedoMap, _DetailScroll);
-						}
-					});
-					MGUI.Space4();
-				}
-				else MGUI.SpaceN2();
+				// bool detailMapsTab = Foldouts.DoMediumFoldout(foldouts, mat, me, 1, "Detail Maps");
+				// if (MGUI.MedTabButton(resetIcon, 23f)){
+				// 	DoDetailMapsReset();
+				// }
+				// GUILayout.Space(5);
+				// if (detailMapsTab){
+				// 	MGUI.Space4();
+				MGUI.BoldLabel("Detail Maps");
+				me.ShaderProperty(_UVSec, "UV Set");
+				MGUI.Space2();
+				MGUI.PropertyGroup(() => {
+					bool usingDetRough = _DetailRoughnessMap.textureValue;
+					bool usingDetOcc = _DetailOcclusionMap.textureValue;
+					bool usingDetAlbedo = _DetailAlbedoMap.textureValue;
+					bool usingDetNormal = _DetailNormalMap.textureValue;
+					me.TexturePropertySingleLine(albedoLabel, _DetailAlbedoMap, usingDetAlbedo ? _DetailAlbedoStrength : null, usingDetAlbedo ? _DetailAlbedoBlending : null);
+					me.TexturePropertySingleLine(normalTexLabel, _DetailNormalMap, usingDetNormal ? _DetailNormalMapScale : null);
+					if (workflow == 0 || workflow >= 3)
+						me.TexturePropertySingleLine(roughnessTexLabel, _DetailRoughnessMap, usingDetRough ? _DetailRoughStrength : null, usingDetRough ? _DetailRoughBlending : null);
+					me.TexturePropertySingleLine(occlusionTexLabel, _DetailOcclusionMap, usingDetOcc ? _DetailOcclusionStrength : null, usingDetOcc ? _DetailOcclusionBlending : null);
+					if (usingDetAlbedo || usingDetNormal || usingDetRough || usingDetOcc) {
+						MGUI.TextureSOScroll(me, _DetailAlbedoMap, _DetailScroll);
+					}
+				});
+				// 	MGUI.Space4();
+				// }
+				// else MGUI.SpaceN2();
 
 				// Masking
 				bool maskingTab = Foldouts.DoMediumFoldout(foldouts, mat, me, 1, "Masks");
@@ -1081,17 +1081,18 @@ internal class USEditor : ShaderGUI {
 					DoLightingReset();
 				GUILayout.Space(5);
 				if (lightingTab){
-					MGUI.PropertyGroup( () => {
-						bool generalTab = Foldouts.DoSmallFoldout(foldouts, mat, me, "General");
-						if (generalTab){
+						// bool generalTab = Foldouts.DoSmallFoldout(foldouts, mat, me, "General");
+						// if (generalTab){
+							MGUI.Space2();
+							MGUI.BoldLabel("General");
 							MGUI.SpaceN2();
-							MGUI.PropertyGroupLayer( () => {
+							MGUI.PropertyGroup( () => {
 								MGUI.ToggleVector3("Static Direction", _StaticLightDirToggle, _StaticLightDir);
 								MGUI.ToggleGroup(!_OcclusionMap.textureValue && workflow != 3);
 								me.ShaderProperty(_DirectAO, "Direct Occlusion");
 								me.ShaderProperty(_IndirectAO, "Indirect Occlusion");
 								MGUI.ToggleGroupEnd();
-								if (!_OcclusionMap.textureValue && workflow != 3){
+								if (!_OcclusionMap.textureValue && workflow < 3){
 									GUILayout.Space(-28);
 									GUIStyle f = new GUIStyle(EditorStyles.boldLabel);
 									f.fontSize = 10;
@@ -1101,48 +1102,47 @@ internal class USEditor : ShaderGUI {
 									MGUI.Space10();
 								}
 							});
-							MGUI.Space4();
-						}
-						else MGUI.SpaceN2();
+						// }
+						// else MGUI.SpaceN2();
 
-						bool diffuseTab = Foldouts.DoSmallFoldout(foldouts, mat, me, "Diffuse Shading");
-						if (diffuseTab){
+						// bool diffuseTab = Foldouts.DoSmallFoldout(foldouts, mat, me, "Diffuse Shading");
+						// if (diffuseTab){
+							MGUI.BoldLabel("Diffuse Shading");
 							MGUI.SpaceN2();
-							MGUI.PropertyGroupLayer( () => {
+							MGUI.PropertyGroup( () => {
 								me.ShaderProperty(_DisneyDiffuse, "Disney Term");
 								me.ShaderProperty(_SHStr, "Spherical Harmonics");
 								MGUI.ToggleGroup(_SHStr.floatValue == 0);
 								me.ShaderProperty(_NonlinearSHToggle, "Nonlinear SH");
 								MGUI.ToggleGroupEnd();
 							});
-							MGUI.Space4();
-						}
-						else MGUI.SpaceN2();
+						// }
+						// else MGUI.SpaceN2();
 
-						bool realtimeTab = Foldouts.DoSmallFoldout(foldouts, mat, me, "Realtime Lighting");
-						if (realtimeTab){
+						// bool realtimeTab = Foldouts.DoSmallFoldout(foldouts, mat, me, "Realtime Lighting");
+						// if (realtimeTab){
+							MGUI.BoldLabel("Realtime Light");
 							MGUI.SpaceN2();
-							MGUI.PropertyGroupLayer( () => {
+							MGUI.PropertyGroup( () => {
 								me.ShaderProperty(_RTDirectCont, "Direct Intensity");
 								me.ShaderProperty(_RTIndirectCont, "Indirect Intensity");
 								me.ShaderProperty(_VLightCont, "Vertex Intensity");
 								me.ShaderProperty(_ClampAdditive, "Clamp Additive");
 							});
-							MGUI.Space4();
-						}
-						else MGUI.SpaceN2();
+						// }
+						// else MGUI.SpaceN2();
 
-						bool bakedTab = Foldouts.DoSmallFoldout(foldouts, mat, me, "Baked Lighting");
-						if (bakedTab){
+						// bool bakedTab = Foldouts.DoSmallFoldout(foldouts, mat, me, "Baked Lighting");
+						// if (bakedTab){
+							MGUI.BoldLabel("Baked Light");
 							MGUI.SpaceN2();
-							MGUI.PropertyGroupLayer( () => {
+							MGUI.PropertyGroup( () => {
 								me.ShaderProperty(_DirectCont, "Direct Intensity");
 								me.ShaderProperty(_IndirectCont, "Indirect Intensity");
-							});
-						}
-						else MGUI.SpaceN2();
-					});
-					MGUI.Space2();
+					 		});
+						// }
+						// else MGUI.SpaceN2();
+						MGUI.Space2();
 				}
 				else MGUI.SpaceN2();
 
@@ -1165,6 +1165,7 @@ internal class USEditor : ShaderGUI {
 								me.ShaderProperty(_RampWidth0, "Ramp 1");
 								me.ShaderProperty(_RampWidth1, "Ramp 2");
 								me.ShaderProperty(_RampWeight, "Ramp Blend");
+								me.ShaderProperty(_RampPos, "Offset");
 							});
 						}
 						else if (_ShadowMode.floatValue == 2){
@@ -1190,10 +1191,8 @@ internal class USEditor : ShaderGUI {
 						}
 						MGUI.PropertyGroup( () => {
 							me.ShaderProperty(_ShadowStr, "Strength");
-							if (_ShadowMode.floatValue == 1)
-								me.ShaderProperty(_RampPos, "Offset");
 							me.ShaderProperty(_DitheredShadows, "Dithering");
-							me.ShaderProperty(_RTSelfShadow, "Dynamic Shadows");
+							me.ShaderProperty(_RTSelfShadow, "Directional Light Shadows");
 							MGUI.ToggleGroup(_RTSelfShadow.floatValue == 0);
 							me.ShaderProperty(_AttenSmoothing, "Smooth Attenuation");
 							MGUI.ToggleGroupEnd();
@@ -1258,7 +1257,7 @@ internal class USEditor : ShaderGUI {
 						MGUI.Space2();
 						if (_Specular.floatValue == 3){
 							MGUI.Space6();
-							GUILayout.Label("Note: Use Specular Blend mask in the masks tab to interpolate between GGX and Anisotropic");
+							MGUI.DisplayInfo("Note: Use Specular Blend mask in the masks tab to interpolate between GGX and Anisotropic");
 							MGUI.Space6();
 						}
 						MGUI.PropertyGroup(() => {
@@ -1268,16 +1267,17 @@ internal class USEditor : ShaderGUI {
 								MGUI.ToggleSlider(me, "Manual Roughness", _SpecUseRough, _SpecRough);
 								MGUI.ToggleSlider(me, "Manual Bias", _SpecBiasOverrideToggle, _SpecBiasOverride);
 								MGUI.ToggleIntSlider(me, "Stepping", _SharpSpecular, _SharpSpecStr);
-								me.ShaderProperty(_RealtimeSpec, "Realtime Lighting Only");
+								me.ShaderProperty(_RealtimeSpec, "Realtime Light Only");
 							}
 							else if (_Specular.floatValue == 2){
 								me.ShaderProperty(_AnisoStr, "Strength");
+								me.ShaderProperty(_RealtimeSpec, "Realtime Light Only");
 								MGUI.ToggleIntSlider(me, "Stepping", _SharpSpecular, _AnisoSteps);
 							}
 							else {
 								me.ShaderProperty(_SpecStr, "GGX Strength");
 								me.ShaderProperty(_AnisoStr, "Aniso Strength");
-								me.ShaderProperty(_RealtimeSpec, "GGX Realtime Lighting Only");
+								me.ShaderProperty(_RealtimeSpec, "Realtime Light Only");
 								me.ShaderProperty(_ManualSpecBright, "Ignore Environment");
 								me.ShaderProperty(_SharpSpecular, "Stepping");
 								if (_SharpSpecular.floatValue == 1){
@@ -1290,20 +1290,17 @@ internal class USEditor : ShaderGUI {
 								me.ShaderProperty(_ManualSpecBright, "Ignore Environment");
 							}
 							if (_Specular.floatValue == 2 || _Specular.floatValue == 3){
-									MGUI.Space6();
-								me.ShaderProperty(_UVAniso, "Aniso UV Set");
-								me.ShaderProperty(_AnisoAngleX, "Layer 1 Width");
-								me.ShaderProperty(_AnisoAngleY, "Layer 1 Height");
 								MGUI.Space6();
-								me.ShaderProperty(_AnisoLayerX, "Layer 2 Width");
-								me.ShaderProperty(_AnisoLayerY, "Layer 2 Height");
+								// me.ShaderProperty(_UVAniso, "Aniso UV Set");
+								me.ShaderProperty(_AnisoAngleY, "Layer 1 Thickness");
+								me.ShaderProperty(_AnisoLayerY, "Layer 2 Thickness");
 								me.ShaderProperty(_AnisoLayerStr, "Layer Blend");
 								me.ShaderProperty(_AnisoLerp, "Lerp Blend");
 								MGUI.Space8();
-								me.ShaderProperty(_RippleFrequency, "Ripple Frequency");
-								me.ShaderProperty(_RippleAmplitude, "Ripple Amplitude");
-								MGUI.Vector3Field(_RippleSeeds, "Ripple Wave Seeds");
-								me.ShaderProperty(_RippleInvert, "Ripple Invert");
+								me.ShaderProperty(_RippleStrength, "Hair Strength");
+								me.ShaderProperty(_RippleFrequency, "Hair Density");
+								me.ShaderProperty(_RippleAmplitude, "Hair Intensity");
+								me.ShaderProperty(_RippleContinuity, "Hair Continuity");
 							}
 						});
 						MGUI.Space2();
@@ -2689,6 +2686,7 @@ internal class USEditor : ShaderGUI {
 		_DirectAO.floatValue = 1f;
 		_IndirectAO.floatValue = 0f;
 		_LightingBasedIOR.floatValue = 0f;
+		_RealtimeSpec.floatValue = 1;
 	}
 
 	// void DoToonLighting(){
@@ -2829,26 +2827,25 @@ internal class USEditor : ShaderGUI {
 		_SRad.floatValue = 0.02f;
 		_EdgeFade.floatValue = 0.1f;
 		_LightingBasedIOR.floatValue = 0f;
+		_ReflStepping.floatValue = 0f;
+		_ReflSteps.floatValue = 1f;
 	}
 	
 	void DoSpecReset(){
-		_Specular.floatValue = 1f;
 		_SpecStr.floatValue = 1f;
 		_SpecCol.colorValue = Color.white;
 		_SharpSpecular.floatValue = 0f;
-		_AnisoAngleX.floatValue = 1f;
-		_AnisoAngleY.floatValue = 0.05f;
-		_AnisoLayerX.floatValue = 2f;
-		_AnisoLayerY.floatValue = 10f;
-		_AnisoLayerStr.floatValue = 0.1f;
+		_AnisoAngleY.floatValue = 1f;
+		_AnisoLayerY.floatValue = 1f;
+		_AnisoLayerStr.floatValue = 0.5f;
 		_AnisoLerp.floatValue = 0f;
 		_SharpSpecStr.floatValue = 1f;
 		_SpecUseRough.floatValue = 0f;
 		_SpecRough.floatValue = 0.5f;
-		_RippleFrequency.floatValue = 0f;
-		_RippleAmplitude.floatValue = 8f;
-		_RippleSeeds.vectorValue = new Vector4(5.213f, 8.7622f, 12.9f, 0);
-		_RippleInvert.floatValue = 1f;
+		_RippleStrength.floatValue = 0f;
+		_RippleFrequency.floatValue = 1f;
+		_RippleAmplitude.floatValue = 0.5f;
+		_RippleContinuity.floatValue = 1f;
 		_ManualSpecBright.floatValue = 0f;
 		_SpecBiasOverrideToggle.floatValue = 0f;
 		_SpecBiasOverride.floatValue = 0.5f;
@@ -2882,7 +2879,6 @@ internal class USEditor : ShaderGUI {
 		_ShadowDithering.floatValue = 0f;
 		_RTSelfShadow.floatValue = 1f;
 		_AttenSmoothing.floatValue = 1f;
-		_ShadowMode.floatValue = 1f;
 		_RampPos.floatValue = 0f;
 		_DitheredShadows.floatValue = 0f;
 	}

@@ -12,7 +12,25 @@
 	#define SHADOW_COORDS(idx1) unityShadowCoord2 _ShadowCoord : TEXCOORD##idx1;
 #endif
 
-// UNITY_DECLARE_TEX2D(_MainTex); 
+static const float2 blurKernel[16] = {
+    float2(0,0),
+    float2(0.54545456,0),
+    float2(0.16855472,0.5187581),
+    float2(-0.44128203,0.3206101),
+    float2(-0.44128197,-0.3206102),
+    float2(0.1685548,-0.5187581),
+    float2(1,0),
+    float2(0.809017,0.58778524),
+    float2(0.30901697,0.95105654),
+    float2(-0.30901703,0.9510565),
+    float2(-0.80901706,0.5877852),
+    float2(-1,0),
+    float2(-0.80901694,-0.58778536),
+    float2(-0.30901664,-0.9510566),
+    float2(0.30901712,-0.9510565),
+    float2(0.80901694,-0.5877853),
+};
+
 UNITY_DECLARE_TEX2D_NOSAMPLER(_MetallicGlossMap);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_SpecGlossMap);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_BumpMap);
@@ -229,11 +247,11 @@ float _Alpha, _Blur, _EdgeFade, _RTint, _LRad, _SRad, _Step;
 UNITY_DECLARE_TEX2D_NOSAMPLER(_SpecularMask);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_InterpMask);
 int _Specular, _SharpSpecular, _SharpSpecStr, _SpecTermStep, _UVAniso, _RealtimeSpec;
-int _AnisoSteps, _AnisoLerp, _RippleInvert, _SpecUseRough, _ManualSpecBright;
+int _AnisoSteps, _AnisoLerp, _SpecUseRough, _ManualSpecBright;
 float4 _SpecCol, _SpecTex_ST;
-float3 _RippleSeeds;
 float _AnisoAngleX, _AnisoAngleY, _AnisoLayerX, _AnisoLayerY;
-float _SpecStr, _AnisoStr, _AnisoLayerStr, _RippleFrequency, _RippleAmplitude, _SpecRough;
+float _SpecStr, _AnisoStr, _AnisoLayerStr, _RippleFrequency, _RippleAmplitude, _SpecRough, _RippleStrength;
+float _RippleContinuity;
 
 int _DebugIntRange, _DebugToggle, _DebugEnum;
 float _DebugFloat, _DebugRange;
@@ -328,10 +346,11 @@ struct appdata {
     float4 tangent : TANGENT;
     float3 normal : NORMAL;
 	float4 color : COLOR;
+	UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
 // Define this here so the Uberx features sees it
-#include "USSampling.cginc"
+#include "USMacros.cginc"
 
 #if X_FEATURES
 UNITY_DECLARE_TEX2D_NOSAMPLER(_DissolveMask);
@@ -390,6 +409,7 @@ struct v2g {
 	float4 tangent : TANGENT;
 	float3 normal : NORMAL;
 
+	UNITY_VERTEX_INPUT_INSTANCE_ID
 	UNITY_SHADOW_COORDS(17)
 	UNITY_FOG_COORDS(18)
 };
@@ -418,6 +438,8 @@ struct g2f {
 	float4 tangent : TANGENT;
 	float3 normal : NORMAL;
 
+	UNITY_VERTEX_INPUT_INSTANCE_ID
+	UNITY_VERTEX_OUTPUT_STEREO
 	UNITY_SHADOW_COORDS(20)
 	UNITY_FOG_COORDS(21)
 };
@@ -449,6 +471,8 @@ struct v2f {
 	float4 tangent : TANGENT;
 	float3 normal : NORMAL;
 
+	UNITY_VERTEX_INPUT_INSTANCE_ID
+	UNITY_VERTEX_OUTPUT_STEREO
 	UNITY_SHADOW_COORDS(16)
 	UNITY_FOG_COORDS(17)
 };

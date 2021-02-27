@@ -144,20 +144,19 @@ void ApplyDithering(g2f i, inout float3 ramp){
 	}
 }
 
-float3 GetForwardRamp(g2f i, lighting l, masks m, float3 albedo, float3 atten){
+float3 GetForwardRamp(g2f i, lighting l, masks m, float atten){
 	float3 ramp = 1;
 	if (_ShadowMode == 1){
-		float3 tint = _ShadowTint.rgb;
 		if (!l.lightEnv || _RTSelfShadow == 1){
 			atten = lerp(atten, smootherstep(0,1,atten), _AttenSmoothing);
 			l.NdotL *= atten;
 		}
+		_RampPos = lerp(_RampPos, saturate(_RampPos), l.lightEnv);
 		float3 ramp0 = linearstep(0, _RampWidth0, l.NdotL-_RampPos);
 		float3 ramp1 = linearstep(0, _RampWidth1, l.NdotL-_RampPos);
 		ramp = lerp(ramp0, ramp1, _RampWeight);
-		
 		ramp = lerp(1, ramp, _ShadowStr*m.shadowMask); 
-		ramp = lerp(tint, 1, ramp);
+		ramp = lerp(_ShadowTint.rgb, 1, ramp);
 		ApplyDithering(i, ramp);
 		ramp = lerp3(ramp, lerp(1, ramp, l.lightEnv), lerp(ramp,1,l.lightEnv), _ShadowConditions);
 	}
@@ -175,39 +174,27 @@ float3 GetForwardRamp(g2f i, lighting l, masks m, float3 albedo, float3 atten){
 	return ramp;
 }
 
-float3 GetAddRamp(g2f i, lighting l, masks m, float3 albedo, float3 atten){
-	float3 ramp = 1;
-	if (_ShadowMode == 0){
-		ramp = smoothstep(0, 0.005, l.NdotL) * atten;
+float3 GetAddRamp(g2f i, lighting l, masks m, float shadows, float atten){
+	float3 ramp = atten;
+	if (_ShadowConditions != 2){
+		if (_ShadowMode == 1){
+			float3 ramp0 = linearstep(0, _RampWidth0, l.NdotL-_RampPos);
+			float3 ramp1 = linearstep(0, _RampWidth1, l.NdotL-_RampPos);
+			ramp = lerp(ramp0, ramp1, _RampWeight);
+			ramp = lerp(_ShadowTint.rgb, 1, ramp * atten);
+			ApplyDithering(i, ramp);
+		}
+		else if (_ShadowMode == 2){
+			float rampUV = l.NdotL * 0.5 + 0.5;
+			ramp = tex2D(_ShadowRamp, rampUV.xx).rgb;
+			ramp = lerp(1, ramp, _ShadowStr*m.shadowMask) * atten;
+			ApplyDithering(i, ramp);
+		}
 	}
-	else if (_ShadowMode == 1){
-		float3 tint = _ShadowTint.rgb;
-		float3 ramp0 = linearstep(0, _RampWidth0, l.NdotL-_RampPos);
-		float3 ramp1 = linearstep(0, _RampWidth1, l.NdotL-_RampPos);
-		ramp = lerp(ramp0, ramp1, _RampWeight) * atten;
-		ramp = lerp(tint*atten, 1, ramp);
-		ApplyDithering(i, ramp);
-	}
-	else {
-		float rampUV = l.NdotL * 0.5 + 0.5;
-		ramp = tex2D(_ShadowRamp, rampUV.xx).rgb;
-		ramp = lerp(1, ramp, _ShadowStr*m.shadowMask) * atten;
-		ApplyDithering(i, ramp);
-	}
-	return ramp;
+	return lerp(atten, ramp, _ShadowStr);
 }
 
-float3 GetRamp(g2f i, lighting l, masks m, float3 albedo, float3 atten){
-	float3 ramp = 1;
-	#if FORWARD_PASS
-		ramp = GetForwardRamp(i, l, m, albedo, atten);
-	#else
-		ramp = GetAddRamp(i, l, m, albedo, atten);
-	#endif
-	return ramp;
-}
-
-float3 GetSSS(g2f i, lighting l, masks m, float3 albedo, float3 atten){
+float3 GetSSS(g2f i, lighting l, masks m, float3 albedo, float atten){
     float3 sss = 0;
 	#if !OUTLINE_PASS
 		if (_Subsurface == 1){
@@ -250,21 +237,51 @@ float GetGGXTerm(lighting l, float roughness){
 	return visibilityTerm;
 }
 
-float GetAnisoTerm(g2f i, lighting l, masks m){
-	_RippleAmplitude = abs(_RippleAmplitude)+1.01;
-	float rippleValue = i.rawUV.z*_RippleFrequency*100;
-	float ripple = (sin(rippleValue) + sin(rippleValue*_RippleSeeds.x) + sin(rippleValue*_RippleSeeds.y) + sin(rippleValue*_RippleSeeds.z))/3.0;
-	ripple = (ripple+_RippleAmplitude)/(2.0*_RippleAmplitude);
-	ripple = lerp(ripple, (0.01/ripple)*50, _RippleInvert);
-	_AnisoAngleY *= ripple;
-	_AnisoLayerY *= ripple;
-	_AnisoAngleY *=  0.005;
-	_AnisoLayerY *= 0.025;
+// Implementation from Google Filament
+// https://google.github.io/filament/Filament.md.html#lighting/imagebasedlights/anisotropy
+float3 GetAnisoReflDir(lighting l){
+	float anisotropy = 1;
+	float3 anisotropicDirection = anisotropy >= 0.0 ? l.binormal : l.tangent;
+	float3 anisotropicTangent = cross(anisotropicDirection, l.viewDir);
+	float3 anisotropicNormal = cross(anisotropicTangent, anisotropicDirection);
+	float3 bentNormal = normalize(lerp(l.normal, anisotropicNormal, anisotropy));
+	float3 r = reflect(-l.viewDir, bentNormal);
+	return r;
+}
 
-	float f0 = l.TdotH * l.TdotH / (_AnisoAngleX * _AnisoAngleX) + l.BdotH * l.BdotH / (_AnisoAngleY * _AnisoAngleY) + l.NdotH * l.NdotH;
-	float f1 = l.TdotH * l.TdotH / (_AnisoAngleX * _AnisoLayerX) + l.BdotH * l.BdotH / (_AnisoAngleY * _AnisoLayerY) + l.NdotH * l.NdotH;
-	float layer0 = saturate(1.0 / (_AnisoAngleX * _AnisoAngleY * f0 * f0));
-	float layer1 = saturate(1.0 / (_AnisoAngleX * _AnisoAngleY * f1 * f1));
+// 	Implementation from Google Filament
+// 	https://google.github.io/filament/Filament.md.html#materialsystem/anisotropicmodel/anisotropicspecularbrdf
+float GetAnisoTerm(g2f i, lighting l, float roughness){
+	float anisotropy = 1;
+	float ToV = dot(l.tangent, l.viewDir);
+	float BoV = dot(l.binormal, l.viewDir);
+	float ToL = dot(l.tangent, l.lightDir);
+	float BoL = dot(l.binormal, l.lightDir);
+	float NoV = dot(l.normal, l.viewDir);
+	float NoL = dot(l.normal, l.lightDir);
+	float at = max(roughness * (1.0 + anisotropy), 0.001);
+	float ab = max(roughness * (1.0 - anisotropy), 0.001);
+	float lambdaV = NoL * length(float3(at * ToV, ab * BoV, NoV));
+	float lambdaL = NoV * length(float3(at * ToL, ab * BoL, NoL));
+	float visibilityTerm = 0.5 / (lambdaV + lambdaL);
+	return visibilityTerm;
+}
+
+float GetAnisoTerm(g2f i, lighting l, masks m){
+	_RippleAmplitude = abs(1-_RippleAmplitude)+1.01;
+	float rippleValue = i.rawUV.z*_RippleFrequency*120;
+	float ripple = Average(float4(sin(rippleValue), sin(rippleValue*5.213), sin(rippleValue*8.7622), sin(rippleValue*12.9)));
+	float continuous = (0.01/((ripple+_RippleAmplitude)/(2*_RippleAmplitude)))*50;
+	float segmented = ripple * _RippleAmplitude;
+	ripple = lerp(segmented, continuous, _RippleContinuity);
+	ripple = lerp(1, ripple, _RippleStrength);
+	_AnisoAngleY *= ripple * 0.0025;
+	_AnisoLayerY *= ripple * 0.05;
+
+	float f0 = l.TdotH * l.TdotH / 1 + l.BdotH * l.BdotH / (_AnisoAngleY * _AnisoAngleY) + l.NdotH * l.NdotH;
+	float f1 = l.TdotH * l.TdotH / 1 + l.BdotH * l.BdotH / (_AnisoAngleY * _AnisoLayerY) + l.NdotH * l.NdotH;
+	float layer0 = saturate(1.0 / (_AnisoAngleY * f0 * f0));
+	float layer1 = saturate(1.0 / (_AnisoAngleY * f1 * f1));
 	float visibilityTerm = 1;
 
 	if (_AnisoLerp == 1)
@@ -275,29 +292,32 @@ float GetAnisoTerm(g2f i, lighting l, masks m){
 	return visibilityTerm;
 }
 
-void GetSpecFresTerm(g2f i, lighting l, masks m, inout float3 specularTerm, inout float3 fresnelTerm, float3 specCol, float roughness){
+void GetSpecFresTerm(g2f i, lighting l, masks m, inout float3 specularTerm, inout float3 fresnelTerm, float3 specCol, float roughness, inout int steps){
 
 	// GGX
 	#if GGX_SPECULAR
 		specularTerm = GetGGXTerm(l, roughness) * _SpecStr; 
 		fresnelTerm = FresnelTerm(specCol, l.LdotH);
+		steps = _SharpSpecStr;
 
 	// Anisotropic
 	#elif ANISO_SPECULAR
-		specularTerm = GetAnisoTerm(i,l,m) * _AnisoStr;
+		specularTerm = GetAnisoTerm(i, l, m) * _AnisoStr;
 		fresnelTerm = FresnelTerm(specCol, l.LdotH);
 		fresnelTerm = lerp(1, fresnelTerm, metallic);
+		steps = _AnisoSteps;
 
 	// Combined
 	#elif COMBINED_SPECULAR
 		float ggx = GetGGXTerm(l, roughness);
-		float aniso = GetAnisoTerm(i,l,m);
+		float aniso = GetAnisoTerm(i, l, m);
 		specularTerm = lerp(aniso * _AnisoStr, ggx * _SpecStr, 1-m.anisoMask);
 		fresnelTerm = FresnelTerm(specCol, l.LdotH);
 		fresnelTerm = lerp(lerp(1, fresnelTerm, metallic), fresnelTerm, 1-m.anisoMask);
+		steps = lerp(_AnisoSteps, _SharpSpecStr, 1-m.anisoMask);
 	#endif
 
-	specularTerm = max(0, specularTerm * l.NdotL);
+	specularTerm = max(0, specularTerm * max(0.00001, l.NdotL));
 }
 
 float DisneyDiffuse(lighting l, masks m, float percepRough) {
@@ -334,13 +354,15 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
 				float3 fresnelTerm = 1;
 				float3 specularTerm = 1;
 				float3 specBiasCol = lerp(specCol, albedo, _SpecBiasOverride*_SpecBiasOverrideToggle);
-				GetSpecFresTerm(i, l, m, specularTerm, fresnelTerm, specBiasCol, lerp(brdfRoughness, _SpecRough, _SpecUseRough));
+				float specRough = lerp(brdfRoughness, _SpecRough, _SpecUseRough);
+				GetSpecFresTerm(i, l, m, specularTerm, fresnelTerm, specBiasCol, specRough, _SharpSpecStr);
 				specular = lerp(lighting, 1, _ManualSpecBright) * specularTerm * fresnelTerm * m.specularMask * _SpecCol * l.ao;
 				if (_SharpSpecular == 1){
-					roughness = saturate(roughness*2);
-					float sharpTerm = round(_SharpSpecStr*Average(specular))/_SharpSpecStr;
-					specular = lerp(specular*sharpTerm, specular, roughness);
+					float specInterp = smoothstep(0.5, 1, saturate(specRough*8));
+					float sharpSpec = floor(specular * _SharpSpecStr) / _SharpSpecStr;
+					specular = lerp(sharpSpec, specular, 0);
 				}
+
 			#if !ADDITIVE_PASS
 			}
 			#endif
@@ -380,7 +402,7 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
 }
 #else
 
-float4 GetDiffuse(lighting l, float4 albedo, float3 atten){
+float4 GetDiffuse(lighting l, float4 albedo, float atten){
     float4 diffuse;
     float3 lightCol = atten * l.directCol + l.indirectCol + l.vLightCol;
     diffuse.rgb = albedo.rgb;
