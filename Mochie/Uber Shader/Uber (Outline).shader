@@ -17,7 +17,10 @@ Shader "Mochie/Uber/Uber (Outline)" {
 		[Enum(2D,0, Cubemap,1, Combined,2)]_CubeMode("en3", Int) = 0
 		[Enum(Base Color Alpha,0, Alpha Mask,1)]_UseAlphaMask("en2", Int) = 0
 		_Cutoff("ra", Range(0,1)) = 0.5
-
+		_NearClip("fl", Float) = 0
+		_NearClipMask("tex", 2D) = "white" {}
+		[ToggleUI]_NearClipToggle("tog", Int) = 0
+		
 		_MainTex("tex", 2D) = "white" {} // MainTex
 		_MirrorTex("tex", 2D) = "white" {}
 		_Color("col", Color) = (1,1,1,1)
@@ -140,11 +143,15 @@ Shader "Mochie/Uber/Uber (Outline)" {
 		_HeightLightness("ra", Range(-1,1)) = 0
 		_HeightIntensity("ra", Range(0,1)) = 0
 		_HeightContrast("ra", Range(-1,2)) = 1
-		// [ToggleUI]_CurvatureFiltering("tog", Int) = 0 // Curvature
-		// [ToggleUI]_PreviewCurvature("tog", Int) = 0
-		// _CurvatureLightness("ra", Range(-1,1)) = 0
-		// _CurvatureIntensity("ra", Range(0,1)) = 0
-		// _CurvatureContrast("ra", Range(-1,2)) = 1
+
+		// Base Color Dissolve
+		[ToggleUI]_BCDissolveToggle("tog", Int) = 0
+		_MainTex2("tex", 2D) = "white" {}
+		_BCColor("col", Color) = (1,1,1,1)
+		_BCNoiseTex("tex", 2D) = "white" {}
+		_BCDissolveStr("ra", Range(0,1)) = 0
+		_BCRimWidth("ra", Float) = 0.5
+		[HDR]_BCRimCol("col", Color) = (1,1,1,1)
 
 		//----------------------------
 		// SHADING
@@ -300,7 +307,8 @@ Shader "Mochie/Uber/Uber (Outline)" {
 		_EmissionMap("tex", 2D) = "white" {}
 		[HDR]_EmissionColor("col", Color) = (0,0,0)
 		_EmissScroll("vec", Vector) = (0,0,0,0)
-
+		_EmissIntensity("ra", Float) = 1
+		
 		// LIGHT REACTIVITY
 		[ToggleUI]_ReactToggle("tog", Int) = 0
 		[ToggleUI]_CrossMode("tog", Int) = 0
@@ -455,14 +463,13 @@ Shader "Mochie/Uber/Uber (Outline)" {
 		_GeomDissolveSpread("vec", Vector) = (0.1,0.1,0.1,1)
 		_DissolvePoint0("vec", Vector) = (0,0,0,0)
 		_DissolvePoint1("vec", Vector) = (1,1,1,1)
-		_DissolveNoiseScale("vec", Vector) = (10,10,10,0)
+		_DissolveNoiseScale("vec", Vector) = (3,3,3,0)
 		_DissolveAmount("ra", Range(0,1)) = 0
 		[ToggleUI]_DissolveBlending("tog", Int) = 0
 		_DissolveBlendSpeed("ra", Range(0,1)) = 0.2
 		_DissolveMask("tex", 2D) = "white" {}
 		_DissolveTex("Dissolve Map", 2D) = "white" {}
 		_DissolveScroll0("vec", Vector) = (0,0,0,0)
-		_DissolveRimTex("Dissolve Rim", 2D) = "white" {}
 		[HDR]_DissolveRimCol("col", Color) = (1,1,1,1)
 		_DissolveScroll1("vec", Vector) = (0,0,0,0)
 		_DissolveRimWidth("fl", Float) = 0.5
@@ -523,22 +530,12 @@ Shader "Mochie/Uber/Uber (Outline)" {
 		[HideInInspector]_NaNLmao("fl", Float) = 0.0
 		[HideInInspector]_OutlineCulling("tog", Int) = 1
 		[HideInInspector]_UseMatcap1("tog", Int) = 0
-		[HideInInspector]_UseCurvature("tog", Int) = 0
 
 		[IntRange]_StencilRef("ra", Range(1,255)) = 1
         [Enum(UnityEngine.Rendering.StencilOp)]_StencilPass("enx", Float) = 0
         [Enum(UnityEngine.Rendering.StencilOp)]_StencilFail("emx", Float) = 0
         [Enum(UnityEngine.Rendering.StencilOp)]_StencilZFail("enx", Float) = 0
         [Enum(UnityEngine.Rendering.CompareFunction)]_StencilCompare("enx", Float) = 8
-
-		[Enum(Zero,0, One,1, Two,2, Three,3)]_DebugEnum("en4", Int) = 0
-		[HDR]_DebugHDRColor("col", Color) = (1,1,1,1)
-		_DebugColor("col", Color) = (1,1,1,1)
-		_DebugVector("vec", Vector) = (0,0,0,0)
-		_DebugFloat("fl", Float) = 1
-		_DebugRange("ra", Range(0,5)) = 1
-		[IntRange]_DebugIntRange("ra", Range(0,10)) = 1
-		[ToggleUI]_DebugToggle("tog", Int) = 0
     }
 
     SubShader {
@@ -599,6 +596,7 @@ Shader "Mochie/Uber/Uber (Outline)" {
 			#pragma shader_feature GEOM_TYPE_MESH			// Vertex manip toggle
 			#pragma shader_feature GEOM_TYPE_BRANCH			// Mask SOS toggle
 			#pragma shader_feature VIGNETTE_MASKED			// Reflection cubemap check
+			#pragma shader_feature DITHERING				// Base Color Dissolve
 			#pragma multi_compile _ VERTEXLIGHT_ON			// Vertex lighting
 			#pragma multi_compile_fog						// Fog
 			#pragma multi_compile_fwdbase
@@ -652,6 +650,7 @@ Shader "Mochie/Uber/Uber (Outline)" {
 			#pragma shader_feature CHROMATIC_ABBERATION		// Refraction CA toggle
 			#pragma shader_feature GEOM_TYPE_MESH			// Vertex manip toggle
 			#pragma shader_feature GEOM_TYPE_BRANCH			// Mask SOS toggle
+			#pragma shader_feature DITHERING				// Base Color Dissolve
 			#pragma multi_compile_fog						// Fog
 			#pragma multi_compile_fwdadd_fullshadows
 			#pragma multi_compile_istancing
@@ -698,6 +697,7 @@ Shader "Mochie/Uber/Uber (Outline)" {
 			#pragma shader_feature GEOM_TYPE_MESH			// Vertex manip toggle
 			#pragma shader_feature EFFECT_HUE_VARIATION		// Spritesheet toggle
 			#pragma shader_feature GEOM_TYPE_BRANCH			// Mask SOS toggle
+			#pragma shader_feature DITHERING				// Base Color Dissolve
 			#pragma multi_compile _ VERTEXLIGHT_ON			// Vertex lighting
 			#pragma multi_compile_fog						// Fog
 			#pragma multi_compile_fwdbase
@@ -742,6 +742,7 @@ Shader "Mochie/Uber/Uber (Outline)" {
 			#pragma shader_feature GEOM_TYPE_MESH			// Vertex manip toggle
 			#pragma shader_feature EFFECT_HUE_VARIATION		// Spritesheet toggle
 			#pragma shader_feature GEOM_TYPE_BRANCH			// Mask SOS toggle
+			#pragma shader_feature DITHERING				// Base Color Dissolve
 			#pragma multi_compile_fog						// Fog
 			#pragma multi_compile_shadowcaster
 			#pragma multi_compile_istancing

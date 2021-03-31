@@ -67,11 +67,14 @@ UNITY_DECLARE_TEX2D_NOSAMPLER(_PackedMap);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_RefractionMask);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_RefractionDissolveMask);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_DetailOcclusionMap);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_BCNoiseTex);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_MainTex2);
 UNITY_DECLARE_TEX2DARRAY(_Flipbook0);
 UNITY_DECLARE_TEX2DARRAY(_Flipbook1);
 
 sampler2D _PackedMask3;
 sampler2D _OutlineMask;
+sampler2D _NearClipMask;
 sampler2D _ShadowRamp;
 samplerCUBE _MainTexCube0, _MainTexCube1;
 
@@ -104,6 +107,8 @@ int _DitheredShadows;
 int _UsingDetailRough, _UsingDetailOcclusion;
 int _DetailOcclusionBlending;
 int _UsingDetailAlbedo, _DetailAlbedoBlending;
+int _NearClipToggle;
+int _BCDissolveToggle;
 
 float4 _Color; 
 float4 _CubeColor0, _CubeColor1;
@@ -111,6 +116,7 @@ float4 _MatcapColor, _MatcapColor1;
 float4 _RimCol, _ERimTint;
 float4 _TeamColor0, _TeamColor1, _TeamColor2, _TeamColor3;
 float4 _SColor, _ShadowTint;
+float4 _BCRimCol, _BCColor;
 
 float4 _RefractionMask_ST;
 float4 _AlphaMask_ST;
@@ -131,6 +137,8 @@ float4 _EmissMask_ST;
 float4 _EmissPulseMask_ST;
 float4 _RefractionDissolveMask_ST;
 float4 _OutlineMask_ST;
+float4 _BCNoiseTex_ST;
+float4 _MainTex2_ST;
 
 float3 _CubeRotate0, _CubeRotate1;
 float3 _StaticLightDir;
@@ -184,6 +192,8 @@ float _NoiseSpeed, _RampPos;
 float _MatcapRough, _MatcapRough1;
 float _SpecBiasOverride;
 float _DetailOcclusionStrength, _DetailAlbedoStrength;
+float _NearClip;
+float _BCRimWidth, _BCDissolveStr;
 
 int _PreviewRough, _PreviewAO, _PreviewHeight;
 int _AOFiltering, _HeightFiltering, _RoughnessFiltering, _SmoothnessFiltering;
@@ -223,6 +233,7 @@ float4 _EmissionMap_ST, _EmissionColor;
 int _PulseToggle, _PulseWaveform, _ReactToggle, _CrossMode;
 float _PulseSpeed, _PulseStr, _Crossfade, _ReactThresh;
 float2 _EmissScroll;
+float _EmissIntensity;
 
 UNITY_DECLARE_TEX2D_NOSAMPLER(_DetailNormalMap); 
 float _DetailNormalmapScale;
@@ -252,10 +263,6 @@ float4 _SpecCol, _SpecTex_ST;
 float _AnisoAngleX, _AnisoAngleY, _AnisoLayerX, _AnisoLayerY;
 float _SpecStr, _AnisoStr, _AnisoLayerStr, _RippleFrequency, _RippleAmplitude, _SpecRough, _RippleStrength;
 float _RippleContinuity;
-
-int _DebugIntRange, _DebugToggle, _DebugEnum;
-float _DebugFloat, _DebugRange;
-float4 _DebugVector, _DebugColor, _DebugHDRColor;
 
 int _Refraction, _UnlitRefraction, _RefractionCA;
 float3 _RefractionTint;
@@ -355,7 +362,6 @@ struct appdata {
 #if X_FEATURES
 UNITY_DECLARE_TEX2D_NOSAMPLER(_DissolveMask);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_DissolveTex); float4 _DissolveTex_ST;
-UNITY_DECLARE_TEX2D_NOSAMPLER(_DissolveRimTex); float4 _DissolveRimTex_ST;
 UNITY_DECLARE_TEX2D_NOSAMPLER(_DissolveFlow);
 int _GeomFXToggle;
 int _ShatterClones, _DissolveClones, _GlitchClones, _WFClones, _DFClones;
@@ -460,7 +466,7 @@ struct v2f {
 	centroid float4 rawUV : TEXCOORD4;
 	float4 worldPos : TEXCOORD5;
 	float3 binormal : TEXCOORD6; 
-	float3 tangentViewDir : TEXCOOR78;
+	float3 tangentViewDir : TEXCOORD7;
 	float3 cameraPos : TEXCOORD8;
 	float3 objPos : TEXCOORD9;
 	float4 grabPos : TEXCOORD10;

@@ -38,37 +38,6 @@ float3 NormalizePerPixelNormal (float3 n)
 
 // MOCHIE ADDITIONS
 //-------------------------------------------------------------------------------------
-inline float3 BoxProjectedCubemapDirectionOffset(float3 worldRefl, float3 worldPos, float4 cubemapCenter, float4 boxMin, float4 boxMax, float3 offset) {
-    // Do we have a valid reflection probe?
-    UNITY_BRANCH
-    if (cubemapCenter.w > 0.0)
-    {
-        float3 nrdir = normalize(worldRefl);
-
-        #if 1
-			boxMin.xyz += offset;
-			boxMax.y += offset.y;
-            float3 rbmax = (boxMax.xyz - worldPos) / nrdir;
-            float3 rbmin = (boxMin.xyz - worldPos) / nrdir;
-
-            float3 rbminmax = (nrdir > 0.0f) ? rbmax : rbmin;
-
-        #else // Optimized version
-            float3 rbmax = (boxMax.xyz - worldPos);
-            float3 rbmin = (boxMin.xyz - worldPos);
-
-            float3 select = step (float3(0,0,0), nrdir);
-            float3 rbminmax = lerp (rbmax, rbmin, select);
-            rbminmax /= nrdir;
-        #endif
-
-        float fa = min(min(rbminmax.x, rbminmax.y), rbminmax.z);
-
-        worldPos -= cubemapCenter.xyz;
-        worldRefl = worldPos + nrdir * fa;
-    }
-    return worldRefl;
-}
 
 float GSAARoughness(float3 normal, float roughness){
 	float3 normalDDX = ddx_fine(normal);
@@ -99,10 +68,6 @@ half3 Mochie_GlossyEnvironment (UNITY_ARGS_TEXCUBE(tex), half4 hdr, Unity_Glossy
     return DecodeHDR(rgbm, hdr);
 }
 
-float Remap(float x, float minO, float maxO, float minN, float maxN){
-	return minN + (x - minO) * (maxN - minN) / (maxO - minO);
-}
-
 inline half3 MochieGI_IndirectSpecular(UnityGIInput data, half occlusion, Unity_GlossyEnvironmentData glossIn, float3 normal)
 {
     half3 specular;
@@ -117,38 +82,37 @@ inline half3 MochieGI_IndirectSpecular(UnityGIInput data, half occlusion, Unity_
     #ifdef _GLOSSYREFLECTIONS_OFF
         specular = unity_IndirectSpecColor.rgb;
     #else
-        half3 env0 = Mochie_GlossyEnvironment(UNITY_PASS_TEXCUBE(unity_SpecCube0), data.probeHDR[0], glossIn);
-		#if REFLECTION_FALLBACK
-			float3 maskedUVW = BoxProjectedCubemapDirectionOffset(originalReflUVW, data.worldPos, data.probePosition[0], data.boxMin[0], data.boxMax[0], _BoxOffset);
-			half3 env2 = Mochie_GlossyEnvironment(UNITY_PASS_TEXCUBE(_ReflCube), data.probeHDR[0], glossIn, lerp(originalReflUVW, maskedUVW, _DoubleBoxMode));
-			half envMask = Mochie_GlossyEnvironment(UNITY_PASS_TEXCUBE(_ReflCubeMask), data.probeHDR[0], glossIn, maskedUVW);
-		#endif
-        #ifdef UNITY_SPECCUBE_BLENDING
-            const float kBlendFactor = 0.99999;
-            float blendLerp = data.boxMin[0].w;
-            UNITY_BRANCH
-            if (blendLerp < kBlendFactor)
-            {
-                #ifdef UNITY_SPECCUBE_BOX_PROJECTION
-                    glossIn.reflUVW = BoxProjectedCubemapDirection(originalReflUVW, data.worldPos, data.probePosition[1], data.boxMin[1], data.boxMax[1]);
-                #endif
-
-                half3 env1 = Mochie_GlossyEnvironment(UNITY_PASS_TEXCUBE_SAMPLER(unity_SpecCube1,unity_SpecCube0), data.probeHDR[1], glossIn);
-                specular = lerp(env1, env0, blendLerp);
-            }
-            else
-            {
-                specular = env0;
-            }
-			#if REFLECTION_FALLBACK
-				specular = _DoubleBoxMode ? lerp(specular, env2, smoothstep(0, 0.9, envMask)) : lerp(env2, specular, envMask);
+		#if REFLECTION_OVERRIDE
+			half3 env0 = Mochie_GlossyEnvironment(UNITY_PASS_TEXCUBE(_ReflCubeOverride), _ReflCubeOverride_HDR, glossIn, originalReflUVW);
+			specular = env0;
+		#else
+			half3 env0 = Mochie_GlossyEnvironment(UNITY_PASS_TEXCUBE(unity_SpecCube0), data.probeHDR[0], glossIn);
+			#ifdef UNITY_SPECCUBE_BLENDING
+				const float kBlendFactor = 0.99999;
+				float blendLerp = data.boxMin[0].w;
+				UNITY_BRANCH
+				if (blendLerp < kBlendFactor){
+					#ifdef UNITY_SPECCUBE_BOX_PROJECTION
+						glossIn.reflUVW = BoxProjectedCubemapDirection(originalReflUVW, data.worldPos, data.probePosition[1], data.boxMin[1], data.boxMax[1]);
+					#endif
+					half3 env1 = Mochie_GlossyEnvironment(UNITY_PASS_TEXCUBE_SAMPLER(unity_SpecCube1,unity_SpecCube0), data.probeHDR[1], glossIn);
+					specular = lerp(env1, env0, blendLerp);
+				}
+				else {
+					specular = env0;
+				}
+			#else
+				specular = env0;
 			#endif
-        #else
-            specular = env0;
-        #endif
+		#endif
+		#if REFLECTION_FALLBACK
+			half3 env2 = Mochie_GlossyEnvironment(UNITY_PASS_TEXCUBE(_ReflCube), _ReflCube_HDR, glossIn, originalReflUVW);
+			float interpolant = (specular.r + specular.g + specular.b)/3.0;
+			specular = lerp(env2, specular, smoothstep(0, _CubeThreshold * 0.01, interpolant));
+		#endif
     #endif
-	
-    return specular * occlusion * _ReflectionStrength;
+
+    return specular * occlusion;
 }
 
 inline UnityGI MochieGlobalIllumination (UnityGIInput data, half occlusion, half3 normalWorld, Unity_GlossyEnvironmentData glossIn)
@@ -315,23 +279,6 @@ struct FragmentCommonData
     #define UNITY_SETUP_BRDF_INPUT SpecularSetup
 #endif
 
-inline FragmentCommonData SpecularSetup (float4 i_tex)
-{
-    half4 specGloss = SpecularGloss(i_tex.xy);
-    half3 specColor = specGloss.rgb;
-    half smoothness = specGloss.a;
-
-    half oneMinusReflectivity;
-    half3 diffColor = EnergyConservationBetweenDiffuseAndSpecular (Albedo(i_tex), specColor, /*out*/ oneMinusReflectivity);
-
-    FragmentCommonData o = (FragmentCommonData)0;
-    o.diffColor = diffColor;
-    o.specColor = specColor;
-    o.oneMinusReflectivity = oneMinusReflectivity;
-    o.smoothness = smoothness;
-    return o;
-}
-
 inline FragmentCommonData RoughnessSetup(float4 i_tex)
 {
     half2 metallicGloss = MetallicRough(i_tex.xy);
@@ -351,24 +298,6 @@ inline FragmentCommonData RoughnessSetup(float4 i_tex)
     return o;
 }
 
-inline FragmentCommonData MetallicSetup (float4 i_tex)
-{
-    half2 metallicGloss = MetallicGloss(i_tex.xy);
-    half metallic = metallicGloss.x;
-    half smoothness = metallicGloss.y; // this is 1 minus the square root of real roughness m.
-
-    half oneMinusReflectivity;
-    half3 specColor;
-    half3 diffColor = DiffuseAndSpecularFromMetallic (Albedo(i_tex), metallic, /*out*/ specColor, /*out*/ oneMinusReflectivity);
-
-    FragmentCommonData o = (FragmentCommonData)0;
-    o.diffColor = diffColor;
-    o.specColor = specColor;
-    o.oneMinusReflectivity = oneMinusReflectivity;
-    o.smoothness = smoothness;
-	o.metallic = metallic;
-    return o;
-}
 
 float3 CalculateTangentViewDir(inout float3 tangentViewDir){
     tangentViewDir = Unity_SafeNormalize(tangentViewDir);

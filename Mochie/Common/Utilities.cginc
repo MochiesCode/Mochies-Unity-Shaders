@@ -165,6 +165,22 @@ float4 RemapClamped(float4 x, float4 minO, float4 maxO, float4 minN, float4 maxN
 	return clamp(minN + (x - minO) * (maxN - minN) / (maxO - minO), minN, maxN);
 }
 
+float RemapPositive(float x){
+	return (x + 1) * 0.5;
+}
+
+float2 RemapPositive(float2 x){
+	return (x + 1) * 0.5;
+}
+
+float3 RemapPositive(float3 x){
+	return (x + 1) * 0.5;
+}
+
+float4 RemapPositive(float4 x){
+	return (x + 1) * 0.5;
+}
+
 float SmoothFalloff(float minR, float maxR, float d){
 	return smoothstep(maxR, clamp(minR, 0, maxR-0.001), d);
 }
@@ -392,3 +408,70 @@ float2 GetGrabPos(float4 grabPos){
 	#endif
 	return(grabPos / grabPos.w).xy;
 }
+
+// _EdgeRadius("Edge Radius", Range(0,1)) = 0.5
+// _EdgeBlur("Edge Blur", Range(0,1)) = 0.1
+// _EdgeThreshold("Edge Threshold", Range(0,1)) = 0.8
+
+// float _EdgeRadius;
+// float _EdgeBlur;
+// float _EdgeThreshold;
+
+// static const float2 kernel[16] = {
+// 	float2(0,0),
+// 	float2(0.54545456,0),
+// 	float2(0.16855472,0.5187581),
+// 	float2(-0.44128203,0.3206101),
+// 	float2(-0.44128197,-0.3206102),
+// 	float2(0.1685548,-0.5187581),
+// 	float2(1,0),
+// 	float2(0.809017,0.58778524),
+// 	float2(0.30901697,0.95105654),
+// 	float2(-0.30901703,0.9510565),
+// 	float2(-0.80901706,0.5877852),
+// 	float2(-1,0),
+// 	float2(-0.80901694,-0.58778536),
+// 	float2(-0.30901664,-0.9510566),
+// 	float2(0.30901712,-0.9510565),
+// 	float2(0.80901694,-0.5877853),
+// };
+
+// float tex2DSobel(sampler2D tex, float2 uv) {
+// 	_EdgeRadius = lerp(0.0001, 0.005, _EdgeRadius);
+// 	float2 delta = _EdgeRadius.xx;
+	
+// 	float4 hr = float4(0, 0, 0, 0);
+// 	float4 vt = float4(0, 0, 0, 0);
+	
+// 	hr += tex2D(tex, (uv + float2(-1.0, -1.0) * delta)) *  1.0;
+// 	hr += tex2D(tex, (uv + float2( 0.0, -1.0) * delta)) *  0.0;
+// 	hr += tex2D(tex, (uv + float2( 1.0, -1.0) * delta)) * -1.0;
+// 	hr += tex2D(tex, (uv + float2(-1.0,  0.0) * delta)) *  2.0;
+// 	hr += tex2D(tex, (uv + float2( 0.0,  0.0) * delta)) *  0.0;
+// 	hr += tex2D(tex, (uv + float2( 1.0,  0.0) * delta)) * -2.0;
+// 	hr += tex2D(tex, (uv + float2(-1.0,  1.0) * delta)) *  1.0;
+// 	hr += tex2D(tex, (uv + float2( 0.0,  1.0) * delta)) *  0.0;
+// 	hr += tex2D(tex, (uv + float2( 1.0,  1.0) * delta)) * -1.0;
+	
+// 	vt += tex2D(tex, (uv + float2(-1.0, -1.0) * delta)) *  1.0;
+// 	vt += tex2D(tex, (uv + float2( 0.0, -1.0) * delta)) *  2.0;
+// 	vt += tex2D(tex, (uv + float2( 1.0, -1.0) * delta)) *  1.0;
+// 	vt += tex2D(tex, (uv + float2(-1.0,  0.0) * delta)) *  0.0;
+// 	vt += tex2D(tex, (uv + float2( 0.0,  0.0) * delta)) *  0.0;
+// 	vt += tex2D(tex, (uv + float2( 1.0,  0.0) * delta)) *  0.0;
+// 	vt += tex2D(tex, (uv + float2(-1.0,  1.0) * delta)) * -1.0;
+// 	vt += tex2D(tex, (uv + float2( 0.0,  1.0) * delta)) * -2.0;
+// 	vt += tex2D(tex, (uv + float2( 1.0,  1.0) * delta)) * -1.0;
+	
+// 	return sqrt(hr * hr + vt * vt);
+// }
+
+// float4 tex2DBlur(sampler2D tex, float2 uv){
+// 	float4 blurCol = 0;
+// 	float strength = _EdgeBlur * 0.001;
+// 	UNITY_UNROLL
+// 	for (int i = 0; i < 16; i++){
+// 		blurCol += tex2D(tex, uv + (strength * kernel[i]));
+// 	}	
+// 	return blurCol /= 16;
+// }

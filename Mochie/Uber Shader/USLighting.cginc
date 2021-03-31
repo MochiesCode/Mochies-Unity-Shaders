@@ -87,7 +87,7 @@ float3 GetNormalDir(g2f i, lighting l, masks m){
 		#endif
 
 		float3 hardNormals = normalize(cross(ddy(i.worldPos), ddx(i.worldPos)));
-		i.normal = lerp(normalize(i.normal), hardNormals, _HardenNormals);
+		i.normal = _HardenNormals == 1 ? hardNormals : normalize(i.normal);
 			
 		return normalize(normalMap.x * l.tangent + normalMap.y * l.binormal + normalMap.z * i.normal);
 	#else
@@ -275,7 +275,7 @@ lighting GetLighting(g2f i, masks m, float3 atten, bool frontFace){
 		l.lightDir = GetLightDir(i, l);
 		l.halfVector = normalize(l.lightDir + l.viewDir);
 
-		l.NdotL = dot(l.normalDir, l.lightDir);
+		l.NdotL = clamp(dot(l.normalDir, l.lightDir), -1, 1);
 		l.NdotV = abs(dot(l.normal, l.viewDir));
 		l.NdotH = Safe_DotClamped(l.normal, l.halfVector);
 		l.LdotH = Safe_DotClamped(l.lightDir, l.halfVector);

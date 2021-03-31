@@ -97,4 +97,6 @@
 
 #define REFLCUBE_EXISTS defined(VIGNETTE_MASKED)
 
+#define BCDISSOLVE_ENABLED defined(DITHERING)
+
 #endif

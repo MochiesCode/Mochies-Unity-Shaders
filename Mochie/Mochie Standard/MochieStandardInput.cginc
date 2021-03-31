@@ -52,6 +52,7 @@ float2		_ParallaxMaskScroll;
 float4		_ParallaxMask_ST;
 half        _Parallax;
 int			_ParallaxSteps;
+float		_ParallaxOffset;
 float2 		uvOffset;
 float2		lightmapOffset;
 half        _UVSec;
@@ -63,34 +64,36 @@ float2		_UV1Scroll;
 half4       _EmissionColor;
 sampler2D   _EmissionMap;
 sampler2D   _EmissionMask;
-int _SpectrumInput;
-float _SpectrumValue, _SpectrumStrength;
+float		_EmissionIntensity;
 
-int _DoubleBoxMode;
-float3 _BoxOffset;
 float _ReflectionStrength, _SpecularStrength;
+float _TSSBias;
 
 sampler2D _PackedMap;
 UNITY_DECLARE_TEXCUBE(_ReflCube);
+UNITY_DECLARE_TEXCUBE(_ReflCubeOverride);
+float4 _ReflCube_HDR, _ReflCubeOverride_HDR;
 float _CubeThreshold;
 int _RoughnessMult, _MetallicMult, _OcclusionMult, _HeightMult;
 
 #define REFLECTION_FALLBACK defined(_MAPPING_6_FRAMES_LAYOUT)
+#define REFLECTION_OVERRIDE defined(_COLOROVERLAY_ON)
 #define GSAA_ENABLED defined(FXAA)
+#define TSS_ENABLED defined(BLOOM)
 #define SSR_ENABLED defined(GRAIN)
-// #define WORKFLOW_PACKED defined(BLOOM_LENS_DIRT)
+#define STOCHASTIC_ENABLED defined(EFFECT_HUE_VARIATION)
+#define WORKFLOW_PACKED defined(BLOOM_LENS_DIRT)
+
 #if SSR_ENABLED
-	sampler2D _MSSRGrab; 
+	sampler2D _GrabTexture; 
 	sampler2D _NoiseTexSSR;
 	sampler2D _CameraDepthTexture;
-	float4 _MSSRGrab_TexelSize;
+	float4 _GrabTexture_TexelSize;
 	float4 _NoiseTexSSR_TexelSize;
 	float _EdgeFade;
 	float _SSRStrength;
 #endif
-#if REFLECTION_FALLBACK
-	UNITY_DECLARE_TEXCUBE(_ReflCubeMask);
-#endif
+
 #if SHADER_TARGET < 50
 	#define ddx_fine ddx
 	#define ddy_fine ddy
@@ -120,7 +123,8 @@ float2 Rotate2D(float2 coords, float rot){
 	float cosX = cos(rot);
 	float2x2 mat = float2x2(cosX, -sinVal, sinVal, cosX);
 	mat = ((mat*0.5)+0.5)*2-1;
-	return mul(coords, mat);
+	coords -= 0.5;
+	return mul(coords, mat) + 0.5;
 }
 
 float RoundTo(float value, uint fraction){
@@ -136,23 +140,25 @@ float2 RoundTo(float2 value, uint fraction0, uint fraction1){
 float4 TexCoords(VertexInput v)
 {
     float4 texcoord;
-    texcoord.xy = TRANSFORM_TEX(v.uv0, _MainTex); // Always source from uv0
-    texcoord.zw = TRANSFORM_TEX(((_UVSec == 0) ? v.uv0 : v.uv1), _DetailAlbedoMap);
-	texcoord.xy = Rotate2D(texcoord.xy, _UV0Rotate);
-	texcoord.zw = Rotate2D(texcoord.zw, _UV1Rotate);
+	texcoord.xy = Rotate2D(v.uv0, _UV0Rotate);
+	texcoord.zw = Rotate2D((_UVSec == 0 ? v.uv0 : v.uv1), _UV1Rotate);
+    texcoord.xy = TRANSFORM_TEX(texcoord.xy, _MainTex); // Always source from uv0
+    texcoord.zw = TRANSFORM_TEX((_UVSec == 0 ? texcoord.xy : texcoord.zw), _DetailAlbedoMap);
 	texcoord.xy += _Time.y * _UV0Scroll;
 	texcoord.zw += _Time.y * _UV1Scroll;
     return texcoord;
 }
 
+#include "MochieStandardSampling.cginc"
+
 half DetailMask(float2 uv)
 {
-    return tex2D (_DetailMask, uv).a;
+    return tex2D(_DetailMask, uv).a;
 }
 
 half3 Albedo(float4 texcoords)
 {
-    half3 albedo = _Color.rgb * tex2D (_MainTex, texcoords.xy).rgb;
+    half3 albedo = _Color.rgb * tex2D(_MainTex, texcoords.xy).rgb;
 	albedo = lerp(dot(albedo, float3(0.3,0.59,0.11)), albedo, _Saturation);
 #if _DETAIL
     #if (SHADER_TARGET < 30)
@@ -162,7 +168,7 @@ half3 Albedo(float4 texcoords)
     #else
         half mask = DetailMask(texcoords.xy);
     #endif
-    half3 detailAlbedo = tex2D (_DetailAlbedoMap, texcoords.zw).rgb;
+    half3 detailAlbedo = tex2D(_DetailAlbedoMap, texcoords.zw).rgb;
     #if _DETAIL_MULX2
         albedo *= LerpWhiteTo (detailAlbedo * unity_ColorSpaceDouble.rgb, mask);
     #elif _DETAIL_MUL
@@ -178,7 +184,7 @@ half3 Albedo(float4 texcoords)
 
 half Alpha(float2 uv)
 {
-#if defined(_SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A)
+#ifdef _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
     return _Color.a;
 #else
     return tex2D(_MainTex, uv).a * _Color.a;
@@ -191,13 +197,13 @@ half Occlusion(float2 uv)
 #if (SHADER_TARGET < 30)
     // SM20: instruction count limitation
     // SM20: simpler occlusion
-	#ifndef BLOOM_LENS_DIRT
+	#if !WORKFLOW_PACKED
     	return tex2D(_OcclusionMap, uv).g;
 	#else
 		return tex2D(_PackedMap, uv).r;
 	#endif
 #else
-	#ifndef BLOOM_LENS_DIRT
+	#if !WORKFLOW_PACKED
     	half occ = tex2D(_OcclusionMap, uv).g;
 		return LerpOneTo (occ, _OcclusionStrength);
 	#else
@@ -208,55 +214,10 @@ half Occlusion(float2 uv)
 #endif
 }
 
-half4 SpecularGloss(float2 uv)
-{
-    half4 sg;
-#ifdef _SPECGLOSSMAP
-    #if defined(_SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A)
-        sg.rgb = tex2D(_SpecGlossMap, uv).rgb;
-        sg.a = tex2D(_MainTex, uv).a;
-    #else
-        sg = tex2D(_SpecGlossMap, uv);
-    #endif
-    sg.a *= _GlossMapScale;
-#else
-    sg.rgb = _SpecColor.rgb;
-    #ifdef _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
-        sg.a = tex2D(_MainTex, uv).a * _GlossMapScale;
-    #else
-        sg.a = _Glossiness;
-    #endif
-#endif
-    return sg;
-}
-
-half2 MetallicGloss(float2 uv)
-{
-    half2 mg;
-
-#ifdef _METALLICGLOSSMAP
-    #ifdef _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
-        mg.r = tex2D(_MetallicGlossMap, uv).r;
-        mg.g = tex2D(_MainTex, uv).a;
-    #else
-        mg = tex2D(_MetallicGlossMap, uv).ra;
-    #endif
-    mg.g *= _GlossMapScale;
-#else
-    mg.r = _Metallic;
-    #ifdef _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
-        mg.g = tex2D(_MainTex, uv).a * _GlossMapScale;
-    #else
-        mg.g = _Glossiness;
-    #endif
-#endif
-    return mg;
-}
-
 half2 MetallicRough(float2 uv)
 {
 	half2 mg;
-	#ifndef BLOOM_LENS_DIRT
+	#if !WORKFLOW_PACKED
 		#ifdef _METALLICGLOSSMAP
 			mg.r = tex2D(_MetallicGlossMap, uv).r * _Metallic;
 		#else
@@ -284,20 +245,20 @@ half3 Emission(float2 uv)
 #ifndef _EMISSION
     return 0;
 #else
-	float3 emissTex = tex2D(_EmissionMap, uv).rgb * _EmissionColor.rgb;
-	emissTex = lerp(emissTex, lerp(0, emissTex, _SpectrumValue), _SpectrumStrength * _SpectrumInput);
-    return emissTex * tex2D(_EmissionMask, uv).r;
+	float3 emissTex = tex2D(_EmissionMap, uv).rgb * _EmissionColor.rgb * _EmissionIntensity;
+	float emissMask = tex2D(_EmissionMask, uv).r;
+    return emissTex * emissMask;
 #endif
 }
 
 #ifdef _NORMALMAP
 half3 NormalInTangentSpace(float4 texcoords)
 {
-    half3 normalTangent = UnpackScaleNormal(tex2D (_BumpMap, texcoords.xy), _BumpScale);
+	half3 normalTangent = UnpackScaleNormal(tex2D(_BumpMap, texcoords.xy), _BumpScale);
 
 #if _DETAIL && defined(UNITY_ENABLE_DETAIL_NORMALMAP)
     half mask = DetailMask(texcoords.xy);
-    half3 detailNormalTangent = UnpackScaleNormal(tex2D (_DetailNormalMap, texcoords.zw), _DetailNormalMapScale);
+    half3 detailNormalTangent = UnpackScaleNormal(tex2D(_DetailNormalMap, texcoords.zw), _DetailNormalMapScale);
     #if _DETAIL_LERP
         normalTangent = lerp(
             normalTangent,
@@ -318,85 +279,20 @@ half3 NormalInTangentSpace(float4 texcoords)
 //----------------------------
 // Parallax Mapping
 //----------------------------
-float2 ParallaxOffsetMultiStep(float surfaceHeight, float strength, float2 uv, float3 tangentViewDir){
-    float2 uvOffset = 0;
-	float2 prevUVOffset = 0;
-	float stepSize = 1.0/_ParallaxSteps;
-	float stepHeight = 1;
-	tangentViewDir.xy = Rotate2D(tangentViewDir.xy, _UV0Rotate);
-	float2 uvDelta = tangentViewDir.xy * (stepSize * strength);
 
-	#ifdef BLOOM_LENS_DIRT
-		float prevStepHeight = stepHeight;
-		float prevSurfaceHeight = surfaceHeight;
-		[unroll(50)]
-		for (int j = 1; j <= _ParallaxSteps && stepHeight > surfaceHeight; j++){
-			prevUVOffset = uvOffset;
-			prevStepHeight = stepHeight;
-			prevSurfaceHeight = surfaceHeight;
-			uvOffset -= uvDelta;
-			stepHeight -= stepSize;
-			surfaceHeight = tex2D(_PackedMap, uv+uvOffset).a;
-		}
-		[unroll(3)]
-		for (int k = 0; k < 3; k++) {
-			uvDelta *= 0.5;
-			stepSize *= 0.5;
-
-			if (stepHeight < surfaceHeight) {
-				uvOffset += uvDelta;
-				stepHeight += stepSize;
-			}
-			else {
-				uvOffset -= uvDelta;
-				stepHeight -= stepSize;
-			}
-			surfaceHeight = tex2D(_PackedMap, uv+uvOffset).a;
-		}
-	#else
-		float prevStepHeight = stepHeight;
-		float prevSurfaceHeight = surfaceHeight;
-		[unroll(50)]
-		for (int j = 1; j <= _ParallaxSteps && stepHeight > surfaceHeight; j++){
-			prevUVOffset = uvOffset;
-			prevStepHeight = stepHeight;
-			prevSurfaceHeight = surfaceHeight;
-			uvOffset -= uvDelta;
-			stepHeight -= stepSize;
-			surfaceHeight = tex2D(_ParallaxMap, uv+uvOffset);
-		}
-		[unroll(3)]
-		for (int k = 0; k < 3; k++) {
-			uvDelta *= 0.5;
-			stepSize *= 0.5;
-
-			if (stepHeight < surfaceHeight) {
-				uvOffset += uvDelta;
-				stepHeight += stepSize;
-			}
-			else {
-				uvOffset -= uvDelta;
-				stepHeight -= stepSize;
-			}
-			surfaceHeight = tex2D(_ParallaxMap, uv+uvOffset);
-		}
-	#endif
-
-    return uvOffset;
-}
+#include "MochieStandardParallax.cginc"
 
 float4 Parallax (float4 texcoords, half3 viewDir, out float2 offset)
 {
 	offset = 0;
-	#ifndef BLOOM_LENS_DIRT
+	#if !WORKFLOW_PACKED
 		#if !defined(_PARALLAXMAP) || (SHADER_TARGET < 30)
 			return texcoords;
 		#else
-			half h = tex2D(_ParallaxMap, texcoords.xy).g;
+			half h = tex2D(_ParallaxMap, texcoords.xy).g + _ParallaxOffset;
+			h = clamp(h, 0, 0.999);
 			float2 maskUV = TRANSFORM_TEX(texcoords, _ParallaxMask) + (_Time.y*_ParallaxMaskScroll);
 			half m = tex2D(_ParallaxMask, maskUV);
-			// _Parallax = lerp(_Parallax, lerp(0, _Parallax, _SpectrumValue), _SpectrumStrength * _SpectrumInput);
-			h = clamp(h, 0, 0.999);
 			offset = ParallaxOffsetMultiStep(h, _Parallax * m, texcoords.xy, viewDir);
 			return float4(texcoords.xy + offset, texcoords.zw + offset);
 		#endif
@@ -404,16 +300,22 @@ float4 Parallax (float4 texcoords, half3 viewDir, out float2 offset)
 		#ifndef _PARALLAXMAP
 			return texcoords;
 		#else
-			half h = tex2D(_PackedMap, texcoords.xy).a;
+			half h = tex2D(_PackedMap, texcoords.xy).a + _ParallaxOffset;
+			h = clamp(h, 0, 0.999);
 			float2 maskUV = TRANSFORM_TEX(texcoords, _ParallaxMask) + (_Time.y*_ParallaxMaskScroll);
 			half m = tex2D(_ParallaxMask, maskUV);
-			// _Parallax = lerp(_Parallax, lerp(0, _Parallax, _SpectrumValue), _SpectrumStrength * _SpectrumInput);
-			h = clamp(h, 0, 0.999);
+			_Parallax = lerp(0.02, _Parallax, _HeightMult);
 			offset = ParallaxOffsetMultiStep(h, _Parallax * m, texcoords.xy, viewDir);
 			return float4(texcoords.xy + offset, texcoords.zw + offset);
 		#endif
 	#endif
 	return texcoords;
 }
+
+#if STOCHASTIC_ENABLED
+	#undef tex2D
+#elif TSS_ENABLED
+	#undef tex2D
+#endif
 
 #endif // UNITY_STANDARD_INPUT_INCLUDED

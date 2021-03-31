@@ -223,20 +223,6 @@ float3 FresnelTerm(float3 specCol, float LdotH){
     return specCol + (1-specCol) * t;
 }
 
-float GetGGXTerm(lighting l, float roughness){
-	float rough2 = roughness * roughness;
-	float lambdaV = l.NdotL * sqrt((-l.NdotV * rough2 + l.NdotV) * l.NdotV + rough2);
-    float lambdaL = l.NdotV * sqrt((-l.NdotL * rough2 + l.NdotL) * l.NdotL + rough2);
-
-	float visibilityTerm = 0.5f / (lambdaV + lambdaL + 1e-5f);
-    float d = (l.NdotH * rough2 - l.NdotH) * l.NdotH + 1.0f;
-	float dotTerm = UNITY_INV_PI * rough2 / (d * d + 1e-7f);
-
-	visibilityTerm *= dotTerm * UNITY_PI;
-
-	return visibilityTerm;
-}
-
 // Implementation from Google Filament
 // https://google.github.io/filament/Filament.md.html#lighting/imagebasedlights/anisotropy
 float3 GetAnisoReflDir(lighting l){
@@ -288,6 +274,28 @@ float GetAnisoTerm(g2f i, lighting l, masks m){
 		visibilityTerm = lerp(layer1*_AnisoLayerStr, layer0, layer0);
 	else
 		visibilityTerm = saturate(layer0 + (layer1*_AnisoLayerStr));
+
+	return visibilityTerm;
+}
+
+float GetGGXTerm(lighting l, float roughness){
+
+	float rough = roughness;
+	float rough2 = roughness * roughness;
+
+	// Originally used this because it's "mathematically correct" according to unity standard
+	// but it actually creates NaNs due to how I'm handling NdotL
+	// float lambdaV = l.NdotL * sqrt((-l.NdotV * rough2 + l.NdotV) * l.NdotV + rough2);
+    // float lambdaL = l.NdotV * sqrt((-l.NdotL * rough2 + l.NdotL) * l.NdotL + rough2);
+
+    float lambdaV = l.NdotL * (l.NdotV * (1 - rough) + rough);
+    float lambdaL = l.NdotV * (l.NdotL * (1 - rough) + rough);
+
+	float visibilityTerm = 0.5f / (lambdaV + lambdaL + 1e-5f);
+    float d = (l.NdotH * rough2 - l.NdotH) * l.NdotH + 1.0f;
+	float dotTerm = UNITY_INV_PI * rough2 / (d * d + 1e-7f);
+
+	visibilityTerm *= dotTerm * UNITY_PI;
 
 	return visibilityTerm;
 }
@@ -371,7 +379,7 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
 		// Reflections
 		// Lighting based IOR from Retro's standard mod
 		#if REFLECTIONS_ENABLED && FORWARD_PASS													
-			float surfaceReduction = (1.0 / (brdfRoughness*brdfRoughness + 1.0)) * lerp(1, (l.NdotL + 0.3), _LightingBasedIOR);
+			float surfaceReduction = (1.0 / (brdfRoughness*brdfRoughness + 1.0)) * saturate(lerp(1, (l.NdotL + 0.3), _LightingBasedIOR));
 			float grazingTerm = saturate(smoothness + (1-omr));
 			reflections = surfaceReduction * reflCol * FresnelLerp(specCol, grazingTerm, l.NdotV);
 			#if SSR_ENABLED

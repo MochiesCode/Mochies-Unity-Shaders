@@ -55,9 +55,8 @@ v2g vert (appdata v) {
 	o.uv2.xy = TRANSFORM_TEX(detailUV, _DetailAlbedoMap) + (_Time.y * _DetailScroll);
 	o.uv2.zw = TRANSFORM_TEX(v.uv, _RimTex) + (_Time.y * _RimScroll);
 	o.uv3.xy = TRANSFORM_TEX(v.uv, _DistortUVMap) + (_Time.y * _DistortUVScroll);
-	float2 anisoUV = lerp3(v.uv, v.uv1, v.uv2, _UVAniso);
 	o.rawUV.xy = v.uv.xy;
-	o.rawUV.zw = anisoUV;
+	o.rawUV.zw = v.uv.xy;
 
 	UNITY_TRANSFER_SHADOW(o, v.uv1);
 	UNITY_TRANSFER_FOG(o, o.pos);
@@ -68,16 +67,14 @@ v2g vert (appdata v) {
 
 float4 frag (g2f i, bool frontFace : SV_IsFrontFace) : SV_Target {
 	
-		
-
 	#if X_FEATURES && (NON_OPAQUE_RENDERING)
 		float falloff, falloffRim;
 		GetFalloff(i, falloff, falloffRim);
 		clip(falloff);
 	#endif
 
-	if ((i.isReflection && _MirrorBehavior == 3) ||  (!i.isReflection && _MirrorBehavior == 1))
-		discard;
+	MirrorClip(i);
+	NearClip(i);
 	
 	#if UV_DISTORTION_ENABLED
 		ApplyUVDistortion(i, uvOffset);
@@ -303,8 +300,8 @@ float4 frag(g2f i) : SV_Target {
 		clip(falloff);
 	#endif
 	
-	if ((i.isReflection && _MirrorBehavior == 3) ||  (!i.isReflection && _MirrorBehavior == 1))
-		discard;
+	MirrorClip(i);
+	NearClip(i);
 
 	#if PACKED_WORKFLOW || PACKED_WORKFLOW_BAKED
 		packedTex = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy);
@@ -462,8 +459,8 @@ float4 frag(g2f i) : SV_Target {
 			discard;
 	#endif
 	
-	if ((i.isReflection && _MirrorBehavior == 3) ||  (!i.isReflection && _MirrorBehavior == 1))
-		discard;
+	MirrorClip(i);
+	NearClip(i);
 
     #if NON_OPAQUE_RENDERING
 		#if X_FEATURES
@@ -474,6 +471,7 @@ float4 frag(g2f i) : SV_Target {
 		
 		float alpha = 1;
 		float4 albedo = _MainTex.Sample(sampler_MainTex, i.uv.xy) * _Color;
+		ApplyBCDissolve(i, albedo);
 		float maskAlpha = UNITY_SAMPLE_TEX2D_SAMPLER(_AlphaMask, _MainTex, i.uv.xy) * _Color.a;
 		alpha = lerp(albedo.a, maskAlpha, _UseAlphaMask);
 

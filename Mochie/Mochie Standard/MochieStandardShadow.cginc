@@ -49,23 +49,46 @@ sampler2D   _SpecGlossMap;
 sampler2D   _MetallicGlossMap;
 #endif
 
+
+
 #if defined(UNITY_STANDARD_USE_SHADOW_UVS) && defined(_PARALLAXMAP)
 sampler2D   _ParallaxMap;
+sampler2D	_ParallaxMask;
+float2		_ParallaxMaskScroll;
+float4		_ParallaxMask_ST;
 half        _Parallax;
+int			_ParallaxSteps;
+float		_ParallaxOffset;
+float2 		uvOffset;
+half		_UV0Rotate;
+half		_UV1Rotate;
+float2		_UV0Scroll;
+float2		_UV1Scroll;
 #endif
 
 sampler2D _PackedMap;
+float _TSSBias;
 
-half MetallicSetup_ShadowGetOneMinusReflectivity(half2 uv)
-{
-    half metallicity = _Metallic;
-	#if !defined(BLOOM_LENS_DIRT) && defined(_METALLICGLOSSMAP)
-		metallicity = tex2D(_MetallicGlossMap, uv).r;
-	#else
-		metallicity = tex2D(_PackedMap, uv).b;
-	#endif
-    return OneMinusReflectivityFromMetallic(metallicity);
+#if SHADER_TARGET < 50
+	#define ddx_fine ddx
+	#define ddy_fine ddy
+#endif
+
+float2 Rotate2D(float2 coords, float rot){
+	rot *= (UNITY_PI/180.0);
+	float sinVal = sin(rot);
+	float cosX = cos(rot);
+	float2x2 mat = float2x2(cosX, -sinVal, sinVal, cosX);
+	mat = ((mat*0.5)+0.5)*2-1;
+	coords -= 0.5;
+	return mul(coords, mat) + 0.5;
 }
+
+#include "MochieStandardSampling.cginc"
+
+#if defined(UNITY_STANDARD_USE_SHADOW_UVS) && defined(_PARALLAXMAP)
+	#include "MochieStandardParallax.cginc"
+#endif
 
 half RoughnessSetup_ShadowGetOneMinusReflectivity(half2 uv)
 {
@@ -76,15 +99,6 @@ half RoughnessSetup_ShadowGetOneMinusReflectivity(half2 uv)
 		metallicity = tex2D(_PackedMap, uv).b;
 	#endif
     return OneMinusReflectivityFromMetallic(metallicity);
-}
-
-half SpecularSetup_ShadowGetOneMinusReflectivity(half2 uv)
-{
-    half3 specColor = _SpecColor.rgb;
-    #ifdef _SPECGLOSSMAP
-        specColor = tex2D(_SpecGlossMap, uv).rgb;
-    #endif
-    return (1 - SpecularStrength(specColor));
 }
 
 // SHADOW_ONEMINUSREFLECTIVITY(): workaround to get one minus reflectivity based on UNITY_SETUP_BRDF_INPUT
@@ -154,6 +168,10 @@ void vertShadowCaster (VertexInput v
     #endif
 }
 
+#if STOCHASTIC_ENABLED
+	#define tex2D tex2Dstoch
+#endif
+
 half4 fragShadowCaster (UNITY_POSITION(vpos)
 #ifdef UNITY_STANDARD_USE_SHADOW_OUTPUT_STRUCT
     , VertexOutputShadowCaster i
@@ -163,14 +181,19 @@ half4 fragShadowCaster (UNITY_POSITION(vpos)
     #if defined(UNITY_STANDARD_USE_SHADOW_UVS)
         #if defined(_PARALLAXMAP) && (SHADER_TARGET >= 30)
             half3 viewDirForParallax = normalize(i.viewDirForParallax);
-			#if defined(BLOOM_LENS_DIRT)
-				fixed h = tex2D(_PackedMap, i.tex.xy).a;
+			#if WORKFLOW_PACKED
+				half h = tex2D(_PackedMap, i.tex.xy).a + _ParallaxOffset;
 				h = clamp(h, 0, 0.999);
-				half2 offset = ParallaxOffsetMultiStep(h, lerp(0.02, _Parallax, _HeightMult), i.tex.xy, viewDirForParallax, uvOffset);
+				float2 maskUV = TRANSFORM_TEX(i.tex, _ParallaxMask) + (_Time.y*_ParallaxMaskScroll);
+				half m = tex2D(_ParallaxMask, maskUV);
+				_Parallax = lerp(0.02, _Parallax, _HeightMult);
+				half2 offset = ParallaxOffsetMultiStep(h, _Parallax * m, i.tex.xy, viewDirForParallax);
 			#else
-            	fixed h = tex2D(_ParallaxMap, i.tex.xy).g;
+				half h = tex2D(_ParallaxMap, i.tex.xy).g + _ParallaxOffset;
 				h = clamp(h, 0, 0.999);
-				half2 offset = ParallaxOffsetMultiStep(h, _Parallax, i.tex.xy, viewDirForParallax, uvOffset);
+				float2 maskUV = TRANSFORM_TEX(i.tex, _ParallaxMask) + (_Time.y*_ParallaxMaskScroll);
+				half m = tex2D(_ParallaxMask, maskUV);
+				half2 offset = ParallaxOffsetMultiStep(h, _Parallax * m, i.tex.xy, viewDirForParallax);
 			#endif
            
             i.tex.xy += offset;
@@ -215,5 +238,11 @@ half4 fragShadowCaster (UNITY_POSITION(vpos)
 
     SHADOW_CASTER_FRAGMENT(i)
 }
+
+#if STOCHASTIC_ENABLED
+	#undef tex2D
+#elif TSS_ENABLED
+	#undef tex2D
+#endif
 
 #endif // UNITY_STANDARD_SHADOW_INCLUDED

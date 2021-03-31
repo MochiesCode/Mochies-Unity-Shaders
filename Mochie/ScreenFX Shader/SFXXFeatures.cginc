@@ -1,1 +1,1 @@
-// https://www.patreon.com/mochieshaders
+// mochie.moe

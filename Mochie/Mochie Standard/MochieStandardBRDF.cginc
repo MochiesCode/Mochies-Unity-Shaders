@@ -24,12 +24,10 @@ half4 BRDF1_Mochie_PBS (
     // Specular term
     half roughness = PerceptualRoughnessToRoughness(perceptualRoughness);
 	#if UNITY_BRDF_GGX
-		// GGX with roughtness to 0 would mean no specular at all, using max(roughness, 0.002) here to match HDrenderloop roughtness remapping.
 		roughness = max(roughness, 0.002);
 		half V = SmithJointGGXVisibilityTerm (nl, nv, roughness);
 		half D = GGXTerm(nh, roughness);
 	#else
-		// Legacy
 		half V = SmithBeckmannVisibilityTerm (nl, nv, roughness);
 		half D = NDFBlinnPhongNormalizedTerm (nh, PerceptualRoughnessToSpecPower(perceptualRoughness));
 	#endif
@@ -37,33 +35,32 @@ half4 BRDF1_Mochie_PBS (
 	#if defined(_SPECULARHIGHLIGHTS_OFF)
 		half specularTerm = 0.0;
 	#else
-		half specularTerm = V*D * UNITY_PI; // Torrance-Sparrow model, Fresnel is applied later
+		half specularTerm = V*D * UNITY_PI;
 		#ifdef UNITY_COLORSPACE_GAMMA
 			specularTerm = sqrt(max(1e-4h, specularTerm));
 		#endif
-		// specularTerm * nl can be NaN on Metal in some cases, use max() to make sure it's a sane value
 		specularTerm = max(0, specularTerm * nl);
 	#endif
-    // surfaceReduction = Int D(NdotH) * NdotH * Id(NdotL>0) dH = 1/(roughness^2+1)
     half surfaceReduction;
 	#ifdef UNITY_COLORSPACE_GAMMA
-		surfaceReduction = 1.0-0.28*roughness*perceptualRoughness;      // 1-0.28*x^3 as approximation for (1/(x^4+1))^(1/2.2) on the domain [0;1]
+		surfaceReduction = 1.0-0.28*roughness*perceptualRoughness;
 	#else
-		surfaceReduction = 1.0 / (roughness*roughness + 1.0);           // fade \in [0.5;1]
+		surfaceReduction = 1.0 / (roughness*roughness + 1.0);
 	#endif
 
     half grazingTerm = saturate(smoothness + (1-oneMinusReflectivity));
 
 	half3 diffCol = diffColor * (gi.diffuse + light.color * diffuseTerm);
 	half3 specCol = specularTerm * light.color * FresnelTerm (specColor, lh) * _SpecularStrength;
-	half3 reflCol = surfaceReduction * gi.specular * FresnelLerp (specColor, grazingTerm, nv);
+	half3 reflCol = surfaceReduction * gi.specular * FresnelLerp (specColor, grazingTerm, nv) * _ReflectionStrength;
 	#if SSR_ENABLED
-		half4 ssrCol = GetSSRColor(worldPos, viewDir, reflect(-viewDir, normal), normal, smoothness, diffColor, metallic, screenUVs, screenPos);
+		half4 ssrCol = GetSSR(worldPos, viewDir, reflect(-viewDir, normal), normal, smoothness, diffColor, metallic, screenUVs, screenPos);
 		ssrCol.rgb *= _SSRStrength;
 		reflCol = lerp(reflCol, ssrCol.rgb, ssrCol.a);
+		specCol *= (1-smoothstep(0, 0.1, ssrCol.a));
 	#endif
 	
-    return clamp(half4(diffCol + specCol + reflCol, 1), 0, 100);
+    return half4(diffCol + specCol + reflCol, 1);
 }
 
 half4 BRDF2_Mochie_PBS (
@@ -123,14 +120,12 @@ half4 BRDF2_Mochie_PBS (
     half grazingTerm = saturate(smoothness + (1-oneMinusReflectivity));
 
 	half3 diffCol = (diffColor + specularTerm * specColor * _SpecularStrength) * light.color * nl + gi.diffuse * diffColor;
-	half3 reflCol = surfaceReduction * gi.specular * FresnelLerpFast(specColor, grazingTerm, nv);
-	#ifndef UNITY_PASS_FORWARDADD
-		#if SSR_ENABLED
-			half4 ssrCol = GetSSRColor(worldPos, viewDir, reflect(-viewDir, normal), normal, smoothness, diffColor, metallic, screenUVs, screenPos);
-			ssrCol.rgb *= _SSRStrength;
-			reflCol = lerp(reflCol, ssrCol.rgb, ssrCol.a);
-		#endif
+	half3 reflCol = surfaceReduction * gi.specular * FresnelLerpFast(specColor, grazingTerm, nv) * _ReflectionStrength;
+	#if SSR_ENABLED
+		half4 ssrCol = GetSSR(worldPos, viewDir, reflect(-viewDir, normal), normal, smoothness, diffColor, metallic, screenUVs, screenPos);
+		ssrCol.rgb *= _SSRStrength;
+		reflCol = lerp(reflCol, ssrCol.rgb, ssrCol.a);
 	#endif
 
-    return clamp(half4(diffCol + reflCol, 1), 0, 100);
+    return half4(diffCol + reflCol, 1);
 }

@@ -187,6 +187,21 @@ void ApplyRefraction(g2f i, lighting l, masks m, inout float3 albedo){
 	albedo = lerp(refractionCol, albedo, _RefractionOpac);
 }
 
+void ApplyBCDissolve(g2f i, inout float4 albedo){
+	#if BCDISSOLVE_ENABLED
+		float2 texUV = TRANSFORM_TEX(i.rawUV, _MainTex2);
+		float2 noiseUV = TRANSFORM_TEX(i.rawUV, _BCNoiseTex);
+		float4 albedo2 = UNITY_SAMPLE_TEX2D_SAMPLER(_MainTex2, _MainTex, texUV) * _BCColor;
+		float noise = UNITY_SAMPLE_TEX2D_SAMPLER(_BCNoiseTex, _MainTex, noiseUV);
+		float dissolveStr = noise - _BCDissolveStr;
+		float rimInner = step(dissolveStr, _BCRimWidth*0.035);
+		float rimOuter = step(dissolveStr+_BCRimWidth*0.035, _BCRimWidth*0.035);
+		float3 rim = (rimInner - rimOuter) * _BCRimCol;
+		albedo = lerp(albedo2, albedo, ceil(dissolveStr));
+		albedo.rgb += rim * _BCRimCol.a;
+	#endif
+}
+
 float3 GetDetailAlbedo(g2f i, float3 alIn){
 	float3 detailAlbedo = UNITY_SAMPLE_TEX2D_SAMPLER(_DetailAlbedoMap, _MainTex, i.uv2.xy);
 	float3 alOut = 0;
@@ -243,6 +258,8 @@ float4 GetAlbedo(g2f i, lighting l, masks m){
 		albedo.rgb = BlendCubemap(albedo0, albedo1, cubeMask, _CubeBlendMode);
 	#endif
 
+	ApplyBCDissolve(i, albedo);
+
 	#if SHADING_ENABLED
 		albedo.rgb = lerp(albedo.rgb, GetDetailAlbedo(i, albedo.rgb), _DetailAlbedoStrength * m.detailMask * _UsingDetailAlbedo);
 	#endif
@@ -296,7 +313,7 @@ float3 GetEmission(g2f i, masks m){
 	#if PULSE_ENABLED && !OUTLINE_PASS
 		emiss *= GetPulse(i);
 	#endif
-	return emiss;
+	return emiss * _EmissIntensity;
 }
 
 void ApplyRimLighting(g2f i, lighting l, masks m, inout float3 diffuse){
@@ -668,6 +685,25 @@ float ShadowPremultiplyAlpha(g2f i, float alpha){
 	float omr = GetOneMinusReflectivity(i);
 	alpha = 1-omr + alpha*omr;
 	return alpha;
+}
+
+void NearClip(g2f i){
+    if (_NearClipToggle == 1 && !i.isReflection){
+        #if UNITY_SINGLE_PASS_STEREO
+            float camDist = distance(i.worldPos, (unity_StereoWorldSpaceCameraPos[0].xyz + unity_StereoWorldSpaceCameraPos[1].xyz)*0.5);
+        #else
+            float camDist = distance(i.worldPos, _WorldSpaceCameraPos.xyz);
+        #endif
+        float ncMask = tex2D(_NearClipMask, i.rawUV);
+        if (camDist < _NearClip && ncMask > 0.5){
+            discard;
+        }
+    }
+}
+
+void MirrorClip(g2f i){
+	if ((i.isReflection && _MirrorBehavior == 3) ||  (!i.isReflection && _MirrorBehavior == 1))
+		discard;
 }
 
 //----------------------------

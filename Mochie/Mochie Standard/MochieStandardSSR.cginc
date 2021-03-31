@@ -87,17 +87,16 @@ float4 ReflectRay(float3 reflectedRay, float3 rayDir, float _LRad, float _SRad, 
 	return float4(finalPos, totalIterations);
 }
 
-float4 GetSSRColor(const float3 wPos, const float3 viewDir, float3 rayDir, const half3 faceNormal, float smoothness, float3 albedo, float metallic, float2 screenUVs, float4 screenPos){
+float4 GetSSR(const float3 wPos, const float3 viewDir, float3 rayDir, const half3 faceNormal, float smoothness, float3 albedo, float metallic, float2 screenUVs, float4 screenPos){
 	
 	float FdotR = dot(faceNormal, rayDir.xyz);
 
-	UNITY_BRANCH
 	if (IsInMirror() || FdotR < 0){
 		return 0;
 	}
 	else {
 		float4 noiseUvs = screenPos;
-		noiseUvs.xy = (noiseUvs.xy * _MSSRGrab_TexelSize.zw) / (_NoiseTexSSR_TexelSize.zw * noiseUvs.w);	
+		noiseUvs.xy = (noiseUvs.xy * _GrabTexture_TexelSize.zw) / (_NoiseTexSSR_TexelSize.zw * noiseUvs.w);	
 		float4 noiseRGBA = tex2Dlod(_NoiseTexSSR, float4(noiseUvs.xy,0,0));
 		float noise = noiseRGBA.r;
 		
@@ -106,7 +105,6 @@ float4 GetSSRColor(const float3 wPos, const float3 viewDir, float3 rayDir, const
 		float totalSteps = finalPos.w;
 		finalPos.w = 1;
 
-		UNITY_BRANCH
 		if (!any(finalPos.xyz)){
 			return 0;
 		}
@@ -129,12 +127,12 @@ float4 GetSSRColor(const float3 wPos, const float3 viewDir, float3 rayDir, const
 		// Second input for GetBlurredGP is some math to make it so the max _Blurring
 		// occurs at 0.5 smoothness.
 		float blurFac = max(1,min(12, 12 * (-2)*(smoothness-1)));
-		float4 reflection = float4(GetBlurredGP(_MSSRGrab, _MSSRGrab_TexelSize.zw, uvs.xy, blurFac*1.5),1);
+		float4 reflection = float4(GetBlurredGP(_GrabTexture, _GrabTexture_TexelSize.zw, uvs.xy, blurFac*1.5),1);
 		
 		// If you're alpha-blending the reflection, then multiplying the alpha by the reflection
 		// strength and fade is enough. If you're adding the reflection, then you'll need to
 		// also multiply the color by those terms.
-		reflection.rgb = lerp(reflection.rgb, reflection.rgb*albedo.rgb, metallic);
+		reflection.rgb = lerp(reflection.rgb, reflection.rgb*albedo.rgb,smoothstep(0, 1.75, metallic));
 
 		reflection.a = FdotR*fade;
 		return max(0,reflection);
