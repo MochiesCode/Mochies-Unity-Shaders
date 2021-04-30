@@ -1,7 +1,3 @@
-// Upgrade NOTE: replaced tex2D unity_Lightmap with UNITY_SAMPLE_TEX2D
-
-// Unity built-in shader source. Copyright (c) 2016 Unity Technologies. MIT license (see license.txt)
-
 #ifndef MOCHIE_STANDARD_CORE_INCLUDED
 #define MOCHIE_STANDARD_CORE_INCLUDED
 
@@ -424,14 +420,15 @@ struct VertexOutputForwardBase
     float4 eyeVec                         : TEXCOORD1;    // eyeVec.xyz | fogCoord
     float4 tangentToWorldAndPackedData[3] : TEXCOORD2;    // [3x3:tangentToWorld | 1x3:viewDirForParallax or worldPos]
     half4 ambientOrLightmapUV             : TEXCOORD5;    // SH or Lightmap UV
-    UNITY_LIGHTING_COORDS(6,7)
+	float4 tex1                           : TEXCOORD6;
+    UNITY_LIGHTING_COORDS(7,8)
 
     // next ones would not fit into SM2.0 limits, but they are always for SM3.0+
 #if UNITY_REQUIRE_FRAG_WORLDPOS && !UNITY_PACK_WORLDPOS_WITH_TANGENT
-    float3 posWorld                     : TEXCOORD8;
+    float3 posWorld                     : TEXCOORD9;
 #endif
 #if SSR_ENABLED
-	float4 screenPos : TEXCOORD9;
+	float4 screenPos : TEXCOORD10;
 #endif
     UNITY_VERTEX_INPUT_INSTANCE_ID
     UNITY_VERTEX_OUTPUT_STEREO
@@ -457,7 +454,7 @@ VertexOutputForwardBase vertForwardBase (VertexInput v)
     #endif
     o.pos = UnityObjectToClipPos(v.vertex);
 
-    o.tex = TexCoords(v);
+    TexCoords(v, o.tex, o.tex1);
     o.eyeVec.xyz = NormalizePerVertexNormal(posWorld.xyz - _WorldSpaceCameraPos);
     float3 normalWorld = UnityObjectToWorldNormal(v.normal);
     #ifdef _TANGENT_TO_WORLD
@@ -519,7 +516,7 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i)
     half4 c = MOCHIE_BRDF (s.diffColor, s.specColor, s.oneMinusReflectivity, 
 								s.smoothness, s.normalWorld, -s.eyeVec, s.posWorld, screenUVs, screenPos,
 								s.metallic, gi.light, gi.indirect);
-    c.rgb += Emission(i.tex.xy);
+    c.rgb += Emission(i.tex.xy, i.tex1.zw);
 
     UNITY_EXTRACT_FOG_FROM_EYE_VEC(i);
     UNITY_APPLY_FOG(_unity_fogCoord, c.rgb);
@@ -541,11 +538,12 @@ struct VertexOutputForwardAdd
     float4 eyeVec                       : TEXCOORD1;    // eyeVec.xyz | fogCoord
     float4 tangentToWorldAndLightDir[3] : TEXCOORD2;    // [3x3:tangentToWorld | 1x3:lightDir]
     float3 posWorld                     : TEXCOORD5;
-    UNITY_LIGHTING_COORDS(6, 7)
+	float4 tex1                         : TEXCOORD6;
+    UNITY_LIGHTING_COORDS(7,8)
 
     // next ones would not fit into SM2.0 limits, but they are always for SM3.0+
 #if defined(_PARALLAXMAP)
-    half3 viewDirForParallax            : TEXCOORD8;
+    half3 viewDirForParallax            : TEXCOORD9;
 #endif
 
     UNITY_VERTEX_OUTPUT_STEREO
@@ -561,7 +559,7 @@ VertexOutputForwardAdd vertForwardAdd (VertexInput v)
     float4 posWorld = mul(unity_ObjectToWorld, v.vertex);
     o.pos = UnityObjectToClipPos(v.vertex);
 
-    o.tex = TexCoords(v);
+    TexCoords(v, o.tex, o.tex1);
     o.eyeVec.xyz = NormalizePerVertexNormal(posWorld.xyz - _WorldSpaceCameraPos);
     o.posWorld = posWorld.xyz;
     float3 normalWorld = UnityObjectToWorldNormal(v.normal);
@@ -633,11 +631,10 @@ struct VertexOutputDeferred
     float3 eyeVec                         : TEXCOORD1;
     float4 tangentToWorldAndPackedData[3] : TEXCOORD2;    // [3x3:tangentToWorld | 1x3:viewDirForParallax or worldPos]
     half4 ambientOrLightmapUV             : TEXCOORD5;    // SH or Lightmap UVs
-
     #if UNITY_REQUIRE_FRAG_WORLDPOS && !UNITY_PACK_WORLDPOS_WITH_TANGENT
         float3 posWorld                     : TEXCOORD6;
     #endif
-
+	float4 tex1                           : TEXCOORD7;
     UNITY_VERTEX_INPUT_INSTANCE_ID
     UNITY_VERTEX_OUTPUT_STEREO
 };
@@ -663,7 +660,7 @@ VertexOutputDeferred vertDeferred (VertexInput v)
     #endif
     o.pos = UnityObjectToClipPos(v.vertex);
 
-    o.tex = TexCoords(v);
+    TexCoords(v, o.tex, o.tex1);
     o.eyeVec = NormalizePerVertexNormal(posWorld.xyz - _WorldSpaceCameraPos);
     float3 normalWorld = UnityObjectToWorldNormal(v.normal);
     #ifdef _TANGENT_TO_WORLD
@@ -744,7 +741,7 @@ void fragDeferred (
     half3 emissiveColor = UNITY_BRDF_PBS (s.diffColor, s.specColor, s.oneMinusReflectivity, s.smoothness, s.normalWorld, -s.eyeVec, gi.light, gi.indirect).rgb;
 
     #ifdef _EMISSION
-        emissiveColor += Emission (i.tex.xy);
+        emissiveColor += Emission(i.tex.xy, i.tex1.zw);
     #endif
 
     #ifndef UNITY_HDR_ON

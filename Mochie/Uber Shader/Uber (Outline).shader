@@ -6,7 +6,7 @@ Shader "Mochie/Uber/Uber (Outline)" {
 		// BASE
 		//----------------------------
 		[Enum(Off,0, On,1)]_RenderMode("en2", Int) = 1
-		[Enum(Opaque,0, Cutout,1, Dithered,2, Alpha to Coverage,3, Fade,4, Transparent,5)]_BlendMode("en6", Int) = 0
+		[Enum(Opaque,0, Cutout,1, Dithered,2, Fade,4, Transparent,5)]_BlendMode("en5", Int) = 0
 		[HideInInspector]_SrcBlend("inte", Int) = 1
 		[HideInInspector]_DstBlend ("inte", Int) = 0
 		[Enum(Off,0, On,1)]_ATM("en2", Int) = 0
@@ -26,6 +26,7 @@ Shader "Mochie/Uber/Uber (Outline)" {
 		_Color("col", Color) = (1,1,1,1)
 		[ToggleUI]_ColorPreservation("tog", Int) = 1
 		_AlphaMask("tex", 2D) = "white" {}
+		[Enum(Red,0, Green,1, Blue,2, Alpha,3)]_AlphaMaskChannel("en03", Int) = 0
 		_MainTexScroll("vec", Vector) = (0,0,0,0)
 
 		_CubeBlendMask("tex", 2D) = "white" {} // MainTex (Cubemap)
@@ -321,7 +322,7 @@ Shader "Mochie/Uber/Uber (Outline)" {
 		_PulseMask("tex", 2D) = "white" {}
 		_PulseStr("ra", Range(0,1)) = 0.5
 		_PulseSpeed("fl", Float) = 1
-		
+
 		//----------------------------
 		// FILTERS
 		//----------------------------
@@ -436,6 +437,26 @@ Shader "Mochie/Uber/Uber (Outline)" {
 		_VertexRoundingPrecision("fl", Float) = 100
 		_VertexExpansionMask("tex", 2D) = "white" {}
 		_VertexRoundingMask("tex", 2D) = "white" {}
+
+		//----------------------------
+		// AUDIO LINK
+		//----------------------------
+		[ToggleUI]_AudioLinkToggle("tog", Int) = 0
+		[ToggleUI]_AudioLinkPreview("tog", Int) = 0
+		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkEmissionBand("en03", Int) = 0
+		_AudioLinkEmissionMultiplier("ra", Range(0,1)) = 0
+		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkRimBand("en03", Int) = 0
+		_AudioLinkRimMultiplier("ra", Range(0,1)) = 0
+		_AudioLinkRimWidth("ra", Range(0,1)) = 0
+		_AudioLinkRimPulse("ra", Range(0,1)) = 0
+		_AudioLinkRimPulseWidth("ra", Range(0,1)) = 0.5
+		_AudioLinkRimPulseSharp("ra", Range(0, 0.5)) = 0.3
+		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkDissolveBand("en03", Int) = 0
+		_AudioLinkDissolveMultiplier("ra", Range(0,1)) = 0
+		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkBCDissolveBand("en03", Int) = 0
+		_AudioLinkBCDissolveMultiplier("ra", Range(0,1)) = 0
+		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkVertManipBand("en03", Int) = 0
+		_AudioLinkVertManipMultiplier("ra", Range(0,1)) = 0
 		
 		//----------------------------
 		// SPECIAL FEATURES
@@ -597,6 +618,8 @@ Shader "Mochie/Uber/Uber (Outline)" {
 			#pragma shader_feature GEOM_TYPE_BRANCH			// Mask SOS toggle
 			#pragma shader_feature VIGNETTE_MASKED			// Reflection cubemap check
 			#pragma shader_feature DITHERING				// Base Color Dissolve
+			#pragma shader_feature DEPTH_OF_FIELD_COC_VIEW// Audio Link Toggle
+			#pragma shader_feature GEOM_TYPE_FROND			// Rim toggle
 			#pragma multi_compile _ VERTEXLIGHT_ON			// Vertex lighting
 			#pragma multi_compile_fog						// Fog
 			#pragma multi_compile_fwdbase
@@ -651,6 +674,7 @@ Shader "Mochie/Uber/Uber (Outline)" {
 			#pragma shader_feature GEOM_TYPE_MESH			// Vertex manip toggle
 			#pragma shader_feature GEOM_TYPE_BRANCH			// Mask SOS toggle
 			#pragma shader_feature DITHERING				// Base Color Dissolve
+			#pragma shader_feature DEPTH_OF_FIELD_COC_VIEW// Audio Link Toggle
 			#pragma multi_compile_fog						// Fog
 			#pragma multi_compile_fwdadd_fullshadows
 			#pragma multi_compile_istancing
@@ -698,6 +722,7 @@ Shader "Mochie/Uber/Uber (Outline)" {
 			#pragma shader_feature EFFECT_HUE_VARIATION		// Spritesheet toggle
 			#pragma shader_feature GEOM_TYPE_BRANCH			// Mask SOS toggle
 			#pragma shader_feature DITHERING				// Base Color Dissolve
+			#pragma shader_feature DEPTH_OF_FIELD_COC_VIEW// Audio Link Toggle
 			#pragma multi_compile _ VERTEXLIGHT_ON			// Vertex lighting
 			#pragma multi_compile_fog						// Fog
 			#pragma multi_compile_fwdbase
@@ -718,8 +743,8 @@ Shader "Mochie/Uber/Uber (Outline)" {
         Pass {
             Name "ShadowCaster"
             Tags {"LightMode"="ShadowCaster"}
-			AlphaToMask Off
 			ZWrite On ZTest LEqual
+			AlphaToMask Off
 			Stencil {
                 Ref [_StencilRef]
                 Comp [_StencilCompare]
@@ -743,6 +768,7 @@ Shader "Mochie/Uber/Uber (Outline)" {
 			#pragma shader_feature EFFECT_HUE_VARIATION		// Spritesheet toggle
 			#pragma shader_feature GEOM_TYPE_BRANCH			// Mask SOS toggle
 			#pragma shader_feature DITHERING				// Base Color Dissolve
+			#pragma shader_feature DEPTH_OF_FIELD_COC_VIEW// Audio Link Toggle
 			#pragma multi_compile_fog						// Fog
 			#pragma multi_compile_shadowcaster
 			#pragma multi_compile_istancing

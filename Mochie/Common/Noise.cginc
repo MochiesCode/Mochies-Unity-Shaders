@@ -5,9 +5,7 @@ float4 mod289(float4 x){ return x - floor(x / 289.0) * 289.0; }
 float3 mod289(float3 x){ return x - floor(x / 289.0) * 289.0; }
 float2 mod289(float2 x){ return x - floor(x / 289.0) * 289.0; }
 float4 permute(float4 x){ return mod289((x * 34.0 + 1.0) * x); }
-// float3 permute(float3 x) { return mod289((x * 34.0 + 1.0) * x); }
 float4 taylorInvSqrt(float4 r){ return 1.79284291400159 - r * 0.85373472095314; }
-// float3 taylorInvSqrt(float3 r){ return 1.79284291400159 - 0.85373472095314 * r; }
 
 float4 grad4(float j, float4 ip){
   const float4 ones = float4(1.0, 1.0, 1.0, -1.0);
@@ -195,4 +193,5 @@ float GetSimplex3D(float2 uv, float2 scale, float driver, int octaves){
 	
 	return f;
 }
-#endif
+
+#endif // NOISE_INCLUDED

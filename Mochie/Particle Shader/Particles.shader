@@ -1,15 +1,14 @@
 // BY MOCHIE
 
-Shader "Mochie/Particles/Particle" {
+Shader "Mochie/Particles" {
     Properties {
-
-        [HideInInspector]_BlendMode("__mode", Int) = 1.0
+        
+        [Enum(Alpha,0, Premultiplied,1, Additive,2, Soft Additive,3, Multiply,4, Multiply x2,5)]_BlendMode("", Int) = 1.0
         [HideInInspector]_SrcBlend("__src", Int) = 1
         [HideInInspector]_DstBlend("__dst", Int) = 10
-        [HideInInspector]_ZT("", Int) = 2
-        [ToggleUI]_ZTest("", Int) = 0
+		[Enum(UnityEngine.Rendering.CompareFunction)]_ZTest("ZTest", Int) = 4
         [ToggleUI]_ZWrite("", Int) = 0
-        [Enum(Off,0, Front,1, Back,2)]_Culling("", Int) = 2
+        [Enum(UnityEngine.Rendering.CullMode)]_Culling("", Int) = 2
 		[ToggleUI]_FlipbookBlending("", Int) = 0
 
         _MainTex("", 2D) = "white" {}
@@ -22,20 +21,19 @@ Shader "Mochie/Particles/Particle" {
 		_Opacity("", Range(0,1)) = 1
 
         _IsCutout("", Int) = 0
-        _Cutout("", Range(0,1)) = 0
-        [Toggle(_FADING_ON)]_Softening("", Int) = 0
+        _Cutoff("", Range(0,1)) = 0
+        [ToggleUI]_Softening("", Int) = 0
         _SoftenStr("", Range(0, 0.999)) = 0
 
         [ToggleUI]_Filtering("", Int) = 0
         [ToggleUI]_AutoShift("", Int) = 0
-		_AutoShiftSpeed("", Range(0,1)) = 0.25
+		_AutoShiftSpeed("", Float) = 0.25
 		_Hue("", Range(0,1)) = 0
-		_Saturation("", Range(0,2)) = 1
-		_Value("", Range(-3,3)) = 0
-		_HDR("", Range(0,1)) = 0
-		_Contrast("", Range(0,2)) = 1
+		_Saturation("", Float) = 1
+		_HDR("", Float) = 0
+		_Contrast("", Float) = 1
 
-        [Toggle(EFFECT_BUMP)]_Distortion("", Int) = 0
+        [ToggleUI]_Distortion("", Int) = 0
         _NormalMap("", 2D) = "bump" {}
 		_NormalMapScale("", Vector) = (1,1,0,0)
 		[ToggleUI]_DistortMainTex("", Int) = 0
@@ -49,6 +47,7 @@ Shader "Mochie/Particles/Particle" {
 		_PulseSpeed("", Float) = 1
 
         [ToggleUI]_Falloff("", Int) = 0
+		[Enum(Per Particle,0, Per Vertex,1)]_FalloffMode("", Int) = 0
         _NearMinRange("", Float) = 1
         _NearMaxRange("", Float) = 5
         _MinRange("", Float) = 8
@@ -65,9 +64,13 @@ Shader "Mochie/Particles/Particle" {
             "PreviewType"="Plane" 
 			"LightMode"="ForwardBase"
         }
+		GrabPass {
+			Tags {"LightMode"="Always"}
+			"_GrabTexture"
+		}
         Blend [_SrcBlend] [_DstBlend]
         Cull [_Culling]
-		ZTest [_ZT]
+		ZTest [_ZTest]
 		ZWrite Off
         ColorMask RGB
 
@@ -76,9 +79,18 @@ Shader "Mochie/Particles/Particle" {
             #pragma vertex vert
             #pragma fragment frag
             #pragma target 5.0
-			#pragma multi_compile_particles
+            #pragma multi_compile_particles
+			#pragma shader_feature _ _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON _COLORCOLOR_ON _SPECGLOSSMAP _METALLICGLOSSMAP _PARALLAXMAP
+			#pragma shader_feature _ALPHATEST_ON
+			#pragma shader_feature _COLOROVERLAY_ON
+			#pragma shader_feature EFFECT_BUMP
+			#pragma shader_feature _NORMALMAP
+			#pragma shader_feature _DETAIL_MULX2
+			#pragma shader_feature _ALPHAMODULATE_ON
+			#pragma shader_feature DEPTH_OF_FIELD
+			#pragma shader_feature _REQUIRE_UV2
 			#pragma shader_feature _FADING_ON
-			#include "PSDefines.cginc"
+            #include "PSDefines.cginc"
 
             v2f vert (appdata v){
                 v2f o;
@@ -87,16 +99,31 @@ Shader "Mochie/Particles/Particle" {
 				UNITY_SETUP_INSTANCE_ID(v);
                 UNITY_TRANSFER_INSTANCE_ID(v, o);
                 o.pos = UnityObjectToClipPos(v.vertex);
-				o.projPos = GetProjPos(v.vertex.xyzz, o.pos);
-                o.falloff = GetFalloff(v.vertex.xyzz);
-				o.pulse = GetPulse();
-				UNITY_BRANCH
-				if (_Falloff == 1 && o.falloff <= 0.0001)
-					o.pos = 0.0/_NaNLmao;
+				
+				#if FADING_ENABLED
+					o.projPos = GetProjPos(v.vertex.xyzz, o.pos);
+				#endif
+
+				o.pulse = 1;
+				#if PULSE_ENABLED
+                	o.pulse = GetPulse();
+				#endif
+
+				o.falloff = 1;
+				#if FALLOFF_ENABLED
+					o.center = v.center;
+					o.vertex = v.vertex;
+					o.falloff = GetFalloff(o);
+					UNITY_BRANCH
+					if (o.falloff <= 0.0001)
+						o.pos = 0.0/_NaNLmao;
+				#endif
+
                 o.uv0 = v.uv0;
 				o.color = v.color;
-				o.color.rgb *= _Brightness;
-				o.color.a *= _Opacity;
+                #if DISTORTION_ENABLED
+                    o.uv1 = ComputeGrabScreenPos(o.pos);
+                #endif
                 return o;
             }
 

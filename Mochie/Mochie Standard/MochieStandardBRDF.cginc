@@ -1,4 +1,6 @@
-// Unity built-in shader source. Copyright (c) 2016 Unity Technologies. MIT license (see license.txt)
+#ifndef MOCHIE_STANDARD_BRDF_INCLUDED
+#define MOCHIE_STANDARD_BRDF_INCLUDED
+
 #include "UnityCG.cginc"
 #include "UnityStandardConfig.cginc"
 #include "UnityLightingCommon.cginc"
@@ -129,3 +131,5 @@ half4 BRDF2_Mochie_PBS (
 
     return half4(diffCol + reflCol, 1);
 }
+
+#endif // MOCHIE_STANDARD_BRDF_INCLUDED

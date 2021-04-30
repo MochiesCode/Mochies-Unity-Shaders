@@ -6,6 +6,12 @@ using UnityEditor;
 namespace Mochie {
 	public class Foldouts {
 
+		#if UNITY_2019_1_OR_NEWER
+			static float versionOffset = 7f;
+		#else
+			static float versionOffset = 0f;
+		#endif
+
 		private static bool foldoutClicked = false;
 		private static Color errorCol = new Color(1f,0.3f,0.3f,1f);
 		private static float[] foldoutOffsets = {-8f, 20f, 48f, 76f};
@@ -214,7 +220,7 @@ namespace Mochie {
 				default: break;
 			}
 
-			Rect arrowRect = new Rect(rect.x+offset, rect.y+offset, 0f, 0f);
+			Rect arrowRect = new Rect(rect.x+offset, rect.y+offset+versionOffset, 0f, 0f);
 			switch(evt.type){
 
 				case EventType.Repaint:
@@ -258,9 +264,25 @@ namespace Mochie {
 			return DoSmallToggle(display, rect);
 		}
 
+		public static bool DoSmallFoldoutBold(Dictionary<Material, Toggles> foldouts, Material mat, MaterialEditor me, string header){
+			foldouts[mat].SetState(header, SmallFoldoutBold(header, foldouts[mat].GetState(header)));
+			return foldouts[mat].GetState(header);
+		}
+		
+		public static bool SmallFoldoutBold(string header, bool display){
+			float lw = EditorGUIUtility.labelWidth-13;
+			GUILayoutOption clickArea = GUILayout.MaxWidth(lw);
+			Rect rect = GUILayoutUtility.GetRect(0, 18f, clickArea);
+			GUILayout.Space(-20);
+			header = "    " + header;
+			EditorGUILayout.LabelField(header, EditorStyles.boldLabel);
+			GUILayout.Space(20);
+			return DoSmallToggle(display, rect);
+		}
+
 		public static bool DoSmallToggle(bool display, Rect rect){
 			Event evt = Event.current;
-			Rect arrowRect = new Rect(rect.x+2f, rect.y, 0f, 0f);
+			Rect arrowRect = new Rect(rect.x+2f, rect.y+versionOffset, 0f, 0f);
 			if (evt.rawType == EventType.Repaint)
 				EditorStyles.foldout.Draw(arrowRect, false, false, display, false);
 			if (evt.rawType == EventType.MouseDown && rect.Contains(evt.mousePosition)){

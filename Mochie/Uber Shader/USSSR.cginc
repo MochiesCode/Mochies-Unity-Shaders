@@ -1,3 +1,6 @@
+#ifndef USSSR_INCLUDED
+#define USSSR_INCLUDED
+
 //-----------------------------------------------------------------------------------
 // SCREEN SPACE REFLECTIONS
 // 
@@ -7,15 +10,13 @@
 
 #if REFLECTIONS_ENABLED && SSR_ENABLED
 
-float3 GetBlurredGP(const sampler2D ssrg, const float2 texelSize, const float2 uvs, const float dim){
+float3 GetBlurredGP(const Texture2D ssrg, const float2 texelSize, const float2 uvs, const float dim){
 	float2 pixSize = 2/texelSize;
 	float center = floor(dim*0.5);
 	float3 refTotal = float3(0,0,0);
-	[loop]
 	for (int i = 0; i < floor(dim); i++){
-		[loop]
 		for (int j = 0; j < floor(dim); j++){
-			float4 refl = tex2Dlod(ssrg, float4(uvs.x + pixSize.x*(i-center), uvs.y + pixSize.y*(j-center),0,0));
+			float4 refl = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(ssrg, _MainTex, float4(uvs.x + pixSize.x*(i-center), uvs.y + pixSize.y*(j-center),0,0));
 			refTotal += refl.rgb;
 		}
 	}
@@ -41,7 +42,6 @@ float4 ReflectRay(float3 reflectedRay, float3 rayDir, float _LRad, float _SRad, 
 	float lRad = _LRad;
 	float sRad = _SRad;
 
-	[loop]
 	for (int i = 0; i < maxIterations; i++){
 		totalIterations = i;
 		float4 spos = ComputeGrabScreenPos(mul(UNITY_MATRIX_P, float4(reflectedRay, 1)));
@@ -108,7 +108,6 @@ float4 GetSSRColor(const float4 wPos, const float3 viewDir, float3 rayDir, const
 		float totalSteps = finalPos.w;
 		finalPos.w = 1;
 
-		UNITY_BRANCH
 		if (!any(finalPos.xyz))
 			return 0;
 		
@@ -137,3 +136,5 @@ float4 GetSSRColor(const float4 wPos, const float3 viewDir, float3 rayDir, const
 }
 
 #endif
+
+#endif // USSSR_INCLUDED

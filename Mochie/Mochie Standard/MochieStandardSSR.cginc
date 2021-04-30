@@ -1,3 +1,6 @@
+#ifndef MOCHIE_STANDARD_SSR_INCLUDED
+#define MOCHIE_STANDARD_SSR_INCLUDED
+
 //-----------------------------------------------------------------------------------
 // SCREEN SPACE REFLECTIONS
 // 
@@ -15,9 +18,7 @@ float3 GetBlurredGP(const sampler2D ssrg, const float2 texelSize, const float2 u
 	float2 pixSize = 2/texelSize;
 	float center = floor(dim*0.5);
 	float3 refTotal = float3(0,0,0);
-	[loop]
 	for (int i = 0; i < floor(dim); i++){
-		[loop]
 		for (int j = 0; j < floor(dim); j++){
 			float4 refl = tex2Dlod(ssrg, float4(uvs.x + pixSize.x*(i-center), uvs.y + pixSize.y*(j-center),0,0));
 			refTotal += refl.rgb;
@@ -45,7 +46,6 @@ float4 ReflectRay(float3 reflectedRay, float3 rayDir, float _LRad, float _SRad, 
 	float lRad = _LRad;
 	float sRad = _SRad;
 
-	[loop]
 	for (int i = 0; i < maxIterations; i++){
 		totalIterations = i;
 		float4 spos = ComputeGrabScreenPos(mul(UNITY_MATRIX_P, float4(reflectedRay, 1)));
@@ -91,6 +91,7 @@ float4 GetSSR(const float3 wPos, const float3 viewDir, float3 rayDir, const half
 	
 	float FdotR = dot(faceNormal, rayDir.xyz);
 
+	UNITY_BRANCH
 	if (IsInMirror() || FdotR < 0){
 		return 0;
 	}
@@ -104,7 +105,7 @@ float4 GetSSR(const float3 wPos, const float3 viewDir, float3 rayDir, const half
 		float4 finalPos = ReflectRay(reflectedRay, rayDir, 0.2, 0.02, 0.09, noise, 50);
 		float totalSteps = finalPos.w;
 		finalPos.w = 1;
-
+		
 		if (!any(finalPos.xyz)){
 			return 0;
 		}
@@ -119,24 +120,17 @@ float4 GetSSR(const float3 wPos, const float3 viewDir, float3 rayDir, const half
 		#endif
 		float yfade = smoothstep(0, _EdgeFade, uvs.y)*smoothstep(1, 1-_EdgeFade, uvs.y); //Same for y
 		float lengthFade = smoothstep(1, 0, 2*(totalSteps / 50)-1);
-	
-		float fade = xfade * yfade * lengthFade;
-	
-		// Get the color of the grabpass at the ray's screen uv location, applying
-		// an (expensive) _Blur effect to partially simulate roughness
-		// Second input for GetBlurredGP is some math to make it so the max _Blurring
-		// occurs at 0.5 smoothness.
+
 		float blurFac = max(1,min(12, 12 * (-2)*(smoothness-1)));
 		float4 reflection = float4(GetBlurredGP(_GrabTexture, _GrabTexture_TexelSize.zw, uvs.xy, blurFac*1.5),1);
-		
-		// If you're alpha-blending the reflection, then multiplying the alpha by the reflection
-		// strength and fade is enough. If you're adding the reflection, then you'll need to
-		// also multiply the color by those terms.
+
 		reflection.rgb = lerp(reflection.rgb, reflection.rgb*albedo.rgb,smoothstep(0, 1.75, metallic));
 
-		reflection.a = FdotR*fade;
+		reflection.a = FdotR * xfade * yfade * lengthFade;
 		return max(0,reflection);
 	}	
 }
 
 #endif
+
+#endif // MOCHIE_STANDARD_SSR_INCLUDED

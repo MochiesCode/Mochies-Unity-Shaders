@@ -1,3 +1,32 @@
+#ifndef US_FUNCTIONS_INCLUDED
+#define US_FUNCTIONS_INCLUDED
+
+#if !X_FEATURES
+float GetPackedAudioLinkBand(float4 al, int band){
+	float value = 1;
+	switch (band){
+		case 0: value = al.x; break;
+		case 1: value = al.y; break;
+		case 2: value = al.z; break;
+		case 3: value = al.w; break;
+		default: break;
+	}
+	return value;
+}
+
+float GetAudioLinkBand(audioLinkData al, int band){
+	float value = 1;
+	switch (band){
+		case 0: value = al.bass; break;
+		case 1: value = al.lowMid; break;
+		case 2: value = al.upperMid; break;
+		case 3: value = al.treble; break;
+		default: break;
+	}
+	return value;
+}
+#endif
+
 //----------------------------
 // Color Filtering
 //----------------------------
@@ -39,11 +68,13 @@ void ApplyFiltering(g2f i, masks m, inout float3 albedo){
 // Albedo
 //------------------------------------
 
-void ApplyCutout(float2 screenUV, float alpha){
-	if (_BlendMode == 1)
-		clip(alpha - _Cutoff);
-	else if (_BlendMode != 3)
-		clip(Dither(screenUV, alpha));
+void ApplyCutout(g2f i, float2 screenUV, inout float4 albedo){
+	if (_BlendMode == 1){
+		albedo.a = (albedo.a - _Cutoff) / max(fwidth(albedo.a), 0.0001) + 0.5;
+	}
+	else if (_BlendMode == 2){
+		clip(Dither(screenUV, albedo.a));
+	}
 }
 
 float2 ScaleUV(float2 uv, float2 pos,  float2 scale, float rot){
@@ -85,7 +116,7 @@ float3 GetFlipbookUV(Texture2DArray tex2da, float2 uv, float scrubPos, float fps
 }
 
 float4 GetSpritesheetColor(g2f i, 
-		sampler2D tex, UNITY_ARGS_TEX2DARRAY(tex2da), float4 spriteColor,
+		Texture2D tex, UNITY_ARGS_TEX2DARRAY(tex2da), float4 spriteColor,
 		float2 pos, float2 scale, float2 rowsColumns, float2 fco, 
 		float rot, float scrubPos, float fps, float brightness, int manualScrub, int mode
 	) {
@@ -98,7 +129,7 @@ float4 GetSpritesheetColor(g2f i,
 	float4 col = 0;
 	UNITY_BRANCH
 	if (mode == 1){
-		col = tex2D(tex, uv.xy) * spriteColor * brightness * FrameClip(scaledUV, rowsColumns, fco);
+		col = UNITY_SAMPLE_TEX2D_SAMPLER(tex, _MainTex, uv.xy) * spriteColor * brightness * FrameClip(scaledUV, rowsColumns, fco);
 	}
 	else {
 		col = UNITY_SAMPLE_TEX2DARRAY(tex2da, uv) * spriteColor * brightness;
@@ -174,32 +205,47 @@ void ApplyRefraction(g2f i, lighting l, masks m, inout float3 albedo){
 	#if REFRACTION_CA_ENABLED
 		float2 uvG = screenUV + (offset * (1 + _RefractionCAStr));
 		float2 uvB = screenUV + (offset * (1 - _RefractionCAStr));
-		float chromR = tex2Dlod(_SSRGrab, float4(refractUV,0,0)).r;
-		float chromG = tex2Dlod(_SSRGrab, float4(uvG,0,0)).g;
-		float chromB = tex2Dlod(_SSRGrab, float4(uvB,0,0)).b;
+		float chromR = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_SSRGrab, _MainTex, float4(refractUV,0,0)).r;
+		float chromG = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_SSRGrab, _MainTex, float4(uvG,0,0)).g;
+		float chromB = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_SSRGrab, _MainTex, float4(uvB,0,0)).b;
 		float3 refractionCol = float3(chromR, chromG, chromB);
 	#else
-		float3 refractionCol = tex2Dlod(_SSRGrab, float4(refractUV,0,0));
+		float3 refractionCol = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_SSRGrab, _MainTex, float4(refractUV,0,0));
 	#endif
-	// float alpha = tex3D(_DitherMaskLOD, float3(i.pos.xy*0.25, m.refractDissolveMask * _RefractionDissolveMaskStr * 0.9375)).a - 0.01;
 	float alpha = step(m.refractDissolveMask, _RefractionDissolveMaskStr);
 	refractionCol = lerp(albedo, refractionCol * _RefractionTint, alpha * m.refractMask);
 	albedo = lerp(refractionCol, albedo, _RefractionOpac);
 }
 
-void ApplyBCDissolve(g2f i, inout float4 albedo){
+void ApplyBCDissolve(g2f i, audioLinkData al, inout float4 albedo, out float3 bcRimColor){
+	bcRimColor = 0;
 	#if BCDISSOLVE_ENABLED
 		float2 texUV = TRANSFORM_TEX(i.rawUV, _MainTex2);
 		float2 noiseUV = TRANSFORM_TEX(i.rawUV, _BCNoiseTex);
 		float4 albedo2 = UNITY_SAMPLE_TEX2D_SAMPLER(_MainTex2, _MainTex, texUV) * _BCColor;
 		float noise = UNITY_SAMPLE_TEX2D_SAMPLER(_BCNoiseTex, _MainTex, noiseUV);
+		#if AUDIOLINK_ENABLED
+			float bcDissolveValueAL = GetAudioLinkBand(al, _AudioLinkBCDissolveBand);
+			_BCDissolveStr *= lerp(1, bcDissolveValueAL, _AudioLinkBCDissolveMultiplier);
+		#endif
 		float dissolveStr = noise - _BCDissolveStr;
 		float rimInner = step(dissolveStr, _BCRimWidth*0.035);
 		float rimOuter = step(dissolveStr+_BCRimWidth*0.035, _BCRimWidth*0.035);
 		float3 rim = (rimInner - rimOuter) * _BCRimCol;
 		albedo = lerp(albedo2, albedo, ceil(dissolveStr));
-		albedo.rgb += rim * _BCRimCol.a;
+		bcRimColor = rim * _BCRimCol.a;
 	#endif
+}
+
+float3 BlendCubemap(float3 baseCol, float3 cubeCol, float blend, int blendMode){
+	switch (blendMode){
+		case 0: baseCol = lerp(baseCol, cubeCol, blend); break;
+		case 1: baseCol += cubeCol * blend; break;
+		case 2: baseCol -= cubeCol * blend; break;
+		case 3: baseCol *= lerp(1, cubeCol, blend); break;
+		default: break;
+	}
+	return baseCol;
 }
 
 float3 GetDetailAlbedo(g2f i, float3 alIn){
@@ -217,8 +263,8 @@ float3 GetDetailAlbedo(g2f i, float3 alIn){
 	return alOut;
 }
 
-float4 GetAlbedo(g2f i, lighting l, masks m){
-	float4 mainTex =  _MainTex.Sample(sampler_MainTex, i.uv.xy); // UNITY_SAMPLE_TEX2D(_MainTex, i.uv.xy);
+float4 GetAlbedo(g2f i, lighting l, masks m, audioLinkData al){
+	float4 mainTex = UNITY_SAMPLE_TEX2D(_MainTex, i.uv.xy);
 	#if REFRACTION_ENABLED
 		if (_UnlitRefraction == 0)
 			ApplyRefraction(i, l, m, mainTex.rgb);
@@ -238,10 +284,6 @@ float4 GetAlbedo(g2f i, lighting l, masks m){
 		_CubeRotate0 = lerp(_CubeRotate0, _CubeRotate0 *_Time.y, _AutoRotate0);
 		float3 vDir = Rotate(l.viewDir, _CubeRotate0);
 		albedo = texCUBE(_MainTexCube0, vDir);
-
-		// prevent compiler from optimizing out mainTex, which would mean we lose the sampler
-		albedo += (mainTex*0.000001);
-
 		albedo *= _CubeColor0;
 
 	#elif COMBINED_CUBEMAP_ENABLED
@@ -254,14 +296,15 @@ float4 GetAlbedo(g2f i, lighting l, masks m){
 		float4 albedo1 = texCUBE(_MainTexCube0, vDir);
 		albedo0 *= _Color;
 		albedo1 *= _CubeColor0;
-		cubeMask = SampleCubeMask(_CubeBlendMask, i.uv.xy, _CubeBlend, _IsCubeBlendMask); 
+		cubeMask = lerp(str, UNITY_SAMPLE_TEX2D_SAMPLER(tex, _MainTex, uv).r, _IsCubeBlendMask); 
 		albedo.rgb = BlendCubemap(albedo0, albedo1, cubeMask, _CubeBlendMode);
 	#endif
 
-	ApplyBCDissolve(i, albedo);
+	ApplyBCDissolve(i, al, albedo, bcRimColor);
 
 	#if SHADING_ENABLED
-		albedo.rgb = lerp(albedo.rgb, GetDetailAlbedo(i, albedo.rgb), _DetailAlbedoStrength * m.detailMask * _UsingDetailAlbedo);
+		float detailInterp = _DetailAlbedoStrength * m.detailMask * _UsingDetailAlbedo;
+		albedo.rgb = lerp(albedo.rgb, GetDetailAlbedo(i, albedo.rgb), detailInterp);
 	#endif
 
 	#if NON_OPAQUE_RENDERING
@@ -290,6 +333,35 @@ float4 GetAlbedo(g2f i, lighting l, masks m){
 }
 
 //----------------------------
+// Audio Link
+//----------------------------
+bool GrabExists(){
+	float width = 0;
+	float height = 0;
+	_AudioTexture.GetDimensions(width, height);
+	return width > 16;
+}
+
+float SampleAudioTexture(float time, float band){
+	return UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_AudioTexture, _MainTex, float4(time, band,0,0));
+}
+
+void InitializeAudioLink(inout audioLinkData al, float time){
+	if (GrabExists()){
+		al.bass = SampleAudioTexture(time, 0.125);
+		al.lowMid = SampleAudioTexture(time, 0.375);
+		al.upperMid = SampleAudioTexture(time, 0.625);
+		al.treble = SampleAudioTexture(time, 0.875);
+	}
+	else if (_AudioLinkPreview == 1){
+		al.bass = 1-frac(_Time.y*1.5);						// Reverse saw for kick
+		al.lowMid = 0.5*(sin(_Time.y*3)+1);				// Sin for bassy lower-mids
+		al.upperMid = frac(_Time.y*3);					// Saw for harsher high-mids
+		al.treble = round((sin(_Time.y*15)+1)*0.5);		// Flashy square for high hats
+	}
+}
+
+//----------------------------
 // Emission/Rim
 //----------------------------
 float GetPulse(g2f i){
@@ -299,7 +371,7 @@ float GetPulse(g2f i){
 		case 1: pulse = round((sin(_Time.y * _PulseSpeed)+1)*0.5); break; 	// Square
 		case 2: pulse = abs((_Time.y * (_PulseSpeed * 0.333)%2)-1); break; 	// Triangle
 		case 3: pulse = frac(_Time.y * (_PulseSpeed * 0.2)); break; 		// Saw
-		case 4: pulse = 1-frac(_Time.y * (_PulseSpeed * 0.2)); break; 	// Reverse Saw
+		case 4: pulse = 1-frac(_Time.y * (_PulseSpeed * 0.2)); break; 		// Reverse Saw
 		default: break;
 	}
 	float mask = UNITY_SAMPLE_TEX2D_SAMPLER(_PulseMask, _MainTex, i.uv.xy);
@@ -307,36 +379,59 @@ float GetPulse(g2f i){
 	return pulse;
 }
 
-float3 GetEmission(g2f i, masks m){
+float3 GetEmission(g2f i, masks m, audioLinkData al){
 	float3 emiss = UNITY_SAMPLE_TEX2D(_EmissionMap, i.uv.zw).rgb * _EmissionColor.rgb;
 	emiss *= m.emissMask;
-	#if PULSE_ENABLED && !OUTLINE_PASS
-		emiss *= GetPulse(i);
+	#if !OUTLINE_PASS
+		#if PULSE_ENABLED
+			emiss *= GetPulse(i);
+		#endif
+		#if AUDIOLINK_ENABLED
+			float emissValueAL = GetAudioLinkBand(al, _AudioLinkEmissionBand);
+			emiss *= lerp(1, emissValueAL, _AudioLinkEmissionMultiplier);
+		#endif
 	#endif
 	return emiss * _EmissIntensity;
 }
 
-void ApplyRimLighting(g2f i, lighting l, masks m, inout float3 diffuse){
-	if (_RimLighting == 1){
-		float rim = GetRimValue(l.viewDir, l.normal, _RimWidth, _RimEdge);
-		rim *= m.rimMask;
-		float3 rimCol = UNITY_SAMPLE_TEX2D_SAMPLER(_RimTex, _MainTex, i.uv2.zw).rgb * _RimCol.rgb;
-		float interpolator = rim*_RimStr*lerp(l.worldBrightness, 1, _UnlitRim);
+float GetRim(lighting l, float width){
+	float VdotL = abs(dot(l.viewDir, l.normal));
+	float rim = pow((1-VdotL), (1-width) * 10);
+	rim = smoothstep(_RimEdge, 1-_RimEdge, rim);
+	#if AUDIOLINK_ENABLED
+		audioLinkData ral = (audioLinkData)0;
+		InitializeAudioLink(ral, 1-VdotL);
+		float pulseValueAL = 1-GetAudioLinkBand(ral, _AudioLinkRimBand);
+		float pulseRim = pow((1-pulseValueAL), (1-_AudioLinkRimPulseWidth) * 10);
+		pulseRim = smoothstep(_AudioLinkRimPulseSharp, 1-_AudioLinkRimPulseSharp, pulseRim);
+		rim += (pulseRim * _AudioLinkRimPulse);
+	#endif
+	return rim;
+}
 
-		[flatten]
-		switch (_RimBlending){
-			case 0: diffuse = lerp(diffuse, rimCol, interpolator); break;
-			case 1: diffuse += rimCol*interpolator; break;
-			case 2: diffuse -= rimCol*interpolator; break;
-			case 3: diffuse *= lerp(1, rimCol, interpolator); break;
-		}
+void ApplyRimLighting(g2f i, lighting l, masks m, audioLinkData al, inout float3 diffuse){
+	#if AUDIOLINK_ENABLED
+		float rimValueAL = GetAudioLinkBand(al, _AudioLinkRimBand);
+		_RimWidth *= lerp(1, rimValueAL, _AudioLinkRimWidth);
+	#endif
+	float rim = GetRim(l, _RimWidth);
+	rim *= m.rimMask;
+	float3 rimCol = UNITY_SAMPLE_TEX2D_SAMPLER(_RimTex, _MainTex, i.uv2.zw).rgb * _RimCol.rgb;
+	float interpolator = rim*_RimStr*lerp(l.worldBrightness, 1, _UnlitRim);
+	#if AUDIOLINK_ENABLED
+		interpolator *= lerp(1, rimValueAL, _AudioLinkRimMultiplier);
+	#endif
+	switch (_RimBlending){
+		case 0: diffuse = lerp(diffuse, rimCol, interpolator); break;
+		case 1: diffuse += rimCol*interpolator; break;
+		case 2: diffuse -= rimCol*interpolator; break;
+		case 3: diffuse *= lerp(1, rimCol, interpolator); break;
 	}
 }
 
 //----------------------------
 // Workflows
 //----------------------------
-
 float GetDetailRough(g2f i, float roughIn){
 	float detailRough = UNITY_SAMPLE_TEX2D_SAMPLER(_DetailRoughnessMap, _MainTex, i.uv2.xy);
 	float roughOut = 0;
@@ -694,7 +789,7 @@ void NearClip(g2f i){
         #else
             float camDist = distance(i.worldPos, _WorldSpaceCameraPos.xyz);
         #endif
-        float ncMask = tex2D(_NearClipMask, i.rawUV);
+        float ncMask = UNITY_SAMPLE_TEX2D_SAMPLER(_NearClipMask, _MainTex, i.rawUV);
         if (camDist < _NearClip && ncMask > 0.5){
             discard;
         }
@@ -804,7 +899,7 @@ masks GetMasks(g2f i){
 			m.subsurfMask = mask1.b;
 			m.detailMask = mask1.a;
 		#endif
-		float4 mask3 = tex2D(_PackedMask3, i.uv.xy);
+		float4 mask3 = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMask3, _MainTex, i.uv.xy);
 		m.emissMask = mask3.r;
 		m.emissPulseMask = mask3.g;
 		#if OUTLINE_PASS
@@ -826,3 +921,5 @@ masks GetMasks(g2f i){
 
 	return m;
 }
+
+#endif // US_FUNCTIONS_INCLUDED

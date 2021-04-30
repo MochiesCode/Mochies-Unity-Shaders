@@ -1,5 +1,3 @@
-// Unity built-in shader source. Copyright (c) 2016 Unity Technologies. MIT license (see license.txt)
-
 #ifndef MOCHIE_STANDARD_CORE_FORWARD_INCLUDED
 #define MOCHIE_STANDARD_CORE_FORWARD_INCLUDED
 

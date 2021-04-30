@@ -80,7 +80,8 @@ internal class USEditor : ShaderGUI {
 			"Emission Mask",
 			"Emission Pulse Mask",
 			"Outline Thickness Mask",
-			"Base Color Dissolve"
+			"Base Color Dissolve",
+			"AUDIO LINK"
 		}
 	);
 
@@ -98,7 +99,7 @@ internal class USEditor : ShaderGUI {
 	string watermark = "Watermark_Pro";
 	string patIcon = "Patreon_Icon";
 	string keyTex = "KeyIcon_Pro";
-	string versionLabel = "v1.16";
+	string versionLabel = "v1.17";
 	// β
 	
 	GUIContent maskLabel = new GUIContent("Mask");
@@ -556,6 +557,23 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _BCRimCol = null;
 	MaterialProperty _MainTex2 = null;
 	MaterialProperty _BCColor = null;
+	MaterialProperty _AlphaMaskChannel = null;
+	MaterialProperty _AudioLinkToggle = null;
+	MaterialProperty _AudioLinkEmissionMultiplier = null;
+	MaterialProperty _AudioLinkRimMultiplier = null;
+	MaterialProperty _AudioLinkRimWidth = null;
+	MaterialProperty _AudioLinkDissolveMultiplier = null;
+	MaterialProperty _AudioLinkBCDissolveMultiplier = null;
+	MaterialProperty _AudioLinkPreview = null;
+	MaterialProperty _AudioLinkVertManipMultiplier = null;
+	MaterialProperty _AudioLinkEmissionBand = null;
+	MaterialProperty _AudioLinkRimBand = null;
+	MaterialProperty _AudioLinkDissolveBand = null;
+	MaterialProperty _AudioLinkBCDissolveBand = null;
+	MaterialProperty _AudioLinkVertManipBand = null;
+	MaterialProperty _AudioLinkRimPulse = null;
+	MaterialProperty _AudioLinkRimPulseWidth = null;
+	MaterialProperty _AudioLinkRimPulseSharp = null;
 
 	MaterialProperty _NaNLmao = null;
 
@@ -733,7 +751,8 @@ internal class USEditor : ShaderGUI {
 			}
 			if (_UseAlphaMask.floatValue == 1 && (isCutout || isTransparent)){
 				MGUI.Space8();
-				me.TexturePropertySingleLine(alphaMaskLabel, _AlphaMask);
+				me.TexturePropertySingleLine(alphaMaskLabel, _AlphaMask, _AlphaMaskChannel);
+				MGUI.TexPropLabel("Channel", 109);
 				MGUI.TextureSO(me, _AlphaMask);
 			}
 			MGUI.Space8();
@@ -1792,13 +1811,62 @@ internal class USEditor : ShaderGUI {
 			MGUI.ToggleGroup(_VertexManipulationToggle.floatValue == 0);
 			MGUI.PropertyGroup(() => {
 				me.TexturePropertySingleLine(maskLabel, _VertexExpansionMask);
-				MGUI.Vector3Field(_VertexExpansion, "Expansion");
+				MGUI.Vector3FieldNoIndent(_VertexExpansion, "Expansion");
 				me.ShaderProperty(_VertexExpansionClamp, "Clamp Direction");
 			});
 			MGUI.PropertyGroup(() => {
 				me.TexturePropertySingleLine(maskLabel, _VertexRoundingMask);
 				me.ShaderProperty(_VertexRounding, "Position Rounding");
 				me.ShaderProperty(_VertexRoundingPrecision, "Precision");
+			});
+			MGUI.ToggleGroupEnd();
+			MGUI.Space8();
+		}
+
+		// -----------------
+		// Audio Link
+		// -----------------
+		bool audioLinkTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "AUDIO LINK");
+		if (MGUI.TabButton(resetIcon, 26f)){
+			DoAudioLinkReset();
+		}
+		MGUI.Space8();
+		if (audioLinkTab){
+			MGUI.Space4();
+			me.ShaderProperty(_AudioLinkToggle, "Enable");
+			MGUI.ToggleGroup(_AudioLinkToggle.floatValue == 0);
+			me.ShaderProperty(_AudioLinkPreview, "Preview");
+			MGUI.Space4();
+			MGUI.BoldLabel("Emission");
+			MGUI.PropertyGroup(() => {
+				me.ShaderProperty(_AudioLinkEmissionBand, "Band");
+				me.ShaderProperty(_AudioLinkEmissionMultiplier, "Strength");
+			});
+			MGUI.BoldLabel("Rim");
+			MGUI.PropertyGroup(() => {
+				me.ShaderProperty(_AudioLinkRimBand, "Band");
+				me.ShaderProperty(_AudioLinkRimMultiplier, "Strength");
+				me.ShaderProperty(_AudioLinkRimWidth, "Width");
+				me.ShaderProperty(_AudioLinkRimPulse, "Pulse Strength");
+				me.ShaderProperty(_AudioLinkRimPulseWidth, "Pulse Width");
+				me.ShaderProperty(_AudioLinkRimPulseSharp, "Pulse Sharpness");
+			});
+			if (isUberX){
+				MGUI.BoldLabel("Dissolve");
+				MGUI.PropertyGroup(() => {
+					me.ShaderProperty(_AudioLinkDissolveBand, "Band");
+					me.ShaderProperty(_AudioLinkDissolveMultiplier, "Strength");
+				});
+			}
+			MGUI.BoldLabel("Base Color Dissolve");
+			MGUI.PropertyGroup(() => {
+				me.ShaderProperty(_AudioLinkBCDissolveBand, "Band");
+				me.ShaderProperty(_AudioLinkBCDissolveMultiplier, "Strength");
+			});
+			MGUI.BoldLabel("Vertex Manipulation");
+			MGUI.PropertyGroup(() => {
+				me.ShaderProperty(_AudioLinkVertManipBand, "Band");
+				me.ShaderProperty(_AudioLinkVertManipMultiplier, "Strength");
 			});
 			MGUI.ToggleGroupEnd();
 			MGUI.Space8();
@@ -1890,10 +1958,10 @@ internal class USEditor : ShaderGUI {
 								me.ShaderProperty(_GeomDissolveAmount, "Clip Position");
 								me.ShaderProperty(_GeomDissolveWidth, "Falloff Size");
 								if (_GeomDissolveAxis.floatValue > 2){
-									MGUI.Vector3Field(_DissolvePoint0, "Point 1");
-									MGUI.Vector3Field(_DissolvePoint1, "Point 2");
+									MGUI.Vector3FieldNoIndent(_DissolvePoint0, "Point 1");
+									MGUI.Vector3FieldNoIndent(_DissolvePoint1, "Point 2");
 								}
-								MGUI.Vector3Field(_GeomDissolveSpread, "Offset Amount");
+								MGUI.Vector3FieldNoIndent(_GeomDissolveSpread, "Offset Amount");
 								me.ShaderProperty(_GeomDissolveClip, "Offset Clip");
 								me.ShaderProperty(_GeomDissolveFilter, "Offset Filter");
 							}
@@ -1903,7 +1971,7 @@ internal class USEditor : ShaderGUI {
 									MGUI.ToggleSlider(me, "Flow", _DissolveBlending, _DissolveBlendSpeed);
 								else if (_DissolveStyle.floatValue == 2){
 									me.ShaderProperty(_DissolveBlendSpeed, "Generation Speed");
-									MGUI.Vector3Field(_DissolveNoiseScale, "Noise Scale");
+									MGUI.Vector3FieldNoIndent(_DissolveNoiseScale, "Noise Scale");
 								}
 								MGUI.ToggleGroup(_CloneToggle.floatValue == 0);
 								me.ShaderProperty(_DissolveClones, "Clones Only");
@@ -2163,6 +2231,8 @@ internal class USEditor : ShaderGUI {
 		int vManipToggle = mat.GetInt("_VertexManipulationToggle");
 		int maskTransToggle = mat.GetInt("_EnableMaskTransform");
 		int bcDissToggle = mat.GetInt("_BCDissolveToggle");
+		int audioLinkToggle = mat.GetInt("_AudioLinkToggle");
+		int rimToggle = mat.GetInt("_RimLighting");
 		bool reflFallback = mat.GetTexture("_ReflCube");
 		bool isUberX = MGUI.IsXVersion(mat);
 		bool isOutline = MGUI.IsOutline(mat);
@@ -2177,7 +2247,7 @@ internal class USEditor : ShaderGUI {
 		mat.SetInt("_IsCubeBlendMask", mat.GetTexture("_CubeBlendMask") ? 1 : 0);
 		mat.SetInt("_UseSmoothMap", mat.GetTexture("_SmoothnessMap") && workflow == 1 ? 1 : 0);
 		mat.SetInt("_UseMatcap1", mat.GetTexture("_Matcap1") ? 1 : 0);
-		mat.SetInt("_ATM", blendMode == 3 ? 1 : 0);	
+		mat.SetInt("_ATM", blendMode == 1 ? 1 : 0);	
 
 		// Sync the outline stencil settings with base pass stencil settings when not using stencil mode
 		if (isOutline && stencilToggle == 0){
@@ -2256,7 +2326,9 @@ internal class USEditor : ShaderGUI {
 		bool prevHeight = mat.GetInt("_HeightFiltering") == 1 && mat.GetInt("_PreviewHeight") == 1;
 
 		// Begone grabpass
-		mat.SetShaderPassEnabled("Always", ((ssr == 1 && reflToggle == 1) || refracToggle == 1) && renderMode == 1);
+		bool ssrEnabled = ssr == 1 && reflToggle == 1 && renderMode > 0;
+		bool refracEnabled = refracToggle == 1 && renderMode > 0;
+		mat.SetShaderPassEnabled("Always", ssrEnabled || refracEnabled);
 
 		SetKeyword(mat, "_METALLICGLOSSMAP", workflow >= 3 && renderMode > 0);
 		SetKeyword(mat, "_SPECGLOSSMAP", (workflow == 1 || workflow == 2) && renderMode > 0);
@@ -2281,7 +2353,7 @@ internal class USEditor : ShaderGUI {
 		SetKeyword(mat, "_ALPHATEST_ON", blendMode > 0 && blendMode < 4);
 		SetKeyword(mat, "_ALPHABLEND_ON", blendMode == 4);
 		SetKeyword(mat, "_ALPHAPREMULTIPLY_ON", blendMode == 5);
-		SetKeyword(mat, "CHROMATIC_ABBERATION_LOW", reflToggle == 1 && ssr == 1 && renderMode > 0);
+		SetKeyword(mat, "CHROMATIC_ABBERATION_LOW", ssrEnabled);
 		SetKeyword(mat, "BLOOM_LENS_DIRT", emissToggle == 1 && pulseToggle == 1);
 		SetKeyword(mat, "BLOOM", isUberX && cloneToggle == 1);
 		SetKeyword(mat, "_ALPHAMODULATE_ON", dissolveStyle == 2 && isUberX);
@@ -2291,12 +2363,14 @@ internal class USEditor : ShaderGUI {
 		SetKeyword(mat, "PIXELSNAP_ON", eRimToggle == 1 && renderMode > 0);
 		SetKeyword(mat, "EFFECT_HUE_VARIATION", spriteToggle0 == 1 || spriteToggle1 == 1);
 		SetKeyword(mat, "_SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A", reflToggle == 2 && renderMode > 0);
-		SetKeyword(mat, "DISTORT", refracToggle == 1 && renderMode > 0);
+		SetKeyword(mat, "DISTORT", refracEnabled);
 		SetKeyword(mat, "CHROMATIC_ABBERATION", refracToggle == 1 && caToggle == 1 && renderMode > 0);
 		SetKeyword(mat, "GEOM_TYPE_MESH", vManipToggle == 1);
 		SetKeyword(mat, "GEOM_TYPE_BRANCH", maskingMode == 1 && maskTransToggle == 1);
 		SetKeyword(mat, "VIGNETTE_MASKED", reflFallback && reflToggle > 0 && renderMode > 0);
 		SetKeyword(mat, "DITHERING", bcDissToggle == 1 && renderMode > 0);
+		SetKeyword(mat, "DEPTH_OF_FIELD_COC_VIEW", audioLinkToggle == 1);
+		SetKeyword(mat, "GEOM_TYPE_FROND", rimToggle == 1 && renderMode > 0);
 	}
 
 	void SetBlendMode(Material mat){
@@ -2892,6 +2966,24 @@ internal class USEditor : ShaderGUI {
 		_PulseToggle.floatValue = 0f;
 		DoLRReset();
 		DoPulseReset();
+	}
+
+	void DoAudioLinkReset(){
+		_AudioLinkPreview.floatValue = 0f;
+		_AudioLinkEmissionBand.floatValue = 0f;
+		_AudioLinkEmissionMultiplier.floatValue = 0f;
+		_AudioLinkRimBand.floatValue = 0f;
+		_AudioLinkRimMultiplier.floatValue = 0f;
+		_AudioLinkRimWidth.floatValue = 0f;
+		_AudioLinkRimPulse.floatValue = 0f;
+		_AudioLinkRimPulseWidth.floatValue = 0.5f;
+		_AudioLinkRimPulseSharp.floatValue = 0.3f;
+		_AudioLinkDissolveBand.floatValue = 0f;
+		_AudioLinkDissolveMultiplier.floatValue = 0f;
+		_AudioLinkBCDissolveBand.floatValue = 0f;
+		_AudioLinkBCDissolveMultiplier.floatValue = 0f;
+		_AudioLinkVertManipBand.floatValue = 0f;
+		_AudioLinkVertManipMultiplier.floatValue = 0f;
 	}
 
 	void DoLRReset(){

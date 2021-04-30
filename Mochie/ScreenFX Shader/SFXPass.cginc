@@ -23,7 +23,6 @@ v2f vert (appdata v){
     o.blurF = GetFalloff(_BlurUseGlobal, gf, _BlurMinRange, _BlurMaxRange, o.objDist);
 	o.noiseF = GetFalloff(_NoiseUseGlobal, gf, _NoiseMinRange, _NoiseMaxRange, o.objDist);
 	#if X_FEATURES
-		o.fogF = GetFalloff(_FogUseGlobal, gf, _FogMinRange, _FogMaxRange, o.objDist);
 		o.sstF = GetFalloff(_SSTUseGlobal, gf, _SSTMinRange, _SSTMaxRange, o.objDist);
 		o.olF = GetFalloff(_OLUseGlobal, gf, _OLMinRange, _OLMaxRange, o.objDist);
 	#endif
@@ -60,10 +59,15 @@ float4 frag (v2f i) : SV_Target {
 		ApplyMapDistortion(i);
 	#elif DISTORTION_WORLD_ENABLED
 		ApplyWGDistortion(i); 
-		GetDepth(i, wPos, wNorm, depth);
 	#endif
     
 	#if BLUR_ENABLED
+		#if DOF_ENABLED
+			float dof = GetDoF(i);
+			_BlurStr = lerp(_BlurStr, 0, dof);
+			_RippleGridStr = lerp(_RippleGridStr, 0, dof);
+			_PixelationStr = lerp(_PixelationStr, 0, dof);
+		#endif
 		ApplyRipplePixelate(i);
 		float4 col = tex2Dproj(_MSFXGrab, i.uv);
 		ApplyDitherBlur(i);
@@ -78,9 +82,6 @@ float4 frag (v2f i) : SV_Target {
 		ApplyNormalMap(i, col.rgb);
 		#if OUTLINE_ENABLED
 			ApplyOutline(i, col.rgb);
-		#endif
-		#if FOG_ENABLED
-			ApplyFog(i, col.rgb);
 		#endif
 		ApplyRounding(col.rgb);
 	#endif

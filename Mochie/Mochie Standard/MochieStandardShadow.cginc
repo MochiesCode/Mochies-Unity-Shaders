@@ -1,11 +1,5 @@
-// Unity built-in shader source. Copyright (c) 2016 Unity Technologies. MIT license (see license.txt)
-
 #ifndef MOCHIE_STANDARD_SHADOW_INCLUDED
 #define MOCHIE_STANDARD_SHADOW_INCLUDED
-
-// NOTE: had to split shadow functions into separate file,
-// otherwise compiler gives trouble with LIGHTING_COORDS macro (in UnityStandardCore.cginc)
-
 
 #include "UnityCG.cginc"
 #include "UnityShaderVariables.cginc"
@@ -69,6 +63,9 @@ float2		_UV1Scroll;
 sampler2D _PackedMap;
 float _TSSBias;
 
+int _RoughnessMult, _MetallicMult, _OcclusionMult, _HeightMult;
+int _RoughnessChannel, _MetallicChannel, _OcclusionChannel, _HeightChannel;
+
 #if SHADER_TARGET < 50
 	#define ddx_fine ddx
 	#define ddy_fine ddy
@@ -84,7 +81,16 @@ float2 Rotate2D(float2 coords, float rot){
 	return mul(coords, mat) + 0.5;
 }
 
-#include "MochieStandardSampling.cginc"
+#define TSS_ENABLED defined(BLOOM)
+#define STOCHASTIC_ENABLED defined(EFFECT_HUE_VARIATION)
+
+#include "../Common/Sampling.cginc"
+
+#if STOCHASTIC_ENABLED
+	#define tex2D tex2Dstoch
+#elif TSS_ENABLED
+	#define tex2D tex2Dsuper
+#endif
 
 #if defined(UNITY_STANDARD_USE_SHADOW_UVS) && defined(_PARALLAXMAP)
 	#include "MochieStandardParallax.cginc"
@@ -181,17 +187,22 @@ half4 fragShadowCaster (UNITY_POSITION(vpos)
     #if defined(UNITY_STANDARD_USE_SHADOW_UVS)
         #if defined(_PARALLAXMAP) && (SHADER_TARGET >= 30)
             half3 viewDirForParallax = normalize(i.viewDirForParallax);
-			#if WORKFLOW_PACKED
-				half h = tex2D(_PackedMap, i.tex.xy).a + _ParallaxOffset;
+			#if WORKFLOW_PACKED || WORKFLOW_MODULAR
+				#if WORKFLOW_PACKED
+					half h = tex2D(_PackedMap, i.tex.xy).a + _ParallaxOffset;
+				#else
+					half4 packedMap = tex2D(_PackedMap, i.tex.xy);
+					half h = ChannelCheck(packedMap, _HeightChannel) + _ParallaxOffset;
+				#endif
 				h = clamp(h, 0, 0.999);
-				float2 maskUV = TRANSFORM_TEX(i.tex, _ParallaxMask) + (_Time.y*_ParallaxMaskScroll);
+				float2 maskUV = TRANSFORM_TEX(i.tex1.xy, _ParallaxMask) + (_Time.y*_ParallaxMaskScroll);
 				half m = tex2D(_ParallaxMask, maskUV);
 				_Parallax = lerp(0.02, _Parallax, _HeightMult);
 				half2 offset = ParallaxOffsetMultiStep(h, _Parallax * m, i.tex.xy, viewDirForParallax);
 			#else
 				half h = tex2D(_ParallaxMap, i.tex.xy).g + _ParallaxOffset;
 				h = clamp(h, 0, 0.999);
-				float2 maskUV = TRANSFORM_TEX(i.tex, _ParallaxMask) + (_Time.y*_ParallaxMaskScroll);
+				float2 maskUV = TRANSFORM_TEX(i.tex1.xy, _ParallaxMask) + (_Time.y*_ParallaxMaskScroll);
 				half m = tex2D(_ParallaxMask, maskUV);
 				half2 offset = ParallaxOffsetMultiStep(h, _Parallax * m, i.tex.xy, viewDirForParallax);
 			#endif

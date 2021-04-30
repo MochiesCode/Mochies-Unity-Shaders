@@ -1,96 +1,50 @@
 #ifndef SFX_KEYWORD_DEFINES
 #define SFX_KEYWORD_DEFINES
 
-#ifndef X_FEATURES
-	#define X_FEATURES defined(SFXX)
-#endif
+#define X_FEATURES defined(SFXX)
 
-#ifndef MAIN_PASS
-	#define MAIN_PASS defined(MAIN)
-#endif
+#define MAIN_PASS defined(MAIN)
 
-#ifndef TRIPLANAR_PASS
-	#define TRIPLANAR_PASS defined(TRIPLANAR)
-#endif
+#define TRIPLANAR_PASS defined(TRIPLANAR)
 
-#ifndef ZOOM_PASS
-	#define ZOOM_PASS defined(ZOOM)
-#endif
+#define ZOOM_PASS defined(ZOOM)
 
-#ifndef COLOR_ENABLED
-	#define COLOR_ENABLED defined(_COLORCOLOR_ON)
-#endif
+#define COLOR_ENABLED defined(_COLORCOLOR_ON)
 
-#ifndef SHAKE_ENABLED
-	#define SHAKE_ENABLED defined(FXAA)
-#endif
+#define SHAKE_ENABLED defined(FXAA)
 
-#ifndef DISTORTION_ENABLED
-	#define DISTORTION_ENABLED defined(EFFECT_BUMP)
-#endif
+#define DISTORTION_ENABLED defined(EFFECT_BUMP)
 
-#ifndef DISTORTION_WORLD_ENABLED
-	#define DISTORTION_WORLD_ENABLED defined(_TERRAIN_NORMAL_MAP)
-#endif
+#define DISTORTION_WORLD_ENABLED defined(_TERRAIN_NORMAL_MAP)
 
-#ifndef BLUR_PIXEL_ENABLED
-	#define BLUR_PIXEL_ENABLED defined(BLOOM)
-#endif
+#define BLUR_PIXEL_ENABLED defined(BLOOM)
 
-#ifndef BLUR_DITHER_ENABLED
-	#define BLUR_DITHER_ENABLED defined(GRAIN)
-#endif
+#define BLUR_DITHER_ENABLED defined(GRAIN)
 
-#ifndef BLUR_RADIAL_ENABLED
-	#define BLUR_RADIAL_ENABLED defined(_SUNDISK_SIMPLE)
-#endif
+#define BLUR_RADIAL_ENABLED defined(_SUNDISK_SIMPLE)
 
-#ifndef BLUR_Y_ENABLED
-	#define BLUR_Y_ENABLED defined(BLOOM_LENS_DIRT)
-#endif
+#define BLUR_Y_ENABLED defined(BLOOM_LENS_DIRT)
 
-#ifndef BLUR_ENABLED
-	#define BLUR_ENABLED defined(BLOOM) || defined(GRAIN) || defined(_SUNDISK_SIMPLE)
-#endif
+#define BLUR_ENABLED defined(BLOOM) || defined(GRAIN) || defined(_SUNDISK_SIMPLE)
 
-#ifndef CHROM_ABB_ENABLED
-	#define CHROM_ABB_ENABLED defined(CHROMATIC_ABBERATION_LOW)
-#endif
+#define CHROM_ABB_ENABLED defined(CHROMATIC_ABBERATION_LOW)
 
-#ifndef DOF_ENABLED
-	#define DOF_ENABLED defined(DEPTH_OF_FIELD)
-#endif
+#define DOF_ENABLED defined(DEPTH_OF_FIELD)
 
-#ifndef ZOOM_ENABLED
-	#define ZOOM_ENABLED defined(_DETAIL_MULX2)
-#endif
+#define ZOOM_ENABLED defined(_DETAIL_MULX2)
 
-#ifndef ZOOM_RGB_ENABLED
-	#define ZOOM_RGB_ENABLED defined(_MAPPING_6_FRAMES_LAYOUT)
-#endif
+#define ZOOM_RGB_ENABLED defined(_MAPPING_6_FRAMES_LAYOUT)
 
-#ifndef IMAGE_OVERLAY_ENABLED
-	#define IMAGE_OVERLAY_ENABLED defined(_COLOROVERLAY_ON)
-#endif
+#define IMAGE_OVERLAY_ENABLED defined(_COLOROVERLAY_ON)
 
-#ifndef IMAGE_OVERLAY_DISTORTION_ENABLED
-	#define IMAGE_OVERLAY_DISTORTION_ENABLED defined(_PARALLAXMAP)
-#endif
+#define IMAGE_OVERLAY_DISTORTION_ENABLED defined(_PARALLAXMAP)
 
-#ifndef FOG_ENABLED
-	#define FOG_ENABLED defined(_FADING_ON)
-#endif
+#define FOG_ENABLED defined(_FADING_ON)
 
-#ifndef TRIPLANAR_ENABLED
-	#define TRIPLANAR_ENABLED defined(PIXELSNAP_ON)
-#endif
+#define TRIPLANAR_ENABLED defined(PIXELSNAP_ON)
 
-#ifndef OUTLINE_ENABLED
-	#define OUTLINE_ENABLED defined(_COLORADDSUBDIFF_ON)
-#endif
+#define OUTLINE_ENABLED defined(_COLORADDSUBDIFF_ON)
 
-#ifndef NOISE_ENABLED
-	#define NOISE_ENABLED defined(_REQUIRE_UV2)
-#endif
+#define NOISE_ENABLED defined(_REQUIRE_UV2)
 
 #endif

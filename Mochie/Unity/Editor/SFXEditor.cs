@@ -49,7 +49,7 @@ public class SFXEditor : ShaderGUI {
 	string header = "SFXHeader_Pro";
 	string watermark = "Watermark_Pro";
 	string patIcon = "Patreon_Icon";
-	string versionLabel = "v1.11";
+	string versionLabel = "v1.12";
 	string keyTex = "KeyIcon_Pro";
 	
     // Commonly used strings
@@ -555,7 +555,7 @@ public class SFXEditor : ShaderGUI {
 					});
                     if (_DistortionModel.floatValue == 2){
 						MGUI.PropertyGroup(() => {
-							MGUI.DisplayWarning("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
+							MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
 							me.ShaderProperty(_DistortionRadius, radiusLabel);
 							me.ShaderProperty(_DistortionFade, fadeLabel);
 							me.ShaderProperty(_DistortionP2O, p2oLabel);
@@ -599,13 +599,24 @@ public class SFXEditor : ShaderGUI {
 						}
 						me.ShaderProperty(_PixelationStr, "Pixelation");
 						me.ShaderProperty(_RippleGridStr, "Ripple Grid");
+						if (_BlurModel.floatValue == 3){
+							me.ShaderProperty(_DoF, "Depth of Field");
+							if (_DoF.floatValue == 1){
+								MGUI.PropertyGroupLayer(() => {
+									MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
+									me.ShaderProperty(_DoFRadius, radiusLabel);
+									me.ShaderProperty(_DoFFade, fadeLabel);
+									me.ShaderProperty(_DoFP2O, p2oLabel);
+								});
+							}
+						}
 					});
 					MGUI.PropertyGroup(_BlurModel.floatValue != 3, () => {
 						if (_BlurModel.floatValue != 3){
 							me.ShaderProperty(_DoF, "Depth of Field");
 							if (_DoF.floatValue == 1){
 								MGUI.PropertyGroupLayer(() => {
-									MGUI.DisplayWarning("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
+									MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
 									me.ShaderProperty(_DoFRadius, radiusLabel);
 									me.ShaderProperty(_DoFFade, fadeLabel);
 									me.ShaderProperty(_DoFP2O, p2oLabel);
@@ -748,7 +759,7 @@ public class SFXEditor : ShaderGUI {
 						}
 						else MGUI.Space6();
 						MGUI.PropertyGroup(() => {
-							MGUI.DisplayWarning("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
+							MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
 							me.ShaderProperty(_FogColor, colorLabel);
 							me.ShaderProperty(_FogRadius, radiusLabel);
 							me.ShaderProperty(_FogFade, fadeLabel);
@@ -785,7 +796,7 @@ public class SFXEditor : ShaderGUI {
 						}
 						else MGUI.Space6();
 						MGUI.PropertyGroup(() => {
-							MGUI.DisplayWarning("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
+							MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
 							me.TexturePropertySingleLine(tpTexLabel, _TPTexture, _TPColor);
 							if (_TPTexture.textureValue){
 								MGUI.TextureSO(me, _TPTexture);
@@ -831,7 +842,7 @@ public class SFXEditor : ShaderGUI {
 						}
 						else MGUI.Space6();
 						MGUI.PropertyGroup(() => {
-							MGUI.DisplayWarning("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
+							MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
 							if (_OutlineType.floatValue == 2)
 								me.ShaderProperty(_AuraSampleCount, "Sample Count");
 							me.ShaderProperty(_OutlineCol, "Line Tint");
@@ -937,7 +948,7 @@ public class SFXEditor : ShaderGUI {
 					
 					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _DepthBufferToggle, 0, "Depth Buffer")){
 						if (_DepthBufferToggle.floatValue == 1){
-							MGUI.DisplayWarning("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
+							MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
 						}
 						MGUI.PropertyGroup(() => {
 							MGUI.ToggleGroup(_DepthBufferToggle.floatValue == 0);
@@ -1011,6 +1022,7 @@ public class SFXEditor : ShaderGUI {
 		int tpMode = mat.GetInt("_Triplanar");
 		int outlineMode = mat.GetInt("_OutlineType");
 		int noiseMode = mat.GetInt("_NoiseMode");
+		int letterboxMode = mat.GetInt("_Letterbox");
 
 		bool isXVersion = MGUI.IsXVersion(mat);
 		bool filteringEnabled = filterMode > 0;
@@ -1032,6 +1044,7 @@ public class SFXEditor : ShaderGUI {
 		bool sstDistEnabled = sstMode == 3 && isXVersion;
 		bool tpEnabled = tpMode > 0 && isXVersion;
 		bool outlineEnabled = outlineMode > 0 && isXVersion;
+		bool letterboxEnabled = letterboxMode > 0 && isXVersion;
 		
 		SetKeyword(mat, "_COLORCOLOR_ON", filteringEnabled);
 		SetKeyword(mat, "FXAA", shakeEnabled);
@@ -1051,6 +1064,8 @@ public class SFXEditor : ShaderGUI {
 		SetKeyword(mat, "PIXELSNAP_ON", tpEnabled);
 		SetKeyword(mat, "_COLORADDSUBDIFF_ON", outlineEnabled);
 		SetKeyword(mat, "_REQUIRE_UV2", noiseEnabled);
+
+		mat.SetShaderPassEnabled("Always", zoomEnabled || zoomRGBEnabled || sstEnabled || sstDistEnabled ||  letterboxEnabled);
 	}
 
     public static void SetBlendMode(Material mat) {

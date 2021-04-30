@@ -215,7 +215,7 @@ Shader "Mochie/Screen FX/Screen FX" {
 			"_MSFXGrab"
 		}
         Pass {
-			Tags {"LightMode"="Always"}
+			Tags {"LightMode"="ForwardBase"}
 			Blend [_SrcBlend] [_DstBlend]
             CGPROGRAM
 			#pragma target 5.0

@@ -84,19 +84,17 @@ float depth;
 
 	// Zoom
 	sampler2D _ZoomGrab;
-	int _Zoom, _ZoomUseGlobal;
+	int _Zoom, _ZoomUseGlobal, _NeedsZoomPass;
 	float _ZoomMinRange, _ZoomMaxRange;
 	float _ZoomStr, _ZoomStrR, _ZoomStrG, _ZoomStrB;
 
 	// Extras
-	sampler2D _GhostingGrab;
-	int _OLUseGlobal, _OutlineType, _GhostingToggle, _DeepFry, _Shift, _InvertX, _InvertY, _Sobel, _FreezeFrame, _DepthBufferToggle;
+	int _OLUseGlobal, _OutlineType, _Shift, _InvertX, _InvertY, _Sobel, _DepthBufferToggle;
 	int _AuraSampleCount;
-	float _GhostingStr, _OLMinRange, _OLMaxRange, _AuraFade, _AuraStr;
+	float _OLMinRange, _OLMaxRange, _AuraFade, _AuraStr;
 	float4 _OutlineCol, _BackgroundCol;
 	float3 _DBColor;
 	float _OutlineThiccS, _OutlineThiccN, _OutlineThresh, _SobelStr;
-	float _Flavor, _Heat, _Sizzle;
 	float _ShiftX, _ShiftY, _Rotate;
 	int _Pulse, _WaveForm, _PulseColor;
 	float _PulseSpeed, _NormalMapFilter, _NMFToggle, _NMFOpacity, _DBOpacity;

@@ -1,156 +1,158 @@
-#ifndef P_FUNCS_INCLUDED
-#define P_FUNCS_INCLUDED
+#ifndef PS_FUNCTIONS_INCLUDED
+#define PS_FUNCTIONS_INCLUDED
+
+float4 ApplyLayeredTex(v2f i, float4 texCol){
+	float alpha = _BlendMode == 1 ? texCol.a : 1;
+	float4 secondTexCol = tex2D(_SecondTex, i.uv0.xy) * _SecondColor;
+	switch (_TexBlendMode){
+		case 0: texCol = lerp(secondTexCol*alpha, texCol, texCol.a); break;
+		case 1: texCol.rgb += secondTexCol.rgb*alpha; break;
+		case 2: texCol.rgb -= secondTexCol.rgb; break;
+		case 3: texCol.rgb *= secondTexCol.rgb; break;
+		default: break;
+	}
+    return texCol;
+}
+
+void ApplyDistortion(inout v2f i, float alpha){
+	float2 duv = i.uv0.xy - (_Time.y*_DistortionSpeed);
+	duv *= _NormalMapScale;
+	float2 normal = UnpackNormal(tex2D(_NormalMap, duv)).rg;
+	float2 offset = normal * alpha * _DistortionStr * ((i.color.r + i.color.b + i.color.g)/3.0);
+	#if FADING_ENABLED
+		offset *= fade;
+	#endif
+	i.uv1.xy += offset;
+	#if DISTORTION_UV_ENABLED
+		i.uv0.xy += offset;
+	#endif
+}
+
+
+float3 GetHSVFilter(float4 col){
+	_Hue += lerp(0, frac(_Time.y*_AutoShiftSpeed), _AutoShift);
+	float3 filteredCol = HSVShift(col.rgb, _Hue, 0, 0);
+	filteredCol = GetSaturation(filteredCol, _Saturation);
+	filteredCol = lerp(filteredCol, GetHDR(filteredCol), _HDR);
+	filteredCol = GetContrast(filteredCol, _Contrast);
+	col.rgb = lerp(col.rgb, filteredCol, col.a);
+	col.rgb *= _Brightness;
+    return col;
+}
 
 void Softening(v2f i, inout float fade){
-    fade = 1;
-	#if defined(_FADING_ON)
-        float sceneZ = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, UNITY_PROJ_COORD(i.projPos)));
-        float partZ = i.projPos.z;
-        fade = saturate((1-_SoftenStr) * (sceneZ-partZ));
-    #endif
+	float sceneZ = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, UNITY_PROJ_COORD(i.projPos)));
+	float partZ = i.projPos.z;
+	fade = saturate((1-_SoftenStr) * (sceneZ-partZ));
 }
 
 float4 GetTexture(v2f i){ 
 
-	#if defined(PSX) && defined(EFFECT_BUMP)
+	#if DISTORTION_ENABLED
 		float4 texCol = tex2D(_MainTex, i.uv0.xy);
 		ApplyDistortion(i, texCol.a);
-		if (_DistortMainTex == 1)
+		#if DISTORTION_UV_ENABLED
 			texCol = tex2D(_MainTex, i.uv0.xy);
-		float4 grabCol = float4(tex2Dproj(_PSGrab, i.uv1).rgb, texCol.a);
-		// texCol = lerp(texCol, grabCol*lerp(1,texCol.a,_BlendMode == 1), _DistortionBlend);
-		texCol = grabCol;
+		#endif
+		float4 grabCol = float4(tex2Dproj(_GrabTexture, i.uv1).rgb, texCol.a);
+		texCol = lerp(texCol, grabCol*lerp(1,texCol.a,_BlendMode == 1), _DistortionBlend);
 	#else
-		float4 texCol = tex2D(_MainTex, i.uv0.xy) * _Color;
+		float4 texCol = tex2D(_MainTex, i.uv0.xy);
 	#endif
 
-	if (_FlipbookBlending == 1){
-		float4 blendedTex = tex2D(_MainTex, i.uv0.xy) * _Color;
+	#if FLIPBOOK_BLEND_ENABLED
+		float4 blendedTex = tex2D(_MainTex, i.uv0.xy);
 		texCol = lerp(texCol, blendedTex, i.uv0.z);
-	}
-    if (_IsCutout == 1)
-        clip(texCol.a - _Cutout);
-	
-	#if defined(PSX)
+	#endif
+
+    #if ALPHA_TEST_ENABLED
+        clip(texCol.a - _Cutoff);
+	#endif
+
+	#if LAYERED_TEX_ENABLED
 		texCol = ApplyLayeredTex(i, texCol);
 	#endif
+
     return texCol;
 }
 
 float4 GetProjPos(float4 vertex0, float4 vertex1){
-    float4 projPos = 0;
-    #if defined(_FADING_ON)
-        projPos = ComputeScreenPos(vertex1);
-		projPos.z = -UnityObjectToViewPos(vertex0).z;
-    #endif
+	float4 projPos = ComputeScreenPos(vertex1);
+	projPos.z = -UnityObjectToViewPos(vertex0).z;
     return projPos;
 }
 
-float GetFalloff(float4 vertex){
-    float falloff = 1;
-    if (_Falloff == 1){
-        float dist = distance(GetCameraPos(), mul(unity_ObjectToWorld, vertex));
-        falloff = smoothstep(_MaxRange, clamp(_MinRange, 0, _MinRange-0.001), dist);
-        falloff *= smoothstep(clamp(_NearMinRange, 0, _NearMaxRange-0.001), _NearMaxRange, dist);
-    }
+float4 GetFalloffPosition(v2f i){
+	float4 pos = 0;
+	if (_FalloffMode == 0)
+		pos = mul(unity_ObjectToWorld, i.center);
+	else
+		pos = mul(unity_ObjectToWorld, i.vertex);
+	return pos;
+}
+
+float GetFalloff(v2f i){
+	float dist = distance(GetCameraPos(), GetFalloffPosition(i));
+	float falloff = smoothstep(_MaxRange, clamp(_MinRange, 0, _MinRange-0.001), dist);
+	falloff *= smoothstep(clamp(_NearMinRange, 0, _NearMaxRange-0.001), _NearMaxRange, dist);
     return falloff;
 }
 
 float GetPulse(){
 	float pulse = 1;
-	if (_Pulse == 1){
-		UNITY_BRANCH
-		switch (_Waveform){
-			case 0: pulse = 0.5*(sin(_Time.y * _PulseSpeed)+1); break;
-			case 1: pulse = round((sin(_Time.y * _PulseSpeed)+1)*0.5); break;
-			case 2: pulse = abs((_Time.y * (_PulseSpeed * 0.333)%2)-1); break;
-			case 3: pulse = frac(_Time.y * (_PulseSpeed * 0.2)); break;
-			case 4: pulse = 1-frac(_Time.y * (_PulseSpeed * 0.2)); break;
-			default: break;
-		}
+	switch (_Waveform){
+		case 0: pulse = 0.5*(sin(_Time.y * _PulseSpeed)+1); break;
+		case 1: pulse = round((sin(_Time.y * _PulseSpeed)+1)*0.5); break;
+		case 2: pulse = abs((_Time.y * (_PulseSpeed * 0.333)%2)-1); break;
+		case 3: pulse = frac(_Time.y * (_PulseSpeed * 0.2)); break;
+		case 4: pulse = 1-frac(_Time.y * (_PulseSpeed * 0.2)); break;
+		default: break;
 	}
 	return lerp(1, pulse, _PulseStr);
 }
 
 float4 GetColor(v2f i){
-	Softening(i, fade);
-    i.color.a *= fade;
+
+	#if FADING_ENABLED
+		Softening(i, fade);
+    	i.color.a *= fade;
+	#endif
+
+	i.color.a *= _Opacity;
     float4 col = 1;
+	float4 tex = GetTexture(i);
 
-    [forcecase]
-	switch (_BlendMode){
+	#if ALPHA_BLEND
+		col = i.color * tex * _Color;
+		col.a *= i.falloff;
+		col.a *= i.pulse;
+	#elif ALPHA_PREMULTIPLY
+		col = i.color * tex * i.color.a * _Color;
+		col *= i.falloff;
+		col *= i.pulse;
+	#elif ALPHA_ADD
+		col = i.color * tex * _Color;
+		col *= i.falloff;
+		col *= i.pulse;
+	#elif ALPHA_ADD_SOFT
+		col = i.color * tex * _Color;
+		col.rgb *= col.a;
+		col *= i.falloff;
+		col *= i.pulse;
+	#elif ALPHA_MULTIPLY
+		float4 prev = i.color * tex * _Color;
+		col = lerp(float4(1,1,1,1), prev, prev.a * i.falloff * i.pulse);
+	#elif ALPHA_MULTIPLYX2
+		col.rgb = i.color.rgb * tex.rgb * _Color * 2;
+		col.a = i.color.a * tex.a;
+		col = lerp(float4(0.5,0.5,0.5,0.5), col, col.a * i.falloff * i.pulse);
+	#endif
 
-		// Alpha Blended
-		case 0:
-			col = GetTexture(i);
-			col.a = saturate(col.a);
-			col.a *= i.falloff;
-			// col *= _Color;
-			col *= i.pulse;
-			#if defined(PSX)
-				col.rgb = GetHSVFilter(col);
-			#endif
-			break;
+	#if FILTERING_ENABLED
+		col.rgb = GetHSVFilter(col);
+	#endif
 
-		// Premultiplied
-		case 1: 
-			col = i.color * GetTexture(i) * i.color.a;
-			col *= i.falloff;
-			col *= _Color;
-			col *= i.pulse;
-			#if defined(PSX)
-				col.rgb = GetHSVFilter(col);
-			#endif
-			break;
-
-		// Additive
-		case 2:
-			col = 2.0 * i.color * GetTexture(i);
-			col.a = saturate(col.a);
-			col.a *= i.falloff;
-			col *= _Color;
-			#if defined(PSX)
-				col.rgb = GetHSVFilter(col);
-			#endif
-			break;
-		
-		// Soft Additive
-		case 3: 
-			col = i.color * GetTexture(i);
-			col.rgb *= col.a;
-			col *= i.falloff;
-			col *= _Color;
-			col.rgb *= i.pulse;
-			#if defined(PSX)
-				col.rgb = GetHSVFilter(col);
-			#endif
-			break;
-		
-		// Multiply
-		case 4:
-			float4 prev = i.color * GetTexture(i);
-			col = lerp(float4(1,1,1,1), prev, prev.a*i.falloff);
-			col *= _Color;
-			#if defined(PSX)
-				col.rgb = GetHSVFilter(col);
-			#endif
-			break;
-		
-		// Multiply x2
-		case 5:
-			float4 tex = GetTexture(i);
-			col.rgb = tex.rgb * i.color.rgb * 2;
-			col.a = i.color.a * tex.a;
-			col = lerp(float4(0.5,0.5,0.5,0.5), col, col.a*i.falloff);
-			col *= _Color;
-			#if defined(PSX)
-				col.rgb = GetHSVFilter(col);
-			#endif
-			break;
-		
-		default: break;
-	}
     return col;
 }
 
-#endif
+#endif // PS_FUNCTIONS_INCLUDED

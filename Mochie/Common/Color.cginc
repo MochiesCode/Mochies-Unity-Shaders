@@ -1,5 +1,5 @@
-#ifndef COLOR_COM_INCLUDED
-#define COLOR_COM_INCLUDED
+#ifndef COLOR_INCLUDED
+#define COLOR_INCLUDED
 
 // ---------------------------
 // Color Model Conversions
@@ -218,4 +218,4 @@ float3 GetHDR(float3 rgb) {
 	return float3(eotf_sRGB_scalar(rgb.r), eotf_sRGB_scalar(rgb.g), eotf_sRGB_scalar(rgb.b));
 }
 
-#endif
+#endif // COLOR_INCLUDED

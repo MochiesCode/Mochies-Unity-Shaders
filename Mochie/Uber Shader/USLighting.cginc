@@ -1,5 +1,5 @@
-#ifndef LIGHTING_INCLUDED
-#define LIGHTING_INCLUDED
+#ifndef US_LIGHTING_INCLUDED
+#define US_LIGHTING_INCLUDED
 
 float FadeShadows (g2f i, float atten) {
     #if HANDLE_SHADOWS_BLENDING_IN_GI
@@ -197,7 +197,6 @@ float3 GetLightDir(g2f i, lighting l) {
 void GetLightColor(g2f i, inout lighting l, masks m){
 	#if FORWARD_PASS
 		float3 probeCol = float3(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w);
-
 		#if SHADING_ENABLED
 			UNITY_BRANCH
 			if (_NonlinearSHToggle == 1)
@@ -224,7 +223,6 @@ void GetLightColor(g2f i, inout lighting l, masks m){
 				l.indirectCol *= 0.5;
 			}
 		#endif
-
 		l.worldBrightness = saturate(Average(l.directCol + l.indirectCol + l.vLightCol));
 		l.directCol *= lerp(1, l.ao, _DirectAO);
 		l.indirectCol *= lerp(1, l.ao, _IndirectAO);
@@ -235,10 +233,6 @@ void GetLightColor(g2f i, inout lighting l, masks m){
 			l.directCol = saturate(_LightColor0);
 		#endif
 	#endif
-}
-
-float Safe_DotClamped(float3 a, float3 b){
-	return max(0.00001, dot(a,b));
 }
 
 lighting GetLighting(g2f i, masks m, float3 atten, bool frontFace){
@@ -264,11 +258,6 @@ lighting GetLighting(g2f i, masks m, float3 atten, bool frontFace){
 		l.normal = lerp(l.normalDir, normalize(i.normal), _ClearCoat);
 		l.normal = lerp(-l.normal, l.normal, frontFace);
 		l.reflectionDir = reflect(-l.viewDir, l.normal);
-		// #if ANISO_SPECULAR
-		// 	l.reflectionDir = GetAnisoReflDir(l);
-		// #else
-		// 	l.reflectionDir = reflect(-l.viewDir, l.normal);
-		// #endif
 		#if VERTEX_LIGHT
 			GetVertexLightData(i, l);
 		#endif
@@ -299,4 +288,4 @@ lighting GetLighting(g2f i, masks m, float3 atten, bool frontFace){
     return l;
 }
 
-#endif // LIGHTING_INCLUDED
+#endif // US_LIGHTING_INCLUDED

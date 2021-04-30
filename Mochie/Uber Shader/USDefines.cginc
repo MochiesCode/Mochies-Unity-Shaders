@@ -1,8 +1,13 @@
 #ifndef US_DEFINES_INCLUDED
 #define US_DEFINES_INCLUDED
 
+Texture2D _MainTex;
+SamplerState sampler_MainTex;
+float4 _MainTex_ST, _MainTex_TexelSize;
+
 #include "USKeyDefines.cginc"
 #include "UnityPBSLighting.cginc"
+#include "../Common/Sampling.cginc"
 #include "../Common/Color.cginc"
 #include "../Common/Utilities.cginc"
 #include "../Common/Noise.cginc"
@@ -12,37 +17,74 @@
 	#define SHADOW_COORDS(idx1) unityShadowCoord2 _ShadowCoord : TEXCOORD##idx1;
 #endif
 
-static const float2 blurKernel[16] = {
-    float2(0,0),
-    float2(0.54545456,0),
-    float2(0.16855472,0.5187581),
-    float2(-0.44128203,0.3206101),
-    float2(-0.44128197,-0.3206102),
-    float2(0.1685548,-0.5187581),
-    float2(1,0),
-    float2(0.809017,0.58778524),
-    float2(0.30901697,0.95105654),
-    float2(-0.30901703,0.9510565),
-    float2(-0.80901706,0.5877852),
-    float2(-1,0),
-    float2(-0.80901694,-0.58778536),
-    float2(-0.30901664,-0.9510566),
-    float2(0.30901712,-0.9510565),
-    float2(0.80901694,-0.5877853),
-};
+#ifdef POINT
+	#define POI_LIGHT_ATTENUATION(destName, shadows, input, worldPos) \
+		unityShadowCoord3 lightCoord = mul(unity_WorldToLight, unityShadowCoord4(worldPos, 1)).xyz; \
+		float shadows = UNITY_SHADOW_ATTENUATION(input, worldPos); \
+		float destName = tex2D(_LightTexture0, dot(lightCoord, lightCoord).rr).r;
+#endif
 
+#ifdef POINT_COOKIE
+	#if !defined(UNITY_HALF_PRECISION_FRAGMENT_SHADER_REGISTERS)
+		#define DECLARE_LIGHT_COORD(input, worldPos) unityShadowCoord3 lightCoord = mul(unity_WorldToLight, unityShadowCoord4(worldPos, 1)).xyz
+	#else
+		#define DECLARE_LIGHT_COORD(input, worldPos) unityShadowCoord3 lightCoord = input._LightCoord
+	#endif
+	#define POI_LIGHT_ATTENUATION(destName, shadows, input, worldPos) \
+        DECLARE_LIGHT_COORD(input, worldPos); \
+        float shadows = UNITY_SHADOW_ATTENUATION(input, worldPos); \
+        float destName = tex2D(_LightTextureB0, dot(lightCoord, lightCoord).rr).r * texCUBE(_LightTexture0, lightCoord).w;
+#endif
+
+#ifdef SPOT
+	#if !defined(UNITY_HALF_PRECISION_FRAGMENT_SHADER_REGISTERS)
+		#define DECLARE_LIGHT_COORD(input, worldPos) unityShadowCoord4 lightCoord = mul(unity_WorldToLight, unityShadowCoord4(worldPos, 1))
+	#else
+		#define DECLARE_LIGHT_COORD(input, worldPos) unityShadowCoord4 lightCoord = input._LightCoord
+	#endif
+	#define POI_LIGHT_ATTENUATION(destName, shadows, input, worldPos) \
+		DECLARE_LIGHT_COORD(input, worldPos); \
+		float shadows = UNITY_SHADOW_ATTENUATION(input, worldPos); \
+		float destName = (lightCoord.z > 0) * UnitySpotCookie(lightCoord) * UnitySpotAttenuate(lightCoord.xyz);
+#endif
+
+// PBR Shading
+UNITY_DECLARE_TEX2D_NOSAMPLER(_MainTex2);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_MirrorTex);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_PackedMap);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_MetallicGlossMap);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_SpecGlossMap);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_BumpMap);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_OcclusionMap);
-UNITY_DECLARE_TEX2D_NOSAMPLER(_DetailAlbedoMap); float4 _DetailAlbedoMap_ST;
-UNITY_DECLARE_TEX2D_NOSAMPLER(_RimTex); float4 _RimTex_ST;
-UNITY_DECLARE_TEX2D_NOSAMPLER(_DistortUVMap); float4 _DistortUVMap_ST;
-UNITY_DECLARE_TEX2D_NOSAMPLER(_AOTintTex);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_SmoothnessMap);
-UNITY_DECLARE_TEX2D_NOSAMPLER(_Matcap); float4 _Matcap_ST;
-UNITY_DECLARE_TEX2D_NOSAMPLER(_Matcap1); float4 _Matcap1_ST;
+UNITY_DECLARE_TEX2D_NOSAMPLER(_ParallaxMap);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_TranslucencyMap);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_DetailAlbedoMap); 
+UNITY_DECLARE_TEX2D_NOSAMPLER(_DetailRoughnessMap);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_DetailOcclusionMap);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_DetailNormalMap);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_AudioTexture);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_SSRGrab);
+
+// NPR Shading
+UNITY_DECLARE_TEX2D_NOSAMPLER(_RimTex); 
+UNITY_DECLARE_TEX2D_NOSAMPLER(_AOTintTex);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_Matcap);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_Matcap1);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_SubsurfaceTex);
+
+// FX
+UNITY_DECLARE_TEX2D_NOSAMPLER(_BCNoiseTex);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_OutlineTex);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_DissolveTex); 
+UNITY_DECLARE_TEX2D_NOSAMPLER(_DissolveFlow);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_DistortUVMap);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_Spritesheet);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_Spritesheet1);
+
+// Masks
 UNITY_DECLARE_TEX2D_NOSAMPLER(_MatcapBlendMask);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_EmissMask);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_DetailMask);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_ShadowMask);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_RimMask);
@@ -53,30 +95,68 @@ UNITY_DECLARE_TEX2D_NOSAMPLER(_CubeBlendMask);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_DistortUVMask);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_PulseMask);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_SubsurfaceMask);
-UNITY_DECLARE_TEX2D_NOSAMPLER(_TranslucencyMap);
-UNITY_DECLARE_TEX2D_NOSAMPLER(_SubsurfaceTex);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_MatcapMask);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_AlphaMask);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_ERimMask);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_RefractionMask);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_RefractionDissolveMask);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_SpecularMask);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_InterpMask);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_ReflectionMask);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_DissolveMask);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_OutlineMask);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_NearClipMask);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_VertexExpansionMask);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_VertexRoundingMask);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_PackedMask0);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_PackedMask1);
 UNITY_DECLARE_TEX2D_NOSAMPLER(_PackedMask2);
-UNITY_DECLARE_TEX2D_NOSAMPLER(_MirrorTex);
-UNITY_DECLARE_TEX2D_NOSAMPLER(_DetailRoughnessMap);
-UNITY_DECLARE_TEX2D_NOSAMPLER(_PackedMap);
-UNITY_DECLARE_TEX2D_NOSAMPLER(_RefractionMask);
-UNITY_DECLARE_TEX2D_NOSAMPLER(_RefractionDissolveMask);
-UNITY_DECLARE_TEX2D_NOSAMPLER(_DetailOcclusionMap);
-UNITY_DECLARE_TEX2D_NOSAMPLER(_BCNoiseTex);
-UNITY_DECLARE_TEX2D_NOSAMPLER(_MainTex2);
+UNITY_DECLARE_TEX2D_NOSAMPLER(_PackedMask3);
+
+// Requires dedicated samplers
+UNITY_DECLARE_TEX2D(_EmissionMap);
 UNITY_DECLARE_TEX2DARRAY(_Flipbook0);
 UNITY_DECLARE_TEX2DARRAY(_Flipbook1);
-
-sampler2D _PackedMask3;
-sampler2D _OutlineMask;
-sampler2D _NearClipMask;
-sampler2D _ShadowRamp;
 samplerCUBE _MainTexCube0, _MainTexCube1;
+samplerCUBE _ReflCube;
+sampler2D _ShadowRamp;
+sampler2D _NoiseTexSSR;
+sampler3D _DitherMaskLOD;
+sampler2D _DitherMaskLOD2D;
+sampler2D _CameraDepthTexture;
+
+float4 _RimTex_ST;
+float4 _DetailAlbedoMap_ST;
+float4 _DistortUVMap_ST;
+float4 _Matcap_ST;
+float4 _Matcap1_ST;
+float4 _RefractionMask_ST;
+float4 _AlphaMask_ST;
+float4 _ReflectionMask_ST;
+float4 _SpecularMask_ST;
+float4 _ERimMask_ST;
+float4 _MatcapMask_ST;
+float4 _MatcapBlendMask_ST;
+float4 _InterpMask_ST;
+float4 _SubsurfaceMask_ST;
+float4 _RimMask_ST;
+float4 _DetailMask_ST;
+float4 _ShadowMask_ST;
+float4 _DiffuseMask_ST;
+float4 _FilterMask_ST;
+float4 _TeamColorMask_ST;
+float4 _EmissMask_ST;
+float4 _EmissPulseMask_ST;
+float4 _RefractionDissolveMask_ST;
+float4 _OutlineMask_ST;
+float4 _BCNoiseTex_ST;
+float4 _MainTex2_ST;
+float4 _OutlineTex_ST;
+float4 _ReflTex_ST;
+float4 _EmissionMap_ST;
+float4 _SpecTex_ST;
+float4 _DissolveTex_ST;
+float4 _SSRGrab_TexelSize;
 
 int _IsCubeBlendMask;
 int _MaskingMode;
@@ -109,6 +189,13 @@ int _DetailOcclusionBlending;
 int _UsingDetailAlbedo, _DetailAlbedoBlending;
 int _NearClipToggle;
 int _BCDissolveToggle;
+int _AlphaMaskChannel;
+int _AudioLinkEmissionBand;
+int _AudioLinkRimBand;
+int _AudioLinkDissolveBand;
+int _AudioLinkBCDissolveBand;
+int _AudioLinkVertManipBand;
+int _AudioLinkToggle;
 
 float4 _Color; 
 float4 _CubeColor0, _CubeColor1;
@@ -117,28 +204,6 @@ float4 _RimCol, _ERimTint;
 float4 _TeamColor0, _TeamColor1, _TeamColor2, _TeamColor3;
 float4 _SColor, _ShadowTint;
 float4 _BCRimCol, _BCColor;
-
-float4 _RefractionMask_ST;
-float4 _AlphaMask_ST;
-float4 _ReflectionMask_ST;
-float4 _SpecularMask_ST;
-float4 _ERimMask_ST;
-float4 _MatcapMask_ST;
-float4 _MatcapBlendMask_ST;
-float4 _InterpMask_ST;
-float4 _SubsurfaceMask_ST;
-float4 _RimMask_ST;
-float4 _DetailMask_ST;
-float4 _ShadowMask_ST;
-float4 _DiffuseMask_ST;
-float4 _FilterMask_ST;
-float4 _TeamColorMask_ST;
-float4 _EmissMask_ST;
-float4 _EmissPulseMask_ST;
-float4 _RefractionDissolveMask_ST;
-float4 _OutlineMask_ST;
-float4 _BCNoiseTex_ST;
-float4 _MainTex2_ST;
 
 float3 _CubeRotate0, _CubeRotate1;
 float3 _StaticLightDir;
@@ -169,6 +234,19 @@ float2 _EmissMaskScroll;
 float2 _EmissPulseMaskScroll; 
 float2 _RefractionDissolveMaskScroll;
 float2 _OutlineMaskScroll;
+float2 _EmissScroll;
+float2 _OutlineScroll;
+float2 _DissolveScroll0; 
+float2 _DissolveScroll1;
+
+float2 _FrameClipOfs;
+float2 _SpritesheetScale;
+float2 _SpritesheetPos;
+float2 _RowsColumns1;
+float2 _FrameClipOfs1;
+float2 _SpritesheetScale1;
+float2 _SpritesheetPos1;
+float2 _RowsColumns;
 
 float _Opacity, _Cutoff;
 float _RefractionDissolveMaskStr;
@@ -194,6 +272,10 @@ float _SpecBiasOverride;
 float _DetailOcclusionStrength, _DetailAlbedoStrength;
 float _NearClip;
 float _BCRimWidth, _BCDissolveStr;
+float _AudioLinkVertManipMultiplier;
+float _AudioLinkRimWidth;
+float _AudioLinkRimPulse;
+float _AudioLinkRimPulseWidth;
 
 int _PreviewRough, _PreviewAO, _PreviewHeight;
 int _AOFiltering, _HeightFiltering, _RoughnessFiltering, _SmoothnessFiltering;
@@ -201,65 +283,43 @@ float _AOLightness, _AOIntensity, _AOContrast;
 float _RoughLightness, _RoughIntensity, _RoughContrast;
 float _SmoothLightness, _SmoothIntensity, _SmoothContrast;
 
-
-sampler3D _DitherMaskLOD;
-sampler2D _DitherMaskLOD2D;
-
-sampler2D _Spritesheet;
-sampler2D _Spritesheet1;
 int _UnlitSpritesheet, _UnlitSpritesheet1, _UseSpritesheetAlpha;
 int _ManualScrub, _ScrubPos, _EnableSpritesheet, _SpritesheetBlending;
 int _ManualScrub1, _ScrubPos1, _EnableSpritesheet1, _SpritesheetBlending1;
 float4 _SpritesheetCol, _SpritesheetCol1;
-float2 _RowsColumns;
-float2 _FrameClipOfs;
-float2 _SpritesheetScale, _SpritesheetPos;
-float2 _RowsColumns1;
-float2 _FrameClipOfs1;
-float2 _SpritesheetScale1, _SpritesheetPos1;
+
 float _SpritesheetRot, _FPS;
 float _SpritesheetRot1, _FPS1;
 float _SpritesheetBrightness, _SpritesheetBrightness1;
 
-UNITY_DECLARE_TEX2D_NOSAMPLER(_OutlineTex); float4 _OutlineTex_ST;
 int _OutlineToggle, _ApplyOutlineLighting, _ApplyOutlineEmiss, _ApplyAlbedoTint, _UseVertexColor;
 float4 _OutlineCol;
-float2 _OutlineScroll;
 float _OutlineThicc, _OutlineRange, _OutlineMult;
-
-UNITY_DECLARE_TEX2D(_EmissionMap);
-UNITY_DECLARE_TEX2D_NOSAMPLER(_EmissMask);
-float4 _EmissionMap_ST, _EmissionColor;
+float4 _EmissionColor;
 int _PulseToggle, _PulseWaveform, _ReactToggle, _CrossMode;
 float _PulseSpeed, _PulseStr, _Crossfade, _ReactThresh;
-float2 _EmissScroll;
+
 float _EmissIntensity;
-
-UNITY_DECLARE_TEX2D_NOSAMPLER(_DetailNormalMap); 
 float _DetailNormalmapScale;
-
-UNITY_DECLARE_TEX2D_NOSAMPLER(_ParallaxMap);
 float _Parallax;
 float _HeightLightness, _HeightIntensity, _HeightContrast;
+float _AudioLinkEmissionMultiplier;
+float _AudioLinkDissolveMultiplier;
+float _AudioLinkBCDissolveMultiplier;
 
-UNITY_DECLARE_TEX2D_NOSAMPLER(_ReflectionMask);
-sampler2D_float _CameraDepthTexture;
-sampler2D _SSRGrab;
-samplerCUBE _ReflCube;
-sampler2D _NoiseTexSSR;
-float4 _ReflCol, _ReflTex_ST, _ReflCube_HDR, _NoiseTexSSR_TexelSize;
+float4 _ReflCol, _ReflCube_HDR, _NoiseTexSSR_TexelSize;
 float _ReflectionStr, _ReflRough;
 int _Reflections, _ReflUseRough, _ReflStepping, _ReflSteps;
 int _Dith, _MaxSteps, _SSR, _LightingBasedIOR;
-float4 _SSRGrab_TexelSize;
+float4 _AudioTexture_TexelSize;
 float4 _CameraDepthTexture_TexelSize;
 float _Alpha, _Blur, _EdgeFade, _RTint, _LRad, _SRad, _Step;
+float _AudioLinkRimMultiplier;
+float _AudioLinkRimPulseSharp;
 
-UNITY_DECLARE_TEX2D_NOSAMPLER(_SpecularMask);
-UNITY_DECLARE_TEX2D_NOSAMPLER(_InterpMask);
 int _Specular, _SharpSpecular, _SharpSpecStr, _SpecTermStep, _UVAniso, _RealtimeSpec;
 int _AnisoSteps, _AnisoLerp, _SpecUseRough, _ManualSpecBright;
-float4 _SpecCol, _SpecTex_ST;
+float4 _SpecCol;
 float _AnisoAngleX, _AnisoAngleY, _AnisoLayerX, _AnisoLayerY;
 float _SpecStr, _AnisoStr, _AnisoLayerStr, _RippleFrequency, _RippleAmplitude, _SpecRough, _RippleStrength;
 float _RippleContinuity;
@@ -267,11 +327,8 @@ float _RippleContinuity;
 int _Refraction, _UnlitRefraction, _RefractionCA;
 float3 _RefractionTint;
 float _RefractionOpac, _RefractionIOR, _RefractionCAStr;
-
+int _AudioLinkPreview;
 int _GSAA;
-
-sampler2D _VertexExpansionMask;
-sampler2D _VertexRoundingMask;
 int _VertexExpansionClamp;
 float3 _VertexExpansion;
 float _VertexRounding, _VertexRoundingPrecision;
@@ -294,6 +351,8 @@ float prevRough;
 float prevSmooth;
 float prevHeight;
 float prevCurve;
+float audioLink;
+float3 bcRimColor;
 float3 prevAO;
 float3 uvOffsetOut;
 
@@ -345,6 +404,13 @@ struct masks {
 	float4 teamMask;
 };
 
+struct audioLinkData {
+	float bass;
+	float lowMid;
+	float upperMid;
+	float treble;
+};
+
 struct appdata {
     float4 vertex : POSITION;
     float4 uv : TEXCOORD0;
@@ -356,13 +422,8 @@ struct appdata {
 	UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
-// Define this here so the Uberx features sees it
-#include "USMacros.cginc"
-
 #if X_FEATURES
-UNITY_DECLARE_TEX2D_NOSAMPLER(_DissolveMask);
-UNITY_DECLARE_TEX2D_NOSAMPLER(_DissolveTex); float4 _DissolveTex_ST;
-UNITY_DECLARE_TEX2D_NOSAMPLER(_DissolveFlow);
+
 int _GeomFXToggle;
 int _ShatterClones, _DissolveClones, _GlitchClones, _WFClones, _DFClones;
 int _WireframeToggle, _WFMode;
@@ -384,8 +445,7 @@ float3 _BaseOffset, _BaseRotation;
 float3 _ReflOffset, _ReflRotation;
 float3 _Position, _Rotation;
 float3 _GeomDissolveSpread, _DissolvePoint0, _DissolvePoint1;
-float2 _DissolveScroll0; 
-float2 _DissolveScroll1;
+
 float _Range;
 float _DissolveAmount, _DissolveRimWidth, _DissolveBlendSpeed;
 float _GeomDissolveAmount, _GeomDissolveWidth, _GeomDissolveClip;
@@ -411,13 +471,14 @@ struct v2g {
 	float4 localPos : TEXCOORD12;
 	float roundingMask : TEXCOORD13;
 	float4 screenPos : TEXCOORD14;
+	float4 audioLinkBands : TEXCOORD15;
 
 	float4 tangent : TANGENT;
 	float3 normal : NORMAL;
 
+	UNITY_SHADOW_COORDS(18)
+	UNITY_FOG_COORDS(19)
 	UNITY_VERTEX_INPUT_INSTANCE_ID
-	UNITY_SHADOW_COORDS(17)
-	UNITY_FOG_COORDS(18)
 };
 
 struct g2f {
@@ -440,14 +501,15 @@ struct g2f {
 	float4 localPos : TEXCOORD15;
 	float wfOpac : TEXCOORD16;
 	float4 screenPos : TEXCOORD17;
+	float4 audioLinkBands : TEXCOORD18;
 
 	float4 tangent : TANGENT;
 	float3 normal : NORMAL;
 
+	UNITY_SHADOW_COORDS(21)
+	UNITY_FOG_COORDS(22)
 	UNITY_VERTEX_INPUT_INSTANCE_ID
 	UNITY_VERTEX_OUTPUT_STEREO
-	UNITY_SHADOW_COORDS(20)
-	UNITY_FOG_COORDS(21)
 };
 
 #include "USXFeatures.cginc"
@@ -473,14 +535,15 @@ struct v2f {
 	bool isReflection : TEXCOORD11;
 	float4 localPos : TEXCOORD12;
 	float4 screenPos : TEXCOORD13;
+	float4 audioLinkBands : TEXCOORD14;
 
 	float4 tangent : TANGENT;
 	float3 normal : NORMAL;
 
 	UNITY_VERTEX_INPUT_INSTANCE_ID
 	UNITY_VERTEX_OUTPUT_STEREO
-	UNITY_SHADOW_COORDS(16)
-	UNITY_FOG_COORDS(17)
+	UNITY_SHADOW_COORDS(17)
+	UNITY_FOG_COORDS(18)
 };
 #endif
 
@@ -490,4 +553,4 @@ struct v2f {
 #include "USFunctions.cginc"
 #include "USPass.cginc"
 
-#endif
+#endif // US_DEFINES_INCLUDED

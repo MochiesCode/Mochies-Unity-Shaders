@@ -181,12 +181,20 @@ float4 RemapPositive(float4 x){
 	return (x + 1) * 0.5;
 }
 
+float RoundTo(float x, float y){
+	return ceil(x*y)/y;
+}
+
 float SmoothFalloff(float minR, float maxR, float d){
 	return smoothstep(maxR, clamp(minR, 0, maxR-0.001), d);
 }
 
 float GetFalloff(int ug, float gf, float minR, float maxR, float d){
     return lerp(smoothstep(maxR, clamp(minR, 0, maxR-0.001), d), gf, ug);
+}
+
+float Safe_DotClamped(float3 a, float3 b){
+	return max(0.00001, dot(a,b));
 }
 
 #if defined(HAS_DEPTH_TEXTURE)
@@ -307,7 +315,7 @@ float2 Rotate2D(float2 coords, float rot){
 	return mul(coords, mat);
 }
 
-float3 Rotate(float3 coords, float3 axis){
+float3 Rotate3D(float3 coords, float3 axis){
 	coords.xy = mul(GetRotationMatrix(axis.x), coords.xy);
 	coords.xz = mul(GetRotationMatrix(axis.y), coords.xz);
 	coords.yz = mul(GetRotationMatrix(axis.z), coords.yz);
@@ -364,6 +372,14 @@ float3 FlowUV (float2 uv, float time, float phase) {
 	return uvw;
 }
 
+float2 GetFlipbookUV(float2 uv, float width, float height, float speed, float2 invertAxis){
+	float tile = fmod(trunc(_Time.y * speed), width*height);
+	float2 tileCount = float2(1.0, 1.0) / float2(width, height);
+	float tileY = abs(invertAxis.y * height - (floor(tile * tileCount.x) + invertAxis.y * 1));
+	float tileX = abs(invertAxis.x * width - ((tile - width * floor(tile * tileCount.x)) + invertAxis.x * 1));
+	return (uv + float2(tileX, tileY)) * tileCount;
+}
+
 float GetRimValue(float3 viewDir, float3 normal, float rimWidth, float rimEdge){
 	float VdotL = abs(dot(viewDir, normal));
 	float rim = pow((1-VdotL), (1-rimWidth) * 10);
@@ -409,69 +425,32 @@ float2 GetGrabPos(float4 grabPos){
 	return(grabPos / grabPos.w).xy;
 }
 
-// _EdgeRadius("Edge Radius", Range(0,1)) = 0.5
-// _EdgeBlur("Edge Blur", Range(0,1)) = 0.1
-// _EdgeThreshold("Edge Threshold", Range(0,1)) = 0.8
+float ChannelCheck(float4 rgba, int channel){
+	float selection = 0;
+	switch (channel){
+		case 0: selection = rgba.r; break;
+		case 1: selection = rgba.g; break;
+		case 2: selection = rgba.b; break;
+		case 3: selection = rgba.a; break;
+		default: break;
+	}
+	return selection;
+}
 
-// float _EdgeRadius;
-// float _EdgeBlur;
-// float _EdgeThreshold;
+void ApplyPBRFiltering(inout float value, float contrast, float intensity, float lightness, int shouldApply, inout float previewValue){
+	if (shouldApply == 1){
+		value = saturate(lerp(0.5, value, contrast));
+		value += saturate(value * intensity);
+		value = saturate(value + lightness);
+		previewValue = value;
+	}
+}
 
-// static const float2 kernel[16] = {
-// 	float2(0,0),
-// 	float2(0.54545456,0),
-// 	float2(0.16855472,0.5187581),
-// 	float2(-0.44128203,0.3206101),
-// 	float2(-0.44128197,-0.3206102),
-// 	float2(0.1685548,-0.5187581),
-// 	float2(1,0),
-// 	float2(0.809017,0.58778524),
-// 	float2(0.30901697,0.95105654),
-// 	float2(-0.30901703,0.9510565),
-// 	float2(-0.80901706,0.5877852),
-// 	float2(-1,0),
-// 	float2(-0.80901694,-0.58778536),
-// 	float2(-0.30901664,-0.9510566),
-// 	float2(0.30901712,-0.9510565),
-// 	float2(0.80901694,-0.5877853),
-// };
-
-// float tex2DSobel(sampler2D tex, float2 uv) {
-// 	_EdgeRadius = lerp(0.0001, 0.005, _EdgeRadius);
-// 	float2 delta = _EdgeRadius.xx;
-	
-// 	float4 hr = float4(0, 0, 0, 0);
-// 	float4 vt = float4(0, 0, 0, 0);
-	
-// 	hr += tex2D(tex, (uv + float2(-1.0, -1.0) * delta)) *  1.0;
-// 	hr += tex2D(tex, (uv + float2( 0.0, -1.0) * delta)) *  0.0;
-// 	hr += tex2D(tex, (uv + float2( 1.0, -1.0) * delta)) * -1.0;
-// 	hr += tex2D(tex, (uv + float2(-1.0,  0.0) * delta)) *  2.0;
-// 	hr += tex2D(tex, (uv + float2( 0.0,  0.0) * delta)) *  0.0;
-// 	hr += tex2D(tex, (uv + float2( 1.0,  0.0) * delta)) * -2.0;
-// 	hr += tex2D(tex, (uv + float2(-1.0,  1.0) * delta)) *  1.0;
-// 	hr += tex2D(tex, (uv + float2( 0.0,  1.0) * delta)) *  0.0;
-// 	hr += tex2D(tex, (uv + float2( 1.0,  1.0) * delta)) * -1.0;
-	
-// 	vt += tex2D(tex, (uv + float2(-1.0, -1.0) * delta)) *  1.0;
-// 	vt += tex2D(tex, (uv + float2( 0.0, -1.0) * delta)) *  2.0;
-// 	vt += tex2D(tex, (uv + float2( 1.0, -1.0) * delta)) *  1.0;
-// 	vt += tex2D(tex, (uv + float2(-1.0,  0.0) * delta)) *  0.0;
-// 	vt += tex2D(tex, (uv + float2( 0.0,  0.0) * delta)) *  0.0;
-// 	vt += tex2D(tex, (uv + float2( 1.0,  0.0) * delta)) *  0.0;
-// 	vt += tex2D(tex, (uv + float2(-1.0,  1.0) * delta)) * -1.0;
-// 	vt += tex2D(tex, (uv + float2( 0.0,  1.0) * delta)) * -2.0;
-// 	vt += tex2D(tex, (uv + float2( 1.0,  1.0) * delta)) * -1.0;
-	
-// 	return sqrt(hr * hr + vt * vt);
-// }
-
-// float4 tex2DBlur(sampler2D tex, float2 uv){
-// 	float4 blurCol = 0;
-// 	float strength = _EdgeBlur * 0.001;
-// 	UNITY_UNROLL
-// 	for (int i = 0; i < 16; i++){
-// 		blurCol += tex2D(tex, uv + (strength * kernel[i]));
-// 	}	
-// 	return blurCol /= 16;
-// }
+void ApplyPBRFiltering(inout float3 value, float contrast, float intensity, float lightness, int shouldApply, inout float3 previewValue){
+	if (shouldApply == 1){
+		value = saturate(lerp(0.5, value, contrast));
+		value += saturate(value * intensity);
+		value = saturate(value + lightness);
+		previewValue = value;
+	}
+}

@@ -288,7 +288,7 @@ namespace Mochie {
 				toggle.floatValue = tog;
 			EditorGUI.showMixedValue = false;
 
-			GUILayout.Space(-18);
+			SpaceN18();
 			Rect r = EditorGUILayout.GetControlRect();
 			r.x += indent;
 			r.width -= indent;
@@ -315,7 +315,7 @@ namespace Mochie {
 				toggle.floatValue = tog;
 			EditorGUI.showMixedValue = false;
 
-			GUILayout.Space(-18);
+			SpaceN18();
 			Rect r = EditorGUILayout.GetControlRect();
 			r.x += indent;
 			r.width -= indent;
@@ -343,7 +343,7 @@ namespace Mochie {
 				toggle.floatValue = tog;
 			EditorGUI.showMixedValue = false;
 
-			GUILayout.Space(-18);
+			SpaceN18();
 			Rect r = EditorGUILayout.GetControlRect();
 			r.x += indent;
 			r.width -= indent;
@@ -458,7 +458,41 @@ namespace Mochie {
 			float fieldWidth = GetPropertyWidth()/3;
 
 			EditorGUILayout.LabelField("        "+ label);
-			GUILayout.Space(-18);
+			SpaceN18();
+			Rect r = EditorGUILayout.GetControlRect();
+			r.x += labelWidth;
+			EditorGUIUtility.labelWidth = 13f;
+
+			EditorGUI.BeginChangeCheck();
+			EditorGUI.showMixedValue = vec.hasMixedValue;
+
+				// X Field
+				r.width = fieldWidth-1f;
+				newVec.x = EditorGUI.FloatField(r, "X", newVec.x);
+				
+				// Y Field
+				r.x += fieldWidth+1;
+				newVec.y = EditorGUI.FloatField(r, "Y", newVec.y);
+
+				// Z Field
+				r.x += fieldWidth;
+				newVec.z = EditorGUI.FloatField(r, "Z", newVec.z);
+
+			if (EditorGUI.EndChangeCheck())
+				vec.vectorValue = newVec;
+			EditorGUI.showMixedValue = false;
+			EditorGUIUtility.labelWidth = labelWidth;
+		}
+
+		// Vector3 property with corrected width scaling and no label indent
+		public static void Vector3FieldNoIndent(MaterialProperty vec, string label){
+			SpaceN2();
+			Vector4 newVec = vec.vectorValue;
+			float labelWidth = EditorGUIUtility.labelWidth;
+			float fieldWidth = GetPropertyWidth()/3;
+
+			EditorGUILayout.LabelField(label);
+			SpaceN18();
 			Rect r = EditorGUILayout.GetControlRect();
 			r.x += labelWidth;
 			EditorGUIUtility.labelWidth = 13f;
@@ -492,7 +526,7 @@ namespace Mochie {
 			float fieldWidth = GetPropertyWidth()/3;
 
 			EditorGUILayout.LabelField(label);
-			GUILayout.Space(-18);
+			SpaceN18();
 			Rect r = EditorGUILayout.GetControlRect();
 			r.x += labelWidth;
 			EditorGUIUtility.labelWidth = 13f;
@@ -520,13 +554,17 @@ namespace Mochie {
 
 		// Vector2 property with corrected width scaling
 		public static void Vector2Field(MaterialProperty vec, string label){
-			SpaceN2();
+			#if UNITY_2019_1_OR_NEWER
+				Space2();
+			#else
+				SpaceN2();
+			#endif
 			Vector4 newVec = vec.vectorValue;
 			float labelWidth = EditorGUIUtility.labelWidth;
 			float fieldWidth = GetPropertyWidth()/2;
 
 			EditorGUILayout.LabelField(label);
-			GUILayout.Space(-18);
+			SpaceN18();
 			Rect r = EditorGUILayout.GetControlRect();
 			r.x += labelWidth;
 			EditorGUIUtility.labelWidth = 13f;
@@ -601,7 +639,7 @@ namespace Mochie {
 		}
 
 		public static void PropLabel(string text, int offset){
-			GUILayout.Space(-18);
+			SpaceN18();
 			Rect rm = EditorGUILayout.GetControlRect();
 			rm.x += EditorGUIUtility.labelWidth+offset+14.0f;
 			EditorGUI.LabelField(rm, text);
@@ -656,14 +694,14 @@ namespace Mochie {
 		// Scale offset property with added scrolling x/y
 		public static void TextureSOScroll(MaterialEditor me, MaterialProperty tex, MaterialProperty vec){
 			me.TextureScaleOffsetProperty(tex);
-			SpaceN2();
+			SpaceN4();
 			Vector2Field(vec, "Scrolling");
 		}
 
 		public static void TextureSOScroll(MaterialEditor me, MaterialProperty tex, MaterialProperty vec, bool shouldDisplay){
 			if (shouldDisplay){
 				me.TextureScaleOffsetProperty(tex);
-				SpaceN2();
+				SpaceN4();
 				Vector2Field(vec, "Scrolling");
 			}
 		}
@@ -695,9 +733,15 @@ namespace Mochie {
 				EditorGUILayout.BeginVertical(EditorStyles.helpBox);
 				Space2();
 				action();
-				Space2();
-				EditorGUILayout.EndVertical();
-				Space2();
+				#if UNITY_2019_1_OR_NEWER
+					Space4();
+					EditorGUILayout.EndVertical();
+					Space4();
+				#else
+					Space2();
+					EditorGUILayout.EndVertical();
+					Space2();
+				#endif
 			}
 		}
 
@@ -707,10 +751,16 @@ namespace Mochie {
 			EditorGUILayout.BeginVertical(EditorStyles.helpBox);
 			Space2();
 			action();
-			Space2();
-			GUI.backgroundColor = col;
-			EditorGUILayout.EndVertical();
-			SpaceN2();
+			#if UNITY_2019_1_OR_NEWER
+				Space4();
+				GUI.backgroundColor = col;
+				EditorGUILayout.EndVertical();
+			#else
+				Space2();
+				GUI.backgroundColor = col;
+				EditorGUILayout.EndVertical();
+				SpaceN2();
+			#endif
 		}
 
 		// Replace invalid windows characters with underscores
@@ -735,22 +785,45 @@ namespace Mochie {
 		}
 		
 		// Shorthand spacing funcs
-		public static void SpaceN16(){ GUILayout.Space(-16); }
-		public static void SpaceN14(){ GUILayout.Space(-14); }
-		public static void SpaceN12(){ GUILayout.Space(-12); }
-		public static void SpaceN10(){ GUILayout.Space(-10); }
-		public static void SpaceN8(){ GUILayout.Space(-8); }
-		public static void SpaceN6(){ GUILayout.Space(-6); }
-		public static void SpaceN4(){ GUILayout.Space(-4); }
-		public static void SpaceN2(){ GUILayout.Space(-2); }
-		public static void Space2(){ GUILayout.Space(2); }
-		public static void Space4(){ GUILayout.Space(4); }
-		public static void Space6(){ GUILayout.Space(6); }
-		public static void Space8(){ GUILayout.Space(8); }
-		public static void Space10(){ GUILayout.Space(10); }
-		public static void Space12(){ GUILayout.Space(12); }
-		public static void Space14(){ GUILayout.Space(14); }
-		public static void Space16(){ GUILayout.Space(16); }
+		#if !UNITY_2019_1_OR_NEWER
+			public static void SpaceN18(){ GUILayout.Space(-18); }
+			public static void SpaceN16(){ GUILayout.Space(-16); }
+			public static void SpaceN14(){ GUILayout.Space(-14); }
+			public static void SpaceN12(){ GUILayout.Space(-12); }
+			public static void SpaceN10(){ GUILayout.Space(-10); }
+			public static void SpaceN8(){ GUILayout.Space(-8); }
+			public static void SpaceN6(){ GUILayout.Space(-6); }
+			public static void SpaceN4(){ GUILayout.Space(-4); }
+			public static void SpaceN2(){ GUILayout.Space(-2); }
+			public static void Space2(){ GUILayout.Space(2); }
+			public static void Space4(){ GUILayout.Space(4); }
+			public static void Space6(){ GUILayout.Space(6); }
+			public static void Space8(){ GUILayout.Space(8); }
+			public static void Space10(){ GUILayout.Space(10); }
+			public static void Space12(){ GUILayout.Space(12); }
+			public static void Space14(){ GUILayout.Space(14); }
+			public static void Space16(){ GUILayout.Space(16); }
+			public static void Space18(){ GUILayout.Space(18); }
+		#else
+			public static void SpaceN18(){ GUILayout.Space(-20); }
+			public static void SpaceN16(){ GUILayout.Space(-18); }
+			public static void SpaceN14(){ GUILayout.Space(-16); }
+			public static void SpaceN12(){ GUILayout.Space(-14); }
+			public static void SpaceN10(){ GUILayout.Space(-12); }
+			public static void SpaceN8(){ GUILayout.Space(-10); }
+			public static void SpaceN6(){ GUILayout.Space(-8); }
+			public static void SpaceN4(){ GUILayout.Space(-6); }
+			public static void SpaceN2(){ GUILayout.Space(-4); }
+			public static void Space2(){ GUILayout.Space(2); }
+			public static void Space4(){ GUILayout.Space(2); }
+			public static void Space6(){ GUILayout.Space(4); }
+			public static void Space8(){ GUILayout.Space(6); }
+			public static void Space10(){ GUILayout.Space(8); }
+			public static void Space12(){ GUILayout.Space(10); }
+			public static void Space14(){ GUILayout.Space(12); }
+			public static void Space16(){ GUILayout.Space(14); }
+			public static void Space18(){ GUILayout.Space(16); }
+		#endif
 
 		public static void SetKeyword(Material mat, string keyword, bool state){
 			if (state) mat.EnableKeyword(keyword);
@@ -770,7 +843,7 @@ namespace Mochie {
 			r1.width = 50;
 			r1.x += iw-50;
 
-			GUILayout.Space(-18);
+			SpaceN18();
 			toggle.floatValue = EditorGUILayout.Toggle(" ", toggle.floatValue==1, clickArea)?1:0;
 			EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
 			value.floatValue = GUI.HorizontalSlider(r0, value.floatValue, min, max);

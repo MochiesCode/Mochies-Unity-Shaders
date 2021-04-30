@@ -18,20 +18,21 @@ void GetDepth(v2f i, out float3 wPos, out float3 wNorm, out float depth){
 float GetRadius(v2f i, float3 pos, float range, float falloff){
     GetDepth(i, wPos, wNorm, depth);
     float dist = distance(wPos, pos);
-    #if MAIN_PASS
-        dist = smoothstep(range, range - falloff, dist);
-	#elif TRIPLANAR_PASS
-        #if TRIPLANAR_ENABLED
-			if (_Triplanar == 1){
-				dist = smoothstep(range, range - falloff, dist);
-			}
-			else if (_Triplanar == 2){
-				_TPScanFade = lerp(_TPThickness-0.001, -3, _TPScanFade);
-				dist = smoothstep(range+_TPThickness, range+_TPScanFade, dist) * smoothstep(range-_TPThickness, range-_TPScanFade, dist);
-			}
-		#endif
-    #endif
+    dist = smoothstep(range, range - falloff, dist);
     return dist;
+}
+
+float GetTriplanarRadius(v2f i, float3 pos, float range, float falloff){
+	GetDepth(i, wPos, wNorm, depth);
+	float dist = distance(wPos, pos);
+	#if TRIPLANAR_ENABLED
+		if (_Triplanar == 1)
+			dist = smoothstep(range, range - falloff, dist);
+		else if (_Triplanar == 2)
+			_TPScanFade = lerp(_TPThickness-0.001, -3, _TPScanFade);
+			dist = smoothstep(range+_TPThickness, range+_TPScanFade, dist) * smoothstep(range-_TPThickness, range-_TPScanFade, dist);
+	#endif
+	return dist;
 }
 
 float4 GetTriplanar(v2f i, sampler2D tex, sampler2D nTex, float2 _ST0, float2 _ST1, float radius) {
@@ -248,17 +249,12 @@ void ApplyCrush(inout float3 col, float strength){
 	col = lerp(col, crushCol, strength);
 }
 
-void ApplyDoF(v2f i, inout float strength){
+float GetDoF(v2f i){
 	float3 focusPos = lerp(i.cameraPos, i.objPos, _DoFP2O);
-	float combined = saturate(GetRadius(i, focusPos, _DoFRadius, _DoFFade));
-	strength = lerp(strength, 0, combined);
+	return saturate(GetRadius(i, focusPos, _DoFRadius, _DoFFade));
 }
 
 void ApplyRipplePixelate(inout v2f i){
-	#if DOF_ENABLED
-		ApplyDoF(i, _RippleGridStr);
-		ApplyDoF(i, _PixelationStr);
-	#endif
 	if (_RippleGridStr > 0){
 		_RippleGridStr *= i.blurF;
 		i.uv.xy += sin(i.pos) * _RippleGridStr/1000;
@@ -272,15 +268,12 @@ void ApplyRipplePixelate(inout v2f i){
 }
 
 void ApplyPixelBlur(v2f i, inout float3 blurCol){
-	#if DOF_ENABLED
-		ApplyDoF(i, _BlurStr);
-	#endif
 	_BlurStr *= 16;
 	#if BLUR_Y_ENABLED
 		#if CHROM_ABB_ENABLED
-			ApplyStandardBlurY(_MSFXGrab, _MSFXGrab_TexelSize.xy, i.uv, _PixelBlurSamples, _BlurStr, blurCol);
+			ApplyChromaticAbberationY(_MSFXGrab, _MSFXGrab_TexelSize.xy, i.uv, _PixelBlurSamples, _BlurStr, blurCol);
 		#else
-			ApplyChromaticAbberationY(_MSFXGrab, _MSFXGrab_TexelSize.xy, i.uv, _PixelBlurSamples, _BlurStr, blurCol);	
+			ApplyStandardBlurY(_MSFXGrab, _MSFXGrab_TexelSize.xy, i.uv, _PixelBlurSamples, _BlurStr, blurCol);
 		#endif	
 	#else
 		#if CHROM_ABB_ENABLED
@@ -294,11 +287,10 @@ void ApplyPixelBlur(v2f i, inout float3 blurCol){
 
 void ApplyDitherBlur(inout v2f i){
     #if BLUR_DITHER_ENABLED && !CHROM_ABB_ENABLED
-		ApplyDoF(i, _BlurStr);
         _BlurStr *= 0.01;
         float2 noise = GetNoiseRGB(i.uv, _BlurStr).rg;
-        i.uv.y += noise.g;
-		#if BLUR_Y_ENABLED
+		i.uv.y += noise.g;
+		#if !BLUR_Y_ENABLED
 			i.uv.x += noise.r;
 		#endif
     #endif
@@ -307,9 +299,15 @@ void ApplyDitherBlur(inout v2f i){
 void ApplyRGBDitherBlur(v2f i, inout float3 col){
 	_BlurStr *= 0.01;
 	float3 noise = GetNoiseRGB(i.uv, _BlurStr);
-	float4 redUV = float4(i.uv.x+noise.r, i.uv.yzw);
-	float4 greenUV = float4(i.uv.x, i.uv.y+noise.g, i.uv.zw);
-	float4 blueUV = float4(i.uv.x+noise.b, i.uv.y+noise.b, i.uv.zw);
+	#if BLUR_Y_ENABLED
+		float4 redUV = float4(i.uv.x, i.uv.y+(noise.r*0.3333), i.uv.zw);
+		float4 greenUV = float4(i.uv.x, i.uv.y+(noise.g*0.6666), i.uv.zw);
+		float4 blueUV = float4(i.uv.x, i.uv.y+noise.b, i.uv.zw);
+	#else
+		float4 redUV = float4(i.uv.x+noise.r, i.uv.yzw);
+		float4 greenUV = float4(i.uv.x, i.uv.y+noise.g, i.uv.zw);
+		float4 blueUV = float4(i.uv.x+noise.b, i.uv.y+noise.b, i.uv.zw);
+	#endif
 	float red = tex2Dproj(_MSFXGrab, redUV).r;
 	float green = tex2Dproj(_MSFXGrab, greenUV).g;
 	float blue = tex2Dproj(_MSFXGrab, blueUV).b;

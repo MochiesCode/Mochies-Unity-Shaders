@@ -61,7 +61,7 @@ float3 GetReflections(g2f i, lighting l, float roughness){
 				reflections = GetWorldReflections(l.reflectionDir, i.worldPos.xyz, roughness);
 			}
 			else {
-				reflections = texCUBElod(_ReflCube, float4(l.reflectionDir, roughness * UNITY_SPECCUBE_LOD_STEPS))*l.worldBrightness;
+				reflections = texCUBElod(_ReflCube, float4(l.reflectionDir, roughness * UNITY_SPECCUBE_LOD_STEPS))*linearstep(-0.5, 1, l.worldBrightness);
 				reflections = DecodeHDR(float4(reflections,1), _ReflCube_HDR);
 			}
 		#else
@@ -69,7 +69,7 @@ float3 GetReflections(g2f i, lighting l, float roughness){
 		#endif
 	#else
 		#if REFLCUBE_EXISTS
-			reflections = texCUBElod(_ReflCube, float4(l.reflectionDir, roughness * UNITY_SPECCUBE_LOD_STEPS))*l.worldBrightness;
+			reflections = texCUBElod(_ReflCube, float4(l.reflectionDir, roughness * UNITY_SPECCUBE_LOD_STEPS))*linearstep(-0.5, 1, l.worldBrightness);
 			reflections = DecodeHDR(float4(reflections,1), _ReflCube_HDR);
 		#endif
 	#endif
@@ -146,6 +146,7 @@ void ApplyDithering(g2f i, inout float3 ramp){
 
 float3 GetForwardRamp(g2f i, lighting l, masks m, float atten){
 	float3 ramp = 1;
+	UNITY_BRANCH
 	if (_ShadowMode == 1){
 		if (!l.lightEnv || _RTSelfShadow == 1){
 			atten = lerp(atten, smootherstep(0,1,atten), _AttenSmoothing);
@@ -279,24 +280,25 @@ float GetAnisoTerm(g2f i, lighting l, masks m){
 }
 
 float GetGGXTerm(lighting l, float roughness){
+	float visibilityTerm = 0;
+	if (l.NdotL > 0){
+		float rough = roughness;
+		float rough2 = roughness * roughness;
 
-	float rough = roughness;
-	float rough2 = roughness * roughness;
+		// Originally used this because it's "mathematically correct" according to unity standard
+		// but it actually creates NaNs due to how I'm handling NdotL
+		// float lambdaV = l.NdotL * sqrt((-l.NdotV * rough2 + l.NdotV) * l.NdotV + rough2);
+		// float lambdaL = l.NdotV * sqrt((-l.NdotL * rough2 + l.NdotL) * l.NdotL + rough2);
 
-	// Originally used this because it's "mathematically correct" according to unity standard
-	// but it actually creates NaNs due to how I'm handling NdotL
-	// float lambdaV = l.NdotL * sqrt((-l.NdotV * rough2 + l.NdotV) * l.NdotV + rough2);
-    // float lambdaL = l.NdotV * sqrt((-l.NdotL * rough2 + l.NdotL) * l.NdotL + rough2);
+		float lambdaV = l.NdotL * (l.NdotV * (1 - rough) + rough);
+		float lambdaL = l.NdotV * (l.NdotL * (1 - rough) + rough);
 
-    float lambdaV = l.NdotL * (l.NdotV * (1 - rough) + rough);
-    float lambdaL = l.NdotV * (l.NdotL * (1 - rough) + rough);
+		visibilityTerm = 0.5f / (lambdaV + lambdaL + 1e-5f);
+		float d = (l.NdotH * rough2 - l.NdotH) * l.NdotH + 1.0f;
+		float dotTerm = UNITY_INV_PI * rough2 / (d * d + 1e-7f);
 
-	float visibilityTerm = 0.5f / (lambdaV + lambdaL + 1e-5f);
-    float d = (l.NdotH * rough2 - l.NdotH) * l.NdotH + 1.0f;
-	float dotTerm = UNITY_INV_PI * rough2 / (d * d + 1e-7f);
-
-	visibilityTerm *= dotTerm * UNITY_PI;
-
+		visibilityTerm *= dotTerm * UNITY_PI;
+	}
 	return visibilityTerm;
 }
 
@@ -370,7 +372,6 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
 					float sharpSpec = floor(specular * _SharpSpecStr) / _SharpSpecStr;
 					specular = lerp(sharpSpec, specular, 0);
 				}
-
 			#if !ADDITIVE_PASS
 			}
 			#endif
@@ -389,7 +390,7 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
 			reflections *= m.reflectionMask * _ReflectionStr;
 		#endif
 
-		environment = specular + reflections  + subsurfCol;
+		environment = specular + reflections + subsurfCol;
 		
 		#if MATCAP_ENABLED
 			ApplyMatcap(i, l, m, environment, GetRoughness(smoothness));
