@@ -80,6 +80,29 @@ int GetLum(int r, int g, int b) {
     );
 }
 
+float3 WhitePointAdjust(float3 XYZ, float3 from, float3 to){
+	float3x3 Bradford=float3x3(0.8951,0.2664,-0.1614,
+	-0.7502,1.7135,0.0367,
+	0.0389,-0.0685,1.0296);
+
+	float3x3 BradfordInv=float3x3(0.9869929,-0.1470543,0.1599627,
+	0.4323053,0.5183603,0.0492912,
+	-0.0085287,0.0400428,0.9684867);
+
+
+	float3 BradFrom= mul(Bradford,from);
+	float3 BradTo= mul(Bradford,to);
+
+	float3x3 CR=float3x3(BradTo.x/BradFrom.x,0,0,
+	0,BradTo.y/BradFrom.y,0,
+	0,0,BradTo.z/BradFrom.z);
+
+	float3x3 convBrad= mul(mul(BradfordInv,CR),Bradford);
+
+	float3 outp=mul(convBrad,XYZ);
+	return outp;
+}
+
 // ---------------------------
 // Photoshop Blending Modes
 // ---------------------------

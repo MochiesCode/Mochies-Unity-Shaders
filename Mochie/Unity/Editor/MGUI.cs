@@ -783,7 +783,45 @@ namespace Mochie {
 		public static void BoldLabel(string text){
 			EditorGUILayout.LabelField(text, EditorStyles.boldLabel);
 		}
-		
+
+		// Mimics the normal map import warning - written by Orels1
+		static bool TextureImportWarningBox(string message){
+			GUILayout.BeginVertical(new GUIStyle(EditorStyles.helpBox));
+			EditorGUILayout.LabelField(message, new GUIStyle(EditorStyles.label) {
+				fontSize = 9, wordWrap = true
+			});
+			EditorGUILayout.BeginHorizontal(new GUIStyle() {
+				alignment = TextAnchor.MiddleRight
+			}, GUILayout.Height(24));
+			EditorGUILayout.Space();
+			bool buttonPress = GUILayout.Button("Fix Now", new GUIStyle("button") {
+				stretchWidth = false,
+				margin = new RectOffset(0, 0, 0, 0),
+				padding = new RectOffset(9, 9, 0, 0)
+			}, GUILayout.Height(22));
+			EditorGUILayout.EndHorizontal();
+			GUILayout.EndVertical();
+			return buttonPress;
+		}
+
+		public static void sRGBWarning(MaterialProperty tex){
+			if (tex.textureValue){
+				string sRGBWarning = "This texture is marked as sRGB, but should not contain color information.";
+				string texPath = AssetDatabase.GetAssetPath(tex.textureValue);
+				TextureImporter texImporter;
+				var importer = TextureImporter.GetAtPath(texPath) as TextureImporter;
+				if (importer != null){
+					texImporter = (TextureImporter)importer;
+					if (texImporter.sRGBTexture){
+						if (TextureImportWarningBox(sRGBWarning)){
+							texImporter.sRGBTexture = false;
+							texImporter.SaveAndReimport();
+						}
+					}
+				}
+			}
+		}
+
 		// Shorthand spacing funcs
 		#if !UNITY_2019_1_OR_NEWER
 			public static void SpaceN18(){ GUILayout.Space(-18); }
@@ -794,8 +832,10 @@ namespace Mochie {
 			public static void SpaceN8(){ GUILayout.Space(-8); }
 			public static void SpaceN6(){ GUILayout.Space(-6); }
 			public static void SpaceN4(){ GUILayout.Space(-4); }
+			public static void SpaceN3(){ GUILayout.Space(-3); }
 			public static void SpaceN2(){ GUILayout.Space(-2); }
 			public static void Space2(){ GUILayout.Space(2); }
+			public static void Space3(){ GUILayout.Space(3); }
 			public static void Space4(){ GUILayout.Space(4); }
 			public static void Space6(){ GUILayout.Space(6); }
 			public static void Space8(){ GUILayout.Space(8); }
@@ -813,8 +853,10 @@ namespace Mochie {
 			public static void SpaceN8(){ GUILayout.Space(-10); }
 			public static void SpaceN6(){ GUILayout.Space(-8); }
 			public static void SpaceN4(){ GUILayout.Space(-6); }
+			public static void SpaceN3(){ GUILayout.Space(-3); }
 			public static void SpaceN2(){ GUILayout.Space(-4); }
 			public static void Space2(){ GUILayout.Space(2); }
+			public static void Space3(){ GUILayout.Space(3); }
 			public static void Space4(){ GUILayout.Space(2); }
 			public static void Space6(){ GUILayout.Space(4); }
 			public static void Space8(){ GUILayout.Space(6); }

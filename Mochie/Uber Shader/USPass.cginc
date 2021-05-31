@@ -23,7 +23,6 @@ v2g vert (appdata v) {
 	audioLinkData al = (audioLinkData)1;
 	#if AUDIOLINK_ENABLED
 		InitializeAudioLink(al, 0);
-		o.audioLinkBands = float4(al.bass, al.lowMid, al.upperMid, al.treble);
 	#endif
 
 	o.isReflection = IsInMirror();
@@ -38,7 +37,7 @@ v2g vert (appdata v) {
 		roundingMask = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_VertexRoundingMask, _MainTex, float4(v.uv.xy,0,0));
 		float expansionMask = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_VertexExpansionMask, _MainTex, float4(v.uv.xy,0,0));
 		#if AUDIOLINK_ENABLED
-			float vertManipAL = GetPackedAudioLinkBand(o.audioLinkBands, _AudioLinkVertManipBand);
+			float vertManipAL = GetAudioLinkBand(al, _AudioLinkVertManipBand);
 			_VertexExpansion *= lerp(1, vertManipAL, _AudioLinkVertManipMultiplier);
 		#endif
 		v.vertex.xyz += _VertexExpansion * lerp(v.normal.xyz, abs(v.normal.xyz), _VertexExpansionClamp) * expansionMask * 0.001;
@@ -47,7 +46,7 @@ v2g vert (appdata v) {
 
 	#if X_FEATURES
 		o.roundingMask = roundingMask;
-		VertX(o, v);
+		VertX(o, v, al);
 	#else
 		o.worldPos = mul(unity_ObjectToWorld, localPos);
 		#if VERTEX_MANIP_ENABLED
@@ -198,6 +197,7 @@ float4 frag (g2f i, bool frontFace : SV_IsFrontFace) : SV_Target {
 			ApplyFalloffRim(i, diffuse.rgb, falloffRim);
 		#endif
 		ApplyWireframe(i, diffuse.rgb);
+		ApplyAudioLinkWireframe(i, diffuse.rgb);
 	#endif
 	
 	#if BCDISSOLVE_ENABLED
@@ -251,7 +251,6 @@ v2g vert (appdata v) {
 		audioLinkData al = (audioLinkData)1;
 		#if AUDIOLINK_ENABLED
 			InitializeAudioLink(al, 0);
-			o.audioLinkBands = float4(al.bass, al.lowMid, al.upperMid, al.treble);
 		#endif
 		o.isReflection = IsInMirror();
 		float thicknessMask = 1;
@@ -276,7 +275,7 @@ v2g vert (appdata v) {
 			roundingMask = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_VertexRoundingMask, _MainTex, float4(v.uv.xy,0,0));
 			float expansionMask = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_VertexExpansionMask, _MainTex, float4(v.uv.xy,0,0));
 			#if AUDIOLINK_ENABLED
-				float vertManipAL = GetPackedAudioLinkBand(o.audioLinkBands, _AudioLinkVertManipBand);
+				float vertManipAL = GetAudioLinkBand(al, _AudioLinkVertManipBand);
 				_VertexExpansion *= lerp(1, vertManipAL, _AudioLinkVertManipMultiplier);
 			#endif
 			v.vertex.xyz += _VertexExpansion * lerp(v.normal.xyz, abs(v.normal.xyz), _VertexExpansionClamp) * expansionMask * 0.001;
@@ -285,7 +284,7 @@ v2g vert (appdata v) {
 
 		#if X_FEATURES
 			o.roundingMask = roundingMask;
-			VertX(o, v);
+			VertX(o, v, al);
 		#else
 			o.worldPos = mul(unity_ObjectToWorld, localPos);
 			#if VERTEX_MANIP_ENABLED
@@ -436,6 +435,7 @@ float4 frag(g2f i) : SV_Target {
 			#endif
 		#endif
 		ApplyWireframe(i, col.rgb);
+		ApplyAudioLinkWireframe(i, diffuse.rgb);
 	#endif
 
 	#if POST_FILTERING_ENABLED
@@ -469,7 +469,6 @@ v2g vert (appdata v) {
 	audioLinkData al = (audioLinkData)1;
 	#if AUDIOLINK_ENABLED
 		InitializeAudioLink(al, 0);
-		o.audioLinkBands = float4(al.bass, al.lowMid, al.upperMid, al.treble);
 	#endif
 
 	o.isReflection = IsInMirror();
@@ -497,7 +496,7 @@ v2g vert (appdata v) {
 		roundingMask = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_VertexRoundingMask, _MainTex, float4(v.uv.xy,0,0));
 		float expansionMask = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_VertexExpansionMask, _MainTex, float4(v.uv.xy,0,0));
 		#if AUDIOLINK_ENABLED
-			float vertManipAL = GetPackedAudioLinkBand(o.audioLinkBands, _AudioLinkVertManipBand);
+			float vertManipAL = GetAudioLinkBand(al, _AudioLinkVertManipBand);
 			_VertexExpansion *= lerp(1, vertManipAL, _AudioLinkVertManipMultiplier);
 		#endif
 		v.vertex.xyz += _VertexExpansion * lerp(v.normal.xyz, abs(v.normal.xyz), _VertexExpansionClamp) * expansionMask * 0.001;
@@ -506,7 +505,7 @@ v2g vert (appdata v) {
 
 	#if X_FEATURES
 		o.roundingMask = roundingMask;
-		VertX(o, v);
+		VertX(o, v, al);
 	#else
 		o.worldPos = mul(unity_ObjectToWorld, localPos);
 		#if VERTEX_MANIP_ENABLED
@@ -560,22 +559,21 @@ float4 frag(g2f i) : SV_Target {
 			clip(falloff);
 		#endif
 		
-		float alpha = 1;
 		float4 albedo = _MainTex.Sample(sampler_MainTex, i.uv.xy) * _Color;
 		ApplyBCDissolve(i, al, albedo, bcRimColor);
 		if (_UseAlphaMask == 1){
 			float4 alphaMask = UNITY_SAMPLE_TEX2D_SAMPLER(_AlphaMask, _MainTex, i.uv.xy);
-			alpha = ChannelCheck(alphaMask, _AlphaMaskChannel);
+			albedo.a = ChannelCheck(alphaMask, _AlphaMaskChannel);
 		}
 		#if ALPHA_PREMULTIPLY
-			alpha = ShadowPremultiplyAlpha(i, alpha);
+			albedo.a = ShadowPremultiplyAlpha(i, albedo.a);
 		#endif
 
 		if (_BlendMode == 1){
-			clip(alpha - _Cutoff);
+			clip(albedo.a - _Cutoff);
 		}
 		else if (_BlendMode > 1){
-			clip(tex3D(_DitherMaskLOD, float3(i.pos.xy*0.25, alpha * 0.9375)).a - 0.01);
+			clip(tex3D(_DitherMaskLOD, float3(i.pos.xy*0.25, albedo.a * 0.9375)).a - 0.01);
 		}
 
     #endif

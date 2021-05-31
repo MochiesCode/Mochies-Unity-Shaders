@@ -124,6 +124,8 @@ sampler2D _NoiseTexSSR;
 sampler3D _DitherMaskLOD;
 sampler2D _DitherMaskLOD2D;
 sampler2D _CameraDepthTexture;
+sampler2D _AudioLinkTriOffsetMask;
+sampler2D _AudioLinkWireframeMask;
 
 float4 _RimTex_ST;
 float4 _DetailAlbedoMap_ST;
@@ -157,6 +159,8 @@ float4 _EmissionMap_ST;
 float4 _SpecTex_ST;
 float4 _DissolveTex_ST;
 float4 _SSRGrab_TexelSize;
+float4 _AudioLinkTriOffsetMask_ST;
+float4 _AudioLinkWireframeMask_ST;
 
 int _IsCubeBlendMask;
 int _MaskingMode;
@@ -196,6 +200,13 @@ int _AudioLinkDissolveBand;
 int _AudioLinkBCDissolveBand;
 int _AudioLinkVertManipBand;
 int _AudioLinkToggle;
+int _AudioLinkTriOffsetCoords;
+int _AudioLinkTriOffsetCoordInvert;
+int _AudioLinkWireframeBand;
+int _AudioLinkWireframeCoords;
+int _AudioLinkWireframeCoordInvert;
+int _AudioLinkTriOffsetMode;
+int _AudioLinkWireframeMode;
 
 float4 _Color; 
 float4 _CubeColor0, _CubeColor1;
@@ -204,6 +215,7 @@ float4 _RimCol, _ERimTint;
 float4 _TeamColor0, _TeamColor1, _TeamColor2, _TeamColor3;
 float4 _SColor, _ShadowTint;
 float4 _BCRimCol, _BCColor;
+float4 _AudioLinkWireframeColor;
 
 float3 _CubeRotate0, _CubeRotate1;
 float3 _StaticLightDir;
@@ -238,6 +250,8 @@ float2 _EmissScroll;
 float2 _OutlineScroll;
 float2 _DissolveScroll0; 
 float2 _DissolveScroll1;
+float2 _AudioLinkTriOffsetMaskScroll;
+float2 _AudioLinkWireframeMaskScroll;
 
 float2 _FrameClipOfs;
 float2 _SpritesheetScale;
@@ -276,6 +290,15 @@ float _AudioLinkVertManipMultiplier;
 float _AudioLinkRimWidth;
 float _AudioLinkRimPulse;
 float _AudioLinkRimPulseWidth;
+float _AudioLinkTriOffsetSize;
+float _AudioLinkTriOffsetStartPos;
+float _AudioLinkWireframeStartPos;
+float _AudioLinkTriOffsetEndPos;
+float _AudioLinkWireframeEndPos;
+float _AudioLinkWireframeSize;
+float _AudioLinkWireframeStrength;
+float _AudioLinkWireframeFalloff;
+float _AudioLinkTriOffsetFalloff;
 
 int _PreviewRough, _PreviewAO, _PreviewHeight;
 int _AOFiltering, _HeightFiltering, _RoughnessFiltering, _SmoothnessFiltering;
@@ -327,7 +350,6 @@ float _RippleContinuity;
 int _Refraction, _UnlitRefraction, _RefractionCA;
 float3 _RefractionTint;
 float _RefractionOpac, _RefractionIOR, _RefractionCAStr;
-int _AudioLinkPreview;
 int _GSAA;
 int _VertexExpansionClamp;
 float3 _VertexExpansion;
@@ -372,6 +394,7 @@ struct lighting {
     float3 lightDir;
 	float3 vLightDir; 
     float3 viewDir;
+	float3 viewDirVR;
     float3 halfVector; 
     float3 normalDir;
     float3 reflectionDir;
@@ -405,6 +428,7 @@ struct masks {
 };
 
 struct audioLinkData {
+	bool textureExists;
 	float bass;
 	float lowMid;
 	float upperMid;
@@ -436,6 +460,8 @@ int _ShowInMirror, _ShowBase, _Connected;
 int _DissolveChannel, _DissolveWave, _DissolveBlending;
 int _GeomDissolveAxis, _GeomDissolveAxisFlip, _GeomDissolveWireframe;
 int _GeomDissolveFilter, _GeomDissolveClamp;
+int _AudioLinkTriOffsetBand;
+
 float4 _Clone1, _Clone2, _Clone3, _Clone4, _Clone5, _Clone6, _Clone7, _Clone8;
 float4 _DissolveRimCol;
 float4 _WFColor;
@@ -453,6 +479,7 @@ float _WFFill, _WFVisibility;
 float _ShatterMax, _ShatterMin, _ShatterSpread, _ShatterCull; 
 float _Instability, _GlitchFrequency, _GlitchIntensity, _PosPrecision, _PatternMult; 
 float _Visibility, _CloneSize;
+float _AudioLinkTriOffsetStrength;
 
 struct v2g {
 	float4 pos : POSITION;
@@ -471,13 +498,13 @@ struct v2g {
 	float4 localPos : TEXCOORD12;
 	float roundingMask : TEXCOORD13;
 	float4 screenPos : TEXCOORD14;
-	float4 audioLinkBands : TEXCOORD15;
 
 	float4 tangent : TANGENT;
 	float3 normal : NORMAL;
 
-	UNITY_SHADOW_COORDS(18)
-	UNITY_FOG_COORDS(19)
+	UNITY_SHADOW_COORDS(19)
+	UNITY_FOG_COORDS(20)
+
 	UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
@@ -501,13 +528,15 @@ struct g2f {
 	float4 localPos : TEXCOORD15;
 	float wfOpac : TEXCOORD16;
 	float4 screenPos : TEXCOORD17;
-	float4 audioLinkBands : TEXCOORD18;
+	float wfOpacAL : TEXCOORD18;
+	float wfStrAL : TEXCOORD19;
 
 	float4 tangent : TANGENT;
 	float3 normal : NORMAL;
 
-	UNITY_SHADOW_COORDS(21)
-	UNITY_FOG_COORDS(22)
+	UNITY_SHADOW_COORDS(22)
+	UNITY_FOG_COORDS(23)
+
 	UNITY_VERTEX_INPUT_INSTANCE_ID
 	UNITY_VERTEX_OUTPUT_STEREO
 };
@@ -535,15 +564,15 @@ struct v2f {
 	bool isReflection : TEXCOORD11;
 	float4 localPos : TEXCOORD12;
 	float4 screenPos : TEXCOORD13;
-	float4 audioLinkBands : TEXCOORD14;
 
 	float4 tangent : TANGENT;
 	float3 normal : NORMAL;
 
+	UNITY_SHADOW_COORDS(18)
+	UNITY_FOG_COORDS(19)
+	
 	UNITY_VERTEX_INPUT_INSTANCE_ID
 	UNITY_VERTEX_OUTPUT_STEREO
-	UNITY_SHADOW_COORDS(17)
-	UNITY_FOG_COORDS(18)
 };
 #endif
 

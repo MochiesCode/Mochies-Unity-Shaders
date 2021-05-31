@@ -251,6 +251,7 @@ lighting GetLighting(g2f i, masks m, float3 atten, bool frontFace){
     #if SHADING_ENABLED
 		l.ao = GetAO(i, m);
 		l.viewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPos);
+		l.viewDirVR = normalize(i.cameraPos - i.worldPos);
 		l.tangent = lerp(-i.tangent, i.tangent, frontFace);
 		l.binormal = cross(i.normal, i.tangent.xyz) * (i.tangent.w * unity_WorldTransformParams.w);
 		l.binormal = lerp(-l.binormal, l.binormal, frontFace);

@@ -2,6 +2,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEditor;
+using System.Linq;
 
 namespace Mochie {
 	public class Foldouts {
@@ -16,6 +17,10 @@ namespace Mochie {
 		private static Color errorCol = new Color(1f,0.3f,0.3f,1f);
 		private static float[] foldoutOffsets = {-8f, 20f, 48f, 76f};
 		private static float[] medFoldoutOffsets = {-4f, 21f, 45f};
+
+		public static bool ContainsDigit(string input){
+			return input.Any(c => char.IsDigit(c));
+		}
 
 		public static bool DoFoldout(Dictionary<Material, Toggles> foldouts, Material mat, MaterialEditor me, int buttonCount, string header){
 			foldouts[mat].SetState(header, Foldout(header, foldouts[mat].GetState(header), buttonCount, me));
@@ -89,7 +94,10 @@ namespace Mochie {
 				GUI.backgroundColor = Color.gray;
 				me.Repaint();
 			}
-			
+
+			if (ContainsDigit(header))
+				header = header.Substring(0, header.Length-2);
+
 			GUI.Box(rect, header, formatting);
 			GUI.backgroundColor = bgCol;
 
@@ -121,6 +129,9 @@ namespace Mochie {
 				GUI.backgroundColor = Color.gray;
 				me.Repaint();
 			}
+
+			if (ContainsDigit(header))
+				header = header.Substring(0, header.Length-2);
 
 			GUI.Box(rect, header, formatting);
 			GUI.backgroundColor = bgCol;
@@ -159,7 +170,10 @@ namespace Mochie {
 				GUI.backgroundColor = Color.gray;
 				me.Repaint();
 			}
-			
+
+			if (ContainsDigit(header))
+				header = header.Substring(0, header.Length-2);
+
 			GUI.Box(rect, header, formatting);
 			GUI.backgroundColor = bgCol;
 
@@ -194,7 +208,10 @@ namespace Mochie {
 				GUI.backgroundColor = Color.gray;
 				me.Repaint();
 			}
-
+			
+			if (ContainsDigit(header))
+				header = header.Substring(0, header.Length-2);
+				
 			GUI.Box(rect, header, formatting);
 			GUI.backgroundColor = bgCol;
 			

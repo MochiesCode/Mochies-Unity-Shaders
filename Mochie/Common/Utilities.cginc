@@ -454,3 +454,18 @@ void ApplyPBRFiltering(inout float3 value, float contrast, float intensity, floa
 		previewValue = value;
 	}
 }
+
+            // v2f vert (appdata v)
+            // {
+            //     v2f o;
+            //     float4 vert = mul(unity_ObjectToWorld, v.vertex);
+            //     float3 objX = mul(unity_ObjectToWorld, float4(1, 0, 0, 0)).xyz;
+            //     float3 localZ = normalize(cross(objX, float3(0, 1, 0)));
+            //     float3 localX = normalize(cross(float3(0, 1, 0), localZ));
+
+            //     vert.xyz += localX + localZ;
+            //     o.vertex = mul(UNITY_MATRIX_VP, vert);
+            //     o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+            //     UNITY_TRANSFER_FOG(o,o.vertex);
+            //     return o;
+            // }

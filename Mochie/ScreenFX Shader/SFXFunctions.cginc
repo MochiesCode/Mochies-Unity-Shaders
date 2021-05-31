@@ -161,10 +161,8 @@ float GrayscaleSample(float2 uv){
 float2 GetShakeTime(){
     float2 shakeTime;
     if (_ShakeModel != 3){
-        _ShakeSpeedX *= 128;
-        _ShakeSpeedY *= 128;
-        shakeTime.x = sin(_Time.y * _ShakeSpeedX);
-        shakeTime.y = sin(_Time.y * _ShakeSpeedY);
+        shakeTime.x = sin(_Time.y * _ShakeSpeedX * 0.2);
+        shakeTime.y = sin(_Time.y * _ShakeSpeedY * 0.2);
         if (_ShakeModel == 2)
             shakeTime = round(shakeTime);
     }

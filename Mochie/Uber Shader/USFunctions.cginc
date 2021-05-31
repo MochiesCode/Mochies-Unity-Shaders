@@ -282,13 +282,13 @@ float4 GetAlbedo(g2f i, lighting l, masks m, audioLinkData al){
 	#elif CUBEMAP_ENABLED
 		albedo = mainTex * 2;
 		_CubeRotate0 = lerp(_CubeRotate0, _CubeRotate0 *_Time.y, _AutoRotate0);
-		float3 vDir = Rotate(l.viewDir, _CubeRotate0);
+		float3 vDir = Rotate3D(l.viewDir, _CubeRotate0);
 		albedo = texCUBE(_MainTexCube0, vDir);
 		albedo *= _CubeColor0;
 
 	#elif COMBINED_CUBEMAP_ENABLED
 		_CubeRotate0 = lerp(_CubeRotate0, _CubeRotate0 *_Time.y, _AutoRotate0);
-		float3 vDir = Rotate(l.viewDir, _CubeRotate0);
+		float3 vDir = Rotate3D(l.viewDir, _CubeRotate0);
 		float4 albedo0 = mainTex;
 		float4 mirrorTex = UNITY_SAMPLE_TEX2D_SAMPLER(_MirrorTex, _MainTex, i.uv.xy);
 		if (i.isReflection && _MirrorBehavior == 2)
@@ -310,8 +310,8 @@ float4 GetAlbedo(g2f i, lighting l, masks m, audioLinkData al){
 	#if NON_OPAQUE_RENDERING
 		if (_UseAlphaMask == 1){
 			float2 alphaMaskUV = TRANSFORM_TEX(i.rawUV, _AlphaMask);
-			float alphaMask = UNITY_SAMPLE_TEX2D_SAMPLER(_AlphaMask, _MainTex, alphaMaskUV) * _Color.a;
-			albedo.a = alphaMask;
+			float4 alphaMask = UNITY_SAMPLE_TEX2D_SAMPLER(_AlphaMask, _MainTex, alphaMaskUV) * _Color.a;
+			albedo.a = ChannelCheck(alphaMask, _AlphaMaskChannel);
 		}
 	#endif
 
@@ -335,11 +335,15 @@ float4 GetAlbedo(g2f i, lighting l, masks m, audioLinkData al){
 //----------------------------
 // Audio Link
 //----------------------------
-bool GrabExists(){
+void GrabExists(inout audioLinkData al, inout float versionBand, inout float versionTime){
 	float width = 0;
 	float height = 0;
 	_AudioTexture.GetDimensions(width, height);
-	return width > 16;
+	if (width > 64){
+		versionBand = 0.0625;
+		versionTime = 0.25;
+	}
+	al.textureExists = width > 16;
 }
 
 float SampleAudioTexture(float time, float band){
@@ -347,17 +351,15 @@ float SampleAudioTexture(float time, float band){
 }
 
 void InitializeAudioLink(inout audioLinkData al, float time){
-	if (GrabExists()){
-		al.bass = SampleAudioTexture(time, 0.125);
-		al.lowMid = SampleAudioTexture(time, 0.375);
-		al.upperMid = SampleAudioTexture(time, 0.625);
-		al.treble = SampleAudioTexture(time, 0.875);
-	}
-	else if (_AudioLinkPreview == 1){
-		al.bass = 1-frac(_Time.y*1.5);						// Reverse saw for kick
-		al.lowMid = 0.5*(sin(_Time.y*3)+1);				// Sin for bassy lower-mids
-		al.upperMid = frac(_Time.y*3);					// Saw for harsher high-mids
-		al.treble = round((sin(_Time.y*15)+1)*0.5);		// Flashy square for high hats
+	float versionBand = 1;
+	float versionTime = 1;
+	GrabExists(al, versionBand, versionTime);
+	if (al.textureExists){
+		time *= versionTime;
+		al.bass = SampleAudioTexture(time, 0.125 * versionBand);
+		al.lowMid = SampleAudioTexture(time, 0.375 * versionBand);
+		al.upperMid = SampleAudioTexture(time, 0.625 * versionBand);
+		al.treble = SampleAudioTexture(time, 0.875 * versionBand);
 	}
 }
 
@@ -400,7 +402,8 @@ float GetRim(lighting l, float width){
 	rim = smoothstep(_RimEdge, 1-_RimEdge, rim);
 	#if AUDIOLINK_ENABLED
 		audioLinkData ral = (audioLinkData)0;
-		InitializeAudioLink(ral, 1-VdotL);
+		float VVRdotL = abs(dot(l.viewDirVR, l.normal));
+		InitializeAudioLink(ral, 1-VVRdotL);
 		float pulseValueAL = 1-GetAudioLinkBand(ral, _AudioLinkRimBand);
 		float pulseRim = pow((1-pulseValueAL), (1-_AudioLinkRimPulseWidth) * 10);
 		pulseRim = smoothstep(_AudioLinkRimPulseSharp, 1-_AudioLinkRimPulseSharp, pulseRim);

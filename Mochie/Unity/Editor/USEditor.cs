@@ -27,7 +27,7 @@ internal class USEditor : ShaderGUI {
 			"Basic Rim",
 			"Roughness Filter",
 			"Normals",
-			"EMISSION",
+			"EMISSION 0",
 			"Pulse",
 			"Light Reactivity",
 			"FILTERING",
@@ -35,33 +35,33 @@ internal class USEditor : ShaderGUI {
 			"OUTLINE",
 			"SPECIAL FEATURES",
 			"Distance Fade",
-			"Dissolve",
+			"Dissolve 0",
 			"Screenspace",
 			"Clones",
 			"Positions",
 			"Glitch",
 			"Shatter Culling",
-			"Wireframe",
+			"Wireframe 0",
 			"FLIPBOOK",
 			"Occlusion Filter",
 			"Height Filter",
-			"Layer 1",
-			"Layer 2",
+			"Primary Layer",
+			"Secondary Layer",
 			"Environment Rim",
 			"Smoothness Filter",
 			"RENDER SETTINGS",
 			"Curvature Filter",
 			"Primary Maps",
 			"Detail Maps",
-			"Matcap 1",
-			"Matcap 2",
+			"Primary Matcap",
+			"Secondary Matcap",
 			"General",
 			"Diffuse Shading",
 			"Realtime Lighting",
 			"Baked Lighting",
 			"MASKS",
 			"Refraction",
-			"VERTEX MANIPULATION",
+			"VERTEX MANIPULATION 0",
 			"Refraction Mask",
 			"Reflection Mask",
 			"Specular Mask",
@@ -80,8 +80,15 @@ internal class USEditor : ShaderGUI {
 			"Emission Mask",
 			"Emission Pulse Mask",
 			"Outline Thickness Mask",
-			"Base Color Dissolve",
-			"AUDIO LINK"
+			"Base Color Dissolve 0",
+			"AUDIO LINK",
+			"Emission 1",
+			"Rim",
+			"Dissolve 1",
+			"Base Color Dissolve 1",
+			"Vertex Manipulation 1",
+			"Triangle Offset",
+			"Wireframe 1"
 		}
 	);
 
@@ -99,7 +106,7 @@ internal class USEditor : ShaderGUI {
 	string watermark = "Watermark_Pro";
 	string patIcon = "Patreon_Icon";
 	string keyTex = "KeyIcon_Pro";
-	string versionLabel = "v1.17";
+	string versionLabel = "v1.18";
 	// β
 	
 	GUIContent maskLabel = new GUIContent("Mask");
@@ -564,7 +571,6 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _AudioLinkRimWidth = null;
 	MaterialProperty _AudioLinkDissolveMultiplier = null;
 	MaterialProperty _AudioLinkBCDissolveMultiplier = null;
-	MaterialProperty _AudioLinkPreview = null;
 	MaterialProperty _AudioLinkVertManipMultiplier = null;
 	MaterialProperty _AudioLinkEmissionBand = null;
 	MaterialProperty _AudioLinkRimBand = null;
@@ -574,7 +580,27 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _AudioLinkRimPulse = null;
 	MaterialProperty _AudioLinkRimPulseWidth = null;
 	MaterialProperty _AudioLinkRimPulseSharp = null;
-
+	MaterialProperty _AudioLinkTriOffsetMask = null;
+	MaterialProperty _AudioLinkTriOffsetBand = null;
+	MaterialProperty _AudioLinkTriOffsetStrength = null;
+	MaterialProperty _AudioLinkTriOffsetMaskScroll = null;
+	MaterialProperty _AudioLinkTriOffsetCoords = null;
+	MaterialProperty _AudioLinkTriOffsetSize = null;
+	MaterialProperty _AudioLinkWireframeMask = null;
+	MaterialProperty _AudioLinkWireframeBand = null;
+	MaterialProperty _AudioLinkWireframeStrength = null;
+	MaterialProperty _AudioLinkWireframeMaskScroll = null;
+	MaterialProperty _AudioLinkWireframeCoords = null;
+	MaterialProperty _AudioLinkWireframeSize = null;
+	MaterialProperty _AudioLinkWireframeColor = null;
+	MaterialProperty _AudioLinkWireframeStartPos = null;
+	MaterialProperty _AudioLinkWireframeEndPos = null;
+	MaterialProperty _AudioLinkTriOffsetStartPos = null;
+	MaterialProperty _AudioLinkTriOffsetEndPos = null;
+	MaterialProperty _AudioLinkWireframeMode = null;
+	MaterialProperty _AudioLinkTriOffsetMode = null;
+	// MaterialProperty _AudioLinkWireframeFalloff = null;
+	// MaterialProperty _AudioLinkTriOffsetFalloff = null;
 	MaterialProperty _NaNLmao = null;
 
     BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
@@ -666,8 +692,8 @@ internal class USEditor : ShaderGUI {
 		GUIContent toonLabel = new GUIContent(toonIcon, "Apply preset property values for basic stylized toon shading.");
 		GUIContent standardLabel = new GUIContent(standardIcon, "Apply preset property values that visually match Standard shader.");
 		GUIContent collapseLabel = new GUIContent(collapseIcon, "Collapse all foldout tabs.");
-		GUIContent copyTo1Label = new GUIContent(copyTo1Icon, "Copy settings to sheet 1.");
-		GUIContent copyTo2Label = new GUIContent(copyTo2Icon, "Copy settings to sheet 2.");
+		GUIContent copyTo1Label = new GUIContent(copyTo1Icon, "Copy settings to primary layer.");
+		GUIContent copyTo2Label = new GUIContent(copyTo2Icon, "Copy settings to secondary layer.");
 		GUIContent keyLabel = new GUIContent(keyIcon, "Toggle material keywords list.");
 
         MGUI.CenteredTexture(headerTex, 0, 0);
@@ -781,6 +807,7 @@ internal class USEditor : ShaderGUI {
 						case 0:
 							me.TexturePropertySingleLine(metallicTexLabel, _MetallicGlossMap, _MetallicGlossMap.textureValue ? null : _Metallic);
 							me.TexturePropertySingleLine(roughnessTexLabel, _SpecGlossMap, _SpecGlossMap.textureValue ? null : _Glossiness);
+							MGUI.sRGBWarning(_SpecGlossMap);
 							break;
 
 						// Specular (RGB)
@@ -799,6 +826,7 @@ internal class USEditor : ShaderGUI {
 						// Packed (Modular)
 						case 3:
 							me.TexturePropertySingleLine(packedTexLabel, _PackedMap);
+							MGUI.sRGBWarning(_PackedMap);
 							me.ShaderProperty(_MetallicChannel, "Metallic");
 							me.ShaderProperty(_RoughnessChannel, "Roughness");
 							me.ShaderProperty(_OcclusionChannel, "Occlusion");
@@ -812,6 +840,7 @@ internal class USEditor : ShaderGUI {
 						// Packed (Baked)
 						case 4:
 							me.TexturePropertySingleLine(packedTexLabel, _PackedMap);
+							MGUI.sRGBWarning(_PackedMap);
 							GUILayout.Label("Red:	Metallic\nGreen:	Roughness\nBlue:	Occlusion\nAlpha:	Height");
 							me.ShaderProperty(_OcclusionStrength, "Occlusion Strength");
 							MGUI.ToggleSlider(me, "Height Strength", _EnablePackedHeight, _Parallax);
@@ -1052,7 +1081,7 @@ internal class USEditor : ShaderGUI {
 				MGUI.ToggleGroupEnd();
 				
 				// Base Color Dissolve
-				bool bcDissTab = Foldouts.DoMediumFoldout(foldouts, mat, me, _BCDissolveToggle, 1, "Base Color Dissolve");
+				bool bcDissTab = Foldouts.DoMediumFoldout(foldouts, mat, me, _BCDissolveToggle, 1, "Base Color Dissolve 0");
 				if (MGUI.MedTabButton(resetIcon, 23f))
 					DoBCDissolveReset();
 				GUILayout.Space(5);
@@ -1373,11 +1402,11 @@ internal class USEditor : ShaderGUI {
 				else MGUI.SpaceN2();
 
 				// Rim
-				bool rimTab = Foldouts.DoMediumFoldout(foldouts, mat, me, _RimLighting, 1, "Basic Rim");
+				bool basicRimTab = Foldouts.DoMediumFoldout(foldouts, mat, me, _RimLighting, 1, "Basic Rim");
 				if (MGUI.MedTabButton(resetIcon, 23f))
 					DoRimReset();
 				GUILayout.Space(5);
-				if (rimTab){
+				if (basicRimTab){
 					MGUI.Space2();
 					MGUI.PropertyGroup(() => {
 						MGUI.ToggleGroup(_RimLighting.floatValue == 0);
@@ -1498,7 +1527,7 @@ internal class USEditor : ShaderGUI {
 		// -----------------
 		// Emission
 		// -----------------
-		bool emissTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "EMISSION");
+		bool emissTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "EMISSION 0");
 		if (MGUI.TabButton(resetIcon, 26f)){
 			DoEmissionReset();
 		}
@@ -1608,7 +1637,7 @@ internal class USEditor : ShaderGUI {
 		MGUI.Space8();
 		if (ssTab){
 			MGUI.Space8();
-			bool sheet1Tab = Foldouts.DoMediumFoldout(foldouts, mat, me, _EnableSpritesheet, 2, "Layer 1");
+			bool sheet1Tab = Foldouts.DoMediumFoldout(foldouts, mat, me, _EnableSpritesheet, 2, "Primary Layer");
 			if (MGUI.MedTabButton(resetIcon, 23f))
 				DoSheet1Reset();
 			GUILayout.Space(5);
@@ -1654,7 +1683,7 @@ internal class USEditor : ShaderGUI {
 			}
 			else MGUI.SpaceN2();
 
-			bool sheet2Tab = Foldouts.DoMediumFoldout(foldouts, mat, me, _EnableSpritesheet1, 2, "Layer 2");
+			bool sheet2Tab = Foldouts.DoMediumFoldout(foldouts, mat, me, _EnableSpritesheet1, 2, "Secondary Layer");
 			if (MGUI.MedTabButton(resetIcon, 23f))
 				DoSheet2Reset();
 			GUILayout.Space(5);
@@ -1770,8 +1799,8 @@ internal class USEditor : ShaderGUI {
 					me.ShaderProperty(_DistortDetailUV, "Detail");
 					me.ShaderProperty(_DistortEmissUV, "Emission");
 					me.ShaderProperty(_DistortRimUV, "Rim");
-					me.ShaderProperty(_DistortMatcap0, "Matcap 1");
-					me.ShaderProperty(_DistortMatcap1, "Matcap 2");
+					me.ShaderProperty(_DistortMatcap0, "Primary Matcap");
+					me.ShaderProperty(_DistortMatcap1, "Secondary Matcap");
 				});
 				if (_DistortionStyle.floatValue == 1){
 					MGUI.PropertyGroup(() => {
@@ -1799,7 +1828,7 @@ internal class USEditor : ShaderGUI {
 		// -----------------
 		// Vertex Manip
 		// -----------------
-		bool vertexTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "VERTEX MANIPULATION");
+		bool vertexTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "VERTEX MANIPULATION 0");
 		if (MGUI.TabButton(resetIcon, 26f)){
 			DoVertexReset();
 		}
@@ -1835,39 +1864,134 @@ internal class USEditor : ShaderGUI {
 			MGUI.Space4();
 			me.ShaderProperty(_AudioLinkToggle, "Enable");
 			MGUI.ToggleGroup(_AudioLinkToggle.floatValue == 0);
-			me.ShaderProperty(_AudioLinkPreview, "Preview");
 			MGUI.Space4();
-			MGUI.BoldLabel("Emission");
-			MGUI.PropertyGroup(() => {
-				me.ShaderProperty(_AudioLinkEmissionBand, "Band");
-				me.ShaderProperty(_AudioLinkEmissionMultiplier, "Strength");
-			});
-			MGUI.BoldLabel("Rim");
-			MGUI.PropertyGroup(() => {
-				me.ShaderProperty(_AudioLinkRimBand, "Band");
-				me.ShaderProperty(_AudioLinkRimMultiplier, "Strength");
-				me.ShaderProperty(_AudioLinkRimWidth, "Width");
-				me.ShaderProperty(_AudioLinkRimPulse, "Pulse Strength");
-				me.ShaderProperty(_AudioLinkRimPulseWidth, "Pulse Width");
-				me.ShaderProperty(_AudioLinkRimPulseSharp, "Pulse Sharpness");
-			});
-			if (isUberX){
-				MGUI.BoldLabel("Dissolve");
-				MGUI.PropertyGroup(() => {
-					me.ShaderProperty(_AudioLinkDissolveBand, "Band");
-					me.ShaderProperty(_AudioLinkDissolveMultiplier, "Strength");
-				});
+
+			bool emissTabAL = Foldouts.DoMediumFoldout(foldouts, mat, me, 1, "Emission 1");
+			if (MGUI.MedTabButton(resetIcon, 23f)){
+				DoAudioLinkEmissionReset();
 			}
-			MGUI.BoldLabel("Base Color Dissolve");
-			MGUI.PropertyGroup(() => {
-				me.ShaderProperty(_AudioLinkBCDissolveBand, "Band");
-				me.ShaderProperty(_AudioLinkBCDissolveMultiplier, "Strength");
-			});
-			MGUI.BoldLabel("Vertex Manipulation");
-			MGUI.PropertyGroup(() => {
-				me.ShaderProperty(_AudioLinkVertManipBand, "Band");
-				me.ShaderProperty(_AudioLinkVertManipMultiplier, "Strength");
-			});
+			if (emissTabAL){
+				MGUI.Space6();
+				MGUI.PropertyGroup(() => {
+					me.ShaderProperty(_AudioLinkEmissionBand, "Band");
+					me.ShaderProperty(_AudioLinkEmissionMultiplier, "Strength");
+				});
+				MGUI.Space2();
+			}
+			else MGUI.Space3();
+
+			bool rimTab = Foldouts.DoMediumFoldout(foldouts, mat, me, 1, "Rim");
+			if (MGUI.MedTabButton(resetIcon, 23f)){
+				DoAudioLinkRimReset();
+			}
+			if (rimTab){
+				MGUI.Space6();
+				MGUI.PropertyGroup(() => {
+					me.ShaderProperty(_AudioLinkRimBand, "Band");
+					me.ShaderProperty(_AudioLinkRimMultiplier, "Strength");
+					me.ShaderProperty(_AudioLinkRimWidth, "Width");
+					me.ShaderProperty(_AudioLinkRimPulse, "Pulse Strength");
+					me.ShaderProperty(_AudioLinkRimPulseWidth, "Pulse Width");
+					me.ShaderProperty(_AudioLinkRimPulseSharp, "Pulse Sharpness");
+				});
+				MGUI.Space2();
+			}
+			else MGUI.Space3();
+
+			bool bcDissTabAL = Foldouts.DoMediumFoldout(foldouts, mat, me, 1, "Base Color Dissolve 1");
+			if (MGUI.MedTabButton(resetIcon, 23f)){
+				DoAudioLinkBCDissolveReset();
+			}
+			if (bcDissTabAL){
+				MGUI.Space6();
+				MGUI.PropertyGroup(() => {
+					me.ShaderProperty(_AudioLinkBCDissolveBand, "Band");
+					me.ShaderProperty(_AudioLinkBCDissolveMultiplier, "Strength");
+				});
+				MGUI.Space2();
+			}
+			else MGUI.Space3();
+
+			bool vertManipTabAL = Foldouts.DoMediumFoldout(foldouts, mat, me, 1, "Vertex Manipulation 1");
+			if (MGUI.MedTabButton(resetIcon, 23f)){
+				DoAudioLinkVertManipReset();
+			}
+			if (vertManipTabAL){
+				MGUI.Space6();
+				MGUI.PropertyGroup(() => {
+					me.ShaderProperty(_AudioLinkVertManipBand, "Band");
+					me.ShaderProperty(_AudioLinkVertManipMultiplier, "Strength");
+				});
+				MGUI.Space2();
+			}
+			else MGUI.Space3();
+
+			if (isUberX){
+				bool dissTabAL = Foldouts.DoMediumFoldout(foldouts, mat, me, 1, "Dissolve 1");
+				if (MGUI.MedTabButton(resetIcon, 23f)){
+					DoAudioLinkDissolveReset();
+				}
+				if (dissTabAL){
+					MGUI.Space6();
+					MGUI.PropertyGroup(() => {
+						me.ShaderProperty(_AudioLinkDissolveBand, "Band");
+						me.ShaderProperty(_AudioLinkDissolveMultiplier, "Strength");
+					});
+					MGUI.Space2();
+				}
+				else MGUI.Space3();
+
+				bool triOfsTabAL = Foldouts.DoMediumFoldout(foldouts, mat, me, 1, "Triangle Offset");
+				if (MGUI.MedTabButton(resetIcon, 23f)){
+					DoAudioLinkTriOffsetReset();
+				}
+				if (triOfsTabAL){
+					MGUI.Space6();
+					MGUI.PropertyGroup( () => {
+						me.ShaderProperty(_AudioLinkTriOffsetBand, "Band");
+						me.ShaderProperty(_AudioLinkTriOffsetMode, "Style");
+						me.ShaderProperty(_AudioLinkTriOffsetCoords, "Axis");
+						MGUI.Space8();
+						me.ShaderProperty(_AudioLinkTriOffsetStrength, "Strength");
+						me.ShaderProperty(_AudioLinkTriOffsetStartPos, "Start Position");
+						me.ShaderProperty(_AudioLinkTriOffsetEndPos, "End Position");
+						me.ShaderProperty(_AudioLinkTriOffsetSize, "Size");
+						// me.ShaderProperty(_AudioLinkTriOffsetFalloff, "Falloff");
+						if (_AudioLinkTriOffsetMask.textureValue)
+							MGUI.Space8();
+						me.TexturePropertySingleLine(maskLabel, _AudioLinkTriOffsetMask);
+						MGUI.TextureSOScroll(me, _AudioLinkTriOffsetMask, _AudioLinkTriOffsetMaskScroll, _AudioLinkTriOffsetMask.textureValue);
+					});
+					MGUI.Space2();
+				}
+				else MGUI.Space3();
+
+				bool wfTabAL = Foldouts.DoMediumFoldout(foldouts, mat, me, 1, "Wireframe 1");
+				if (MGUI.MedTabButton(resetIcon, 23f)){
+					DoAudioLinkWireframeReset();
+				}
+				if (wfTabAL){
+					MGUI.Space6();
+					MGUI.PropertyGroup( () => {
+						me.ShaderProperty(_AudioLinkWireframeBand, "Band");
+						me.ShaderProperty(_AudioLinkWireframeMode, "Style");
+						me.ShaderProperty(_AudioLinkWireframeCoords, "Axis");
+						MGUI.Space8();
+						me.ShaderProperty(_AudioLinkWireframeStrength, "Strength");
+						me.ShaderProperty(_AudioLinkWireframeStartPos, "Start Position");
+						me.ShaderProperty(_AudioLinkWireframeEndPos, "End Position");
+						me.ShaderProperty(_AudioLinkWireframeSize, "Size");
+						// me.ShaderProperty(_AudioLinkWireframeFalloff, "Falloff");
+						me.ShaderProperty(_AudioLinkWireframeColor, "Color");
+						if (_AudioLinkWireframeMask.textureValue)
+							MGUI.Space8();
+						me.TexturePropertySingleLine(maskLabel, _AudioLinkWireframeMask);
+						MGUI.TextureSOScroll(me, _AudioLinkWireframeMask, _AudioLinkWireframeMaskScroll, _AudioLinkWireframeMask.textureValue);
+					});
+					MGUI.Space2();
+				}
+				else MGUI.Space3();
+			}
 			MGUI.ToggleGroupEnd();
 			MGUI.Space8();
 		}
@@ -1927,7 +2051,7 @@ internal class USEditor : ShaderGUI {
 				else MGUI.SpaceN2();
 
 				// Dissolve
-				bool dissolveTab = Foldouts.DoMediumFoldoutError(foldouts, mat, me, dissError, 1, "Dissolve");
+				bool dissolveTab = Foldouts.DoMediumFoldoutError(foldouts, mat, me, dissError, 1, "Dissolve 0");
 				if (MGUI.MedTabButton(resetIcon, 23f)){
 					DoDissolveReset();
 				}
@@ -2100,7 +2224,7 @@ internal class USEditor : ShaderGUI {
 				else MGUI.SpaceN2();
 
 				// Wireframe
-				bool wireTab = Foldouts.DoMediumFoldout(foldouts, mat, me, _WireframeToggle, 1, "Wireframe");
+				bool wireTab = Foldouts.DoMediumFoldout(foldouts, mat, me, _WireframeToggle, 1, "Wireframe 0");
 				if (MGUI.MedTabButton(resetIcon, 23f))
 					DoWireframeReset();
 				GUILayout.Space(5);
@@ -2969,21 +3093,67 @@ internal class USEditor : ShaderGUI {
 	}
 
 	void DoAudioLinkReset(){
-		_AudioLinkPreview.floatValue = 0f;
-		_AudioLinkEmissionBand.floatValue = 0f;
-		_AudioLinkEmissionMultiplier.floatValue = 0f;
+		DoAudioLinkWireframeReset();
+		DoAudioLinkTriOffsetReset();
+		DoAudioLinkBCDissolveReset();
+		DoAudioLinkDissolveReset();
+		DoAudioLinkRimReset();
+		DoAudioLinkVertManipReset();
+		DoAudioLinkEmissionReset();
+	}
+
+	void DoAudioLinkWireframeReset(){
+		_AudioLinkWireframeBand.floatValue = 0f;
+		_AudioLinkWireframeCoords.floatValue = 1f;
+		_AudioLinkWireframeMode.floatValue = 0f;
+		_AudioLinkWireframeColor.colorValue = Color.white;
+		_AudioLinkWireframeStartPos.floatValue = -0.5f;
+		_AudioLinkWireframeEndPos.floatValue = 0.5f;
+		_AudioLinkWireframeSize.floatValue = 0.1f;
+		_AudioLinkWireframeMask.textureValue = null;
+		_AudioLinkWireframeStrength.floatValue = 0f;
+		_AudioLinkWireframeMaskScroll.vectorValue = Vector4.zero;
+	}
+
+	void DoAudioLinkTriOffsetReset(){
+		_AudioLinkTriOffsetBand.floatValue = 0;
+		_AudioLinkTriOffsetCoords.floatValue = 1f;
+		_AudioLinkTriOffsetMode.floatValue = 0f;
+		_AudioLinkTriOffsetStartPos.floatValue = -0.5f;
+		_AudioLinkTriOffsetEndPos.floatValue = 0.5f;
+		_AudioLinkTriOffsetSize.floatValue = 0.1f;
+		_AudioLinkTriOffsetMask.textureValue = null;
+		_AudioLinkTriOffsetStrength.floatValue = 0f;
+		_AudioLinkTriOffsetMaskScroll.vectorValue = Vector4.zero;
+	}
+
+	void DoAudioLinkBCDissolveReset(){
+		_AudioLinkBCDissolveBand.floatValue = 0f;
+		_AudioLinkBCDissolveMultiplier.floatValue = 0f;
+	}
+
+	void DoAudioLinkDissolveReset(){
+		_AudioLinkDissolveBand.floatValue = 0f;
+		_AudioLinkDissolveMultiplier.floatValue = 0f;
+	}
+
+	void DoAudioLinkRimReset(){
 		_AudioLinkRimBand.floatValue = 0f;
 		_AudioLinkRimMultiplier.floatValue = 0f;
 		_AudioLinkRimWidth.floatValue = 0f;
 		_AudioLinkRimPulse.floatValue = 0f;
 		_AudioLinkRimPulseWidth.floatValue = 0.5f;
 		_AudioLinkRimPulseSharp.floatValue = 0.3f;
-		_AudioLinkDissolveBand.floatValue = 0f;
-		_AudioLinkDissolveMultiplier.floatValue = 0f;
-		_AudioLinkBCDissolveBand.floatValue = 0f;
-		_AudioLinkBCDissolveMultiplier.floatValue = 0f;
+	}
+
+	void DoAudioLinkVertManipReset(){
 		_AudioLinkVertManipBand.floatValue = 0f;
 		_AudioLinkVertManipMultiplier.floatValue = 0f;
+	}
+
+	void DoAudioLinkEmissionReset(){
+		_AudioLinkEmissionBand.floatValue = 0f;
+		_AudioLinkEmissionMultiplier.floatValue = 0f;
 	}
 
 	void DoLRReset(){

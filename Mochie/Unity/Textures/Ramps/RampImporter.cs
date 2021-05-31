@@ -8,7 +8,7 @@ namespace Mochie {
 	public class RampImporter : AssetPostprocessor {
 
 		void OnPreprocessTexture(){
-			if(assetPath.Contains("Ramps")){
+			if(assetPath.Contains("Ramps") && assetPath.Contains("Mochie")){
 				TextureImporter importer = assetImporter as TextureImporter;
 				importer.textureType  = TextureImporterType.Default;
 				importer.textureCompression = TextureImporterCompression.Uncompressed;

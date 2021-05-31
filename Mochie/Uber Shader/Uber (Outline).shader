@@ -442,22 +442,49 @@ Shader "Mochie/Uber/Uber (Outline)" {
 		// AUDIO LINK
 		//----------------------------
 		[ToggleUI]_AudioLinkToggle("tog", Int) = 0
-		[ToggleUI]_AudioLinkPreview("tog", Int) = 0
+
 		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkEmissionBand("en03", Int) = 0
 		_AudioLinkEmissionMultiplier("ra", Range(0,1)) = 0
+
 		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkRimBand("en03", Int) = 0
 		_AudioLinkRimMultiplier("ra", Range(0,1)) = 0
 		_AudioLinkRimWidth("ra", Range(0,1)) = 0
 		_AudioLinkRimPulse("ra", Range(0,1)) = 0
 		_AudioLinkRimPulseWidth("ra", Range(0,1)) = 0.5
 		_AudioLinkRimPulseSharp("ra", Range(0, 0.5)) = 0.3
+
 		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkDissolveBand("en03", Int) = 0
 		_AudioLinkDissolveMultiplier("ra", Range(0,1)) = 0
+
 		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkBCDissolveBand("en03", Int) = 0
 		_AudioLinkBCDissolveMultiplier("ra", Range(0,1)) = 0
+
 		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkVertManipBand("en03", Int) = 0
 		_AudioLinkVertManipMultiplier("ra", Range(0,1)) = 0
-		
+
+		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkTriOffsetBand("en03", Int) = 0
+		[Enum(X,0, Y,1, Z,2)]_AudioLinkTriOffsetCoords("en02", Int) = 1
+		[Enum(Pulse,0, Levels,1)]_AudioLinkTriOffsetMode("en01", Int) = 0
+		_AudioLinkTriOffsetStartPos("fl", Float) = -0.5
+		_AudioLinkTriOffsetEndPos("fl", Float) = 0.5
+		_AudioLinkTriOffsetFalloff("fl",Float) = 0.05
+		_AudioLinkTriOffsetSize("fl", Float) = 0.1
+		_AudioLinkTriOffsetMask("tex", 2D) = "white" {}
+		_AudioLinkTriOffsetStrength("ra", Range(0,1)) = 0
+		_AudioLinkTriOffsetMaskScroll("vec", Vector) = (0,0,0,0)
+
+		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkWireframeBand("en03", Int) = 0
+		[Enum(X,0, Y,1, Z,2)]_AudioLinkWireframeCoords("en02", Int) = 1
+		[Enum(Pulse,0, Levels,1)]_AudioLinkWireframeMode("en01", Int) = 0
+		[HDR]_AudioLinkWireframeColor("col", Color) = (1,1,1,1)
+		_AudioLinkWireframeStartPos("fl", Float) = -0.5
+		_AudioLinkWireframeEndPos("fl", Float) = 0.5
+		_AudioLinkWireframeFalloff("fl",Float) = 0.05
+		_AudioLinkWireframeSize("fl", Float) = 0.1
+		_AudioLinkWireframeMask("tex", 2D) = "white" {}
+		_AudioLinkWireframeStrength("ra", Range(0,1)) = 0
+		_AudioLinkWireframeMaskScroll("vec", Vector) = (0,0,0,0)
+
 		//----------------------------
 		// SPECIAL FEATURES
 		//----------------------------
