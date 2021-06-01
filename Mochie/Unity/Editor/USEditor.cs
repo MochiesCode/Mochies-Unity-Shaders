@@ -106,7 +106,7 @@ internal class USEditor : ShaderGUI {
 	string watermark = "Watermark_Pro";
 	string patIcon = "Patreon_Icon";
 	string keyTex = "KeyIcon_Pro";
-	string versionLabel = "v1.18";
+	string versionLabel = "v1.18.1";
 	// β
 	
 	GUIContent maskLabel = new GUIContent("Mask");
@@ -1341,7 +1341,7 @@ internal class USEditor : ShaderGUI {
 					MGUI.Space2();
 					MGUI.ToggleGroup(_MatcapToggle.floatValue == 0);
 					MGUI.PropertyGroup(() => {
-						bool matcap1Tab = Foldouts.DoSmallFoldout(foldouts, mat, me, "Matcap 1");
+						bool matcap1Tab = Foldouts.DoSmallFoldout(foldouts, mat, me, "Primary Matcap");
 						if (matcap1Tab){
 							MGUI.SpaceN2();
 							MGUI.PropertyGroupLayer(() => {
@@ -1358,7 +1358,7 @@ internal class USEditor : ShaderGUI {
 						}
 						else MGUI.SpaceN2();
 
-						bool matcap2Tab = Foldouts.DoSmallFoldout(foldouts, mat, me, "Matcap 2");
+						bool matcap2Tab = Foldouts.DoSmallFoldout(foldouts, mat, me, "Secondary Matcap");
 						if (matcap2Tab){
 							MGUI.SpaceN2();
 							MGUI.PropertyGroupLayer(() => {
