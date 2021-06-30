@@ -5,11 +5,12 @@
 #include "UnityStandardConfig.cginc"
 #include "UnityLightingCommon.cginc"
 #include "MochieStandardSSR.cginc"
+#include "MochieStandardSSS.cginc"
 
 half4 BRDF1_Mochie_PBS (
 	half3 diffColor, half3 specColor, half oneMinusReflectivity, half smoothness,
     half3 normal, half3 viewDir, half3 worldPos, half2 screenUVs, half4 screenPos,
-    half metallic, UnityLight light, UnityIndirect gi)
+    half metallic, half thickness, half3 ssColor, half atten, UnityLight light, UnityIndirect gi)
 {
 
     half perceptualRoughness = SmoothnessToPerceptualRoughness (smoothness);
@@ -22,6 +23,8 @@ half4 BRDF1_Mochie_PBS (
 
     // Diffuse term
     half diffuseTerm = DisneyDiffuse(nv, nl, lh, perceptualRoughness) * nl;
+	float wrappedDiffuse = saturate((diffuseTerm + _WrappingFactor) /
+	(1.0f + _WrappingFactor)) * 2 / (2 * (1 + _WrappingFactor));
 
     // Specular term
     half roughness = PerceptualRoughnessToRoughness(perceptualRoughness);
@@ -52,7 +55,11 @@ half4 BRDF1_Mochie_PBS (
 
     half grazingTerm = saturate(smoothness + (1-oneMinusReflectivity));
 
-	half3 diffCol = diffColor * (gi.diffuse + light.color * diffuseTerm);
+	#if SUBSURFACE_ENABLED
+		half3 diffCol = diffColor * (gi.diffuse + light.color * lerp(diffuseTerm, wrappedDiffuse, thickness));
+	#else
+		half3 diffCol = diffColor * (gi.diffuse + light.color * diffuseTerm);
+	#endif
 	half3 specCol = specularTerm * light.color * FresnelTerm (specColor, lh) * _SpecularStrength;
 	half3 reflCol = surfaceReduction * gi.specular * FresnelLerp (specColor, grazingTerm, nv) * _ReflectionStrength;
 	#if SSR_ENABLED
@@ -61,8 +68,16 @@ half4 BRDF1_Mochie_PBS (
 		reflCol = lerp(reflCol, ssrCol.rgb, ssrCol.a);
 		specCol *= (1-smoothstep(0, 0.1, ssrCol.a));
 	#endif
-	
-    return half4(diffCol + specCol + reflCol, 1);
+
+	half3 subsurfaceCol = 0;
+	#if SUBSURFACE_ENABLED
+		subsurfaceCol = GetSubsurfaceLight(
+					light.color, light.dir, normal, viewDir, atten, 
+					thickness, gi.diffuse, ssColor
+				);
+	#endif
+
+    return half4(diffCol + specCol + reflCol + subsurfaceCol, 1);
 }
 
 half4 BRDF2_Mochie_PBS (

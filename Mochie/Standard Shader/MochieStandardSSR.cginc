@@ -10,10 +10,6 @@
 
 #if SSR_ENABLED
 
-bool IsInMirror(){
-	return unity_CameraProjection[2][0] != 0.f || unity_CameraProjection[2][1] != 0.f;
-}
-
 float3 GetBlurredGP(const sampler2D ssrg, const float2 texelSize, const float2 uvs, const float dim){
 	float2 pixSize = 2/texelSize;
 	float center = floor(dim*0.5);

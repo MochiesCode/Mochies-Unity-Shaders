@@ -12,8 +12,7 @@ class GradientObject : ScriptableObject {
 internal class USEditor : ShaderGUI {
 
     public static Dictionary<Material, Toggles> foldouts = new Dictionary<Material, Toggles>();
-    Toggles toggles = new Toggles(
-		new string[] {
+    Toggles toggles = new Toggles(new string[] {
 			"BASE", 
 			"TEXTURES",
 			"SHADING", 
@@ -89,8 +88,7 @@ internal class USEditor : ShaderGUI {
 			"Vertex Manipulation 1",
 			"Triangle Offset",
 			"Wireframe 1"
-		}
-	);
+	}, 0);
 
 	private GradientObject gradientObj;
 	private SerializedProperty colorGradient;
@@ -705,8 +703,7 @@ internal class USEditor : ShaderGUI {
 		// -----------------
 		bool baseTab = Foldouts.DoFoldout(foldouts, mat, me, 3, "BASE");
 		if (MGUI.TabButton(collapseLabel, 26f)){
-			for (int i = 1; i <= foldouts[mat].GetToggles().Length-1; i++)
-				foldouts[mat].SetState(i, false);
+			Toggles.CollapseFoldouts(mat, foldouts, 1);
 		}
 		MGUI.Space8();
 		if (MGUI.TabButton(clearTexLabel, 54f)){

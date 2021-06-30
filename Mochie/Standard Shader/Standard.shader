@@ -24,10 +24,10 @@ Shader "Mochie/Standard" {
         _Cutoff("Alpha Cutoff", Range(0.0, 1.0)) = 0.5
 
 		_PackedMap("Packed Texture", 2D) = "white" {}
-		[ToggleUI]_RoughnessMult("", Int) = 0
-		[ToggleUI]_MetallicMult("", Int) = 0
-		[ToggleUI]_OcclusionMult("", Int) = 0
-		[ToggleUI]_HeightMult("", Int) = 0
+		[ToggleUI]_RoughnessMult("Roughness Multiplier", Int) = 0
+		[ToggleUI]_MetallicMult("Metallic Multiplier", Int) = 0
+		[ToggleUI]_OcclusionMult("Occlusion Multiplier", Int) = 0
+		[ToggleUI]_HeightMult("Height Multiplier", Int) = 0
 
 		[Enum(Red,0, Green,1, Blue,2, Alpha,3)]_RoughnessChannel("Roughness Channel", Int) = 1
 		[Enum(Red,0, Green,1, Blue,2, Alpha,3)]_MetallicChannel("Metallic Channel", Int) = 2
@@ -60,10 +60,14 @@ Shader "Mochie/Standard" {
 		_UV3Scroll("Mask Scrolling", Vector) = (0,0,0,0)
 
         _DetailMask("Detail Mask", 2D) = "white" {}
-        _DetailAlbedoMap("Detail Albedo x2", 2D) = "grey" {}
+        _DetailAlbedoMap("Detail Base Color", 2D) = "gray" {}
+		[Enum(Add,0, Subtract,1, Multiply,2, Overlay,3, Screen,4, Soft Light,5)]_DetailAlbedoBlend("Detail Base Color Blend", Int) = 2
+		_DetailNormalMap("Detail Normal Map", 2D) = "bump" {}
         _DetailNormalMapScale("Scale", Float) = 1.0
-        _DetailNormalMap("Normal Map", 2D) = "bump" {}
-
+        _DetailRoughnessMap("Detail Roughness Map", 2D) = "gray" {}
+		[Enum(Add,0, Subtract,1, Multiply,2, Overlay,3, Screen,4, Soft Light,5)]_DetailRoughBlend("Detail Roughness Blend", Int) = 2
+		_DetailAOMap("Detail AO Map", 2D) = "white" {}
+		[Enum(Add,0, Subtract,1, Multiply,2, Overlay,3, Screen,4, Soft Light,5)]_DetailAOBlend("Detail AO Blend", Int) = 2
         [Enum(UV0,0,UV1,1)]_UVSec("UV Set for secondary textures", Float) = 0
 
 		_ReflCube("Reflection Fallback", CUBE) = "" {}
@@ -71,6 +75,18 @@ Shader "Mochie/Standard" {
 		_CubeThreshold("Threshold", Range(0.0001,1)) = 0.45
 		_EdgeFade("SSR Edge Fade", Range(0,1)) = 0.1
 		
+		[ToggleUI]_Subsurface("Subsurface Scattering", Int) = 0
+		[ToggleUI]_ScatterAlbedoTint("Scatter Albedo Tint", Int) = 0
+		_ThicknessMap("Thickness Map", 2D) = "black" {}
+		_ThicknessMapPower("Thickness Map Power", Float) = 1
+		_ScatterCol("Subsurface Color", Color) = (1,1,1,1)
+		_ScatterIntensity("Intensity", Range(0,10)) = 1
+		_ScatterPow("Power", Range(0.01,10)) = 1
+		_ScatterDist("Distance", Range(0,10)) = 1
+		_ScatterAmbient("Ambient Intensity", Range(0,0.5)) = 0
+		_ScatterShadow("Shadow Power", Range(0,1)) = 1
+		_WrappingFactor("Wrapping Factor", Range(0.001, 1)) = 0.01
+
 		_Cull("", Int) = 2
 		_MetaCull("", Int) = 0
 		[Enum(UnityEngine.Rendering.CullMode)]_CullingMode("", Int) = 2
@@ -93,7 +109,6 @@ Shader "Mochie/Standard" {
 
     CGINCLUDE
         #define UNITY_SETUP_BRDF_INPUT RoughnessSetup
-		// #define MOCHIE_BRDF BRDF2_Mochie_PBS
 		#define MOCHIE_BRDF BRDF1_Mochie_PBS
     ENDCG
 
@@ -136,6 +151,9 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature GRAIN
 			#pragma shader_feature _ EFFECT_HUE_VARIATION BLOOM _COLORCOLOR_ON EFFECT_BUMP
 			#pragma shader_feature _COLOROVERLAY_ON
+			#pragma shader_feature GEOM_TYPE_LEAF
+			#pragma shader_feature GEOM_TYPE_FROND
+			#pragma shader_feature GEOM_TYPE_MESH
             #pragma multi_compile_fwdbase
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
@@ -166,6 +184,9 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature FXAA
 			#pragma shader_feature _ EFFECT_HUE_VARIATION BLOOM _COLORCOLOR_ON EFFECT_BUMP
 			#pragma shader_feature _COLOROVERLAY_ON
+			#pragma shader_feature GEOM_TYPE_LEAF
+			#pragma shader_feature GEOM_TYPE_FROND
+			#pragma shader_feature GEOM_TYPE_MESH
             #pragma multi_compile_fwdadd_fullshadows
             #pragma multi_compile_fog
             #include "MochieStandardCoreForward.cginc"
@@ -187,6 +208,7 @@ Shader "Mochie/Standard" {
             #pragma shader_feature _METALLICGLOSSMAP
             #pragma shader_feature _PARALLAXMAP
 			#pragma shader_feature _ EFFECT_HUE_VARIATION BLOOM _COLORCOLOR_ON EFFECT_BUMP
+			#pragma shader_feature GEOM_TYPE_MESH
             #pragma multi_compile_shadowcaster
             #pragma multi_compile_instancing
 			#pragma skip_variants FOG_LINEAR FOG_EXP FOG_EXP2
@@ -210,6 +232,9 @@ Shader "Mochie/Standard" {
             #pragma shader_feature ___ _DETAIL_MULX2
 			#pragma shader_feature _ EFFECT_HUE_VARIATION BLOOM _COLORCOLOR_ON EFFECT_BUMP
 			#pragma shader_feature _COLOROVERLAY_ON
+			#pragma shader_feature GEOM_TYPE_LEAF
+			#pragma shader_feature GEOM_TYPE_FROND
+			#pragma shader_feature GEOM_TYPE_MESH
             #pragma shader_feature EDITOR_VISUALIZATION
             #include "UnityStandardMeta.cginc"
             ENDCG

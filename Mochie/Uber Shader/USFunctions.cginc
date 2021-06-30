@@ -455,9 +455,6 @@ float3 GetMetallicWorkflow(g2f i, lighting l, masks m, float3 albedo){
 	metallic = lerp(_Metallic, UNITY_SAMPLE_TEX2D_SAMPLER(_MetallicGlossMap, _MainTex, i.uv.xy), _UseMetallicMap);
 	roughness = lerp(_Glossiness, UNITY_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, _MainTex, i.uv.xy), _UseSpecMap);
 	roughness = lerp(roughness, GetDetailRough(i, roughness), _DetailRoughStrength * m.detailMask * _UsingDetailRough);
-	#if CURVATURE_ENABLED
-		roughness = _CurvatureTarget == 2 && _UseCurvature == 1 ? BlendCurvature(curvature, roughness) : roughness;
-	#endif
 	ApplyPBRFiltering(roughness, _RoughContrast, _RoughIntensity, _RoughLightness, _RoughnessFiltering, prevRough);
 
 	smoothness = 1-roughness;

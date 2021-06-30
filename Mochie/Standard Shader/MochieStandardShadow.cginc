@@ -7,6 +7,13 @@
 #include "UnityStandardUtils.cginc"
 #include "MochieStandardKeyDefines.cginc"
 
+#if SHADER_TARGET < 50
+	#define ddx_fine ddx
+	#define ddy_fine ddy
+#endif
+
+#include "../Common/Sampling.cginc"
+
 #if (defined(_ALPHABLEND_ON) || defined(_ALPHAPREMULTIPLY_ON)) && defined(UNITY_USE_DITHER_MASK_FOR_ALPHABLENDED_SHADOWS)
     #define UNITY_STANDARD_USE_DITHER_MASK 1
 #endif
@@ -25,15 +32,8 @@
 #define UNITY_STANDARD_USE_STEREO_SHADOW_OUTPUT_STRUCT 1
 #endif
 
-#if SHADER_TARGET < 50
-	#define ddx_fine ddx
-	#define ddy_fine ddy
-#endif
-
 half4       _Color;
 half        _Cutoff;
-sampler2D   _MainTex;
-float4      _MainTex_ST;
 #ifdef UNITY_STANDARD_USE_DITHER_MASK
 	sampler3D   _DitherMaskLOD;
 #endif
@@ -42,15 +42,15 @@ float4      _MainTex_ST;
 half4       _SpecColor;
 half        _Metallic;
 #ifdef _SPECGLOSSMAP
-	sampler2D   _SpecGlossMap;
+	Texture2D   _SpecGlossMap;
 #endif
 #ifdef _METALLICGLOSSMAP
-	sampler2D   _MetallicGlossMap;
+	Texture2D   _MetallicGlossMap;
 #endif
 
 #if defined(UNITY_STANDARD_USE_SHADOW_UVS) && defined(_PARALLAXMAP)
-	sampler2D   _ParallaxMap;
-	sampler2D	_ParallaxMask;
+	Texture2D   _ParallaxMap;
+	Texture2D	_ParallaxMask;
 	float2		_ParallaxMaskScroll;
 	float4		_ParallaxMask_ST;
 	half        _Parallax;
@@ -65,7 +65,7 @@ float2		_UV0Scroll;
 float2		_UV1Scroll;
 
 #if WORKFLOW_PACKED || WORKFLOW_MODULAR
-	sampler2D _PackedMap;
+	Texture2D _PackedMap;
 	int _RoughnessMult, _MetallicMult, _OcclusionMult, _HeightMult;
 	int _RoughnessChannel, _MetallicChannel, _OcclusionChannel, _HeightChannel;
 #endif
@@ -75,34 +75,13 @@ float2		_UV1Scroll;
 	#define HAS_DEPTH_TEXTURE
 #endif
 
-#include "../Common/Sampling.cginc"
-
 #if defined(UNITY_STANDARD_USE_SHADOW_UVS) && defined(_PARALLAXMAP)
 	#include "MochieStandardParallax.cginc"
 #endif
 
-float ChannelCheck(float4 rgba, int channel){
-	float selection = 0;
-	switch (channel){
-		case 0: selection = rgba.r; break;
-		case 1: selection = rgba.g; break;
-		case 2: selection = rgba.b; break;
-		case 3: selection = rgba.a; break;
-		default: break;
-	}
-	return selection;
-}
+#include "../Common/Utilities.cginc"
 
-float2 Rotate2D(float2 coords, float rot){
-	rot *= (UNITY_PI/180.0);
-	float sinVal = sin(rot);
-	float cosX = cos(rot);
-	float2x2 mat = float2x2(cosX, -sinVal, sinVal, cosX);
-	mat = ((mat*0.5)+0.5)*2-1;
-	return mul(coords, mat);
-}
-
-half RoughnessSetup_ShadowGetOneMinusReflectivity(half2 uv, SampleData sd)
+half ShadowGetOneMinusReflectivity(half2 uv, SampleData sd)
 {
     half metallicity = _Metallic;
 	#if WORKFLOW_PACKED
@@ -256,14 +235,14 @@ half4 fragShadowCaster (UNITY_POSITION(vpos)
 				#endif
 				h = clamp(h, 0, 0.999);
 				float2 maskUV = TRANSFORM_TEX(i.tex1.xy, _ParallaxMask) + (_Time.y*_ParallaxMaskScroll);
-				half m = tex2D(_ParallaxMask, maskUV);
+				half m = _ParallaxMask.Sample(sampler_MainTex, maskUV);
 				_Parallax = lerp(0.02, _Parallax, _HeightMult);
 				half2 offset = ParallaxOffsetMultiStep(h, _Parallax * m, i.tex.xy, viewDirForParallax);
 			#else
 				half h = SampleTexture(_ParallaxMap, i.tex.xy).g + _ParallaxOffset;
 				h = clamp(h, 0, 0.999);
 				float2 maskUV = TRANSFORM_TEX(i.tex1.xy, _ParallaxMask) + (_Time.y*_ParallaxMaskScroll);
-				half m = tex2D(_ParallaxMask, maskUV);
+				half m = _ParallaxMask.Sample(sampler_MainTex, maskUV);
 				half2 offset = ParallaxOffsetMultiStep(h, _Parallax * m, i.tex.xy, viewDirForParallax);
 			#endif
            
@@ -286,7 +265,7 @@ half4 fragShadowCaster (UNITY_POSITION(vpos)
         #if defined(_ALPHABLEND_ON) || defined(_ALPHAPREMULTIPLY_ON)
             #if defined(_ALPHAPREMULTIPLY_ON)
                 half outModifiedAlpha;
-                PreMultiplyAlpha(half3(0, 0, 0), alpha, SHADOW_ONEMINUSREFLECTIVITY(i.tex, i.localPos, i.normal), outModifiedAlpha);
+                PreMultiplyAlpha(half3(0, 0, 0), alpha, ShadowGetOneMinusReflectivity(i.tex, sd), outModifiedAlpha);
                 alpha = outModifiedAlpha;
             #endif
             #if defined(UNITY_STANDARD_USE_DITHER_MASK)

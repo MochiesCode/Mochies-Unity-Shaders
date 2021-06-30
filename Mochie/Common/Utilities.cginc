@@ -372,12 +372,17 @@ float3 FlowUV (float2 uv, float time, float phase) {
 	return uvw;
 }
 
-float2 GetFlipbookUV(float2 uv, float width, float height, float speed, float2 invertAxis){
-	float tile = fmod(trunc(_Time.y * speed), width*height);
-	float2 tileCount = float2(1.0, 1.0) / float2(width, height);
-	float tileY = abs(invertAxis.y * height - (floor(tile * tileCount.x) + invertAxis.y * 1));
-	float tileX = abs(invertAxis.x * width - ((tile - width * floor(tile * tileCount.x)) + invertAxis.x * 1));
-	return (uv + float2(tileX, tileY)) * tileCount;
+float2 GetFlipbookUV(float2 uv, float columns, float rows, float speed){
+	float2 size = float2(1/columns, 1/rows);
+	uint totalFrames = columns * rows;
+	uint index = _Time.y * speed;
+	uint indexX = index % columns;
+	uint indexY = floor((index % totalFrames) / columns);
+	float2 offset = float2(size.x*indexX,-size.y*indexY);
+	float2 flipbookUV = frac(uv)*size;
+	flipbookUV.y = flipbookUV.y + size.y*(rows - 1);
+	flipbookUV += offset;
+	return flipbookUV;
 }
 
 float GetRimValue(float3 viewDir, float3 normal, float rimWidth, float rimEdge){

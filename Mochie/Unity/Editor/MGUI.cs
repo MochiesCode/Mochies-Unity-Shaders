@@ -694,14 +694,14 @@ namespace Mochie {
 		// Scale offset property with added scrolling x/y
 		public static void TextureSOScroll(MaterialEditor me, MaterialProperty tex, MaterialProperty vec){
 			me.TextureScaleOffsetProperty(tex);
-			SpaceN4();
+			SpaceN2();
 			Vector2Field(vec, "Scrolling");
 		}
 
 		public static void TextureSOScroll(MaterialEditor me, MaterialProperty tex, MaterialProperty vec, bool shouldDisplay){
 			if (shouldDisplay){
 				me.TextureScaleOffsetProperty(tex);
-				SpaceN4();
+				SpaceN2();
 				Vector2Field(vec, "Scrolling");
 			}
 		}
@@ -797,7 +797,7 @@ namespace Mochie {
 			bool buttonPress = GUILayout.Button("Fix Now", new GUIStyle("button") {
 				stretchWidth = false,
 				margin = new RectOffset(0, 0, 0, 0),
-				padding = new RectOffset(9, 9, 0, 0)
+				padding = new RectOffset(8, 8, 0, 0)
 			}, GUILayout.Height(22));
 			EditorGUILayout.EndHorizontal();
 			GUILayout.EndVertical();

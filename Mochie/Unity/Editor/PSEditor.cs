@@ -14,22 +14,20 @@ public class PSEditor : ShaderGUI {
 	GUIContent applyStreamsText = new GUIContent("Fix Vertex Streams", "Apply the vertex stream layout to all Particle Systems using this material");
 
     static Dictionary<Material, Toggles> foldouts = new Dictionary<Material, Toggles>();
-    Toggles toggles = new Toggles(
-		new string[] {
+    Toggles toggles = new Toggles(new string[] {
 			"BASE", 
 			"FILTERING", 
 			"DISTORTION", 
 			"PULSE", 
 			"FALLOFF"
-		}
-	);
+	}, 0);
 
 	float buttonSize = 24.0f;
     string header = "ParticleHeader_Pro";
 	string watermark = "Watermark_Pro";
 	string patIcon = "Patreon_Icon";
 	string keyTex = "KeyIcon_Pro";
-	string versionLabel = "v2.0";
+	string versionLabel = "v2.0.1";
 
     // Render Settings
     MaterialProperty _BlendMode = null;
@@ -118,7 +116,10 @@ public class PSEditor : ShaderGUI {
 		Texture2D patIconTex = (Texture2D)Resources.Load(patIcon, typeof(Texture2D));
 		Texture2D resetIconTex = (Texture2D)Resources.Load("ResetIcon", typeof(Texture2D));
 		Texture2D keyIcon = (Texture2D)Resources.Load(keyTex, typeof(Texture2D));
+		Texture2D collapseIcon = (Texture2D)Resources.Load("CollapseIcon", typeof(Texture2D));
+
 		GUIContent keyLabel = new GUIContent(keyIcon, "Toggle material keywords list.");
+		GUIContent collapseLabel = new GUIContent(collapseIcon, "Collapse all foldout tabs.");
 
         MGUI.CenteredTexture(headerTex, 0, 0);
         GUILayout.Space(-34);
@@ -135,9 +136,13 @@ public class PSEditor : ShaderGUI {
             // -----------------
             // Render Settings
             // -----------------
-			bool baseTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "BASE");
+			bool baseTab = Foldouts.DoFoldout(foldouts, mat, me, 2, "BASE");
 			if (MGUI.TabButton(resetIconTex, 26f))
 				ResetBase();
+			MGUI.Space8();
+			if (MGUI.TabButton(collapseLabel, 54f)){
+				Toggles.CollapseFoldouts(mat, foldouts, 1);
+			}
 			MGUI.Space8();
             if (baseTab){
 

@@ -216,6 +216,34 @@ float3 GetSaturation(float3 col, float interpolator){
     return lerp(dot(col, float3(0.3,0.59,0.11)), col, interpolator);
 }
 
+float3 BlendColors(float3 col0, float3 col1, int blendType){
+	float3 col2 = col0;
+	switch (blendType){
+		case 0: col2 = col0 + col1; break;
+		case 1: col2 = col0 - col1; break;
+		case 2: col2 = col0 * col1; break;
+		case 3: col2 = BlendOverlay(col0, col1); break;
+		case 4: col2 = BlendScreen(col0, col1); break;
+		case 5: col2 = BlendSoftLight(col0, col1); break;
+		default: break;
+	}
+	return col2;
+}
+
+float BlendScalars(float scalar0, float scalar1, int blendType){
+	float scalar2 = scalar0;
+	switch (blendType){
+		case 0: scalar2 = scalar0 + scalar1; break;
+		case 1: scalar2 = scalar0 - scalar1; break;
+		case 2: scalar2 = scalar0 * scalar1; break;
+		case 3: scalar2 = BlendOverlay(scalar0, scalar1); break;
+		case 4: scalar2 = BlendScreen(scalar0, scalar1); break;
+		case 5: scalar2 = BlendSoftLight(scalar0, scalar1); break;
+		default: break;
+	}
+	return scalar2;
+}
+
 // ---------------------------
 // Fake HDR
 // ---------------------------

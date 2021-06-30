@@ -8,6 +8,7 @@
 #include "UnityPBSLighting.cginc"
 #include "UnityStandardUtils.cginc"
 #include "UnityGBuffer.cginc"
+#include "MochieStandardSSS.cginc"
 #include "MochieStandardBRDF.cginc"
 
 #include "AutoLight.cginc"
@@ -64,7 +65,7 @@ half3 Mochie_GlossyEnvironment (UNITY_ARGS_TEXCUBE(tex), half4 hdr, Unity_Glossy
     return DecodeHDR(rgbm, hdr);
 }
 
-inline half3 MochieGI_IndirectSpecular(UnityGIInput data, half occlusion, Unity_GlossyEnvironmentData glossIn, float3 normal)
+inline half3 MochieGI_IndirectSpecular(UnityGIInput data, half3 occlusion, Unity_GlossyEnvironmentData glossIn, float3 normal)
 {
     half3 specular;
 	half3 originalReflUVW = glossIn.reflUVW;
@@ -111,10 +112,14 @@ inline half3 MochieGI_IndirectSpecular(UnityGIInput data, half occlusion, Unity_
     return specular * occlusion;
 }
 
-inline UnityGI MochieGlobalIllumination (UnityGIInput data, half occlusion, half3 normalWorld, Unity_GlossyEnvironmentData glossIn)
+inline UnityGI MochieGlobalIllumination (UnityGIInput data, half3 occlusion, half3 normalWorld, Unity_GlossyEnvironmentData glossIn)
 {
     UnityGI o_gi = UnityGI_Base(data, occlusion, normalWorld);
     o_gi.indirect.specular = MochieGI_IndirectSpecular(data, occlusion, glossIn, normalWorld);
+	// #if SUBSURFACE_ENABLED
+	// 	float3 sh_conv = GeneralWrapSH(0.5);
+	// 	o_gi.indirect.diffuse = ShadeSH9_wrappedCorrect(normalWorld, sh_conv);
+	// #endif
     return o_gi;
 }
 
@@ -251,22 +256,20 @@ float3 PerPixelWorldNormal(float4 i_tex, float4 tangentToWorld[3], SampleData sd
 struct FragmentCommonData
 {
     half3 diffColor, specColor;
-    // Note: smoothness & oneMinusReflectivity for optimization purposes, mostly for DX9 SM2.0 level.
-    // Most of the math is being done on these (1-x) values, and that saves a few precious ALU slots.
     half oneMinusReflectivity, smoothness;
     float3 normalWorld;
     float3 eyeVec;
     half alpha;
     float3 posWorld;
 	float metallic;
-
-#if UNITY_STANDARD_SIMPLE
-    half3 reflUVW;
-#endif
-
-#if UNITY_STANDARD_SIMPLE
-    half3 tangentSpaceNormal;
-#endif
+	float thickness;
+	float3 subsurfaceColor;
+	#if UNITY_STANDARD_SIMPLE
+		half3 reflUVW;
+	#endif
+	#if UNITY_STANDARD_SIMPLE
+		half3 tangentSpaceNormal;
+	#endif
 };
 
 #ifndef UNITY_SETUP_BRDF_INPUT
@@ -275,7 +278,7 @@ struct FragmentCommonData
 
 inline FragmentCommonData RoughnessSetup(float4 i_tex, SampleData sd)
 {
-    half2 metallicGloss = MetallicRough(i_tex.xy, sd);
+    half2 metallicGloss = MetallicRough(i_tex, sd);
     half metallic = metallicGloss.x;
     half smoothness = metallicGloss.y; // this is 1 minus the square root of real roughness m.
 
@@ -317,10 +320,15 @@ inline FragmentCommonData FragmentSetup (inout float4 i_tex, float3 i_eyeVec, ha
 
     // NOTE: shader relies on pre-multiply alpha-blend (_SrcBlend = One, _DstBlend = OneMinusSrcAlpha)
     o.diffColor = PreMultiplyAlpha (o.diffColor, alpha, o.oneMinusReflectivity, /*out*/ o.alpha);
+
+	o.thickness = SampleTexture(_ThicknessMap, i_tex, sd);
+	o.thickness = pow(1-o.thickness, _ThicknessMapPower);
+	o.subsurfaceColor = _ScatterCol * lerp(1, o.diffColor, _ScatterAlbedoTint);
+
     return o;
 }
 
-inline UnityGI FragmentGI (FragmentCommonData s, half occlusion, half4 i_ambientOrLightmapUV, half atten, UnityLight light, bool reflections)
+inline UnityGI FragmentGI (FragmentCommonData s, half3 occlusion, half4 i_ambientOrLightmapUV, half atten, UnityLight light, bool reflections)
 {
     UnityGIInput d;
     d.light = light;
@@ -364,7 +372,7 @@ inline UnityGI FragmentGI (FragmentCommonData s, half occlusion, half4 i_ambient
     }
 }
 
-inline UnityGI FragmentGI (FragmentCommonData s, half occlusion, half4 i_ambientOrLightmapUV, half atten, UnityLight light)
+inline UnityGI FragmentGI (FragmentCommonData s, half3 occlusion, half4 i_ambientOrLightmapUV, half atten, UnityLight light)
 {
     return FragmentGI(s, occlusion, i_ambientOrLightmapUV, atten, light, true);
 }
@@ -543,15 +551,16 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i)
     UNITY_SETUP_INSTANCE_ID(i);
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
 
-    UnityLight mainLight = MainLight ();
+    UnityLight mainLight = MainLight();
     UNITY_LIGHT_ATTENUATION(atten, i, s.posWorld);
 
-    half occlusion = Occlusion(i.tex.xy, sd);
+    half3 occlusion = Occlusion(i.tex, sd);
     UnityGI gi = FragmentGI (s, occlusion, i.ambientOrLightmapUV, atten, mainLight);
-
-    half4 c = MOCHIE_BRDF (s.diffColor, s.specColor, s.oneMinusReflectivity, 
-								s.smoothness, s.normalWorld, -s.eyeVec, s.posWorld, screenUVs, screenPos,
-								s.metallic, gi.light, gi.indirect);
+	half4 c = MOCHIE_BRDF(
+				s.diffColor, s.specColor, s.oneMinusReflectivity, 
+				s.smoothness, s.normalWorld, -s.eyeVec, s.posWorld, screenUVs, screenPos,
+				s.metallic, s.thickness, s.subsurfaceColor, atten, gi.light, gi.indirect
+			);
     c.rgb += Emission(i.tex.xy, i.tex1.zw, sd);
 
     UNITY_EXTRACT_FOG_FROM_EYE_VEC(i);
@@ -696,7 +705,7 @@ half4 fragForwardAddInternal (VertexOutputForwardAdd i)
 
 	half4 c = MOCHIE_BRDF (s.diffColor, s.specColor, s.oneMinusReflectivity, 
 								s.smoothness, s.normalWorld, -s.eyeVec, s.posWorld, 0, 0,
-								s.metallic, light, noIndirect);
+								s.metallic, s.thickness, s.subsurfaceColor, atten, light, noIndirect);
 								
     UNITY_EXTRACT_FOG_FROM_EYE_VEC(i);
     UNITY_APPLY_FOG_COLOR(_unity_fogCoord, c.rgb, half4(0,0,0,0)); // fog towards black in additive pass

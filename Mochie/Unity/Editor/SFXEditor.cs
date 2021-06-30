@@ -20,8 +20,7 @@ public class SFXEditor : ShaderGUI {
 	List<string> keywordsList = new List<string>();
 	float buttonSize = 24.0f;
 
-    Toggles toggles = new Toggles(
-		new string[] {
+    Toggles toggles = new Toggles(new string[] {
 			"GENERAL",
 			"FILTERING",
 			"SHAKE",
@@ -42,8 +41,7 @@ public class SFXEditor : ShaderGUI {
 			"Depth Buffer",
 			"Safe Zone",
 			"NOISE"
-		}
-	);
+	}, 0);
 
     // Texture file names
 	string header = "SFXHeader_Pro";
@@ -417,8 +415,7 @@ public class SFXEditor : ShaderGUI {
             // Global
 			bool generalTab = Foldouts.DoFoldout(foldouts, mat, me, 2, "GENERAL");
 			if (MGUI.TabButton(collapseIcon, 26f)){
-				for (int i = 1; i <= foldouts[mat].GetToggles().Length-1; i++)
-					foldouts[mat].SetState(i, false);
+				Toggles.CollapseFoldouts(mat, foldouts, 1);
 			}
 			MGUI.Space8();
 			if (MGUI.TabButton(resetIconTex, 54f))

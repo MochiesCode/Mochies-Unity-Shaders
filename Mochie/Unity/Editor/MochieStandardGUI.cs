@@ -15,12 +15,14 @@ internal class MochieStandardGUI : ShaderGUI {
 		public static GUIContent highlightsText = EditorGUIUtility.TrTextContent("Specular Highlights", "GGX Specular Highlights");
 		public static GUIContent reflectionsText = EditorGUIUtility.TrTextContent("Cubemap Reflections", "Standard cubemap-based reflections");
 		public static GUIContent normalMapText = EditorGUIUtility.TrTextContent("Normal Map", "Normal Map");
-		public static GUIContent heightMapText = EditorGUIUtility.TrTextContent("Height Map", "Height Map (G)");
+		public static GUIContent heightMapText = EditorGUIUtility.TrTextContent("Height Map", "Height Map (R)");
 		public static GUIContent occlusionText = EditorGUIUtility.TrTextContent("Ambient Occlusion", "Ambient Occlusion (G)");
 		public static GUIContent emissionText = EditorGUIUtility.TrTextContent("Color", "Emission (RGB)");
 		public static GUIContent detailMaskText = EditorGUIUtility.TrTextContent("Detail Mask", "Mask for Secondary Maps (A)");
 		public static GUIContent detailAlbedoText = EditorGUIUtility.TrTextContent("Detail Base Color", "Base Color (RGB) multiplied by 2");
 		public static GUIContent detailNormalMapText = EditorGUIUtility.TrTextContent("Detail Normal Map", "Normal Map");
+		public static GUIContent detailRoughnessMapText = EditorGUIUtility.TrTextContent("Detail Roughness", "Roughness (R)");
+		public static GUIContent detailAOMapText = EditorGUIUtility.TrTextContent("Detail Occlusion", "Ambient Occlusion (G)");
 		public static GUIContent packedMapText = EditorGUIUtility.TrTextContent("Packed Map (ARMH)", "AO, Roughness, Metallic, Height");
 		public static GUIContent packedMapModText = EditorGUIUtility.TrTextContent("Packed Map");
 		public static GUIContent reflCubeText = EditorGUIUtility.TrTextContent("Reflection Fallback", "Replace environment reflections below the luminance threshold with this cubemap");
@@ -32,6 +34,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		public static GUIContent maskText = EditorGUIUtility.TrTextContent("Mask");
 		public static GUIContent heightMaskText = EditorGUIUtility.TrTextContent("Height Mask");
 		public static GUIContent parallaxOfsText = EditorGUIUtility.TrTextContent("Parallax Offset");
+		public static GUIContent thicknessMapText = EditorGUIUtility.TrTextContent("Thickness Map");
 	}
 
     public static Dictionary<Material, Toggles> foldouts = new Dictionary<Material, Toggles>();
@@ -41,11 +44,11 @@ internal class MochieStandardGUI : ShaderGUI {
 		"Detail Textures",
 		"UVs",
 		"Render Settings"
-	});
+	}, 1);
 
 	string watermark = "Watermark_Pro";
 	string patIcon = "Patreon_Icon";
-	string versionLabel = "v1.4";
+	string versionLabel = "v1.5";
 
 	MaterialProperty blendMode = null;
 	MaterialProperty workflow = null;
@@ -68,6 +71,11 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty emissionMap = null;
 	MaterialProperty detailMask = null;
 	MaterialProperty detailAlbedoMap = null;
+	MaterialProperty detailAlbedoBlend = null;
+	MaterialProperty detailRoughnessMap = null;
+	MaterialProperty detailRoughBlend = null;
+	MaterialProperty detailAOMap = null;
+	MaterialProperty detailAOBlend = null;
 	MaterialProperty detailNormalMapScale = null;
 	MaterialProperty detailNormalMap = null;
 	MaterialProperty uvSetSecondary = null;
@@ -76,6 +84,17 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty useHeight = null;
 	MaterialProperty saturation = null;
 
+	MaterialProperty subsurface = null;
+	MaterialProperty thicknessMap = null;
+	MaterialProperty thicknessMapPower = null;
+	MaterialProperty scatterCol = null;
+	MaterialProperty scatterAmbient = null;
+	MaterialProperty scatterIntensity = null;
+	MaterialProperty scatterPow = null;
+	MaterialProperty scatterDist = null;
+	MaterialProperty scatterAlbedoTint = null;
+	MaterialProperty wrappingFactor = null;
+	
 	MaterialProperty uv0Rot = null;
 	MaterialProperty uv1Rot = null;
 	MaterialProperty uv0Scroll = null;
@@ -141,6 +160,11 @@ internal class MochieStandardGUI : ShaderGUI {
 		emissionMap = FindProperty("_EmissionMap", props);
 		detailMask = FindProperty("_DetailMask", props);
 		detailAlbedoMap = FindProperty("_DetailAlbedoMap", props);
+		detailAlbedoBlend = FindProperty("_DetailAlbedoBlend", props);
+		detailRoughnessMap = FindProperty("_DetailRoughnessMap", props);
+		detailRoughBlend = FindProperty("_DetailRoughBlend", props);
+		detailAOMap = FindProperty("_DetailAOMap", props);
+		detailAOBlend = FindProperty("_DetailAOBlend", props);
 		detailNormalMapScale = FindProperty("_DetailNormalMapScale", props);
 		detailNormalMap = FindProperty("_DetailNormalMap", props);
 		uvSetSecondary = FindProperty("_UVSec", props);
@@ -182,6 +206,16 @@ internal class MochieStandardGUI : ShaderGUI {
 		triplanarFalloff = FindProperty("_TriplanarFalloff", props);
 		edgeFadeMin = FindProperty("_EdgeFadeMin", props);
 		edgeFadeMax = FindProperty("_EdgeFadeMax", props);
+		subsurface = FindProperty("_Subsurface", props);
+		thicknessMap = FindProperty("_ThicknessMap", props);
+		thicknessMapPower = FindProperty("_ThicknessMapPower", props);
+		scatterCol = FindProperty("_ScatterCol", props);
+		scatterAmbient = FindProperty("_ScatterAmbient", props);
+		scatterPow = FindProperty("_ScatterPow", props);
+		scatterIntensity = FindProperty("_ScatterIntensity", props);
+		scatterDist = FindProperty("_ScatterDist", props);
+		scatterAlbedoTint = FindProperty("_ScatterAlbedoTint", props);
+		wrappingFactor = FindProperty("_WrappingFactor", props);
 	}
 
 	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props){
@@ -212,195 +246,37 @@ internal class MochieStandardGUI : ShaderGUI {
 			MGUI.Space8();
 			bool variantFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, m_MaterialEditor, "Shader Variant");
 			if (variantFoldout){
-				MGUI.PropertyGroup(() => {
-					m_MaterialEditor.ShaderProperty(workflow, "Workflow");
-					m_MaterialEditor.ShaderProperty(blendMode, "Blending Mode");
-					EditorGUI.BeginChangeCheck();
-					m_MaterialEditor.ShaderProperty(samplingMode, "Sampling Mode");
-					if (samplingMode.floatValue == 3){
-						m_MaterialEditor.ShaderProperty(triplanarFalloff, "Triplanar Falloff");
-					}
-					if (samplingMode.floatValue == 4){
-						m_MaterialEditor.ShaderProperty(edgeFadeMin, "Edge Fade Min");
-						m_MaterialEditor.ShaderProperty(edgeFadeMax, "Edge Fade Max");
-					}
-					if (blendMode.floatValue == 1)
-						m_MaterialEditor.ShaderProperty(alphaCutoff, Styles.alphaCutoffText.text);
-				});
+				DoVariantArea();
 			}
 
 			// Primary properties
-			bool texturesFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, m_MaterialEditor, "Primary Textures");
-			if (texturesFoldout){
-				MGUI.PropertyGroup( () => {
-					m_MaterialEditor.TexturePropertySingleLine(Styles.albedoText, albedoMap, albedoColor, albedoMap.textureValue ? saturation : null);
-					if (albedoMap.textureValue)
-						MGUI.TexPropLabel("Saturation", 118);
-					if (workflow.floatValue > 0){
-						m_MaterialEditor.TexturePropertySingleLine(workflow.floatValue == 1 ? Styles.packedMapText : Styles.packedMapModText, packedMap);
-						MGUI.sRGBWarning(packedMap);
-						if (packedMap.textureValue){
-							if (workflow.floatValue == 2){
-								MGUI.PropertyGroupLayer(() => {
-									m_MaterialEditor.ShaderProperty(metallicChannel, "Metallic");
-									m_MaterialEditor.ShaderProperty(roughChannel, "Roughness");
-									m_MaterialEditor.ShaderProperty(occlusionChannel, "Occlusion");
-									if (useHeight.floatValue == 1 && samplingMode.floatValue < 3){
-										m_MaterialEditor.ShaderProperty(heightChannel, "Height");
-									}
-								});
-							}
-							MGUI.PropertyGroupLayer( () => {
-								MGUI.ToggleSlider(m_MaterialEditor, "Metallic Strength", metalMult, metallic);
-								MGUI.ToggleSlider(m_MaterialEditor, "Roughness Strength", roughMult, roughness);
-								MGUI.ToggleSlider(m_MaterialEditor, "AO Strength", occMult, occlusionStrength);
-								if (useHeight.floatValue == 1 && samplingMode.floatValue < 3){
-									MGUI.ToggleSlider(m_MaterialEditor, "Height Strength", heightMult, heightMapScale);
-									m_MaterialEditor.ShaderProperty(steps, Styles.stepsText);
-									m_MaterialEditor.ShaderProperty(parallaxOfs, Styles.parallaxOfsText);
-								}
-							});
-							MGUI.Space8();
-						}
-						if (useHeight.floatValue == 1 && samplingMode.floatValue < 3){
-							m_MaterialEditor.TexturePropertySingleLine(Styles.heightMaskText, parallaxMask);
-						}
-					}
-					else {
-						m_MaterialEditor.TexturePropertySingleLine(Styles.metallicMapText, metallicMap, metallic);
-						MGUI.sRGBWarning(metallicMap);
-						m_MaterialEditor.TexturePropertySingleLine(Styles.roughnessText, roughnessMap, roughness);
-						MGUI.sRGBWarning(roughnessMap);
-						m_MaterialEditor.TexturePropertySingleLine(Styles.occlusionText, occlusionMap, occlusionMap.textureValue ? occlusionStrength : null);
-						MGUI.sRGBWarning(occlusionMap);
-						if (samplingMode.floatValue < 3){
-							m_MaterialEditor.TexturePropertySingleLine(Styles.heightMapText, heightMap, heightMap.textureValue ? heightMapScale : null);
-							MGUI.sRGBWarning(heightMap);
-							if (heightMap.textureValue){
-								m_MaterialEditor.TexturePropertySingleLine(Styles.heightMaskText, parallaxMask);
-								m_MaterialEditor.ShaderProperty(steps, Styles.stepsText, 2);
-								m_MaterialEditor.ShaderProperty(parallaxOfs, Styles.parallaxOfsText, 2);
-							}
-						}
-					}
-					m_MaterialEditor.TexturePropertySingleLine(Styles.normalMapText, bumpMap, bumpMap.textureValue ? bumpScale : null);
-					m_MaterialEditor.TexturePropertySingleLine(Styles.reflOverrideText, reflOverride);
-					m_MaterialEditor.TexturePropertySingleLine(Styles.reflCubeText, reflCube, reflCube.textureValue ? cubeThreshold : null);
-
-					MGUI.Space2();
-					if (workflow.floatValue > 0 && samplingMode.floatValue < 3)
-						m_MaterialEditor.ShaderProperty(useHeight, "Packed Height");
-					DoEmissionArea(material);
-				});
+			bool primaryFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, m_MaterialEditor, "Primary Textures");
+			if (primaryFoldout){
+				DoPrimaryArea(material);
 			}
+
+			// Detail properties
 			bool detailFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, m_MaterialEditor, "Detail Textures");
 			if (detailFoldout){
-				MGUI.PropertyGroup(() => {
-					m_MaterialEditor.TexturePropertySingleLine(Styles.detailMaskText, detailMask);
-					m_MaterialEditor.TexturePropertySingleLine(Styles.detailAlbedoText, detailAlbedoMap);
-					m_MaterialEditor.TexturePropertySingleLine(Styles.detailNormalMapText, detailNormalMap, detailNormalMap.textureValue ? detailNormalMapScale : null);
-				});
+				DoDetailArea();
 			}
 
 			// UVs
-			bool needsDetailUV = detailAlbedoMap.textureValue || detailNormalMap.textureValue;
-			bool needsHeightMaskUV = (((workflow.floatValue > 0 && useHeight.floatValue == 1) || (workflow.floatValue == 0 && heightMap.textureValue)) && parallaxMask.textureValue) && samplingMode.floatValue < 3;
-			bool needsEmissMaskUV = emissionEnabled && emissionMask.textureValue;
 			bool uvFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, m_MaterialEditor, "UVs");
 			if (uvFoldout){
-				MGUI.PropertyGroup( () => {
-					if (needsDetailUV || needsHeightMaskUV){
-						GUILayout.Label("Primary", EditorStyles.boldLabel);
-						MGUI.SpaceN2();
-					}
-					EditorGUI.BeginChangeCheck();
-					if (samplingMode.floatValue < 3){
-						MGUI.TextureSOScroll(m_MaterialEditor, albedoMap, uv0Scroll);
-					}
-					else {
-						MGUI.TextureSO(m_MaterialEditor, albedoMap);
-					}
-					if (EditorGUI.EndChangeCheck())
-						emissionMap.textureScaleAndOffset = albedoMap.textureScaleAndOffset; // Apply the main texture scale and offset to the emission texture as well, for Enlighten's sake
-					m_MaterialEditor.ShaderProperty(uv0Rot, "Rotation");
-					if (needsDetailUV || needsHeightMaskUV){
-						MGUI.Space2();
-					}
-					if (needsDetailUV){
-						GUILayout.Label("Detail", EditorStyles.boldLabel);
-						MGUI.SpaceN2();
-						if (samplingMode.floatValue < 3){
-							m_MaterialEditor.ShaderProperty(uvSetSecondary, Styles.uvSetLabel.text);
-							MGUI.Space2();
-						}
-						if (samplingMode.floatValue < 3){
-							MGUI.TextureSOScroll(m_MaterialEditor, detailAlbedoMap, uv1Scroll);
-						}
-						else {
-							MGUI.TextureSO(m_MaterialEditor, detailAlbedoMap);
-						}
-						m_MaterialEditor.ShaderProperty(uv1Rot, "Rotation");
-					}
-					if (needsHeightMaskUV){
-						MGUI.Space2();
-						GUILayout.Label("Height Mask", EditorStyles.boldLabel);
-						MGUI.SpaceN2();
-						MGUI.TextureSOScroll(m_MaterialEditor, parallaxMask, uv2Scroll);
-					}
-					if (needsEmissMaskUV){
-						MGUI.Space2();
-						GUILayout.Label("Emission Mask", EditorStyles.boldLabel);
-						MGUI.SpaceN2();
-						MGUI.TextureSOScroll(m_MaterialEditor, emissionMask, uv3Scroll);
-					}
-				});
+				DoUVArea();
 			}
 
 			// Rendering options
 			bool renderFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, m_MaterialEditor, "Render Settings");
 			if (renderFoldout){
-				MGUI.PropertyGroup( () => {
-					if (samplingMode.floatValue != 4){
-						m_MaterialEditor.ShaderProperty(culling, "Culling");
-					}
-					queueOffset.floatValue = (int)queueOffset.floatValue;
-					m_MaterialEditor.ShaderProperty(queueOffset, "Render Queue Offset");
-				});
-				MGUI.PropertyGroup( () => {
-					MGUI.ToggleFloat(m_MaterialEditor, Styles.highlightsText.text, highlights, specularStrength);
-					MGUI.ToggleFloat(m_MaterialEditor, Styles.reflectionsText.text, reflections, reflectionStrength);
-					MGUI.ToggleFloat(m_MaterialEditor, "Screen Space Reflections", ssr, ssrStrength);
-					if (ssr.floatValue == 1){
-						m_MaterialEditor.ShaderProperty(edgeFade, Styles.edgeFadeText);
-						MGUI.DisplayInfo("\nSSR in VRChat requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs\n\nIt is also is VERY expensive, please use it sparingly!\n");
-						MGUI.SpaceN2();
-					}
-				});
-				MGUI.PropertyGroup( () => {
-					m_MaterialEditor.ShaderProperty(gsaa, "Specular Antialiasing");
-					m_MaterialEditor.EnableInstancingField();
-					MGUI.SpaceN2();
-					m_MaterialEditor.DoubleSidedGIField();
-				});
+				DoRenderingArea();
 			}
 
 			// Watermark and version display
-			MGUI.Space16();
-			if (!EditorGUIUtility.isProSkin){
-				watermark = "Watermark";
-			}
-			Texture2D watermarkTex = (Texture2D)Resources.Load(watermark, typeof(Texture2D));
-			Texture2D patIconTex = (Texture2D)Resources.Load(patIcon, typeof(Texture2D));
-			float buttonSize = 24.0f;
-			float xPos = 53.0f;
-			MGUI.CenteredTexture(watermarkTex, 0, 0);
-			GUILayout.Space(-buttonSize);
-			if (MGUI.LinkButton(patIconTex, buttonSize, buttonSize, xPos)){
-				Application.OpenURL("https://www.patreon.com/mochieshaders");
-			}
-			GUILayout.Space(buttonSize);
-			MGUI.VersionLabel(versionLabel, 12,-16,-30);
+			DoFooter();
 
+			// Setup stuff for decal mode
 			SetDecalRendering(material);
 		}
 
@@ -413,17 +289,89 @@ internal class MochieStandardGUI : ShaderGUI {
 		MGUI.Space8();
 	}
 
-	public override void AssignNewShaderToMaterial(Material material, Shader oldShader, Shader newShader){
-		// _Emission property is lost after assigning Standard shader to the material
-		// thus transfer it before assigning the new shader
-		if (material.HasProperty("_Emission")){
-			material.SetColor("_EmissionColor", material.GetColor("_Emission"));
-		}
-		base.AssignNewShaderToMaterial(material, oldShader, newShader);
-		MaterialChanged(material);
+	void DoVariantArea(){
+		MGUI.PropertyGroup(() => {
+			m_MaterialEditor.ShaderProperty(workflow, "Workflow");
+			m_MaterialEditor.ShaderProperty(blendMode, "Blending Mode");
+			m_MaterialEditor.ShaderProperty(samplingMode, "Sampling Mode");
+			if (samplingMode.floatValue == 3){
+				m_MaterialEditor.ShaderProperty(triplanarFalloff, "Triplanar Falloff");
+			}
+			if (samplingMode.floatValue == 4){
+				m_MaterialEditor.ShaderProperty(edgeFadeMin, "Edge Fade Min");
+				m_MaterialEditor.ShaderProperty(edgeFadeMax, "Edge Fade Max");
+			}
+			if (blendMode.floatValue == 1)
+				m_MaterialEditor.ShaderProperty(alphaCutoff, Styles.alphaCutoffText.text);
+		});
 	}
 
+	void DoPrimaryArea(Material material){
+		MGUI.PropertyGroup( () => {
+			m_MaterialEditor.TexturePropertySingleLine(Styles.albedoText, albedoMap, albedoColor, albedoMap.textureValue ? saturation : null);
+			if (albedoMap.textureValue)
+				MGUI.TexPropLabel("Saturation", 118);
+			if (workflow.floatValue > 0){
+				m_MaterialEditor.TexturePropertySingleLine(workflow.floatValue == 1 ? Styles.packedMapText : Styles.packedMapModText, packedMap);
+				MGUI.sRGBWarning(packedMap);
+				if (packedMap.textureValue){
+					if (workflow.floatValue == 2){
+						MGUI.PropertyGroupLayer(() => {
+							m_MaterialEditor.ShaderProperty(metallicChannel, "Metallic");
+							m_MaterialEditor.ShaderProperty(roughChannel, "Roughness");
+							m_MaterialEditor.ShaderProperty(occlusionChannel, "Occlusion");
+							if (useHeight.floatValue == 1 && samplingMode.floatValue < 3){
+								m_MaterialEditor.ShaderProperty(heightChannel, "Height");
+							}
+						});
+					}
+					MGUI.PropertyGroupLayer( () => {
+						MGUI.ToggleSlider(m_MaterialEditor, "Metallic Strength", metalMult, metallic);
+						MGUI.ToggleSlider(m_MaterialEditor, "Roughness Strength", roughMult, roughness);
+						MGUI.ToggleSlider(m_MaterialEditor, "AO Strength", occMult, occlusionStrength);
+						if (useHeight.floatValue == 1 && samplingMode.floatValue < 3){
+							MGUI.ToggleSlider(m_MaterialEditor, "Height Strength", heightMult, heightMapScale);
+							m_MaterialEditor.ShaderProperty(steps, Styles.stepsText);
+							m_MaterialEditor.ShaderProperty(parallaxOfs, Styles.parallaxOfsText);
+						}
+					});
+					MGUI.Space8();
+				}
+				if (useHeight.floatValue == 1 && samplingMode.floatValue < 3){
+					m_MaterialEditor.TexturePropertySingleLine(Styles.heightMaskText, parallaxMask);
+				}
+			}
+			else {
+				m_MaterialEditor.TexturePropertySingleLine(Styles.metallicMapText, metallicMap, metallic);
+				MGUI.sRGBWarning(metallicMap);
+				m_MaterialEditor.TexturePropertySingleLine(Styles.roughnessText, roughnessMap, roughness);
+				MGUI.sRGBWarning(roughnessMap);
+				m_MaterialEditor.TexturePropertySingleLine(Styles.occlusionText, occlusionMap, occlusionMap.textureValue ? occlusionStrength : null);
+				MGUI.sRGBWarning(occlusionMap);
+				if (samplingMode.floatValue < 3){
+					m_MaterialEditor.TexturePropertySingleLine(Styles.heightMapText, heightMap, heightMap.textureValue ? heightMapScale : null);
+					MGUI.sRGBWarning(heightMap);
+					if (heightMap.textureValue){
+						m_MaterialEditor.TexturePropertySingleLine(Styles.heightMaskText, parallaxMask);
+						m_MaterialEditor.ShaderProperty(steps, Styles.stepsText, 2);
+						m_MaterialEditor.ShaderProperty(parallaxOfs, Styles.parallaxOfsText, 2);
+					}
+				}
+			}
+			m_MaterialEditor.TexturePropertySingleLine(Styles.normalMapText, bumpMap, bumpMap.textureValue ? bumpScale : null);
+			m_MaterialEditor.TexturePropertySingleLine(Styles.reflOverrideText, reflOverride);
+			m_MaterialEditor.TexturePropertySingleLine(Styles.reflCubeText, reflCube, reflCube.textureValue ? cubeThreshold : null);
 
+			MGUI.Space2();
+			if (workflow.floatValue > 0 && samplingMode.floatValue < 3)
+				m_MaterialEditor.ShaderProperty(useHeight, "Packed Height");
+
+			DoSubsurfaceArea();
+			DoEmissionArea(material);
+			
+		});
+	}
+	
 	void DoEmissionArea(Material material){
 		// Emission for GI?
 		if (m_MaterialEditor.EmissionEnabledProperty()){
@@ -443,6 +391,142 @@ internal class MochieStandardGUI : ShaderGUI {
 		else {
 			emissionEnabled = false;
 		}
+	}
+
+	void DoSubsurfaceArea(){
+		m_MaterialEditor.ShaderProperty(subsurface, "Subsurface Scattering");
+		if (subsurface.floatValue == 1){
+			MGUI.PropertyGroup(() => {
+				m_MaterialEditor.TexturePropertySingleLine(Styles.thicknessMapText, thicknessMap, thicknessMap.textureValue ? thicknessMapPower : null);
+				if (thicknessMap.textureValue)
+					MGUI.TexPropLabel("Power", 96);
+				m_MaterialEditor.ShaderProperty(scatterCol, "Subsurface Color");
+				m_MaterialEditor.ShaderProperty(scatterAlbedoTint, "Base Color Tint");
+				MGUI.Space8();
+				m_MaterialEditor.ShaderProperty(scatterIntensity, "Direct Strength");
+				m_MaterialEditor.ShaderProperty(scatterAmbient, "Indirect Strength");
+				m_MaterialEditor.ShaderProperty(scatterPow, "Power");
+				m_MaterialEditor.ShaderProperty(scatterDist, "Distance");
+				m_MaterialEditor.ShaderProperty(wrappingFactor, "Wrapping Factor");
+			});
+		}
+	}
+
+	void DoDetailArea(){
+		MGUI.PropertyGroup(() => {
+			m_MaterialEditor.TexturePropertySingleLine(Styles.detailMaskText, detailMask);
+			m_MaterialEditor.TexturePropertySingleLine(Styles.detailAlbedoText, detailAlbedoMap, detailAlbedoMap.textureValue ? detailAlbedoBlend : null);
+			m_MaterialEditor.TexturePropertySingleLine(Styles.detailNormalMapText, detailNormalMap, detailNormalMap.textureValue ? detailNormalMapScale : null);
+			m_MaterialEditor.TexturePropertySingleLine(Styles.detailRoughnessMapText, detailRoughnessMap, detailRoughnessMap.textureValue ? detailRoughBlend : null);
+			MGUI.sRGBWarning(detailRoughnessMap);
+			m_MaterialEditor.TexturePropertySingleLine(Styles.detailAOMapText, detailAOMap, detailAOMap.textureValue ? detailAOBlend : null);
+			MGUI.sRGBWarning(detailAOMap);
+		});
+	}
+
+	void DoUVArea(){
+		bool needsDetailUV = detailAlbedoMap.textureValue || detailNormalMap.textureValue || detailRoughnessMap.textureValue || detailAOMap.textureValue;
+		bool needsHeightMaskUV = (((workflow.floatValue > 0 && useHeight.floatValue == 1) || (workflow.floatValue == 0 && heightMap.textureValue)) && parallaxMask.textureValue) && samplingMode.floatValue < 3;
+		bool needsEmissMaskUV = emissionEnabled && emissionMask.textureValue;
+		MGUI.PropertyGroup( () => {
+			if (needsDetailUV || needsHeightMaskUV){
+				GUILayout.Label("Primary", EditorStyles.boldLabel);
+				MGUI.SpaceN2();
+			}
+			EditorGUI.BeginChangeCheck();
+			if (samplingMode.floatValue < 3){
+				MGUI.TextureSOScroll(m_MaterialEditor, albedoMap, uv0Scroll);
+			}
+			else {
+				MGUI.TextureSO(m_MaterialEditor, albedoMap);
+			}
+			if (EditorGUI.EndChangeCheck())
+				emissionMap.textureScaleAndOffset = albedoMap.textureScaleAndOffset; 
+			m_MaterialEditor.ShaderProperty(uv0Rot, "Rotation");
+			if (needsDetailUV || needsHeightMaskUV){
+				MGUI.Space2();
+			}
+			if (needsDetailUV){
+				GUILayout.Label("Detail", EditorStyles.boldLabel);
+				MGUI.SpaceN2();
+				if (samplingMode.floatValue < 3){
+					m_MaterialEditor.ShaderProperty(uvSetSecondary, Styles.uvSetLabel.text);
+					MGUI.Space2();
+				}
+				if (samplingMode.floatValue < 3){
+					MGUI.TextureSOScroll(m_MaterialEditor, detailAlbedoMap, uv1Scroll);
+				}
+				else {
+					MGUI.TextureSO(m_MaterialEditor, detailAlbedoMap);
+				}
+				m_MaterialEditor.ShaderProperty(uv1Rot, "Rotation");
+			}
+			if (needsHeightMaskUV){
+				MGUI.Space2();
+				GUILayout.Label("Height Mask", EditorStyles.boldLabel);
+				MGUI.SpaceN2();
+				MGUI.TextureSOScroll(m_MaterialEditor, parallaxMask, uv2Scroll);
+			}
+			if (needsEmissMaskUV){
+				MGUI.Space2();
+				GUILayout.Label("Emission Mask", EditorStyles.boldLabel);
+				MGUI.SpaceN2();
+				MGUI.TextureSOScroll(m_MaterialEditor, emissionMask, uv3Scroll);
+			}
+		});
+	}
+
+	void DoRenderingArea(){
+		MGUI.PropertyGroup( () => {
+			if (samplingMode.floatValue != 4){
+				m_MaterialEditor.ShaderProperty(culling, "Culling");
+			}
+			queueOffset.floatValue = (int)queueOffset.floatValue;
+			m_MaterialEditor.ShaderProperty(queueOffset, "Render Queue Offset");
+		});
+		MGUI.PropertyGroup( () => {
+			MGUI.ToggleFloat(m_MaterialEditor, Styles.highlightsText.text, highlights, specularStrength);
+			MGUI.ToggleFloat(m_MaterialEditor, Styles.reflectionsText.text, reflections, reflectionStrength);
+			MGUI.ToggleFloat(m_MaterialEditor, "Screen Space Reflections", ssr, ssrStrength);
+			if (ssr.floatValue == 1){
+				m_MaterialEditor.ShaderProperty(edgeFade, Styles.edgeFadeText);
+				MGUI.DisplayInfo("\nSSR in VRChat requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs\n\nIt is also is VERY expensive, please use it sparingly!\n");
+				MGUI.SpaceN2();
+			}
+		});
+		MGUI.PropertyGroup( () => {
+			m_MaterialEditor.ShaderProperty(gsaa, "Specular Antialiasing");
+			m_MaterialEditor.EnableInstancingField();
+			MGUI.SpaceN2();
+			m_MaterialEditor.DoubleSidedGIField();
+		});
+	}
+
+	void DoFooter(){
+		MGUI.Space16();
+		if (!EditorGUIUtility.isProSkin){
+			watermark = "Watermark";
+		}
+		Texture2D watermarkTex = (Texture2D)Resources.Load(watermark, typeof(Texture2D));
+		Texture2D patIconTex = (Texture2D)Resources.Load(patIcon, typeof(Texture2D));
+		float buttonSize = 24.0f;
+		float xPos = 53.0f;
+		MGUI.CenteredTexture(watermarkTex, 0, 0);
+		GUILayout.Space(-buttonSize);
+		if (MGUI.LinkButton(patIconTex, buttonSize, buttonSize, xPos)){
+			Application.OpenURL("https://www.patreon.com/mochieshaders");
+		}
+		GUILayout.Space(buttonSize);
+		MGUI.VersionLabel(versionLabel, 12,-16,-30);
+	}
+	public override void AssignNewShaderToMaterial(Material material, Shader oldShader, Shader newShader){
+		// _Emission property is lost after assigning Standard shader to the material
+		// thus transfer it before assigning the new shader
+		if (material.HasProperty("_Emission")){
+			material.SetColor("_EmissionColor", material.GetColor("_Emission"));
+		}
+		base.AssignNewShaderToMaterial(material, oldShader, newShader);
+		MaterialChanged(material);
 	}
 
 	public static void SetupMaterialWithBlendMode(Material material){
@@ -523,6 +607,9 @@ internal class MochieStandardGUI : ShaderGUI {
 		MGUI.SetKeyword(material, "BLOOM", samplingMode == 2);
 		MGUI.SetKeyword(material, "_COLORCOLOR_ON", samplingMode == 3);
 		MGUI.SetKeyword(material, "EFFECT_BUMP", samplingMode == 4);
+		MGUI.SetKeyword(material, "GEOM_TYPE_LEAF", material.GetTexture("_DetailRoughnessMap"));
+		MGUI.SetKeyword(material, "GEOM_TYPE_FROND", material.GetTexture("_DetailAOMap"));
+		MGUI.SetKeyword(material, "GEOM_TYPE_MESH", material.GetInt("_Subsurface") == 1);
 		if (samplingMode < 3){
 			if (!material.GetTexture("_PackedMap"))
 				MGUI.SetKeyword(material, "_PARALLAXMAP", material.GetTexture("_ParallaxMap"));

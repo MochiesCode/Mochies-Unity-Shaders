@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using UnityEngine;
 
 namespace Mochie {
 	public class Toggles {
@@ -8,18 +9,35 @@ namespace Mochie {
 		List<int> mainFoldouts = new List<int>();
 		List<int> subFoldouts = new List<int>();
 
-		public Toggles(string[] s){
+		// public Toggles(string[] s){
+		// 	headers = s;
+		// 	toggles = new bool[s.Length];
+		// 	toggles[0] = true;
+			
+		// 	for (int i = 0; i < s.Length; i++){
+		// 		if (s[i].ToUpper() == s[i])
+		// 			mainFoldouts.Add(i);
+		// 		else
+		// 			subFoldouts.Add(i);
+		// 		if (i > 0)
+		// 			toggles[i] = false;
+		// 	}
+		// }
+
+		public Toggles(string[] s, int defaultOffset){
 			headers = s;
 			toggles = new bool[s.Length];
-			toggles[0] = true;
+
+			for (int i = 0; i < s.Length; i++){
+				if (i <= defaultOffset)
+					toggles[i] = true;
+			}
 			
 			for (int i = 0; i < s.Length; i++){
 				if (s[i].ToUpper() == s[i])
 					mainFoldouts.Add(i);
 				else
 					subFoldouts.Add(i);
-				if (i > 0)
-					toggles[i] = false;
 			}
 		}
 
@@ -51,6 +69,11 @@ namespace Mochie {
 
 		public bool[] GetToggles(){ 
 			return toggles; 
+		}
+
+		public static void CollapseFoldouts(Material mat, Dictionary<Material, Toggles> foldouts, int startIndex){
+			for (int i = startIndex; i <= foldouts[mat].GetToggles().Length-1; i++)
+				foldouts[mat].SetState(i, false);
 		}
 	}
 }
