@@ -25,7 +25,7 @@ float _Hue, _Saturation, _Contrast, _HDR, _AutoShiftSpeed;
 struct appdata {
     float3 vertex : POSITION;
     float4 uv0 : TEXCOORD0;
-	float4 center : TEXCOORD1;
+	float3 center : TEXCOORD1;
 	float4 color : COLOR;
 	UNITY_VERTEX_INPUT_INSTANCE_ID
 };
@@ -33,12 +33,20 @@ struct appdata {
 struct v2f {
     float4 pos : SV_POSITION;
     float4 uv0 : TEXCOORD0;
-	float4 uv1 : TEXCOORD1;
-    float falloff : TEXCOORD2;
-    float4 projPos : TEXCOORD3;
-	float pulse : TEXCOORD4;
-	float3 center : TEXCOORD5;
-	float3 vertex : TEXCOORD6;
+	#if DISTORTION_ENABLED
+		float4 uv1 : TEXCOORD1;
+	#endif
+	#if FALLOFF_ENABLED
+    	float falloff : TEXCOORD2;
+		float3 center : TEXCOORD3;
+		float3 vertex : TEXCOORD4;
+	#endif
+	#if FADING_ENABLED
+    	float4 projPos : TEXCOORD5;
+	#endif
+	#if PULSE_ENABLED
+		float pulse : TEXCOORD6;
+	#endif
 	float4 color : COLOR;
     UNITY_FOG_COORDS(7)
 	UNITY_VERTEX_INPUT_INSTANCE_ID

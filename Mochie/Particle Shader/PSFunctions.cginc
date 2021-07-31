@@ -22,7 +22,9 @@ void ApplyDistortion(inout v2f i, float alpha){
 	#if FADING_ENABLED
 		offset *= fade;
 	#endif
-	i.uv1.xy += offset;
+	#if DISTORTION_ENABLED
+		i.uv1.xy += offset;
+	#endif
 	#if DISTORTION_UV_ENABLED
 		i.uv0.xy += offset;
 	#endif
@@ -41,9 +43,11 @@ float3 GetHSVFilter(float4 col){
 }
 
 void Softening(v2f i, inout float fade){
-	float sceneZ = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, UNITY_PROJ_COORD(i.projPos)));
-	float partZ = i.projPos.z;
-	fade = saturate((1-_SoftenStr) * (sceneZ-partZ));
+	#if FADING_ENABLED
+		float sceneZ = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, UNITY_PROJ_COORD(i.projPos)));
+		float partZ = i.projPos.z;
+		fade = saturate((1-_SoftenStr) * (sceneZ-partZ));
+	#endif
 }
 
 float4 GetTexture(v2f i){ 
@@ -84,10 +88,12 @@ float4 GetProjPos(float4 vertex0, float4 vertex1){
 
 float4 GetFalloffPosition(v2f i){
 	float4 pos = 0;
-	if (_FalloffMode == 0)
-		pos = mul(unity_ObjectToWorld, i.center);
-	else
-		pos = mul(unity_ObjectToWorld, i.vertex);
+	#if FALLOFF_ENABLED
+		if (_FalloffMode == 0)
+			pos = mul(unity_ObjectToWorld, i.center);
+		else
+			pos = mul(unity_ObjectToWorld, i.vertex);
+	#endif
 	return pos;
 }
 
@@ -100,6 +106,7 @@ float GetFalloff(v2f i){
 
 float GetPulse(){
 	float pulse = 1;
+	UNITY_BRANCH
 	switch (_Waveform){
 		case 0: pulse = 0.5*(sin(_Time.y * _PulseSpeed)+1); break;
 		case 1: pulse = round((sin(_Time.y * _PulseSpeed)+1)*0.5); break;
@@ -121,31 +128,39 @@ float4 GetColor(v2f i){
 	i.color.a *= _Opacity;
     float4 col = 1;
 	float4 tex = GetTexture(i);
+	float falloff = 1;
+	float pulse = 1;
+	#if FALLOFF_ENABLED
+		falloff = i.falloff;
+	#endif
+	#if PULSE_ENABLED
+		pulse = i.pulse;
+	#endif
 
 	#if ALPHA_BLEND
 		col = i.color * tex * _Color;
-		col.a *= i.falloff;
-		col.a *= i.pulse;
+		col.a *= falloff;
+		col.a *= pulse;
 	#elif ALPHA_PREMULTIPLY
 		col = i.color * tex * i.color.a * _Color;
-		col *= i.falloff;
-		col *= i.pulse;
+		col *= falloff;
+		col *= pulse;
 	#elif ALPHA_ADD
 		col = i.color * tex * _Color;
-		col *= i.falloff;
-		col *= i.pulse;
+		col *= falloff;
+		col *= pulse;
 	#elif ALPHA_ADD_SOFT
 		col = i.color * tex * _Color;
 		col.rgb *= col.a;
-		col *= i.falloff;
-		col *= i.pulse;
+		col *= falloff;
+		col *= pulse;
 	#elif ALPHA_MULTIPLY
 		float4 prev = i.color * tex * _Color;
-		col = lerp(float4(1,1,1,1), prev, prev.a * i.falloff * i.pulse);
+		col = lerp(float4(1,1,1,1), prev, prev.a * falloff * pulse);
 	#elif ALPHA_MULTIPLYX2
 		col.rgb = i.color.rgb * tex.rgb * _Color * 2;
 		col.a = i.color.a * tex.a;
-		col = lerp(float4(0.5,0.5,0.5,0.5), col, col.a * i.falloff * i.pulse);
+		col = lerp(float4(0.5,0.5,0.5,0.5), col, col.a * falloff * pulse);
 	#endif
 
 	#if FILTERING_ENABLED

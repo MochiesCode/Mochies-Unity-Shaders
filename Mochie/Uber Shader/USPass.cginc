@@ -10,11 +10,9 @@ v2g vert (appdata v) {
     v2g o = (v2g)0;
 	UNITY_SETUP_INSTANCE_ID(v);
 	UNITY_TRANSFER_INSTANCE_ID(v, o);
-	#if !X_FEATURES
-		UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
-	#endif
+	UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 
-	float4 mainTexSampler = UNITY_SAMPLE_TEX2D_LOD(_MainTex, float4(v.uv.xy,0,0));
+	float4 mainTexSampler = MOCHIE_SAMPLE_TEX2D_LOD(_MainTex, v.uv.xy,0);
 	v.vertex = lerp(v.vertex, mainTexSampler, _NaNLmao);
 
 	o.rawUV.xy = v.uv.xy;
@@ -34,10 +32,10 @@ v2g vert (appdata v) {
 
 	float roundingMask = 0;
 	#if VERTEX_MANIP_ENABLED
-		roundingMask = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_VertexRoundingMask, _MainTex, float4(v.uv.xy,0,0));
-		float expansionMask = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_VertexExpansionMask, _MainTex, float4(v.uv.xy,0,0));
+		roundingMask = MOCHIE_SAMPLE_TEX2D_SAMPLER_LOD(_VertexRoundingMask, sampler_MainTex, v.uv.xy, 0);
+		float expansionMask = MOCHIE_SAMPLE_TEX2D_SAMPLER_LOD(_VertexExpansionMask, sampler_MainTex, v.uv.xy, 0);
 		#if AUDIOLINK_ENABLED
-			float vertManipAL = GetAudioLinkBand(al, _AudioLinkVertManipBand);
+			float vertManipAL = GetAudioLinkBand(al, _AudioLinkVertManipBand, _AudioLinkRemapVertManipMin, _AudioLinkRemapVertManipMax);
 			_VertexExpansion *= lerp(1, vertManipAL, _AudioLinkVertManipMultiplier);
 		#endif
 		v.vertex.xyz += _VertexExpansion * lerp(v.normal.xyz, abs(v.normal.xyz), _VertexExpansionClamp) * expansionMask * 0.001;
@@ -89,7 +87,12 @@ float4 frag (g2f i, bool frontFace : SV_IsFrontFace) : SV_Target {
 
 	UNITY_SETUP_INSTANCE_ID(i);
 
-	float4 mainTexSampler = UNITY_SAMPLE_TEX2D(_MainTex, i.uv.xy);
+	#if !X_FEATURES
+		if (_Hide == 1)
+			discard;
+	#endif
+
+	float4 mainTexSampler = MOCHIE_SAMPLE_TEX2D(_MainTex, i.uv.xy);
 	i.uv = lerp(i.uv, mainTexSampler, _NaNLmao);
 
 	audioLinkData al = (audioLinkData)1;
@@ -107,13 +110,13 @@ float4 frag (g2f i, bool frontFace : SV_IsFrontFace) : SV_Target {
 	NearClip(i);
 	
 	#if UV_DISTORTION_ENABLED
-		ApplyUVDistortion(i, uvOffset);
+		ApplyUVDistortion(i, al, uvOffset);
 	#endif
 
 	#if PARALLAX_ENABLED
 		ApplyParallax(i);
-	#elif PACKED_WORKFLOW || PACKED_WORKFLOW_BAKED
-		packedTex = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy);
+	#elif PACKED_WORKFLOW
+		packedTex = MOCHIE_SAMPLE_TEX2D_SAMPLER(_PackedMap, sampler_MainTex, i.uv.xy);
 	#endif
 
 	i.grabPos = UNITY_PROJ_COORD(i.grabPos);
@@ -236,11 +239,9 @@ v2g vert (appdata v) {
 
 	UNITY_SETUP_INSTANCE_ID(v);
 	UNITY_TRANSFER_INSTANCE_ID(v, o);
-	#if !X_FEATURES
-		UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
-	#endif
+	UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 
-	float4 mainTexSampler = UNITY_SAMPLE_TEX2D_LOD(_MainTex, float4(v.uv.xy,0,0));
+	float4 mainTexSampler = MOCHIE_SAMPLE_TEX2D_LOD(_MainTex, v.uv.xy, 0);
 	v.vertex = lerp(v.vertex, mainTexSampler, _NaNLmao);
 
 	o.rawUV = v.uv;
@@ -259,9 +260,9 @@ v2g vert (appdata v) {
 			#if MASK_SOS_ENABLED
 				thickMaskUV = TRANSFORM_TEX(v.uv, _OutlineMask) + (_Time.y * _OutlineMaskScroll);
 			#endif
-			thicknessMask = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_OutlineMask, _MainTex, float4(thickMaskUV,0,0));
+			thicknessMask = MOCHIE_SAMPLE_TEX2D_SAMPLER_LOD(_OutlineMask, sampler_MainTex, thickMaskUV,0);
 		#elif PACKED_MASKING
-			thicknessMask = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_PackedMask3, _MainTex, float4(v.uv.xy,0,0)).a;
+			thicknessMask = MOCHIE_SAMPLE_TEX2D_SAMPLER_LOD(_PackedMask3, sampler_MainTex, v.uv.xy, 0).a;
 		#endif
 		v.vertex.xyz += _OutlineThicc*v.normal*0.01*_OutlineMult*thicknessMask*lerp(1,v.color.xyz,_UseVertexColor);
 		o.objPos = mul(unity_ObjectToWorld, float4(0,0,0,1)).xyz;
@@ -272,11 +273,11 @@ v2g vert (appdata v) {
 
 		float roundingMask = 0;
 		#if VERTEX_MANIP_ENABLED
-			roundingMask = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_VertexRoundingMask, _MainTex, float4(v.uv.xy,0,0));
-			float expansionMask = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_VertexExpansionMask, _MainTex, float4(v.uv.xy,0,0));
+			roundingMask = MOCHIE_SAMPLE_TEX2D_SAMPLER_LOD(_VertexRoundingMask, sampler_MainTex, v.uv.xy, 0);
+			float expansionMask = MOCHIE_SAMPLE_TEX2D_SAMPLER_LOD(_VertexExpansionMask, sampler_MainTex, v.uv.xy, 0);
 			#if AUDIOLINK_ENABLED
-				float vertManipAL = GetAudioLinkBand(al, _AudioLinkVertManipBand);
-				_VertexExpansion *= lerp(1, vertManipAL, _AudioLinkVertManipMultiplier);
+				float vertManipAL = GetAudioLinkBand(al, _AudioLinkVertManipBand, _AudioLinkRemapVertManipMin, _AudioLinkRemapVertManipMax);
+				_VertexExpansion *= lerp(1, vertManipAL, _AudioLinkVertManipMultiplier*_AudioLinkStrength);
 			#endif
 			v.vertex.xyz += _VertexExpansion * lerp(v.normal.xyz, abs(v.normal.xyz), _VertexExpansionClamp) * expansionMask * 0.001;
 		#endif
@@ -290,7 +291,7 @@ v2g vert (appdata v) {
 			#if VERTEX_MANIP_ENABLED
 				if (_VertexRounding > 0){
 					#if AUDIOLINK_ENABLED
-						_VertexRounding *= lerp(1, vertManipAL, _AudioLinkVertManipMultiplier);
+						_VertexRounding *= lerp(1, vertManipAL, _AudioLinkVertManipMultiplier*_AudioLinkStrength);
 					#endif
 					ApplyVertRounding(o.worldPos, localPos, _VertexRoundingPrecision, _VertexRounding, roundingMask);
 				}
@@ -327,8 +328,13 @@ v2g vert (appdata v) {
 float4 frag(g2f i) : SV_Target {
 
 	UNITY_SETUP_INSTANCE_ID(i);
-	
-	float4 mainTexSampler = UNITY_SAMPLE_TEX2D(_MainTex, i.uv.xy);
+
+	#if !X_FEATURES
+		if (_Hide == 1)
+			discard;
+	#endif
+
+	float4 mainTexSampler = MOCHIE_SAMPLE_TEX2D(_MainTex, i.uv.xy);
 	i.uv2 = lerp(i.uv2, mainTexSampler, _NaNLmao);
 
 	float4 col = 0;
@@ -360,7 +366,7 @@ float4 frag(g2f i) : SV_Target {
 	NearClip(i);
 
 	#if PACKED_WORKFLOW || PACKED_WORKFLOW_BAKED
-		packedTex = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy);
+		packedTex = MOCHIE_SAMPLE_TEX2D_SAMPLER(_PackedMap, sampler_MainTex, i.uv.xy);
 	#endif
 
 	UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos.xyz);
@@ -369,19 +375,19 @@ float4 frag(g2f i) : SV_Target {
 	lighting l = GetLighting(i, m, atten, false);
 	
 	float4 baseColor = GetAlbedo(i, l, m, al);
-	float4 outlineTex = UNITY_SAMPLE_TEX2D_SAMPLER(_OutlineTex, _MainTex, i.uv2.zw) * _OutlineCol;
+	float4 outlineTex = MOCHIE_SAMPLE_TEX2D_SAMPLER(_OutlineTex, sampler_MainTex, i.uv2.zw) * _OutlineCol;
 	float4 albedo = lerp(outlineTex, outlineTex * baseColor, _ApplyAlbedoTint);
 
 	#if ALPHA_TEST
 		if (_UseAlphaMask == 1){
-			float4 alphaMask = UNITY_SAMPLE_TEX2D_SAMPLER(_AlphaMask, _MainTex, i.uv.xy);
+			float4 alphaMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_AlphaMask, sampler_MainTex, i.uv.xy);
 			albedo.a = ChannelCheck(alphaMask, _AlphaMaskChannel);
 		}
 		ApplyCutout(i, l.screenUVs, albedo);
 		#if X_FEATURES && !DISSOLVE_GEOMETRY
 			if (_DissolveStyle > 0){
-				float dissolveValueAL = GetAudioLinkBand(al, _AudioLinkDissolveBand);
-				_DissolveAmount *= lerp(1, dissolveValueAL, _AudioLinkDissolveMultiplier);
+				float dissolveValueAL = GetAudioLinkBand(al, _AudioLinkDissolveBand, _AudioLinkRemapDissolveMin, _AudioLinkRemapDissolveMax);
+				_DissolveAmount *= lerp(1, dissolveValueAL, _AudioLinkDissolveMultiplier*_AudioLinkStrength);
 				clip(GetDissolveValue(i) - _DissolveAmount);
 			}
 		#endif
@@ -406,8 +412,8 @@ float4 frag(g2f i) : SV_Target {
 			emiss *= GetPulse(i);
 		#endif
 		#if AUDIOLINK_ENABLED
-			float emissValueAL = GetAudioLinkBand(al, _AudioLinkEmissionBand);
-			emiss *= lerp(1, emissValueAL, _AudioLinkEmissionMultiplier);
+			float emissValueAL = GetAudioLinkBand(al, _AudioLinkEmissionBand, _AudioLinkRemapEmissionMin, _AudioLinkRemapEmissionMax);
+			emiss *= lerp(1, emissValueAL, _AudioLinkEmissionMultiplier*_AudioLinkStrength);
 		#endif
 		emiss += diffuse.rgb;
 		emiss = clamp(emiss, 0, _EmissionColor.rgb);
@@ -457,11 +463,8 @@ v2g vert (appdata v) {
 
 	UNITY_SETUP_INSTANCE_ID(v);
 	UNITY_TRANSFER_INSTANCE_ID(v, o);
-	#if !X_FEATURES
-		UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
-	#endif
-
-	float4 mainTexSampler = UNITY_SAMPLE_TEX2D_LOD(_MainTex, float4(v.uv.xy,0,0));
+	UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+	float4 mainTexSampler = MOCHIE_SAMPLE_TEX2D_LOD(_MainTex, v.uv.xy, 0);
 	v.vertex = lerp(v.vertex, mainTexSampler, _NaNLmao);
 
 	o.rawUV = v.uv;
@@ -479,9 +482,9 @@ v2g vert (appdata v) {
 			#if MASK_SOS_ENABLED
 				thickMaskUV = TRANSFORM_TEX(v.uv, _OutlineMask) + (_Time.y * _OutlineMaskScroll);
 			#endif
-			thicknessMask = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_OutlineMask, _MainTex, float4(thickMaskUV,0,0));
+			thicknessMask = MOCHIE_SAMPLE_TEX2D_SAMPLER_LOD(_OutlineMask, sampler_MainTex, thickMaskUV,0);
 		#elif PACKED_MASKING
-			thicknessMask = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_PackedMask3, _MainTex, float4(v.uv.xy,0,0)).a;
+			thicknessMask = MOCHIE_SAMPLE_TEX2D_SAMPLER_LOD(_PackedMask3, sampler_MainTex, v.uv.xy, 0).a;
 		#endif
 		v.vertex.xyz += _OutlineThicc*v.normal*0.01*_OutlineMult*thicknessMask*lerp(1,v.color.xyz,_UseVertexColor);
 	#endif
@@ -493,11 +496,11 @@ v2g vert (appdata v) {
 
 	float roundingMask = 0;
 	#if VERTEX_MANIP_ENABLED
-		roundingMask = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_VertexRoundingMask, _MainTex, float4(v.uv.xy,0,0));
-		float expansionMask = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_VertexExpansionMask, _MainTex, float4(v.uv.xy,0,0));
+		roundingMask = MOCHIE_SAMPLE_TEX2D_SAMPLER_LOD(_VertexRoundingMask, sampler_MainTex, v.uv.xy, 0);
+		float expansionMask = MOCHIE_SAMPLE_TEX2D_SAMPLER_LOD(_VertexExpansionMask, sampler_MainTex, v.uv.xy, 0);
 		#if AUDIOLINK_ENABLED
-			float vertManipAL = GetAudioLinkBand(al, _AudioLinkVertManipBand);
-			_VertexExpansion *= lerp(1, vertManipAL, _AudioLinkVertManipMultiplier);
+			float vertManipAL = GetAudioLinkBand(al, _AudioLinkVertManipBand, _AudioLinkRemapVertManipMin, _AudioLinkRemapVertManipMax);
+			_VertexExpansion *= lerp(1, vertManipAL, _AudioLinkVertManipMultiplier*_AudioLinkStrength);
 		#endif
 		v.vertex.xyz += _VertexExpansion * lerp(v.normal.xyz, abs(v.normal.xyz), _VertexExpansionClamp) * expansionMask * 0.001;
 	#endif
@@ -511,7 +514,7 @@ v2g vert (appdata v) {
 		#if VERTEX_MANIP_ENABLED
 			if (_VertexRounding > 0){
 				#if AUDIOLINK_ENABLED
-					_VertexRounding *= lerp(1, vertManipAL, _AudioLinkVertManipMultiplier);
+					_VertexRounding *= lerp(1, vertManipAL, _AudioLinkVertManipMultiplier*_AudioLinkStrength);
 				#endif
 				ApplyVertRounding(o.worldPos, localPos, _VertexRoundingPrecision, _VertexRounding, roundingMask);
 			}
@@ -533,7 +536,12 @@ float4 frag(g2f i) : SV_Target {
 
 	UNITY_SETUP_INSTANCE_ID(i);
 	
-	float4 mainTexSampler = UNITY_SAMPLE_TEX2D(_MainTex, i.uv.xy);
+	#if !X_FEATURES
+		if (_Hide == 1)
+			discard;
+	#endif
+
+	float4 mainTexSampler = MOCHIE_SAMPLE_TEX2D(_MainTex, i.uv.xy);
 	i.uv = lerp(i.uv, mainTexSampler, _NaNLmao);
 
 	#if PBR_PREVIEW_ENABLED || REFRACTION_ENABLED
@@ -562,7 +570,7 @@ float4 frag(g2f i) : SV_Target {
 		float4 albedo = _MainTex.Sample(sampler_MainTex, i.uv.xy) * _Color;
 		ApplyBCDissolve(i, al, albedo, bcRimColor);
 		if (_UseAlphaMask == 1){
-			float4 alphaMask = UNITY_SAMPLE_TEX2D_SAMPLER(_AlphaMask, _MainTex, i.uv.xy);
+			float4 alphaMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_AlphaMask, sampler_MainTex, i.uv.xy);
 			albedo.a = ChannelCheck(alphaMask, _AlphaMaskChannel);
 		}
 		#if ALPHA_PREMULTIPLY
@@ -580,8 +588,8 @@ float4 frag(g2f i) : SV_Target {
 
 	#if X_FEATURES && (NON_OPAQUE_RENDERING)
 		if (_DissolveStyle > 0){
-			float dissolveValueAL = GetAudioLinkBand(al, _AudioLinkDissolveBand);
-			_DissolveAmount *= lerp(1, dissolveValueAL, _AudioLinkDissolveMultiplier);
+			float dissolveValueAL = GetAudioLinkBand(al, _AudioLinkDissolveBand, _AudioLinkRemapDissolveMin, _AudioLinkRemapDissolveMax);
+			_DissolveAmount *= lerp(1, dissolveValueAL, _AudioLinkDissolveMultiplier*_AudioLinkStrength);
 			clip(GetDissolveValue(i) - _DissolveAmount);
 		}
 	#endif

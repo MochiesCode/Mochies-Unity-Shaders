@@ -10,9 +10,10 @@ float2 AlignWithGrabTexel(float2 uv){
 
 void GetDepth(v2f i, out float3 wPos, out float3 wNorm, out float depth){
     depth = Linear01Depth(DecodeFloatRG(tex2Dproj(_CameraDepthTexture, i.uv)));
-    float4 vPos = float4(i.raycast * depth, 1);
+	float3 raycast = i.raycast * (_ProjectionParams.z / i.raycast.z);
+    float4 vPos = float4(raycast * depth, 1);
     wPos = mul(unity_CameraToWorld, vPos).xyz;
-	wNorm = normalize(cross(ddy_fine(wPos), ddx_fine(wPos)));
+	wNorm = normalize(cross(ddy(wPos), ddx(wPos)));
 }
 
 float GetRadius(v2f i, float3 pos, float range, float falloff){
@@ -164,7 +165,7 @@ float2 GetShakeTime(){
         shakeTime.x = sin(_Time.y * _ShakeSpeedX * 0.2);
         shakeTime.y = sin(_Time.y * _ShakeSpeedY * 0.2);
         if (_ShakeModel == 2)
-            shakeTime = round(shakeTime);
+            shakeTime = floor(shakeTime*400)/400;
     }
     else {
         shakeTime = _Time.x * _ShakeSpeedXY;

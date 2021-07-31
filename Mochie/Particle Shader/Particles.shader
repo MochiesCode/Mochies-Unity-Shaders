@@ -80,16 +80,16 @@ Shader "Mochie/Particles" {
             #pragma fragment frag
             #pragma target 5.0
             #pragma multi_compile_particles
-			#pragma shader_feature _ _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON _COLORCOLOR_ON _SPECGLOSSMAP _METALLICGLOSSMAP _PARALLAXMAP
-			#pragma shader_feature _ALPHATEST_ON
-			#pragma shader_feature _COLOROVERLAY_ON
-			#pragma shader_feature EFFECT_BUMP
-			#pragma shader_feature _NORMALMAP
-			#pragma shader_feature _DETAIL_MULX2
-			#pragma shader_feature _ALPHAMODULATE_ON
-			#pragma shader_feature DEPTH_OF_FIELD
-			#pragma shader_feature _REQUIRE_UV2
-			#pragma shader_feature _FADING_ON
+			#pragma shader_feature_local _ _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON _ALPHA_ADD_ON _ALPHA_ADD_SOFT_ON _ALPHA_MUL_ON _ALPHA_MULX2_ON
+			#pragma shader_feature_local _ALPHATEST_ON
+			#pragma shader_feature_local _FILTERING_ON
+			#pragma shader_feature_local _DISTORTION_ON
+			#pragma shader_feature_local _DISTORTION_UV_ON
+			#pragma shader_feature_local _LAYERED_TEX_ON
+			#pragma shader_feature_local _PULSE_ON
+			#pragma shader_feature_local _FALLOFF_ON
+			#pragma shader_feature_local _FLIPBOOK_BLENDING_ON
+			#pragma shader_feature_local _FADING_ON
             #include "PSDefines.cginc"
 
             v2f vert (appdata v){
@@ -99,17 +99,17 @@ Shader "Mochie/Particles" {
 				UNITY_SETUP_INSTANCE_ID(v);
                 UNITY_TRANSFER_INSTANCE_ID(v, o);
                 o.pos = UnityObjectToClipPos(v.vertex);
-				
+				o.uv0 = v.uv0;
+				o.color = v.color;
+
 				#if FADING_ENABLED
 					o.projPos = GetProjPos(v.vertex.xyzz, o.pos);
 				#endif
 
-				o.pulse = 1;
 				#if PULSE_ENABLED
                 	o.pulse = GetPulse();
 				#endif
 
-				o.falloff = 1;
 				#if FALLOFF_ENABLED
 					o.center = v.center;
 					o.vertex = v.vertex;
@@ -119,11 +119,10 @@ Shader "Mochie/Particles" {
 						o.pos = 0.0/_NaNLmao;
 				#endif
 
-                o.uv0 = v.uv0;
-				o.color = v.color;
                 #if DISTORTION_ENABLED
                     o.uv1 = ComputeGrabScreenPos(o.pos);
                 #endif
+				
                 return o;
             }
 
@@ -133,6 +132,5 @@ Shader "Mochie/Particles" {
             ENDCG
         }
     }
-    Fallback "Particles/Additive"
     CustomEditor "PSEditor"
 }

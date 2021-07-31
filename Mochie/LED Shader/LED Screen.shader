@@ -23,8 +23,8 @@ Shader "Mochie/LED Screen" {
 		CGPROGRAM
 		#pragma surface surf Standard fullforwardshadows
 		#pragma target 5.0
-		#pragma shader_feature _SPECGLOSSMAP
-		#pragma shader_feature _EMISSION
+		#pragma shader_feature_local _SPECGLOSSMAP
+		#pragma shader_feature_local _EMISSION
 
 		sampler2D _MainTex;
 		sampler2D _RGBSubPixelTex;

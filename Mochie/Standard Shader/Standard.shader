@@ -12,7 +12,7 @@ Shader "Mochie/Standard" {
     Properties {
 
 		[Enum(Opaque,0, Cutout,1, Fade,2, Transparent,3)]_BlendMode("Blending Mode", Int) = 0
-		[Enum(Standard,0, Packed (Baked),1, Packed (Modular),2)]_Workflow("Workflow", Int) = 0
+		[Enum(Standard,0, Packed,1)]_Workflow("Workflow", Int) = 0
 		[Enum(Default,0, Stochastic,1, Supersampled,2, Triplanar,3)]_SamplingMode("Sampling Mode", Int) = 0
 		_TriplanarFalloff("Triplanar Falloff", Float) = 1
 		_EdgeFadeMin("Edge Fade Min", Float) = 0.25
@@ -61,14 +61,14 @@ Shader "Mochie/Standard" {
 
         _DetailMask("Detail Mask", 2D) = "white" {}
         _DetailAlbedoMap("Detail Base Color", 2D) = "gray" {}
-		[Enum(Add,0, Subtract,1, Multiply,2, Overlay,3, Screen,4, Soft Light,5)]_DetailAlbedoBlend("Detail Base Color Blend", Int) = 2
+		[Enum(Add,0, Sub,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailAlbedoBlend("Detail Base Color Blend", Int) = 2
 		_DetailNormalMap("Detail Normal Map", 2D) = "bump" {}
         _DetailNormalMapScale("Scale", Float) = 1.0
         _DetailRoughnessMap("Detail Roughness Map", 2D) = "gray" {}
-		[Enum(Add,0, Subtract,1, Multiply,2, Overlay,3, Screen,4, Soft Light,5)]_DetailRoughBlend("Detail Roughness Blend", Int) = 2
+		[Enum(Add,0, Sub,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailRoughBlend("Detail Roughness Blend", Int) = 2
 		_DetailAOMap("Detail AO Map", 2D) = "white" {}
-		[Enum(Add,0, Subtract,1, Multiply,2, Overlay,3, Screen,4, Soft Light,5)]_DetailAOBlend("Detail AO Blend", Int) = 2
-        [Enum(UV0,0,UV1,1)]_UVSec("UV Set for secondary textures", Float) = 0
+		[Enum(Add,0, Sub,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailAOBlend("Detail AO Blend", Int) = 2
+        [Enum(UV0,0,UV2,1)]_UVSec("UV Set for secondary textures", Float) = 0
 
 		_ReflCube("Reflection Fallback", CUBE) = "" {}
 		_ReflCubeOverride("Reflection Override", CUBE) = "" {}
@@ -136,24 +136,24 @@ Shader "Mochie/Standard" {
 			#pragma vertex vertBase
             #pragma fragment fragBase
 			#define MOCHIE_STANDARD
-			#pragma shader_feature _ BLOOM_LENS_DIRT _FADING_ON
-            #pragma shader_feature _NORMALMAP
-            #pragma shader_feature _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
-            #pragma shader_feature _EMISSION
-            #pragma shader_feature _METALLICGLOSSMAP
-            #pragma shader_feature _SPECGLOSSMAP
-            #pragma shader_feature ___ _DETAIL_MULX2
-            #pragma shader_feature _ _SPECULARHIGHLIGHTS_OFF
-            #pragma shader_feature _ _GLOSSYREFLECTIONS_OFF
-            #pragma shader_feature _PARALLAXMAP
-			#pragma shader_feature _MAPPING_6_FRAMES_LAYOUT
-			#pragma shader_feature FXAA
-			#pragma shader_feature GRAIN
-			#pragma shader_feature _ EFFECT_HUE_VARIATION BLOOM _COLORCOLOR_ON EFFECT_BUMP
-			#pragma shader_feature _COLOROVERLAY_ON
-			#pragma shader_feature GEOM_TYPE_LEAF
-			#pragma shader_feature GEOM_TYPE_FROND
-			#pragma shader_feature GEOM_TYPE_MESH
+			#pragma shader_feature_local _WORKFLOW_PACKED_ON
+            #pragma shader_feature_local _NORMALMAP
+            #pragma shader_feature_local _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
+            #pragma shader_feature_local _EMISSION
+            #pragma shader_feature_local _METALLICGLOSSMAP
+            #pragma shader_feature_local _SPECGLOSSMAP
+            #pragma shader_feature_local ___ _DETAIL_MULX2
+            #pragma shader_feature_local _ _SPECULARHIGHLIGHTS_OFF
+            #pragma shader_feature_local _ _GLOSSYREFLECTIONS_OFF
+            #pragma shader_feature_local _PARALLAXMAP
+			#pragma shader_feature_local _REFLECTION_FALLBACK_ON
+			#pragma shader_feature_local _GSAA_ON
+			#pragma shader_feature_local _SCREENSPACE_REFLECTIONS_ON
+			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON _DECAL_ON
+			#pragma shader_feature_local _REFLECTION_OVERRIDE_ON
+			#pragma shader_feature_local _DETAIL_ROUGH_ON
+			#pragma shader_feature_local _DETAIL_AO_ON
+			#pragma shader_feature_local _SUBSURFACE_ON
             #pragma multi_compile_fwdbase
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
@@ -173,20 +173,20 @@ Shader "Mochie/Standard" {
 			#pragma vertex vertAdd
             #pragma fragment fragAdd
 			#define MOCHIE_STANDARD
-			#pragma shader_feature _ BLOOM_LENS_DIRT _FADING_ON
-            #pragma shader_feature _NORMALMAP
-            #pragma shader_feature _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
-            #pragma shader_feature _METALLICGLOSSMAP
-            #pragma shader_feature _SPECGLOSSMAP
-            #pragma shader_feature _ _SPECULARHIGHLIGHTS_OFF
-            #pragma shader_feature ___ _DETAIL_MULX2
-            #pragma shader_feature _PARALLAXMAP
-			#pragma shader_feature FXAA
-			#pragma shader_feature _ EFFECT_HUE_VARIATION BLOOM _COLORCOLOR_ON EFFECT_BUMP
-			#pragma shader_feature _COLOROVERLAY_ON
-			#pragma shader_feature GEOM_TYPE_LEAF
-			#pragma shader_feature GEOM_TYPE_FROND
-			#pragma shader_feature GEOM_TYPE_MESH
+			#pragma shader_feature_local _WORKFLOW_PACKED_ON
+            #pragma shader_feature_local _NORMALMAP
+            #pragma shader_feature_local _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
+            #pragma shader_feature_local _METALLICGLOSSMAP
+            #pragma shader_feature_local _SPECGLOSSMAP
+            #pragma shader_feature_local _ _SPECULARHIGHLIGHTS_OFF
+            #pragma shader_feature_local ___ _DETAIL_MULX2
+            #pragma shader_feature_local _PARALLAXMAP
+			#pragma shader_feature_local _GSAA_ON
+			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON _DECAL_ON
+			#pragma shader_feature_local _REFLECTION_OVERRIDE_ON
+			#pragma shader_feature_local _DETAIL_ROUGH_ON
+			#pragma shader_feature_local _DETAIL_AO_ON
+			#pragma shader_feature_local _SUBSURFACE_ON
             #pragma multi_compile_fwdadd_fullshadows
             #pragma multi_compile_fog
             #include "MochieStandardCoreForward.cginc"
@@ -203,12 +203,12 @@ Shader "Mochie/Standard" {
 			#pragma vertex vertShadowCaster
             #pragma fragment fragShadowCaster
 			#define MOCHIE_STANDARD
-			#pragma shader_feature _ BLOOM_LENS_DIRT _FADING_ON
-            #pragma shader_feature _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
-            #pragma shader_feature _METALLICGLOSSMAP
-            #pragma shader_feature _PARALLAXMAP
-			#pragma shader_feature _ EFFECT_HUE_VARIATION BLOOM _COLORCOLOR_ON EFFECT_BUMP
-			#pragma shader_feature GEOM_TYPE_MESH
+			#pragma shader_feature_local _WORKFLOW_PACKED_ON
+            #pragma shader_feature_local _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
+            #pragma shader_feature_local _METALLICGLOSSMAP
+            #pragma shader_feature_local _PARALLAXMAP
+			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON _DECAL_ON
+			#pragma shader_feature_local _SUBSURFACE_ON
             #pragma multi_compile_shadowcaster
             #pragma multi_compile_instancing
 			#pragma skip_variants FOG_LINEAR FOG_EXP FOG_EXP2
@@ -225,17 +225,17 @@ Shader "Mochie/Standard" {
             #pragma vertex vert_meta
             #pragma fragment frag_meta
 			#define MOCHIE_STANDARD
-			#pragma shader_feature _ BLOOM_LENS_DIRT _FADING_ON
-            #pragma shader_feature _EMISSION
-            #pragma shader_feature _METALLICGLOSSMAP
-            #pragma shader_feature _SPECGLOSSMAP
-            #pragma shader_feature ___ _DETAIL_MULX2
-			#pragma shader_feature _ EFFECT_HUE_VARIATION BLOOM _COLORCOLOR_ON EFFECT_BUMP
-			#pragma shader_feature _COLOROVERLAY_ON
-			#pragma shader_feature GEOM_TYPE_LEAF
-			#pragma shader_feature GEOM_TYPE_FROND
-			#pragma shader_feature GEOM_TYPE_MESH
-            #pragma shader_feature EDITOR_VISUALIZATION
+			#pragma shader_feature_local _WORKFLOW_PACKED_ON
+            #pragma shader_feature_local _EMISSION
+            #pragma shader_feature_local _METALLICGLOSSMAP
+            #pragma shader_feature_local _SPECGLOSSMAP
+            #pragma shader_feature_local ___ _DETAIL_MULX2
+			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON _DECAL_ON
+			#pragma shader_feature_local _REFLECTION_OVERRIDE_ON
+			#pragma shader_feature_local _DETAIL_ROUGH_ON
+			#pragma shader_feature_local _DETAIL_AO_ON
+			#pragma shader_feature_local _SUBSURFACE_ON
+            #pragma shader_feature_local EDITOR_VISUALIZATION
             #include "UnityStandardMeta.cginc"
             ENDCG
         }

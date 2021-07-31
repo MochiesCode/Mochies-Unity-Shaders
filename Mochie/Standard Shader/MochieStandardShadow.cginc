@@ -7,12 +7,8 @@
 #include "UnityStandardUtils.cginc"
 #include "MochieStandardKeyDefines.cginc"
 
-#if SHADER_TARGET < 50
-	#define ddx_fine ddx
-	#define ddy_fine ddy
-#endif
-
 #include "../Common/Sampling.cginc"
+#include "MochieStandardSampling.cginc"
 
 #if (defined(_ALPHABLEND_ON) || defined(_ALPHAPREMULTIPLY_ON)) && defined(UNITY_USE_DITHER_MASK_FOR_ALPHABLENDED_SHADOWS)
     #define UNITY_STANDARD_USE_DITHER_MASK 1
@@ -64,7 +60,7 @@ half		_UV1Rotate;
 float2		_UV0Scroll;
 float2		_UV1Scroll;
 
-#if WORKFLOW_PACKED || WORKFLOW_MODULAR
+#if WORKFLOW_MODULAR
 	Texture2D _PackedMap;
 	int _RoughnessMult, _MetallicMult, _OcclusionMult, _HeightMult;
 	int _RoughnessChannel, _MetallicChannel, _OcclusionChannel, _HeightChannel;
@@ -84,9 +80,7 @@ float2		_UV1Scroll;
 half ShadowGetOneMinusReflectivity(half2 uv, SampleData sd)
 {
     half metallicity = _Metallic;
-	#if WORKFLOW_PACKED
-		metallicity = SampleTexture(_PackedMap, uv, sd).b;
-	#elif WORKFLOW_MODULAR
+	#if WORKFLOW_MODULAR
 		half4 packedMap = SampleTexture(_PackedMap, uv, sd);
 		metallicity = ChannelCheck(packedMap, _MetallicChannel);
 	#else
@@ -180,8 +174,8 @@ void GetDepthData(VertexOutputShadowCaster i, inout SampleData sd){
 	i.raycast = i.raycast * (_ProjectionParams.z / i.raycast.z);
 	float4 vpos = float4(i.raycast * depth, 1);
 	float3 wpos = mul(unity_CameraToWorld, vpos).xyz;
-	float3 wposX = ddx_fine(wpos);
-	float3 wposY = ddy_fine(wpos);
+	float3 wposX = ddx(wpos);
+	float3 wposY = ddy(wpos);
 	sd.depthNormal = abs(normalize(cross(wposY, wposX)));
 	sd.worldPixelPos = wpos;
 }
@@ -226,13 +220,9 @@ half4 fragShadowCaster (UNITY_POSITION(vpos)
     #if defined(UNITY_STANDARD_USE_SHADOW_UVS)
         #if defined(_PARALLAXMAP) && (SHADER_TARGET >= 30)
             half3 viewDirForParallax = normalize(i.viewDirForParallax);
-			#if WORKFLOW_PACKED || WORKFLOW_MODULAR
-				#if WORKFLOW_PACKED
-					half h = SampleTexture(_PackedMap, i.tex.xy).a + _ParallaxOffset;
-				#else
-					half4 packedMap = SampleTexture(_PackedMap, i.tex.xy);
-					half h = ChannelCheck(packedMap, _HeightChannel) + _ParallaxOffset;
-				#endif
+			#if WORKFLOW_MODULAR
+				half4 packedMap = SampleTexture(_PackedMap, i.tex.xy);
+				half h = ChannelCheck(packedMap, _HeightChannel) + _ParallaxOffset;
 				h = clamp(h, 0, 0.999);
 				float2 maskUV = TRANSFORM_TEX(i.tex1.xy, _ParallaxMask) + (_Time.y*_ParallaxMaskScroll);
 				half m = _ParallaxMask.Sample(sampler_MainTex, maskUV);

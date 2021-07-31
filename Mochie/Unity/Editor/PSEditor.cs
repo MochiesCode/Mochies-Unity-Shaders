@@ -12,6 +12,11 @@ public class PSEditor : ShaderGUI {
    	GUIContent tex2Label = new GUIContent("Secondary Color");
     GUIContent normalLabel = new GUIContent("Normal Map");
 	GUIContent applyStreamsText = new GUIContent("Fix Vertex Streams", "Apply the vertex stream layout to all Particle Systems using this material");
+	Dictionary<Action, GUIContent> baseTabButtons = new Dictionary<Action, GUIContent>();
+	Dictionary<Action, GUIContent> filterTabButtons = new Dictionary<Action, GUIContent>();
+	Dictionary<Action, GUIContent> distortTabButtons = new Dictionary<Action, GUIContent>();
+	Dictionary<Action, GUIContent> pulseTabButtons = new Dictionary<Action, GUIContent>();
+	Dictionary<Action, GUIContent> falloffTabButtons = new Dictionary<Action, GUIContent>();
 
     static Dictionary<Material, Toggles> foldouts = new Dictionary<Material, Toggles>();
     Toggles toggles = new Toggles(new string[] {
@@ -22,12 +27,8 @@ public class PSEditor : ShaderGUI {
 			"FALLOFF"
 	}, 0);
 
-	float buttonSize = 24.0f;
     string header = "ParticleHeader_Pro";
-	string watermark = "Watermark_Pro";
-	string patIcon = "Patreon_Icon";
-	string keyTex = "KeyIcon_Pro";
-	string versionLabel = "v2.0.1";
+	string versionLabel = "v2.1";
 
     // Render Settings
     MaterialProperty _BlendMode = null;
@@ -93,6 +94,9 @@ public class PSEditor : ShaderGUI {
     public override void OnGUI(MaterialEditor me, MaterialProperty[] props) {
         if (!me.isVisible)
             return;
+
+		ClearDictionaries();
+
         foreach (var property in GetType().GetFields(bindingFlags)){
             if (property.FieldType == typeof(MaterialProperty))
                 property.SetValue(this, FindProperty(property.Name, props));
@@ -107,23 +111,31 @@ public class PSEditor : ShaderGUI {
 		header = "ParticleHeader_Pro";
 		if (!EditorGUIUtility.isProSkin){
 			header = "ParticleHeader";
-			watermark = "Watermark";
-			keyTex = "KeyIcon";
 		}
 
         Texture2D headerTex = (Texture2D)Resources.Load(header, typeof(Texture2D));
-		Texture2D watermarkTex = (Texture2D)Resources.Load(watermark, typeof(Texture2D));
-		Texture2D patIconTex = (Texture2D)Resources.Load(patIcon, typeof(Texture2D));
-		Texture2D resetIconTex = (Texture2D)Resources.Load("ResetIcon", typeof(Texture2D));
-		Texture2D keyIcon = (Texture2D)Resources.Load(keyTex, typeof(Texture2D));
 		Texture2D collapseIcon = (Texture2D)Resources.Load("CollapseIcon", typeof(Texture2D));
 
-		GUIContent keyLabel = new GUIContent(keyIcon, "Toggle material keywords list.");
-		GUIContent collapseLabel = new GUIContent(collapseIcon, "Collapse all foldout tabs.");
+        GUILayout.Label(headerTex);
+		MGUI.Space4();
+		
+		List<ParticleSystemVertexStream> streams = new List<ParticleSystemVertexStream>();
+		streams.Add(ParticleSystemVertexStream.Position);
+		streams.Add(ParticleSystemVertexStream.UV);
+		streams.Add(ParticleSystemVertexStream.AnimBlend);
+		streams.Add(ParticleSystemVertexStream.Custom1X);
+		streams.Add(ParticleSystemVertexStream.Center);
+		streams.Add(ParticleSystemVertexStream.Color);
 
-        MGUI.CenteredTexture(headerTex, 0, 0);
-        GUILayout.Space(-34);
-		ListKeywords(mat, keyLabel, buttonSize);
+		string warnings = "";
+		List<ParticleSystemVertexStream> rendererStreams = new List<ParticleSystemVertexStream>();
+		foreach (ParticleSystemRenderer renderer in m_RenderersUsingThisMaterial){
+			if (renderer != null){
+				renderer.GetActiveVertexStreams(rendererStreams);
+				bool streamsValid = rendererStreams.SequenceEqual(streams);
+				if (!streamsValid) warnings += "  " + renderer.name + "\n";
+			}
+		}
 
         EditorGUI.BeginChangeCheck(); {
 
@@ -136,34 +148,9 @@ public class PSEditor : ShaderGUI {
             // -----------------
             // Render Settings
             // -----------------
-			bool baseTab = Foldouts.DoFoldout(foldouts, mat, me, 2, "BASE");
-			if (MGUI.TabButton(resetIconTex, 26f))
-				ResetBase();
-			MGUI.Space8();
-			if (MGUI.TabButton(collapseLabel, 54f)){
-				Toggles.CollapseFoldouts(mat, foldouts, 1);
-			}
-			MGUI.Space8();
-            if (baseTab){
-
-				// Vertex Stream Helper
-				List<ParticleSystemVertexStream> streams = new List<ParticleSystemVertexStream>();
-				streams.Add(ParticleSystemVertexStream.Position);
-				streams.Add(ParticleSystemVertexStream.UV);
-				streams.Add(ParticleSystemVertexStream.AnimBlend);
-				streams.Add(ParticleSystemVertexStream.Speed);
-				streams.Add(ParticleSystemVertexStream.Center);
-				streams.Add(ParticleSystemVertexStream.Color);
-
-				string warnings = "";
-				List<ParticleSystemVertexStream> rendererStreams = new List<ParticleSystemVertexStream>();
-				foreach (ParticleSystemRenderer renderer in m_RenderersUsingThisMaterial){
-					if (renderer != null){
-						renderer.GetActiveVertexStreams(rendererStreams);
-						bool streamsValid = rendererStreams.SequenceEqual(streams);
-						if (!streamsValid) warnings += "  " + renderer.name + "\n";
-					}
-				}
+			baseTabButtons.Add(()=>{Toggles.CollapseFoldouts(mat, foldouts, 1);}, MGUI.collapseLabel);
+			baseTabButtons.Add(()=>{ResetBase();}, MGUI.resetLabel);
+			Action baseTabAction = ()=>{
 				if (warnings != ""){
 					EditorGUILayout.HelpBox("Incorrect or missing vertex streams detected:\n" + warnings, MessageType.Warning, true);
 					if (GUILayout.Button(applyStreamsText, EditorStyles.miniButton)){
@@ -177,7 +164,6 @@ public class PSEditor : ShaderGUI {
 				}
 
                 // Blending mode dropdown
-                MGUI.Space4();
 				MGUI.PropertyGroup( () => {
 					me.RenderQueueField();
 					me.ShaderProperty(_BlendMode, "Blending Mode");
@@ -197,16 +183,12 @@ public class PSEditor : ShaderGUI {
 						MGUI.TexPropLabel("Blending", 113);
 					}
 				});
-				MGUI.Space4();
-			}
-				
+			};
+			Foldouts.Foldout("BASE", foldouts, baseTabButtons, mat, me, baseTabAction);
+
 			// Filtering
-			bool filteringTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "FILTERING");
-			if (MGUI.TabButton(resetIconTex, 26f))
-				ResetFiltering();
-			MGUI.Space8();
-			if (filteringTab){
-				MGUI.Space4();
+			filterTabButtons.Add(()=>{ResetFiltering();}, MGUI.resetLabel);
+			Action filterTabAction = ()=>{
 				me.ShaderProperty(_Filtering, "Enable");
 				MGUI.Space4();
 				MGUI.PropertyGroup( () => {
@@ -222,38 +204,31 @@ public class PSEditor : ShaderGUI {
 					me.ShaderProperty(_HDR, "HDR");
 					MGUI.ToggleGroupEnd();
 				});
-				MGUI.Space8();
-			}
+			};
+			Foldouts.Foldout("FILTERING", foldouts, filterTabButtons, mat, me, filterTabAction);
 
 			// Distortion
-			bool distortionTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "DISTORTION");
-			if (MGUI.TabButton(resetIconTex, 26f))
-				ResetDistortion();
-			MGUI.Space8();
-			if (distortionTab){
-				MGUI.Space4();
+			distortTabButtons.Add(()=>{ResetDistortion();}, MGUI.resetLabel);
+			Action distortTabAction = ()=>{
 				me.ShaderProperty(_Distortion, "Enable");
 				MGUI.Space4();
 				MGUI.ToggleGroup(_Distortion.floatValue == 0);
 				MGUI.PropertyGroup( () => {
 					me.TexturePropertySingleLine(normalLabel, _NormalMap, _DistortMainTex);
-					MGUI.TexPropLabel("Distort UVs", 127);
+					MGUI.TexPropLabel("Distort UVs", 124);
 					MGUI.Vector2Field(_NormalMapScale, "Scale");
+					MGUI.SpaceN3();
 					MGUI.Vector2Field(_DistortionSpeed, "Scrolling");
 					me.ShaderProperty(_DistortionStr, "Strength");
 					me.ShaderProperty(_DistortionBlend, "Blend");
 					MGUI.ToggleGroupEnd();
 				});
-				MGUI.Space8();
-			}
+			};
+			Foldouts.Foldout("DISTORTION", foldouts, distortTabButtons, mat, me, distortTabAction);
 
 			// Pulse
-			bool pulseTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "PULSE");
-			if (MGUI.TabButton(resetIconTex, 26f))
-				ResetPulse();
-			MGUI.Space8();
-			if (pulseTab){
-				MGUI.Space4();
+			pulseTabButtons.Add(()=>{ResetPulse();}, MGUI.resetLabel);
+			Action pulseTabAction = ()=>{
 				me.ShaderProperty(_Pulse, "Enable");
 				MGUI.Space4();
 				MGUI.PropertyGroup( () => {
@@ -263,16 +238,12 @@ public class PSEditor : ShaderGUI {
 					me.ShaderProperty(_PulseSpeed, "Speed");
 					MGUI.ToggleGroupEnd();
 				});
-				MGUI.Space8();
-			}
+			};
+			Foldouts.Foldout("PULSE", foldouts, pulseTabButtons, mat, me, pulseTabAction);
 
 			// Falloff
-			bool falloffTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "FALLOFF");
-			if (MGUI.TabButton(resetIconTex, 26f))
-				ResetFalloff();
-			MGUI.Space8();
-			if (falloffTab){
-				MGUI.Space4();
+			falloffTabButtons.Add(()=>{ResetFalloff();}, MGUI.resetLabel);
+			Action falloffTabAction = ()=>{
 				me.ShaderProperty(_Falloff, "Enable");
 				MGUI.Space4();
 				MGUI.PropertyGroup( () => {
@@ -286,19 +257,43 @@ public class PSEditor : ShaderGUI {
 					me.ShaderProperty(_NearMaxRange, "Near Max Range");
 					MGUI.ToggleGroupEnd();
 				});
-				MGUI.Space8();
-			}
-			GUILayout.Space(15);
-            MGUI.CenteredTexture(watermarkTex, 0, 0);
-			float buttonSize = 24.0f;
-			float xPos = 53.0f;
-			GUILayout.Space(-buttonSize);
-			if (MGUI.LinkButton(patIconTex, buttonSize, buttonSize, xPos)){
-				Application.OpenURL("https://www.patreon.com/mochieshaders");
-			}
-			GUILayout.Space(buttonSize);
-			MGUI.VersionLabel(versionLabel, 12,-16,-20);
+			};
+			Foldouts.Foldout("FALLOFF", foldouts, falloffTabButtons, mat, me, falloffTabAction);
         }
+
+		GUILayout.Space(20);
+		float buttonSize = 35f;
+		Rect footerRect = EditorGUILayout.GetControlRect();
+		footerRect.x += (MGUI.GetInspectorWidth()/2f)-buttonSize-5f;
+		footerRect.width = buttonSize;
+		footerRect.height = buttonSize;
+		if (GUI.Button(footerRect, MGUI.patIconTex))
+			Application.OpenURL("https://www.patreon.com/mochieshaders");
+		footerRect.x += buttonSize + 5f;
+		footerRect.y += 17f;
+		GUIStyle formatting = new GUIStyle();
+		formatting.fontSize = 15;
+		formatting.fontStyle = FontStyle.Bold;
+		if (EditorGUIUtility.isProSkin){
+			formatting.normal.textColor = new Color(0.8f, 0.8f, 0.8f, 1);
+			formatting.hover.textColor = new Color(0.8f, 0.8f, 0.8f, 1);
+			GUI.Label(footerRect, versionLabel, formatting);
+			footerRect.y += 20f;
+			footerRect.x -= 35f;
+			footerRect.width = 70f;
+			footerRect.height = 70f;
+			GUI.Label(footerRect, MGUI.mochieLogoPro);
+			GUILayout.Space(90);
+		}
+		else {
+			GUI.Label(footerRect, versionLabel, formatting);
+			footerRect.y += 20f;
+			footerRect.x -= 35f;
+			footerRect.width = 70f;
+			footerRect.height = 70f;
+			GUI.Label(footerRect, MGUI.mochieLogo);
+			GUILayout.Space(90);
+		}
     }
 
     // Set blending mode
@@ -307,60 +302,60 @@ public class PSEditor : ShaderGUI {
             case 0:
 				material.EnableKeyword("_ALPHABLEND_ON");
 				material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-				material.DisableKeyword("_COLORCOLOR_ON");
-				material.DisableKeyword("_SPECGLOSSMAP");
-				material.DisableKeyword("_METALLICGLOSSMAP");
-				material.DisableKeyword("_PARALLAXMAP");
+				material.DisableKeyword("_ALPHA_ADD_ON");
+				material.DisableKeyword("_ALPHA_ADD_SOFT_ON");
+				material.DisableKeyword("_ALPHA_MUL_ON");
+				material.DisableKeyword("_ALPHA_MULX2_ON");
                 material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
                 material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
                 break;
             case 1:
 				material.DisableKeyword("_ALPHABLEND_ON");
 				material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
-				material.DisableKeyword("_COLORCOLOR_ON");
-				material.DisableKeyword("_SPECGLOSSMAP");
-				material.DisableKeyword("_METALLICGLOSSMAP");
-				material.DisableKeyword("_PARALLAXMAP");
+				material.DisableKeyword("_ALPHA_ADD_ON");
+				material.DisableKeyword("_ALPHA_ADD_SOFT_ON");
+				material.DisableKeyword("_ALPHA_MUL_ON");
+				material.DisableKeyword("_ALPHA_MULX2_ON");
                 material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
                 material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
                 break;
             case 2:
 				material.DisableKeyword("_ALPHABLEND_ON");
 				material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-				material.EnableKeyword("_COLORCOLOR_ON");
-				material.DisableKeyword("_SPECGLOSSMAP");
-				material.DisableKeyword("_METALLICGLOSSMAP");
-				material.DisableKeyword("_PARALLAXMAP");
+				material.EnableKeyword("_ALPHA_ADD_ON");
+				material.DisableKeyword("_ALPHA_ADD_SOFT_ON");
+				material.DisableKeyword("_ALPHA_MUL_ON");
+				material.DisableKeyword("_ALPHA_MULX2_ON");
                 material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
                 material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);
                 break;
             case 3:
 				material.DisableKeyword("_ALPHABLEND_ON");
 				material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-				material.DisableKeyword("_COLORCOLOR_ON");
-				material.EnableKeyword("_SPECGLOSSMAP");
-				material.DisableKeyword("_METALLICGLOSSMAP");
-				material.DisableKeyword("_PARALLAXMAP");
+				material.DisableKeyword("_ALPHA_ADD_ON");
+				material.EnableKeyword("_ALPHA_ADD_SOFT_ON");
+				material.DisableKeyword("_ALPHA_MUL_ON");
+				material.DisableKeyword("_ALPHA_MULX2_ON");
                 material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
                 material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcColor);
                 break;
             case 4:
 				material.DisableKeyword("_ALPHABLEND_ON");
 				material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-				material.DisableKeyword("_COLORCOLOR_ON");
-				material.DisableKeyword("_SPECGLOSSMAP");
-				material.EnableKeyword("_METALLICGLOSSMAP");
-				material.DisableKeyword("_PARALLAXMAP");
+				material.DisableKeyword("_ALPHA_ADD_ON");
+				material.DisableKeyword("_ALPHA_ADD_SOFT_ON");
+				material.EnableKeyword("_ALPHA_MUL_ON");
+				material.DisableKeyword("_ALPHA_MULX2_ON");
                 material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
                 material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.SrcColor);
                 break;
             case 5:
 				material.DisableKeyword("_ALPHABLEND_ON");
 				material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-				material.DisableKeyword("_COLORCOLOR_ON");
-				material.DisableKeyword("_SPECGLOSSMAP");
-				material.DisableKeyword("_METALLICGLOSSMAP");
-				material.EnableKeyword("_PARALLAXMAP");
+				material.DisableKeyword("_ALPHA_ADD_ON");
+				material.DisableKeyword("_ALPHA_ADD_SOFT_ON");
+				material.DisableKeyword("_ALPHA_MUL_ON");
+				material.EnableKeyword("_ALPHA_MULX2_ON");
                 material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.DstColor);
                 material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.SrcColor);
                 break;
@@ -380,13 +375,13 @@ public class PSEditor : ShaderGUI {
 
 		MGUI.SetKeyword(mat, "_ALPHATEST_ON", cutout);
 		MGUI.SetKeyword(mat, "_FADING_ON", softening);
-		MGUI.SetKeyword(mat, "EFFECT_BUMP", distortion);
-		MGUI.SetKeyword(mat, "_NORMALMAP", distortUV);
-		MGUI.SetKeyword(mat, "_DETAIL_MULX2", layering);
-		MGUI.SetKeyword(mat, "_ALPHAMODULATE_ON", pulse);
-		MGUI.SetKeyword(mat, "DEPTH_OF_FIELD", falloff);
-		MGUI.SetKeyword(mat, "_REQUIRE_UV2", flipbook);
-		MGUI.SetKeyword(mat, "_COLOROVERLAY_ON", filtering);
+		MGUI.SetKeyword(mat, "_DISTORTION_ON", distortion);
+		MGUI.SetKeyword(mat, "_DISTORTION_UV_ON", distortUV);
+		MGUI.SetKeyword(mat, "_LAYERED_TEX_ON", layering);
+		MGUI.SetKeyword(mat, "_PULSE_ON", pulse);
+		MGUI.SetKeyword(mat, "_FALLOFF_ON", falloff);
+		MGUI.SetKeyword(mat, "_FLIPBOOK_BLENDING_ON", flipbook);
+		MGUI.SetKeyword(mat, "_FILTERING_ON", filtering);
 		mat.SetShaderPassEnabled("Always", distortion);
 		SetBlendMode(mat);
 	}
@@ -479,5 +474,13 @@ public class PSEditor : ShaderGUI {
 		_MaxRange.floatValue = 15f;
 		_NearMinRange.floatValue = 1f;
 		_NearMaxRange.floatValue = 5f;
+	}
+
+	void ClearDictionaries(){
+		baseTabButtons.Clear();
+		filterTabButtons.Clear();
+		distortTabButtons.Clear();
+		pulseTabButtons.Clear();
+		falloffTabButtons.Clear();
 	}
 }

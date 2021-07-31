@@ -1,5 +1,6 @@
 ﻿using UnityEditor;
 using UnityEngine;
+using System;
 using System.Reflection;
 using System.Collections.Generic;
 using Mochie;
@@ -15,10 +16,6 @@ public class SFXEditor : ShaderGUI {
     GUIContent tpNoiseTexLabel = new GUIContent("Noise Texture");
     
 	public static Dictionary<Material, Toggles> foldouts = new Dictionary<Material, Toggles>();
-
-	bool displayKeywords = false;
-	List<string> keywordsList = new List<string>();
-	float buttonSize = 24.0f;
 
     Toggles toggles = new Toggles(new string[] {
 			"GENERAL",
@@ -45,10 +42,7 @@ public class SFXEditor : ShaderGUI {
 
     // Texture file names
 	string header = "SFXHeader_Pro";
-	string watermark = "Watermark_Pro";
-	string patIcon = "Patreon_Icon";
 	string versionLabel = "v1.12";
-	string keyTex = "KeyIcon_Pro";
 	
     // Commonly used strings
     string modeLabel = "Mode";
@@ -95,9 +89,6 @@ public class SFXEditor : ShaderGUI {
 	MaterialProperty _SaturationR = null;
 	MaterialProperty _SaturationB = null;
 	MaterialProperty _SaturationG = null;
-
-    //MaterialProperty _Sobel = null;
-    //MaterialProperty _SobelStr = null;
 
     // Shake
     MaterialProperty _ShakeModel = null;
@@ -214,10 +205,6 @@ public class SFXEditor : ShaderGUI {
     MaterialProperty _TPScanFade = null;
 
     // Extras
-    // MaterialProperty _DeepFry = null;
-    // MaterialProperty _Flavor = null;
-    // MaterialProperty _Sizzle = null;
-    // MaterialProperty _Heat = null;
     MaterialProperty _Pulse = null;
     MaterialProperty _PulseColor = null;
     MaterialProperty _PulseSpeed = null;
@@ -238,7 +225,6 @@ public class SFXEditor : ShaderGUI {
 	MaterialProperty _OLUseGlobal = null;
 	MaterialProperty _OLMinRange = null;
 	MaterialProperty _OLMaxRange = null;
-//    MaterialProperty _OutlineThiccN = null;
 	MaterialProperty _RoundingToggle = null;
 	MaterialProperty _Rounding = null;
 	MaterialProperty _RoundingOpacity = null;
@@ -375,16 +361,12 @@ public class SFXEditor : ShaderGUI {
 			header = "SFXHeaderX_Pro";
 			if (!EditorGUIUtility.isProSkin){
 				header = "SFXHeaderX";
-				watermark = "Watermark";
-				keyTex = "KeyIcon";
 			}
 		}
 		else {
 			header = "SFXHeader_Pro";
 			if (!EditorGUIUtility.isProSkin){
 				header = "SFXHeader";
-				watermark = "Watermark";
-				keyTex = "KeyIcon";
 			}
 		}
 
@@ -396,37 +378,22 @@ public class SFXEditor : ShaderGUI {
 		ApplyMaterialSettings(mat);
 		
         Texture2D headerTex = (Texture2D)Resources.Load(header, typeof(Texture2D));
-		Texture2D watermarkTex = (Texture2D)Resources.Load(watermark, typeof(Texture2D));
-		Texture2D patIconTex = (Texture2D)Resources.Load(patIcon, typeof(Texture2D));
-		Texture2D resetIconTex = (Texture2D)Resources.Load("ResetIcon", typeof(Texture2D));
-		Texture2D collapseIconTex = (Texture2D)Resources.Load("CollapseIcon", typeof(Texture2D));
-		Texture2D expandIconTex = (Texture2D)Resources.Load("ExpandIcon", typeof(Texture2D));
-		Texture2D collapseIcon = (Texture2D)Resources.Load("CollapseIcon", typeof(Texture2D));
-		Texture2D keyIcon = (Texture2D)Resources.Load(keyTex, typeof(Texture2D));
 
-		GUIContent keyLabel = new GUIContent(keyIcon, "Toggle material keywords list.");
-
-        MGUI.CenteredTexture(headerTex, 0, 0);
-		GUILayout.Space(-34);
-		ListKeywords(mat, keyLabel, this.buttonSize);
+        GUILayout.Label(headerTex);
+		MGUI.Space4();
 
         EditorGUI.BeginChangeCheck(); {
 
             // Global
-			bool generalTab = Foldouts.DoFoldout(foldouts, mat, me, 2, "GENERAL");
-			if (MGUI.TabButton(collapseIcon, 26f)){
-				Toggles.CollapseFoldouts(mat, foldouts, 1);
-			}
-			MGUI.Space8();
-			if (MGUI.TabButton(resetIconTex, 54f))
-				ResetRendering();
-			MGUI.Space8();
-            if (generalTab){
-				MGUI.Space4();
+			Dictionary<Action, GUIContent> generalTabButtons = new Dictionary<Action, GUIContent>();
+			generalTabButtons.Add(()=>{Toggles.CollapseFoldouts(mat, foldouts, 1);}, MGUI.collapseLabel);
+			generalTabButtons.Add(()=>{ResetRendering();}, MGUI.resetLabel);
+			Action generalTabAction = ()=>{
 				me.ShaderProperty(_DisplayGlobalGizmo, "Display Range Gizmos");
 				me.RenderQueueField();
                 EditorGUI.BeginChangeCheck();
 				me.ShaderProperty(_BlendMode, "Blending Mode");
+				MGUI.Space4();
 				if (EditorGUI.EndChangeCheck())
 					SetBlendMode(mat);
                 if (_BlendMode.floatValue > 0)
@@ -436,20 +403,16 @@ public class SFXEditor : ShaderGUI {
 				MGUI.SpaceN2();
                 me.ShaderProperty(_MinRange, minLabel);
                 me.ShaderProperty(_MaxRange, maxLabel);
-                MGUI.Space8();
-            }
+            };
+			Foldouts.Foldout("GENERAL", foldouts, generalTabButtons, mat, me, generalTabAction);
 
             // Filtering
-			bool colorTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "FILTERING");
-			if (MGUI.TabButton(resetIconTex, 26f))
-				ResetColor();
-			MGUI.Space8();
-			if (colorTab){
-				MGUI.Space4();
+			Dictionary<Action, GUIContent> filterTabButtons = new Dictionary<Action, GUIContent>();
+			filterTabButtons.Add(()=>{ResetColor();}, MGUI.resetLabel);
+			Action filterTabAction = ()=>{
 				me.ShaderProperty(_FilterModel, modeLabel);
 				if (_FilterModel.floatValue > 0){
 					me.ShaderProperty(_FilterStrength, "Opacity");
-					MGUI.Space6();
 					me.ShaderProperty(_ColorUseGlobal, ugfLabel);
 					if (_ColorUseGlobal.floatValue == 0){
 						MGUI.PropertyGroup(() => {
@@ -489,16 +452,13 @@ public class SFXEditor : ShaderGUI {
 						});
 					});
 				}
-				MGUI.Space8();
-			}
+			};
+			Foldouts.Foldout("FILTERING", foldouts, filterTabButtons, mat, me, filterTabAction);
 
             // Shake
-			bool shakeTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "SHAKE");
-			if (MGUI.TabButton(resetIconTex, 26f))
-				ResetShake();
-			MGUI.Space8();
-            if (shakeTab){
-                MGUI.Space4();
+			Dictionary<Action, GUIContent> shakeTabButtons = new Dictionary<Action, GUIContent>();
+			shakeTabButtons.Add(()=>{ResetShake();}, MGUI.resetLabel);
+			Action shakeTabAction = ()=>{
                 me.ShaderProperty(_ShakeModel, modeLabel);
 				if (_ShakeModel.floatValue > 0){
 					MGUI.Space6();
@@ -523,16 +483,13 @@ public class SFXEditor : ShaderGUI {
 						}
 					});
                 }
-                MGUI.Space8();
-            }
+            };
+			Foldouts.Foldout("SHAKE", foldouts, shakeTabButtons, mat, me, shakeTabAction);
 
             // Distortion
-			bool distTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "DISTORTION");
-			if (MGUI.TabButton(resetIconTex, 26f))
-				ResetDistortion();
-			MGUI.Space8();
-            if (distTab){
-                MGUI.Space4();
+			Dictionary<Action, GUIContent> distTabButtons = new Dictionary<Action, GUIContent>();
+			distTabButtons.Add(()=>{ResetDistortion();}, MGUI.resetLabel);
+			Action distTabAction = ()=>{
                 me.ShaderProperty(_DistortionModel, modeLabel);
                 if (_DistortionModel.floatValue > 0){
 					MGUI.Space6();
@@ -559,16 +516,13 @@ public class SFXEditor : ShaderGUI {
 						});
                     }
                 }
-                MGUI.Space8();
-            }
+            };
+			Foldouts.Foldout("DISTORTION", foldouts, distTabButtons, mat, me, distTabAction);
 
 			// Blur
-			bool blurTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "BLUR");
-			if (MGUI.TabButton(resetIconTex, 26f))
-				ResetBlur();
-			MGUI.Space8();
-			if (blurTab){
-				MGUI.Space4();
+			Dictionary<Action, GUIContent> blurTabButtons = new Dictionary<Action, GUIContent>();
+			blurTabButtons.Add(()=>{ResetBlur();}, MGUI.resetLabel);
+			Action blurTabAction = ()=>{
 				me.ShaderProperty(_BlurModel, modeLabel);
 				if (_BlurModel.floatValue > 0){
 					if (_BlurModel.floatValue == 1){
@@ -626,16 +580,13 @@ public class SFXEditor : ShaderGUI {
 							me.ShaderProperty(_CrushBlur, "Crush");
 					});
 				}
-				MGUI.Space8();  
-			}
+			};
+			Foldouts.Foldout("BLUR", foldouts, blurTabButtons, mat, me, blurTabAction);
 
 			// Noise
-            bool noiseTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "NOISE");
-			if (MGUI.TabButton(resetIconTex, 26f))
-				ResetNoise();
-			MGUI.Space8();
-            if (noiseTab){
-				MGUI.Space4();
+			Dictionary<Action, GUIContent> noiseTabButtons = new Dictionary<Action, GUIContent>();
+			noiseTabButtons.Add(()=>{ResetNoise();}, MGUI.resetLabel);
+			Action noiseTabAction = ()=>{
 				me.ShaderProperty(_NoiseMode, "Mode");
 				if (_NoiseMode.floatValue > 0){
 					me.ShaderProperty(_NoiseStrength, "Opacity");
@@ -658,16 +609,13 @@ public class SFXEditor : ShaderGUI {
 						});
 					});
 				}
-				MGUI.Space8();
-			}
+			};
+			Foldouts.Foldout("NOISE", foldouts, noiseTabButtons, mat, me, noiseTabAction);
+
 			if (isSFXX){
-				bool zoomTab =Foldouts.DoFoldout(foldouts, mat, me, 1, "ZOOM");
-				if (MGUI.TabButton(resetIconTex, 26f))
-					ResetZoom();
-				MGUI.Space8();
-				// Zoom
-				if (zoomTab){
-					MGUI.Space4();
+				Dictionary<Action, GUIContent> zoomTabButtons = new Dictionary<Action, GUIContent>();
+				zoomTabButtons.Add(()=>{ResetZoom();}, MGUI.resetLabel);
+				Action zoomTabAction = ()=>{
 					me.ShaderProperty(_Zoom, modeLabel);
 					if (_Zoom.floatValue > 0){
 						MGUI.Space6();
@@ -688,16 +636,13 @@ public class SFXEditor : ShaderGUI {
 							else me.ShaderProperty(_ZoomStr, strengthLabel);
 						});
 					}
-					MGUI.Space8();
-				}
+				};
+				Foldouts.Foldout("ZOOM", foldouts, zoomTabButtons, mat, me, zoomTabAction);
 				
 				// Screenspace Texture Overlay
-				bool sstTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "IMAGE OVERLAY");
-				if (MGUI.TabButton(resetIconTex, 26f))
-					ResetSST();
-				MGUI.Space8();
-				if (sstTab){
-					MGUI.Space4();
+				Dictionary<Action, GUIContent> sstTabButtons = new Dictionary<Action, GUIContent>();
+				sstTabButtons.Add(()=>{ResetSST();}, MGUI.resetLabel);
+				Action sstTabAction = ()=>{
 					me.ShaderProperty(_SST, modeLabel);
 					if (_SST.floatValue > 0){
 						MGUI.Space6();
@@ -734,16 +679,13 @@ public class SFXEditor : ShaderGUI {
 							me.ShaderProperty(_SSTUD, "Down / Up");
 						});
 					}
-					MGUI.Space8();
-				}
+				};
+				Foldouts.Foldout("IMAGE OVERLAY", foldouts, sstTabButtons, mat, me, sstTabAction);
 
 				// Fog
-				bool fogTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "FOG");
-				if (MGUI.TabButton(resetIconTex, 26f))
-					ResetFog();
-				MGUI.Space8();
-				if (fogTab){
-					MGUI.Space4();
+				Dictionary<Action, GUIContent> fogTabButtons = new Dictionary<Action, GUIContent>();
+				fogTabButtons.Add(()=>{ResetFog();}, MGUI.resetLabel);
+				Action fogTabAction = ()=>{
 					me.ShaderProperty(_Fog, modeLabel);
 					if (_Fog.floatValue == 1){
 						MGUI.Space6();
@@ -771,16 +713,13 @@ public class SFXEditor : ShaderGUI {
 							}
 						});
 					}
-					MGUI.Space8();
-				}
+				};
+				Foldouts.Foldout("FOG", foldouts, fogTabButtons, mat, me, fogTabAction);
 
 				// Triplanar Mapping
-				bool triplanarTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "TRIPLANAR");
-				if (MGUI.TabButton(resetIconTex, 26f))
-					ResetTriplanar();
-				MGUI.Space8();
-				if (triplanarTab){
-					MGUI.Space4();
+				Dictionary<Action, GUIContent> triplanarTabButtons = new Dictionary<Action, GUIContent>();
+				triplanarTabButtons.Add(()=>{ResetTriplanar();}, MGUI.resetLabel);
+				Action triplanarTabAction = ()=>{
 					me.ShaderProperty(_Triplanar, modeLabel);
 					if (_Triplanar.floatValue > 0){				
 						MGUI.Space6();
@@ -797,13 +736,15 @@ public class SFXEditor : ShaderGUI {
 							me.TexturePropertySingleLine(tpTexLabel, _TPTexture, _TPColor);
 							if (_TPTexture.textureValue){
 								MGUI.TextureSO(me, _TPTexture);
-								MGUI.Vector3Field(_TPScroll, "Scroll Speed");
+								MGUI.SpaceN5();
+								MGUI.Vector3Field(_TPScroll, "Scroll Speed", false);
 								MGUI.Space4();
 							}
 							me.TexturePropertySingleLine(tpNoiseTexLabel, _TPNoiseTex);
 							if (_TPNoiseTex.textureValue){          
 								MGUI.TextureSO(me, _TPNoiseTex);
-								MGUI.Vector3Field(_TPNoiseScroll, "Scroll Speed");
+								MGUI.SpaceN5();
+								MGUI.Vector3Field(_TPNoiseScroll, "Scroll Speed", false);
 							}
 						});
 						MGUI.PropertyGroup(() => {
@@ -817,16 +758,13 @@ public class SFXEditor : ShaderGUI {
 							me.ShaderProperty(_TPP2O, p2oLabel);
 						});
 					}
-					MGUI.Space8();
-				}
+				};
+				Foldouts.Foldout("TRIPLANAR", foldouts, triplanarTabButtons, mat, me, triplanarTabAction);
 
 				// Outline
-				bool outlineTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "OUTLINE");
-				if (MGUI.TabButton(resetIconTex, 26f))
-					ResetOutline();
-				MGUI.Space8();
-				if (outlineTab){
-					MGUI.Space4();
+				Dictionary<Action, GUIContent> outlineTabButtons = new Dictionary<Action, GUIContent>();
+				outlineTabButtons.Add(()=>{ResetOutline();}, MGUI.resetLabel);
+				Action outlineTabAction = ()=>{
 					me.ShaderProperty(_OutlineType, modeLabel);
 					if (_OutlineType.floatValue > 0){
 						MGUI.Space6();
@@ -854,51 +792,24 @@ public class SFXEditor : ShaderGUI {
 							}
 						});
 					}
-					MGUI.Space8();
-				}
+				};
+				Foldouts.Foldout("OUTLINE", foldouts, outlineTabButtons, mat, me, outlineTabAction);
 
 				// Extras
-				
-				bool miscTab = Foldouts.DoFoldout(foldouts, mat, me, 1, "MISC");
-				if (MGUI.TabButton(resetIconTex, 26f))
-					ResetExtras();
-				MGUI.Space8();
-				if (miscTab){
-					MGUI.Space4();
-					// if (Foldouts.DoMediumFoldout(foldouts, mat, me, 0, "Framebuffer")){
-					// 	if (_FreezeFrame.floatValue == 1 && _GhostingToggle.floatValue == 1){
-					// 		_FreezeFrame.floatValue = 0;
-					// 		_GhostingToggle.floatValue = 0;
-					// 	}
-					// 	me.ShaderProperty(_FreezeFrame, "Freeze Frame");
-					// 	MGUI.ToggleSlider(me, "Ghosting", _GhostingToggle, _GhostingStr);
-					// 	MGUI.FramebufferSection(me, new MaterialProperty[] {_FreezeFrame, _GhostingToggle}, _GhostingStr);
-					// 	MGUI.Space6();
-					// }
-					// else MGUI.SpaceN2();
-
-					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _Letterbox, 0, "Letterbox")){
+				Dictionary<Action, GUIContent> miscTabButtons = new Dictionary<Action, GUIContent>();
+				miscTabButtons.Add(()=>{ResetExtras();}, MGUI.resetLabel);
+				Action miscTabAction = ()=>{
+					Action letterboxTabAction = ()=>{
 						MGUI.PropertyGroup(() => {
 							MGUI.ToggleGroup(_Letterbox.floatValue == 0);
 							me.ShaderProperty(_UseZoomFalloff, "Use Zoom Falloff");
 							me.ShaderProperty(_LetterboxStr, "Bar Width");
 							MGUI.ToggleGroupEnd();
 						});
-					}
-					else MGUI.SpaceN4();
+					};
+					Foldouts.SubFoldout("Letterbox", foldouts, null, mat, me, letterboxTabAction);
 
-					// if (Foldouts.DoMediumFoldout(foldouts, mat, me, 4f, _DeepFry, "Deep Fry")){
-					// 	MGUI.Space6();
-					// 	MGUI.ToggleGroup(_DeepFry.floatValue == 0);
-					// 	me.ShaderProperty(_Flavor, "Flavor");
-					// 	me.ShaderProperty(_Heat, "Heat");
-					// 	me.ShaderProperty(_Sizzle, "Sizzle");
-					// 	MGUI.ToggleGroupEnd();
-					// 	MGUI.Space6();
-					// }
-					// else MGUI.SpaceN2();
-
-					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _Pulse, 0, "Pulse")){
+					Action pulseTabAction = ()=>{
 						MGUI.PropertyGroup(() => {
 							MGUI.ToggleGroup(_Pulse.floatValue == 0);
 							me.ShaderProperty(_WaveForm, "Waveform");
@@ -908,10 +819,10 @@ public class SFXEditor : ShaderGUI {
 							MGUI.ToggleGroupEnd();
 							MGUI.ToggleGroupEnd();
 						});
-					}
-					else MGUI.SpaceN4();
+					};
+					Foldouts.SubFoldout("Pulse", foldouts, null, mat, me, pulseTabAction, _Pulse);
 
-					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _Shift, 0, "UV Manipulation")){
+					Action uvManipTabAction = ()=>{
 						MGUI.PropertyGroup(() => {
 							MGUI.ToggleGroup(_Shift.floatValue == 0);
 							me.ShaderProperty(_InvertX, "Invert X");
@@ -920,30 +831,30 @@ public class SFXEditor : ShaderGUI {
 							me.ShaderProperty(_ShiftY, "Shift Y");
 							MGUI.ToggleGroupEnd();
 						});
-					}
-					else MGUI.SpaceN4();
+					};
+					Foldouts.SubFoldout("UV Manipulation", foldouts, null, mat, me, uvManipTabAction, _Shift);
 
-					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _RoundingToggle, 0, "Rounding")){
+					Action roundingTabAction = ()=>{
 						MGUI.PropertyGroup(() => {
 							MGUI.ToggleGroup(_RoundingToggle.floatValue == 0);
 							me.ShaderProperty(_RoundingOpacity, "Opacity");
 							me.ShaderProperty(_Rounding, "Precision");
 							MGUI.ToggleGroupEnd();
 						});
-					}
-					else MGUI.SpaceN4();
+					};
+					Foldouts.SubFoldout("Rounding", foldouts, null, mat, me, roundingTabAction, _RoundingToggle);
 
-					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _NMFToggle, 0, "Normal Map")){
+					Action nmTabAction = ()=>{
 						MGUI.PropertyGroup(() => {
 							MGUI.ToggleGroup(_NMFToggle.floatValue == 0);
 							me.ShaderProperty(_NMFOpacity, "Opacity");
 							me.ShaderProperty(_NormalMapFilter, "Strength");
 							MGUI.ToggleGroupEnd();
 						});
-					}
-					else MGUI.SpaceN4();
-					
-					if (Foldouts.DoMediumFoldout(foldouts, mat, me, _DepthBufferToggle, 0, "Depth Buffer")){
+					};
+					Foldouts.SubFoldout("Normal Map", foldouts, null, mat, me, nmTabAction, _NMFToggle);
+
+					Action depthTabAction = ()=>{					
 						if (_DepthBufferToggle.floatValue == 1){
 							MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
 						}
@@ -953,50 +864,47 @@ public class SFXEditor : ShaderGUI {
 							me.ShaderProperty(_DBColor, "Tint");
 							MGUI.ToggleGroupEnd();
 						});
-					}
-					else MGUI.SpaceN2();
-					MGUI.Space6();
-				}
+					};
+					Foldouts.SubFoldout("Depth Buffer", foldouts, null, mat, me, depthTabAction, _DepthBufferToggle);
+				};
+				Foldouts.Foldout("MISC", foldouts, miscTabButtons, mat, me, miscTabAction);
 			}
 		}
-		GUILayout.Space(15);
-		
-		MGUI.CenteredTexture(watermarkTex, 0, 0);
-		float buttonSize = 24.0f;
-		float xPos = 53.0f;
-		GUILayout.Space(-buttonSize);
-		if (MGUI.LinkButton(patIconTex, buttonSize, buttonSize, xPos)){
-			Application.OpenURL("https://www.patreon.com/mochieshaders");
-		}
-		GUILayout.Space(buttonSize);
-		MGUI.VersionLabel(versionLabel, 12,-16,-20);
-    }
+		GUILayout.Space(20);
 
-	void ListKeywords(Material mat, GUIContent label, float buttonSize){
-		keywordsList.Clear();
-		foreach (string s in mat.shaderKeywords)
-			keywordsList.Add(s);
-		
-		if (MGUI.LinkButton(label, buttonSize, buttonSize, (MGUI.GetInspectorWidth()/2.0f)-11.0f))
-			displayKeywords = !displayKeywords;
-		
-		if (displayKeywords){
-			MGUI.Space8();
-			string infoString = "";
-			if (keywordsList.Capacity == 0){
-				infoString = "NO KEYWORDS FOUND";
-			}
-			else {
-				infoString = "\nKeywords Used:\n\n";
-				foreach (string s in keywordsList){
-					infoString += " " + s + "\n";
-				}
-			}
-			MGUI.DisplayText(infoString);
-			MGUI.SpaceN8();
+		float buttonSize = 35f;
+		Rect footerRect = EditorGUILayout.GetControlRect();
+		footerRect.x += (MGUI.GetInspectorWidth()/2f)-buttonSize-5f;
+		footerRect.width = buttonSize;
+		footerRect.height = buttonSize;
+		if (GUI.Button(footerRect, MGUI.patIconTex))
+			Application.OpenURL("https://www.patreon.com/mochieshaders");
+		footerRect.x += buttonSize + 5f;
+		footerRect.y += 17f;
+		GUIStyle formatting = new GUIStyle();
+		formatting.fontSize = 15;
+		formatting.fontStyle = FontStyle.Bold;
+		if (EditorGUIUtility.isProSkin){
+			formatting.normal.textColor = new Color(0.8f, 0.8f, 0.8f, 1);
+			formatting.hover.textColor = new Color(0.8f, 0.8f, 0.8f, 1);
+			GUI.Label(footerRect, versionLabel, formatting);
+			footerRect.y += 20f;
+			footerRect.x -= 35f;
+			footerRect.width = 70f;
+			footerRect.height = 70f;
+			GUI.Label(footerRect, MGUI.mochieLogoPro);
+			GUILayout.Space(90);
 		}
-		GUILayout.Space(buttonSize-10);
-	}
+		else {
+			GUI.Label(footerRect, versionLabel, formatting);
+			footerRect.y += 20f;
+			footerRect.x -= 35f;
+			footerRect.width = 70f;
+			footerRect.height = 70f;
+			GUI.Label(footerRect, MGUI.mochieLogo);
+			GUILayout.Space(90);
+		}
+    }
 
 	void SetKeyword(Material m, string keyword, bool state) {
 		if (state)
@@ -1043,24 +951,24 @@ public class SFXEditor : ShaderGUI {
 		bool outlineEnabled = outlineMode > 0 && isXVersion;
 		bool letterboxEnabled = letterboxMode > 0 && isXVersion;
 		
-		SetKeyword(mat, "_COLORCOLOR_ON", filteringEnabled);
-		SetKeyword(mat, "FXAA", shakeEnabled);
-		SetKeyword(mat, "EFFECT_BUMP", distortionEnabled);
-		SetKeyword(mat, "_TERRAIN_NORMAL_MAP", distortionTriEnabled);
-		SetKeyword(mat, "BLOOM", blurPixelEnabled);
-		SetKeyword(mat, "GRAIN", blurDitherEnabled);
-		SetKeyword(mat, "_SUNDISK_SIMPLE", blurRadEnabled);
-		SetKeyword(mat, "BLOOM_LENS_DIRT", blurYEnabled);
-		SetKeyword(mat, "CHROMATIC_ABBERATION_LOW", blurChromEnabled);
-		SetKeyword(mat, "DEPTH_OF_FIELD", dofEnabled);
-		SetKeyword(mat, "_DETAIL_MULX2", zoomEnabled);
-		SetKeyword(mat, "_MAPPING_6_FRAMES_LAYOUT", zoomRGBEnabled);
-		SetKeyword(mat, "_COLOROVERLAY_ON", sstEnabled);
-		SetKeyword(mat, "_PARALLAXMAP", sstDistEnabled);
-		SetKeyword(mat, "_FADING_ON", fogEnabled);
-		SetKeyword(mat, "PIXELSNAP_ON", tpEnabled);
-		SetKeyword(mat, "_COLORADDSUBDIFF_ON", outlineEnabled);
-		SetKeyword(mat, "_REQUIRE_UV2", noiseEnabled);
+		SetKeyword(mat, "_COLOR_ON", filteringEnabled);
+		SetKeyword(mat, "_SHAKE_ON", shakeEnabled);
+		SetKeyword(mat, "_DISTORTION_ON", distortionEnabled);
+		SetKeyword(mat, "_DISTORTION_WORLD_ON", distortionTriEnabled);
+		SetKeyword(mat, "_BLUR_PIXEL_ON", blurPixelEnabled);
+		SetKeyword(mat, "_BLUR_DITHER_ON", blurDitherEnabled);
+		SetKeyword(mat, "_BLUR_RADIAL_ON", blurRadEnabled);
+		SetKeyword(mat, "_BLUR_Y_ON", blurYEnabled);
+		SetKeyword(mat, "_CHROMATIC_ABBERATION_ON", blurChromEnabled);
+		SetKeyword(mat, "_DOF_ON", dofEnabled);
+		SetKeyword(mat, "_ZOOM_ON", zoomEnabled);
+		SetKeyword(mat, "_ZOOM_RGB_ON", zoomRGBEnabled);
+		SetKeyword(mat, "_IMAGE_OVERLAY_ON", sstEnabled);
+		SetKeyword(mat, "_IMAGE_OVERLAY_DISTORTION_ON", sstDistEnabled);
+		SetKeyword(mat, "_FOG_ON", fogEnabled);
+		SetKeyword(mat, "_TRIPLANAR_ON", tpEnabled);
+		SetKeyword(mat, "_OUTLINE_ON", outlineEnabled);
+		SetKeyword(mat, "_NOISE_ON", noiseEnabled);
 
 		mat.SetShaderPassEnabled("Always", zoomEnabled || zoomRGBEnabled || sstEnabled || sstDistEnabled ||  letterboxEnabled);
 	}

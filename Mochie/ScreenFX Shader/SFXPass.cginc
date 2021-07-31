@@ -31,7 +31,6 @@ v2f vert (appdata v){
     float4 wPos = mul(unity_CameraToWorld, v.vertex);
     float4 oPos = mul(unity_WorldToObject, wPos);
     o.raycast = UnityObjectToViewPos(oPos).xyz * float3(-1,-1,1);
-    o.raycast *= (_ProjectionParams.z / o.raycast.z);
     o.pos = GetScreenspaceVertexPos(v.vertex);
 
     o.uv = ComputeGrabScreenPos(o.pos);

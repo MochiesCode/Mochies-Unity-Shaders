@@ -1,36 +1,68 @@
 #ifndef SAMPLING_INCLUDED
 #define SAMPLING_INCLUDED
 
-#ifdef MOCHIE_STANDARD
-	Texture2D		_MainTex;
-	SamplerState 	sampler_MainTex;
-	float4      	_MainTex_ST;
-#endif
+// Replacement sampling macros to ensure everything always stays in dx11 territory
+// Default unity macros will translate some things to dx9 which kills SamplerState syntax
+#define MOCHIE_DECLARE_TEX2D(tex)														Texture2D tex; SamplerState sampler##tex
+#define MOCHIE_DECLARE_TEX2D_NOSAMPLER(tex)												Texture2D tex
+#define MOCHIE_DECLARE_TEX2DARRAY(tex)													Texture2DArray tex; SamplerState sampler##tex
+#define MOCHIE_DECLARE_TEX2DARRAY_NOSAMPLER(tex)										Texture2DArray tex
 
-#define UNITY_SAMPLE_TEX2D_GRAD_SAMPLER(tex,samplertex,coord,dx,dy) tex.SampleGrad(sampler##samplertex,coord,dx,dy)
+#define MOCHIE_SAMPLE_TEX2D(tex,coord)													tex.Sample(sampler##tex,coord)
+#define MOCHIE_SAMPLE_TEX2D_LOD(tex,coord,lod)											tex.SampleLevel(sampler##tex,coord,lod)
+#define MOCHIE_SAMPLE_TEX2D_BIAS(tex,coord,bias)										tex.SampleBias(sampler##tex,coord,bias)
+#define MOCHIE_SAMPLE_TEX2D_BIAS_OFFS(tex,coord,bias,offset)							tex.SampleBias(sampler##tex,coord,bias,offset.xy)
+#define MOCHIE_SAMPLE_TEX2D_GRAD(tex,coord,dx,dy)										tex.SampleGrad(sampler##tex,coord,dx,dy)
 
-#define UNITY_SAMPLE_TEX2D_LOD_SAMPLER(tex,samplertex,coord) tex.SampleLevel(sampler##samplertex,(coord).xy,(coord).w)
+#define MOCHIE_SAMPLE_TEX2D_SAMPLER(tex,texSampler,coord)								tex.Sample(texSampler,coord)
+#define MOCHIE_SAMPLE_TEX2D_SAMPLER_LOD(tex,texSampler,coord,lod)						tex.SampleLevel(texSampler,coord,lod)
+#define MOCHIE_SAMPLE_TEX2D_SAMPLER_BIAS(tex,texSampler,coord,bias)						tex.SampleBias(texSampler,coord,bias)
+#define MOCHIE_SAMPLE_TEX2D_SAMPLER_BIAS_OFFS(tex,texSampler,coord,bias,offset)			tex.SampleBias(texSampler,coord,bias,offset.xy)
+#define MOCHIE_SAMPLE_TEX2D_SAMPLER_GRAD(tex,texSampler,coord,dx,dy)					tex.SampleGrad(texSampler,coord,dx,dy)
 
-#define UNITY_SAMPLE_TEX2D_BIAS_OFFS_SAMPLER(tex,samplertex,coord,offset) tex.SampleBias(sampler##samplertex,(coord).xy,(coord).w,(offset).xy)
+#define MOCHIE_SAMPLE_TEX2DARRAY(tex,coord)												tex.Sample(sampler##tex,coord)
+#define MOCHIE_SAMPLE_TEX2DARRAY_LOD(tex,coord,lod)										tex.SampleLevel(sampler##tex,coord,lod)
+#define MOCHIE_SAMPLE_TEX2DARRAY_BIAS(tex,coord,bias)									tex.SampleBias(sampler##tex,coord,bias)
+#define MOCHIE_SAMPLE_TEX2DARRAY_BIAS_OFFS(tex,coord,bias,offset)						tex.SampleBias(sampler##tex,coord,bias,offset.xy)
+#define MOCHIE_SAMPLE_TEX2DARRAY_GRAD(tex,coord,dx,dy)									tex.SampleGrad(sampler##tex,coord,dx,dy)
 
-#define UNITY_SAMPLE_TEX2D_BIAS_SAMPLER(tex,samplertex,coord) tex.SampleBias(sampler##samplertex,(coord).xy,(coord).w)
+#define MOCHIE_SAMPLE_TEX2DARRAY_SAMPLER(tex,texSampler,coord)							tex.Sample(texSampler,coord)
+#define MOCHIE_SAMPLE_TEX2DARRAY_SAMPLER_LOD(tex,texSampler,coord,lod)					tex.SampleLevel(texSampler,coord,lod)
+#define MOCHIE_SAMPLE_TEX2DARRAY_SAMPLER_BIAS(tex,texSampler,coord,bias)				tex.SampleBias(texSampler,coord,bias)
+#define MOCHIE_SAMPLE_TEX2DARRAY_SAMPLER_BIAS_OFFS(tex,texSampler,coord,bias,offset)	tex.SampleBias(texSampler,coord,bias,offset.xy)
+#define MOCHIE_SAMPLE_TEX2DARRAY_SAMPLER_GRAD(tex,texSampler,coord,dx,dy)				tex.SampleGrad(texSampler,coord,dx,dy)
 
-#define UNITY_SAMPLE_TEX2D_LOD(tex,coord) tex.SampleLevel(sampler##tex,(coord).xy,(coord).w)
+#if defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
 
-float3 tex2Dnormal(Texture2D tex, float2 uv, float offset, float strength){
+#define MOCHIE_DECLARE_TEX2D_SCREENSPACE(tex)											MOCHIE_DECLARE_TEX2DARRAY(tex)
+#define MOCHIE_DECLARE_TEX2D_SCREENSPACE_NOSAMPLER(tex)									MOCHIE_DECLARE_TEX2DARRAY_NOSAMPLER(tex)
+#define MOCHIE_SAMPLE_TEX2D_SCREENSPACE(tex,coord)										MOCHIE_SAMPLE_TEX2DARRAY_LOD(tex,float3(coord,(float)unity_StereoEyeIndex),0)
+#define MOCHIE_SAMPLE_TEX2D_SCREENSPACE_SAMPLER(tex,texSampler,coord)					MOCHIE_SAMPLE_TEX2DARRAY_SAMPLER_LOD(tex,texSampler,float3(coord,(float)unity_StereoEyeIndex),0)
+
+#else
+
+#define MOCHIE_DECLARE_TEX2D_SCREENSPACE(tex)											MOCHIE_DECLARE_TEX2D(tex)
+#define MOCHIE_DECLARE_TEX2D_SCREENSPACE_NOSAMPLER(tex)									MOCHIE_DECLARE_TEX2D_NOSAMPLER(tex)
+#define MOCHIE_SAMPLE_TEX2D_SCREENSPACE(tex,coord)										MOCHIE_SAMPLE_TEX2D_LOD(tex,coord,0)
+#define MOCHIE_SAMPLE_TEX2D_SCREENSPACE_SAMPLER(tex,texSampler,coord)					MOCHIE_SAMPLE_TEX2D_SAMPLER_LOD(tex,texSampler,coord,0)
+
+#endif // defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
+
+// From shadergraph
+float3 tex2Dnormal(Texture2D tex, SamplerState ss, float2 uv, float offset, float strength){
 	offset = pow(offset, 3) * 0.1;
 	float2 offsetU = float2(uv.x + offset, uv.y);
 	float2 offsetV = float2(uv.x, uv.y + offset);
-	float normalSample = tex.Sample(sampler_MainTex, uv);
-	float uSample = tex.Sample(sampler_MainTex, offsetU);
-	float vSample = tex.Sample(sampler_MainTex, offsetV);
+	float normalSample = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, ss, uv);
+	float uSample = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, ss, offsetU);
+	float vSample = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, ss, offsetV);
 	float3 va = float3(1, 0, (uSample - normalSample) * strength);
 	float3 vb = float3(0, 1, (vSample - normalSample) * strength);
 	return normalize(cross(va, vb));
 }
 
 // From https://www.willpodpechan.com/blog/2020/10/16/de-tiled-triplanar-mapping-in-unity
-float4 tex2Dstoch(Texture2D tex, float2 uv){
+float4 tex2Dstoch(Texture2D tex, SamplerState ss, float2 uv){
 	//skew the uv to create triangular grid
 	float2 skewUV = mul(float2x2 (1.0, 0.0, -0.57735027, 1.15470054), uv * 3.464);
 
@@ -64,8 +96,8 @@ float4 tex2Dstoch(Texture2D tex, float2 uv){
 	}	
 
 	//get derivatives to avoid triangular artifacts
-	float2 dx = ddx_fine(uv);
-	float2 dy = ddy_fine(uv);
+	float2 dx = ddx(uv);
+	float2 dy = ddy(uv);
 
 	//offset uvs using magic numbers
 	float2 randomA = uv + frac(sin(fmod(float2(dot(vertA, float2(127.1, 311.7)), dot(vertA, float2(269.5, 183.3))), 3.14159)) * 43758.5453);
@@ -73,29 +105,30 @@ float4 tex2Dstoch(Texture2D tex, float2 uv){
 	float2 randomC = uv + frac(sin(fmod(float2(dot(vertC, float2(127.1, 311.7)), dot(vertC, float2(269.5, 183.3))), 3.14159)) * 43758.5453);
 	
 	//get texture samples
-	float4 sampleA = tex.SampleGrad(sampler_MainTex, randomA, dx, dy);
-	float4 sampleB = tex.SampleGrad(sampler_MainTex, randomB, dx, dy);
-	float4 sampleC = tex.SampleGrad(sampler_MainTex, randomC, dx, dy);
+	float4 sampleA = MOCHIE_SAMPLE_TEX2D_SAMPLER_GRAD(tex, ss, randomA, dx, dy);
+	float4 sampleB = MOCHIE_SAMPLE_TEX2D_SAMPLER_GRAD(tex, ss, randomB, dx, dy);
+	float4 sampleC = MOCHIE_SAMPLE_TEX2D_SAMPLER_GRAD(tex, ss, randomC, dx, dy);
 	
 	//blend samples with weights	
 	return sampleA * weightA + sampleB * weightB + sampleC * weightC;
 }
 
-float4 tex2Dsuper(Texture2D tex, float2 uv){
-	float2 dx = ddx_fine(uv);
-	float2 dy = ddy_fine(uv);
+// From https://bgolus.medium.com/sharper-mipmapping-using-shader-based-supersampling-ed7aadb47bec
+float4 tex2Dsuper(Texture2D tex, SamplerState ss, float2 uv){
+	float2 dx = ddx(uv);
+	float2 dy = ddy(uv);
 	float2 uvOffsets = float2(0.125,0.375);
 	float4 offsetUV = float4(0,0,0,-0.25);
 	
 	half4 col = 0;
 	offsetUV.xy = uv + uvOffsets.x * dx + uvOffsets.y * dy;
-	col += tex.SampleBias(sampler_MainTex, offsetUV.xy, offsetUV.w);
+	col += MOCHIE_SAMPLE_TEX2D_SAMPLER_BIAS(tex, ss, offsetUV.xy, offsetUV.w);
 	offsetUV.xy = uv - uvOffsets.x * dx - uvOffsets.y * dy;
-	col += tex.SampleBias(sampler_MainTex, offsetUV.xy, offsetUV.w);
+	col += MOCHIE_SAMPLE_TEX2D_SAMPLER_BIAS(tex, ss, offsetUV.xy, offsetUV.w);
 	offsetUV.xy = uv + uvOffsets.y * dx - uvOffsets.x * dy;
-	col += tex.SampleBias(sampler_MainTex, offsetUV.xy, offsetUV.w);
+	col += MOCHIE_SAMPLE_TEX2D_SAMPLER_BIAS(tex, ss, offsetUV.xy, offsetUV.w);
 	offsetUV.xy = uv - uvOffsets.y * dx + uvOffsets.x * dy;
-	col += tex.SampleBias(sampler_MainTex, offsetUV.xy, offsetUV.w);
+	col += MOCHIE_SAMPLE_TEX2D_SAMPLER_BIAS(tex, ss, offsetUV.xy, offsetUV.w);
 	col *= 0.25;
 
 	return col;
@@ -121,214 +154,49 @@ static const float2 kernel[16] = {
 };
 
 // edgeRadius is 0-1 property range (default 0.5)
-float tex2Dsobel(Texture2D tex, float2 uv, float edgeRadius) {
+float tex2Dsobel(Texture2D tex, SamplerState ss, float2 uv, float edgeRadius) {
 	edgeRadius = lerp(0.0001, 0.005, edgeRadius);
 	float2 delta = edgeRadius.xx;
 	
 	float4 hr = 0;
 	float4 vt = 0;
 	
-	hr += tex.Sample(sampler_MainTex, (uv + float2(-1.0, -1.0) * delta)) *  1.0;
-	hr += tex.Sample(sampler_MainTex, (uv + float2( 0.0, -1.0) * delta)) *  0.0;
-	hr += tex.Sample(sampler_MainTex, (uv + float2( 1.0, -1.0) * delta)) * -1.0;
-	hr += tex.Sample(sampler_MainTex, (uv + float2(-1.0,  0.0) * delta)) *  2.0;
-	hr += tex.Sample(sampler_MainTex, (uv + float2( 0.0,  0.0) * delta)) *  0.0;
-	hr += tex.Sample(sampler_MainTex, (uv + float2( 1.0,  0.0) * delta)) * -2.0;
-	hr += tex.Sample(sampler_MainTex, (uv + float2(-1.0,  1.0) * delta)) *  1.0;
-	hr += tex.Sample(sampler_MainTex, (uv + float2( 0.0,  1.0) * delta)) *  0.0;
-	hr += tex.Sample(sampler_MainTex, (uv + float2( 1.0,  1.0) * delta)) * -1.0;
+	hr += MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, ss, (uv + float2(-1.0, -1.0) * delta));
+	hr += MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, ss, (uv + float2( 1.0, -1.0) * delta)) * -1.0;
+	hr += MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, ss, (uv + float2(-1.0,  0.0) * delta)) *  2.0;
+	hr += MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, ss, (uv + float2( 1.0,  0.0) * delta)) * -2.0;
+	hr += MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, ss, (uv + float2(-1.0,  1.0) * delta));
+	hr += MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, ss, (uv + float2( 1.0,  1.0) * delta)) * -1.0;
 	
-	vt += tex.Sample(sampler_MainTex, (uv + float2(-1.0, -1.0) * delta)) *  1.0;
-	vt += tex.Sample(sampler_MainTex, (uv + float2( 0.0, -1.0) * delta)) *  2.0;
-	vt += tex.Sample(sampler_MainTex, (uv + float2( 1.0, -1.0) * delta)) *  1.0;
-	vt += tex.Sample(sampler_MainTex, (uv + float2(-1.0,  0.0) * delta)) *  0.0;
-	vt += tex.Sample(sampler_MainTex, (uv + float2( 0.0,  0.0) * delta)) *  0.0;
-	vt += tex.Sample(sampler_MainTex, (uv + float2( 1.0,  0.0) * delta)) *  0.0;
-	vt += tex.Sample(sampler_MainTex, (uv + float2(-1.0,  1.0) * delta)) * -1.0;
-	vt += tex.Sample(sampler_MainTex, (uv + float2( 0.0,  1.0) * delta)) * -2.0;
-	vt += tex.Sample(sampler_MainTex, (uv + float2( 1.0,  1.0) * delta)) * -1.0;
+	vt += MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, ss, (uv + float2(-1.0, -1.0) * delta));
+	vt += MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, ss, (uv + float2( 0.0, -1.0) * delta)) *  2.0;
+	vt += MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, ss, (uv + float2( 1.0, -1.0) * delta));
+	vt += MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, ss, (uv + float2(-1.0,  1.0) * delta)) * -1.0;
+	vt += MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, ss, (uv + float2( 0.0,  1.0) * delta)) * -2.0;
+	vt += MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, ss, (uv + float2( 1.0,  1.0) * delta)) * -1.0;
 	
 	return sqrt(hr * hr + vt * vt);
 }
 
 // edgeBlur is 0-1 property range (default 0.1)
-float4 tex2Dblur(Texture2D tex, float2 uv, float edgeBlur){
+float4 tex2Dblur(Texture2D tex, SamplerState ss, float2 uv, float edgeBlur){
 	float4 blurCol = 0;
 	float strength = edgeBlur * 0.001;
-	UNITY_UNROLL
+	[unroll(16)]
 	for (int i = 0; i < 16; i++){
-		blurCol += tex.Sample(sampler_MainTex, uv + (strength * kernel[i]));
+		blurCol += MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, ss, uv + (strength * kernel[i]));
 	}	
 	return blurCol /= 16;
 }
 
-#ifdef MOCHIE_STANDARD // Only supports standard mod for now due to struct requirements
-	
-#include "../Standard Shader/MochieStandardKeyDefines.cginc"
-struct SampleData {
-	float4 localPos;
-	float3 objPos;
-	float3 depthNormal;
-	float3 worldPixelPos;
-	float3 normal;
-	float4 scaleTransform;
-	float rotation;
-};
-
-float _TriplanarFalloff;
-float _EdgeFadeMin;
-float _EdgeFadeMax;
-
-#if DECAL_ENABLED
-
-float2 RotateDecalUV(float2 coords, float rot){
-	rot *= (UNITY_PI/180.0);
-	float sinVal = sin(rot);
-	float cosX = cos(rot);
-	float2x2 mat = float2x2(cosX, -sinVal, sinVal, cosX);
-	mat = ((mat*0.5)+0.5)*2-1;
-	return mul(coords, mat);;
+float4 tex2Dblur(sampler2D tex, float2 uv, float edgeBlur){
+	float4 blurCol = 0;
+	float strength = edgeBlur * 0.001;
+	[unroll(16)]
+	for (int i = 0; i < 16; i++){
+		blurCol += tex2D(tex, uv + (strength * kernel[i]));
+	}	
+	return blurCol /= 16;
 }
-
-float4 tex2Ddecal(Texture2D tex, SampleData sd){
-	float3 normal = sd.depthNormal;
-	float3 wpos = sd.worldPixelPos;
-	float stepXY = step(normal.x, normal.y);
-	float stepYX = step(normal.y, normal.x);
-	float stepXZ = step(normal.x, normal.z);
-	float stepYZ = step(normal.y, normal.z);
-	float stepZX = step(normal.z, normal.x);
-	float stepZY = step(normal.z, normal.y);
-	float2 uv = stepYX*stepZX*((wpos.zy - sd.objPos.zy)*sd.scaleTransform.xy + float2(0.5, 0.5))+
-				stepXY*stepZY*((wpos.xz - sd.objPos.xz)*sd.scaleTransform.xy + float2(0.5, 0.5))+
-				stepXZ*stepYZ*((wpos.xy - sd.objPos.xy)*sd.scaleTransform.xy + float2(0.5, 0.5));
-	uv = RotateDecalUV(uv, sd.rotation);
-	float4 col = tex.Sample(sampler_MainTex, uv);
-	col.a *= smoothstep(_EdgeFadeMax,_EdgeFadeMin, distance(wpos, sd.objPos));
-	return col;
-}
-
-float3 tex2DdecalNormal(Texture2D tex, SampleData sd, float normalScale){
-	float3 normal = sd.depthNormal;
-	float3 wpos = sd.worldPixelPos;
-	float stepXY = step(normal.x, normal.y);
-	float stepYX = step(normal.y, normal.x);
-	float stepXZ = step(normal.x, normal.z);
-	float stepYZ = step(normal.y, normal.z);
-	float stepZX = step(normal.z, normal.x);
-	float stepZY = step(normal.z, normal.y);
-	float2 uv = stepYX*stepZX*((wpos.zy - sd.objPos.zy)*sd.scaleTransform.xy + float2(0.5, 0.5))+
-				stepXY*stepZY*((wpos.xz - sd.objPos.xz)*sd.scaleTransform.xy + float2(0.5, 0.5))+
-				stepXZ*stepYZ*((wpos.xy - sd.objPos.xy)*sd.scaleTransform.xy + float2(0.5, 0.5));
-	uv = RotateDecalUV(uv, sd.rotation);
-	return UnpackScaleNormal(tex.Sample(sampler_MainTex, uv), normalScale);
-}
-#endif
-
-// Based on Xiexe's implementation
-// https://github.com/Xiexe/XSEnvironmentShaders/blob/bf992e8e292a0562ce4164964f16b3abdc97f078/XSEnvironment/LightingFunctions.cginc#L213
-
-float4 tex2Dtri(Texture2D tex, SampleData sd) {
-	float3 surfaceNormal = sd.normal;
-	float3 pos = sd.localPos;
-    surfaceNormal = abs(surfaceNormal);
-	float3 projectedNormal = pow(abs(surfaceNormal), _TriplanarFalloff);
-    projectedNormal /= (surfaceNormal.x + surfaceNormal.y + surfaceNormal.z);
-	float3 normalSign = sign(surfaceNormal);
-
-	float2 uvX = sd.scaleTransform.xy * (pos.zy * float2(normalSign.x, 1)) + sd.scaleTransform.zw;
-	float2 uvY = sd.scaleTransform.xy * (pos.xz * float2(normalSign.y, 1)) + sd.scaleTransform.zw;
-	float2 uvZ = sd.scaleTransform.xy * (pos.xy * float2(-normalSign.z, 1)) + sd.scaleTransform.zw;
-
-	float4 sampleX, sampleY, sampleZ;
-	sampleX = sampleY = sampleZ = 0;
-
-	if (projectedNormal.x > 0)
-		sampleX = tex.Sample(sampler_MainTex, uvX);
-	if (projectedNormal.y > 0)
-		sampleY = tex.Sample(sampler_MainTex, uvY);
-	if (projectedNormal.z > 0)
-		sampleZ = tex.Sample(sampler_MainTex, uvZ);
-
-	return (sampleX * projectedNormal.x) + (sampleY * projectedNormal.y) + (sampleZ * projectedNormal.z);
-}
-
-float3 tex2DtriNormal(Texture2D tex, SampleData sd, float normalScale) {
-	float3 surfaceNormal = sd.normal;
-	float3 pos = sd.localPos;
-    surfaceNormal = abs(surfaceNormal);
-	float3 projectedNormal = pow(abs(surfaceNormal), _TriplanarFalloff);
-    projectedNormal /= (surfaceNormal.x + surfaceNormal.y + surfaceNormal.z);
-	float3 normalSign = sign(surfaceNormal);
-
-	float2 uvX = sd.scaleTransform.xy * (pos.zy * float2(normalSign.x, 1)) + sd.scaleTransform.zw;
-	float2 uvY = sd.scaleTransform.xy * (pos.xz * float2(normalSign.y, 1)) + sd.scaleTransform.zw;
-	float2 uvZ = sd.scaleTransform.xy * (pos.xy * float2(-normalSign.z, 1)) + sd.scaleTransform.zw;
-
-	float4 sampleX, sampleY, sampleZ;
-	sampleX = sampleY = sampleZ = 0;
-
-	if (projectedNormal.x > 0)
-		sampleX = tex.Sample(sampler_MainTex, uvX);
-	if (projectedNormal.y > 0)
-		sampleY = tex.Sample(sampler_MainTex, uvY);
-	if (projectedNormal.z > 0)
-		sampleZ = tex.Sample(sampler_MainTex, uvZ);
-
-	sampleX.xyz = UnpackScaleNormal(sampleX, normalScale);
-	sampleY.xyz = UnpackScaleNormal(sampleY, normalScale);
-	sampleZ.xyz = UnpackScaleNormal(sampleZ, normalScale);
-
-	return (sampleX * projectedNormal.x) + (sampleY * projectedNormal.y) + (sampleZ * projectedNormal.z);
-}
-
-float4 SampleTexture(Texture2D tex, float2 uv){
-	float4 col = 0;
-	#if STOCHASTIC_ENABLED
-		col = tex2Dstoch(tex, uv);
-	#elif TSS_ENABLED
-		col = tex2Dsuper(tex, uv);
-	#else
-		col = tex.Sample(sampler_MainTex, uv);
-	#endif
-	return col;
-}
-
-float4 SampleTexture(Texture2D tex, float2 uv, SampleData sd){
-	float4 col = 0;
-	#if STOCHASTIC_ENABLED
-		col = tex2Dstoch(tex, uv);
-	#elif TSS_ENABLED
-		col = tex2Dsuper(tex, uv);
-	#elif TRIPLANAR_ENABLED
-		col = tex2Dtri(tex, sd);
-	#elif DECAL_ENABLED
-		col = tex2Ddecal(tex, sd);
-	#else
-		col = tex.Sample(sampler_MainTex, uv);
-	#endif
-	return col;
-}
-
-float3 SampleTexture(Texture2D tex, float2 uv, SampleData sd, float normalScale){
-	float3 col = 0;
-	#if STOCHASTIC_ENABLED
-		float4 normalMap = tex2Dstoch(tex, uv);
-		col = UnpackScaleNormal(normalMap, normalScale);
-	#elif TSS_ENABLED
-		float4 normalMap = tex2Dsuper(tex, uv);
-		col = UnpackScaleNormal(normalMap, normalScale);
-	#elif TRIPLANAR_ENABLED
-		col = tex2DtriNormal(tex, sd, normalScale);
-	#elif DECAL_ENABLED
-		col = tex2DdecalNormal(tex, sd, normalScale);
-	#else
-		float4 normalMap = tex.Sample(sampler_MainTex, uv);
-		col = UnpackScaleNormal(normalMap, normalScale);
-	#endif
-	return col;
-}
-
-#endif // MOCHIE STANDARD
 
 #endif // SAMPLING_INCLUDED

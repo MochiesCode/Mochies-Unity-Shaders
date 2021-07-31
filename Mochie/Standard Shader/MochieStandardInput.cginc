@@ -9,16 +9,12 @@
 #include "../Common/Utilities.cginc"
 #include "../Common/Color.cginc"
 
-#if SHADER_TARGET < 50
-	#define ddx_fine ddx
-	#define ddy_fine ddy
-#endif
-
 #if SSR_ENABLED || DECAL_ENABLED
 	sampler2D _CameraDepthTexture;
 #endif
 
 #include "../Common/Sampling.cginc"
+#include "MochieStandardSampling.cginc"
 
 //---------------------------------------
 // Directional lightmaps & Parallax require tangent space too
@@ -181,13 +177,6 @@ half Alpha(float2 uv, SampleData sd)
 half Occlusion(float4 uv, SampleData sd)
 {
 	#if WORKFLOW_PACKED
-		half occ = SampleTexture(_PackedMap, uv.xy, sd).r;
-		#if DETAIL_AO
-			half occDetail = SampleTexture(_DetailAOMap, uv.zw, sd);
-			occ = BlendScalars(occ, occDetail, _DetailAOBlend);
-		#endif
-		return LerpOneTo(occ, lerp(1, _OcclusionStrength, _OcclusionMult));
-	#elif WORKFLOW_MODULAR
 		half4 map = SampleTexture(_PackedMap, uv.xy, sd);
 		half occ = ChannelCheck(map, _OcclusionChannel);
 		#if DETAIL_AO
@@ -209,20 +198,6 @@ half2 MetallicRough(float4 uv, SampleData sd)
 {
 	half2 mg;
 	#if WORKFLOW_PACKED
-		half4 packedMap = SampleTexture(_PackedMap, uv.xy, sd);
-		#if TRIPLANAR_ENABLED
-			packedMap.b = smoothstep(0,0.1, packedMap.b);
-		#endif
-		float metal = packedMap.b * lerp(1, _Metallic, _MetallicMult);
-		float rough = packedMap.g * lerp(1, _Glossiness, _RoughnessMult);
-		#if DETAIL_ROUGH
-			float detailRough = SampleTexture(_DetailRoughnessMap, uv.zw, sd).r;
-			rough = BlendScalars(rough, detailRough, _DetailRoughBlend);
-		#endif
-		mg.r = metal;
-		mg.g = 1-rough;
-		return mg;
-	#elif WORKFLOW_MODULAR
 		half4 packedMap = SampleTexture(_PackedMap, uv.xy, sd);
 		float rough = ChannelCheck(packedMap, _RoughnessChannel);
 		float metal = ChannelCheck(packedMap, _MetallicChannel);
@@ -316,13 +291,9 @@ float4 Parallax (float4 texcoords, half3 viewDir, out float2 offset)
 		return texcoords;
 	#endif
 
-	#if WORKFLOW_PACKED || WORKFLOW_MODULAR
-		#if WORKFLOW_PACKED
-			half h = SampleTexture(_PackedMap, texcoords.xy).a + _ParallaxOffset;
-		#else
-			half4 packedMap = SampleTexture(_PackedMap, texcoords.xy);
-			half h = ChannelCheck(packedMap, _HeightChannel) + _ParallaxOffset;
-		#endif
+	#if WORKFLOW_PACKED
+		half4 packedMap = SampleTexture(_PackedMap, texcoords.xy);
+		half h = ChannelCheck(packedMap, _HeightChannel) + _ParallaxOffset;
 		h = clamp(h, 0, 0.999);
 		float2 maskUV = TRANSFORM_TEX(texcoords, _ParallaxMask) + (_Time.y*_UV2Scroll);
 		half m = _ParallaxMask.Sample(sampler_MainTex, maskUV);

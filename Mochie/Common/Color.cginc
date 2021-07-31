@@ -1,6 +1,12 @@
 #ifndef COLOR_INCLUDED
 #define COLOR_INCLUDED
 
+#ifdef UNITY_COLORSPACE_GAMMA
+	#define mochie_ColorSpaceDouble float3(2.0, 2.0, 2.0)
+#else
+	#define mochie_ColorSpaceDouble float3(4.59479380, 4.59479380, 4.59479380)
+#endif
+
 // ---------------------------
 // Color Model Conversions
 // ---------------------------
@@ -112,7 +118,8 @@ float BlendPinLight(float s, float d){ return (2.0*s - 1.0 > d) ? 2.0*s - 1.0 : 
 float BlendVividLight(float s, float d){ return (s < 0.5) ? 1.0 - (1.0 - d) / (2.0 * s) : d / (2.0 * (1.0 - s)); }
 float BlendHardLight(float s, float d){ return (s < 0.5) ? 2.0*s*d : 1.0 - 2.0*(1.0 - s)*(1.0 - d); }
 float BlendOverlay(float s, float d){ return (d < 0.5) ? 2.0*s*d : 1.0 - 2.0*(1.0 - s)*(1.0 - d); }
-float BlendScreen(float s, float d) { return s + d - s * d; }
+float BlendScreen(float s, float d){ return s + d - s * d; }
+float BlendLerp(float s, float d){ return lerp(s, d, 0.5); }
 float BlendSoftLight(float s, float d){
     return (s < 0.5) ? d - (1.0 - 2.0*s)*d*(1.0 - d) 
                 : (d < 0.25) ? d + (2.0*s - 1.0)*d*((16.0*d - 12.0)*d + 3.0) 
@@ -124,6 +131,7 @@ float3 BlendColorBurn(float3 s, float3 d){ return 1.0 - (1.0 - d) / s; }
 float3 BlendLinearBurn(float3 s, float3 d ){ return s + d - 1.0; }
 float3 BlendDarkerColor(float3 s, float3 d){ return (s.x + s.y + s.z < d.x + d.y + d.z) ? s : d; }
 float3 BlendScreen(float3 s, float3 d){ return s + d - s * d; }
+float3 BlendLerp(float3 s, float3 d){ return lerp(s, d, 0.5); }
 float3 BlendColorDodge(float3 s, float3 d){ return d / (1.0 - s); }
 float3 BlendLighterColor(float3 s, float3 d){ return (s.x + s.y + s.z > d.x + d.y + d.z) ? s : d; }
 float3 BlendHardMix(float3 s, float3 d){ return floor(s+d); }
@@ -216,32 +224,44 @@ float3 GetSaturation(float3 col, float interpolator){
     return lerp(dot(col, float3(0.3,0.59,0.11)), col, interpolator);
 }
 
+// 0 Add, 1 Sub, 2 Mul, 3 Mulx2, 4 Overlay, 5 Screen, 6 Lerp
 float3 BlendColors(float3 col0, float3 col1, int blendType){
-	float3 col2 = col0;
-	switch (blendType){
-		case 0: col2 = col0 + col1; break;
-		case 1: col2 = col0 - col1; break;
-		case 2: col2 = col0 * col1; break;
-		case 3: col2 = BlendOverlay(col0, col1); break;
-		case 4: col2 = BlendScreen(col0, col1); break;
-		case 5: col2 = BlendSoftLight(col0, col1); break;
-		default: break;
-	}
-	return col2;
+	float3 blends[7] = {
+		col0 + col1,
+		col0 - col1,
+		col0 * col1,
+		col0 * col1 * mochie_ColorSpaceDouble,
+		BlendOverlay(col0, col1),
+		BlendScreen(col0, col1),
+		BlendLerp(col0, col1)
+	};
+	return blends[blendType];
+}
+
+float3 BlendColors(float3 col0, float3 col1, int blendType, float interpolator){
+	float3 blends[7] = {
+		col0 + (col1*interpolator),
+		col0 - (col1*interpolator),
+		col0 * lerp(1, col1, interpolator),
+		col0 * lerp(1, col1 * mochie_ColorSpaceDouble, interpolator),
+		BlendOverlay(col0, col1 * interpolator),
+		BlendScreen(col0, col1 * interpolator),
+		lerp(col0, col1, interpolator)
+	};
+	return blends[blendType];
 }
 
 float BlendScalars(float scalar0, float scalar1, int blendType){
-	float scalar2 = scalar0;
-	switch (blendType){
-		case 0: scalar2 = scalar0 + scalar1; break;
-		case 1: scalar2 = scalar0 - scalar1; break;
-		case 2: scalar2 = scalar0 * scalar1; break;
-		case 3: scalar2 = BlendOverlay(scalar0, scalar1); break;
-		case 4: scalar2 = BlendScreen(scalar0, scalar1); break;
-		case 5: scalar2 = BlendSoftLight(scalar0, scalar1); break;
-		default: break;
-	}
-	return scalar2;
+	float blends[7] = {
+		scalar0 + scalar1,
+		scalar0 - scalar1,
+		scalar0 * scalar1,
+		scalar0 * scalar1 * mochie_ColorSpaceDouble.x,
+		BlendOverlay(scalar0, scalar1),
+		BlendScreen(scalar0, scalar1),
+		BlendLerp(scalar0, scalar1)
+	};
+	return blends[blendType];
 }
 
 // ---------------------------

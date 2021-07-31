@@ -14,44 +14,27 @@ float FadeShadows (g2f i, float atten) {
 void ApplyLREmission(lighting l, inout float3 diffuse, float3 emiss){
 	float interpolator = 0;
 	if (_ReactToggle == 1){
-		if (_CrossMode == 1){
-			float2 threshold = saturate(float2(_ReactThresh-_Crossfade, _ReactThresh+_Crossfade));
-			interpolator = smootherstep(threshold.x, threshold.y, l.worldBrightness); 
-		}
-		else {
-			interpolator = l.worldBrightness;
-		}
+		float2 threshold = saturate(float2(_ReactThresh-_Crossfade, _ReactThresh+_Crossfade));
+		float2 interps = float2(l.worldBrightness, smootherstep(threshold.x, threshold.y, l.worldBrightness));
+		interpolator = interps[_CrossMode];
 	}
-	diffuse = lerp(diffuse+emiss, diffuse, interpolator);
+	diffuse = lerp(diffuse+emiss, diffuse, interpolator*_ReactToggle);
 }
 
 float3 GetDetailAO(g2f i, float3 aoIn){
-	float3 detailAO = UNITY_SAMPLE_TEX2D_SAMPLER(_DetailOcclusionMap, _MainTex, i.uv2.xy);
-	float3 aoOut = 0;
-	switch (_DetailOcclusionBlending){
-		case 0: aoOut = lerp(aoIn, detailAO, 0.5); break;
-		case 1: aoOut = aoIn + detailAO; break;
-		case 2: aoOut = aoIn - detailAO; break;
-		case 3: aoOut = aoIn * detailAO; break;
-		case 4: aoOut = BlendOverlay(detailAO, aoIn); break;
-		case 5: aoOut = BlendScreen(detailAO, aoIn); break;		
-	}
-	return aoOut;
+	float3 detailAO = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailOcclusionMap, sampler_MainTex, i.uv2.xy);
+	return BlendColors(aoIn, detailAO, _DetailOcclusionBlending);
 }
 
 float3 GetAO(g2f i, masks m){
 	float3 ao = 1;
-	#if PACKED_WORKFLOW || PACKED_WORKFLOW_BAKED
-		#if PACKED_WORKFLOW
-			ao = ChannelCheck(packedTex, _OcclusionChannel);
-		#else
-			ao = packedTex.b;
-		#endif
+	#if PACKED_WORKFLOW
+		ao = ChannelCheck(packedTex, _OcclusionChannel);
 	#else
-		ao = UNITY_SAMPLE_TEX2D_SAMPLER(_OcclusionMap, _MainTex, i.uv.xy).g;
+		ao = MOCHIE_SAMPLE_TEX2D_SAMPLER(_OcclusionMap, sampler_MainTex, i.uv.xy).g;
 	#endif
 	ao = lerp(ao, GetDetailAO(i, ao), _DetailOcclusionStrength * m.detailMask * _UsingDetailOcclusion);
-	float3 tintTex = UNITY_SAMPLE_TEX2D_SAMPLER(_AOTintTex, _MainTex, i.uv.xy).rgb;
+	float3 tintTex = MOCHIE_SAMPLE_TEX2D_SAMPLER(_AOTintTex, sampler_MainTex, i.uv.xy).rgb;
 
 	if (_AOFiltering == 1){
 		_AOTint.rgb *= tintTex;
@@ -71,19 +54,17 @@ float3 GetNormalDir(g2f i, lighting l, masks m){
 		#endif
 
 		#if NORMALMAP_ENABLED && DETAIL_NORMALMAP_ENABLED
-			float3 normalMap = UnpackScaleNormal(UNITY_SAMPLE_TEX2D_SAMPLER(_BumpMap, _MainTex, i.uv.xy), _BumpScale);
-			float3 detailNormal = UnpackScaleNormal(UNITY_SAMPLE_TEX2D_SAMPLER(_DetailNormalMap, _MainTex, i.uv2.xy), _DetailNormalMapScale * m.detailMask);
+			float3 normalMap = UnpackScaleNormal(MOCHIE_SAMPLE_TEX2D_SAMPLER(_BumpMap, sampler_MainTex, i.uv.xy), _BumpScale);
+			float3 detailNormal = UnpackScaleNormal(MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailNormalMap, sampler_MainTex, i.uv2.xy), _DetailNormalMapScale * m.detailMask);
 			normalMap = BlendNormals(normalMap, detailNormal);
 		#endif
 
 		#if NORMALMAP_ENABLED && !DETAIL_NORMALMAP_ENABLED
-			float3 normalMap = UnpackScaleNormal(UNITY_SAMPLE_TEX2D_SAMPLER(_BumpMap, _MainTex, i.uv.xy), _BumpScale);
-			normalMap = normalize(normalMap);
+			float3 normalMap = UnpackScaleNormal(MOCHIE_SAMPLE_TEX2D_SAMPLER(_BumpMap, sampler_MainTex, i.uv.xy), _BumpScale);
 		#endif
 
 		#if !NORMALMAP_ENABLED && DETAIL_NORMALMAP_ENABLED		
-			float3 normalMap = UnpackScaleNormal(UNITY_SAMPLE_TEX2D_SAMPLER(_DetailNormalMap, _MainTex, i.uv2.xy), _DetailNormalMapScale * m.detailMask);
-			normalMap = normalize(normalMap);
+			float3 normalMap = UnpackScaleNormal(MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailNormalMap, sampler_MainTex, i.uv2.xy), _DetailNormalMapScale * m.detailMask);
 		#endif
 
 		float3 hardNormals = normalize(cross(ddy(i.worldPos), ddx(i.worldPos)));
@@ -140,6 +121,7 @@ void GetVertexLightData(g2f i, inout lighting l){
 	NdotL += toLightY * l.normal.y;
 	NdotL += toLightZ * l.normal.z;
 
+	UNITY_BRANCH
 	if (_ShadowMode == 1){
 		float4 ramp0 = smootherstep(float4(0,0,0,0), _RampWidth0, NdotL-_RampPos);
 		float4 ramp1 = smootherstep(float4(0,0,0,0), _RampWidth1, NdotL-_RampPos);
@@ -147,10 +129,10 @@ void GetVertexLightData(g2f i, inout lighting l){
 	}
 	else if (_ShadowMode == 2){
 		float4 rampUV = NdotL * 0.5 + 0.5;
-		float ramp0 = tex2D(_ShadowRamp, rampUV.xx);
-		float ramp1 = tex2D(_ShadowRamp, rampUV.yy);
-		float ramp2 = tex2D(_ShadowRamp, rampUV.zz);
-		float ramp3 = tex2D(_ShadowRamp, rampUV.ww);
+		float ramp0 = MOCHIE_SAMPLE_TEX2D(_ShadowRamp, rampUV.xx);
+		float ramp1 = MOCHIE_SAMPLE_TEX2D(_ShadowRamp, rampUV.yy);
+		float ramp2 = MOCHIE_SAMPLE_TEX2D(_ShadowRamp, rampUV.zz);
+		float ramp3 = MOCHIE_SAMPLE_TEX2D(_ShadowRamp, rampUV.ww);
 		atten = float4(ramp0, ramp1, ramp2, ramp3) * atten;
 	}
 
@@ -205,14 +187,18 @@ void GetLightColor(g2f i, inout lighting l, masks m){
 				l.indirectCol = ShadeSH9(l.normal);
 			l.indirectCol = lerp(probeCol, l.indirectCol, _SHStr*m.diffuseMask);
 
-			if (l.lightEnv){
-				l.directCol = _LightColor0 * _RTDirectCont;
-				l.indirectCol *= _RTIndirectCont;
-			}
-			else {
-				l.directCol = l.indirectCol * _DirectCont;
-				l.indirectCol *= _IndirectCont;
-			}
+			l.directCol = lerp(
+				l.indirectCol * _DirectCont,		// No realtime light
+				_LightColor0 * _RTDirectCont,		// Realtime light
+				l.lightEnv
+			);
+
+			l.indirectCol = lerp(
+				l.indirectCol * _IndirectCont,		// No realtime light
+				l.indirectCol * _RTIndirectCont,	// Realtime light
+				l.lightEnv
+			);
+
 		#else
 			l.indirectCol = probeCol;
 			if (l.lightEnv){
@@ -240,14 +226,15 @@ lighting GetLighting(g2f i, masks m, float3 atten, bool frontFace){
 	l.ao = 1;
 
 	#if FORWARD_PASS
-		l.lightEnv = any(_WorldSpaceLightPos0);
+		l.lightEnv = any(_WorldSpaceLightPos0.xyz);
 	#endif
 
 	l.screenUVs = i.grabPos.xy / (i.grabPos.w+0.0000000001);
 	#if UNITY_SINGLE_PASS_STEREO
-		l.screenUVs.x *= 2;
+		l.screenUVs.y *= 0.5555555;
+	#else
+		l.screenUVs.x *= 0.5625;
 	#endif
-
     #if SHADING_ENABLED
 		l.ao = GetAO(i, m);
 		l.viewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPos);
@@ -269,6 +256,8 @@ lighting GetLighting(g2f i, masks m, float3 atten, bool frontFace){
 		l.NdotV = abs(dot(l.normal, l.viewDir));
 		l.NdotH = Safe_DotClamped(l.normal, l.halfVector);
 		l.LdotH = Safe_DotClamped(l.lightDir, l.halfVector);
+		l.VdotL = abs(dot(l.viewDir, l.normal));
+		l.VVRdotL = abs(dot(l.viewDirVR, l.normal));
 		#if SPECULAR_ENABLED && !OUTLINE_PASS
 			l.TdotH = dot(l.tangent, l.halfVector);
 			l.BdotH = dot(l.binormal, l.halfVector);
@@ -276,8 +265,7 @@ lighting GetLighting(g2f i, masks m, float3 atten, bool frontFace){
     #else
 		#if VERTEX_LIGHT
 			GetVertexLightData(i, l);
-		#endif
-		#if ADDITIVE_PASS
+		#elif ADDITIVE_PASS
 			l.lightDir = normalize(UnityWorldSpaceLightDir(i.worldPos));
 			l.normal = normalize(i.normal);
 			l.NdotL = dot(l.normal, l.lightDir);

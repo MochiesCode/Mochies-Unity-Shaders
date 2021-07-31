@@ -5,6 +5,7 @@ Shader "Mochie/Uber/Uber" {
 		//----------------------------
 		// BASE
 		//----------------------------
+		[ToggleUI]_Hide("tog", Int) = 0
 		[Enum(Off,0, On,1)]_RenderMode("en2", Int) = 1
 		[Enum(Opaque,0, Cutout,1, Dithered,2, Fade,4, Transparent,5)]_BlendMode("en5", Int) = 0
 		[HideInInspector]_SrcBlend("inte", Int) = 1
@@ -33,7 +34,7 @@ Shader "Mochie/Uber/Uber" {
 		_CubeBlend("ra", Range(0,1)) = 0
 		_MainTexCube0("tex", CUBE) = "white" {}
 		_CubeColor0("col", Color) = (1,1,1,1)
-		[Enum(Lerp,0, Add,1, Sub,2, Mult,3)]_CubeBlendMode("en5", Int) = 0
+		[Enum(Add,0, Sub,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_CubeBlendMode("en6", Int) = 6
 		_CubeRotate0("vec", Vector) = (180,0,0,0)
 		[ToggleUI]_AutoRotate0("tog", Int) = 0
 
@@ -41,7 +42,7 @@ Shader "Mochie/Uber/Uber" {
 		// TEXTURE MAPPING
 		//----------------------------
 		//PRIMARY MAPS
-		[Enum(Metallic,0, Specular,1, Specular (Alpha Smoothness),2, Packed (Modular),3, Packed (Performant),4)]_PBRWorkflow("en5", Int) = 0
+		[Enum(Metallic,0, Specular,1, Specular (Alpha Smoothness),2, Packed,3)]_PBRWorkflow("en4", Int) = 0
 		_MetallicGlossMap("tex", 2D) = "white" {}
 		_Metallic("ra", Range(0,1)) = 0
 		_SpecGlossMap("tex", 2D) = "white" {}
@@ -65,15 +66,15 @@ Shader "Mochie/Uber/Uber" {
 		// DETAIL MAPS
 		_DetailAlbedoMap("tex", 2D) = "gray" {}
 		_DetailAlbedoStrength("ra", Range(0,1)) = 1
-		[Enum(Lerp,0, Add,1, Sub,2, Mul,3, Mulx2,4, Overlay,5, Screen,6)]_DetailAlbedoBlending("en6", Int) = 4
+		[Enum(Add,0, Sub,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailAlbedoBlending("en6", Int) = 3
 		_UsingDetailAlbedo("tog", Int) = 0
 		_DetailRoughnessMap("tex", 2D) = "white" {}
 		_DetailRoughStrength("ra", Range(0,1)) = 1
-		[Enum(Lerp,0, Add,1, Sub,2, Mul,3, Overlay,4, Screen,5)]_DetailRoughBlending("en6", Int) = 0
+		[Enum(Add,0, Sub,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailRoughBlending("en6", Int) = 6
 		_UsingDetailRough("tog", Int) = 0
 		_DetailOcclusionMap("tex", 2D) = "white" {}
 		_DetailOcclusionStrength("ra", Range(0,1)) = 1
-		[Enum(Lerp,0, Add,1, Sub,2, Mul,3, Overlay,4, Screen,5)]_DetailOcclusionBlending("en6", Int) = 3
+		[Enum(Add,0, Sub,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailOcclusionBlending("en6", Int) = 2
 		_UsingDetailOcclusion("tog", Int) = 0
 		_DetailNormalMap("tex", 2D) = "bump" {}
 		_DetailNormalMapScale("ra", Range(-2,2)) = 1
@@ -125,11 +126,15 @@ Shader "Mochie/Uber/Uber" {
 		_RoughLightness("ra", Range(-1,1)) = 0
 		_RoughIntensity("ra", Range(0,1)) = 0
 		_RoughContrast("ra", Range(-1,2)) = 1
+		_RoughRemapMin("fl", Float) = 0
+		_RoughRemapMax("fl", Float) = 1
 		[ToggleUI]_SmoothnessFiltering("tog", Int) = 0 // Smoothness
 		[ToggleUI]_PreviewSmooth("tog", Int) = 0
 		_SmoothLightness("ra", Range(-1,1)) = 0
 		_SmoothIntensity("ra", Range(0,1)) = 0
 		_SmoothContrast("ra", Range(-1,2)) = 1
+		_SmoothRemapMin("fl", Float) = 0
+		_SmoothRemapMax("fl", Float) = 1
 		[ToggleUI]_AOFiltering("tog", Int) = 0 // AO
 		[ToggleUI]_PreviewAO("tog", Int) = 0
 		[ToggleUI]_DirectAO("tog", Int) = 1
@@ -139,11 +144,15 @@ Shader "Mochie/Uber/Uber" {
 		_AOLightness("ra", Range(-1,1)) = 0
 		_AOIntensity("ra", Range(0,1)) = 0
 		_AOContrast("ra", Range(-1,2)) = 1
+		_AORemapMin("fl", Float) = 0
+		_AORemapMax("fl", Float) = 1
 		[ToggleUI]_HeightFiltering("tog", Int) = 0 // Height
 		[ToggleUI]_PreviewHeight("tog", Int) = 0
 		_HeightLightness("ra", Range(-1,1)) = 0
 		_HeightIntensity("ra", Range(0,1)) = 0
 		_HeightContrast("ra", Range(-1,2)) = 1
+		_HeightRemapMin("fl", Float) = 0
+		_HeightRemapMax("fl", Float) = 1
 
 		// Base Color Dissolve
 		[ToggleUI]_BCDissolveToggle("tog", Int) = 0
@@ -231,7 +240,8 @@ Shader "Mochie/Uber/Uber" {
 		_MatcapRough("ra", Range(0,2)) = 0.5
 		[ToggleUI]_MatcapUseRough1("tog", Int) = 0
 		_MatcapRough1("ra", Range(0,2)) = 0.5
-		
+		[ToggleUI]_MatcapCenter("tog", Int) = 0
+		[ToggleUI]_MatcapCenter1("tog", Int) = 0
 
 		// SHADOWS
 		[Enum(Off,0, Manual Blend,1, Ramp,2)]_ShadowMode("en3", Int) = 0
@@ -243,6 +253,7 @@ Shader "Mochie/Uber/Uber" {
 		_RampWidth1("ra", Range(0.005,1)) = 0.5
 		_RampWeight("ra", Range(0,1)) = 0
 		_ShadowRamp("ShadowRamp", 2D) = "white" {}
+		_DetailShadowMap("tex", 2D) = "white" {}
 		_ShadowStr("ra", Range(0,1)) = 0.5
 		[ToggleUI]_ShadowDithering("tog", Int) = 0
 		[ToggleUI]_RTSelfShadow("tog", Int) = 1
@@ -251,19 +262,22 @@ Shader "Mochie/Uber/Uber" {
 		
 		// SUBSURFACE SCATTERING
 		[ToggleUI]_Subsurface("tog", Int) = 0
-		_TranslucencyMap("tex", 2D) = "black" {}
-		_SubsurfaceTex("tex", 2D) = "white" {}
-		_SColor("col", Color) = (1,1,1,1)
-		_SStr("ra", Range(0,1)) = 1
-		_SPen("ra", Range(0,1)) = 0.5
-		_SSharp("ra", Range(0,1)) = 0.5
-		_SAtten("ra", Range(0,1)) = 0.8
+		[ToggleUI]_ScatterBaseColorTint("tog", Int) = 0
+		_ThicknessMap("tex", 2D) = "black" {}
+		_ThicknessMapPower("fl", Float) = 1
+		_ScatterTex("tex", 2D) = "white" {}
+		_ScatterCol("col", Color) = (1,1,1,1)
+		_ScatterIntensity("fl", Float) = 1
+		_ScatterPow("fl", Float) = 1
+		_ScatterDist("fl", Float) = 1
+		_ScatterAmbient("fl", Float) = 0
+		_ScatterWrap("ra", Range(0.001,1)) = 0.01
 
 		// BASIC RIM
 		[ToggleUI]_RimLighting("tog", Int) = 0
 		_RimTex("tex", 2D) = "white" {}
 		[HDR]_RimCol("col", Color) = (1,1,1,1)
-		[Enum(Lerp,0, Add,1, Sub,2, Mult,3)]_RimBlending("en4", Int) = 0
+		[Enum(Add,0, Sub,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_RimBlending("en4", Int) = 0
 		_RimScroll("vec", Vector) = (0,0,0,0)
 		_RimStr("ra", Range(0,1)) = 1
 		_RimWidth("ra", Range (0,1)) = 0.5
@@ -274,7 +288,7 @@ Shader "Mochie/Uber/Uber" {
 		[ToggleUI]_EnvironmentRim("tog", Int) = 0
 		_ERimTex("tex", 2D) = "white" {}
 		[HDR]_ERimTint("col", Color) = (1,1,1,1)
-		[Enum(Lerp,0, Add,1, Sub,2, Mult,3)]_ERimBlending("en4", Int) = 1
+		[Enum(Add,0, Sub,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_ERimBlending("en4", Int) = 0
 		_ERimScroll("vec", Vector) = (0,0,0,0)
 		_ERimStr("ra", Range(0,1)) = 1
 		_ERimWidth("ra", Range (0,1)) = 0.7
@@ -295,6 +309,19 @@ Shader "Mochie/Uber/Uber" {
 		_RefractionDissolveMask("tex", 2D) = "white" {}
 		_RefractionDissolveMaskScroll("vec", Vector) = (0,0,0,0)
 		_RefractionDissolveMaskStr("ra", Range(0,1)) = 1
+		[ToggleUI]_RefractionBlur("tog", Int) = 0
+		_RefractionBlurStrength("ra", Range(0,1)) = 0
+		[ToggleUI]_RefractionBlurRough("tog", Int) = 0
+
+		// IRIDESCENCE
+		[ToggleUI]_Iridescence("tog", Int) = 0
+		_IridescenceStrength("ra", Range(0,1)) = 1
+		_IridescenceHue("ra", Range(0,1)) = 0
+		_IridescenceWidth("ra", Range(0,1)) = 0.7
+		_IridescenceEdge("ra", Range(0,0.5)) = 0
+		_IridescenceMask("tex", 2D) = "white" {}
+		_IridescenceCurl("ra", Range(0,1)) = 1
+		_IridescenceCurlScale("fl", Float) = 1
 
 		// NORMALS
 		[ToggleUI]_HardenNormals("tog", Int) = 0
@@ -360,7 +387,7 @@ Shader "Mochie/Uber/Uber" {
 		_Flipbook0("tex", 2DArray) = "white" {}
 		_SpritesheetCol("col", Color) = (1,1,1,1)
 		_SpritesheetBrightness("fl", Float) = 1
-		[Enum(Add,0, Mult,1, Alpha,2)]_SpritesheetBlending("en3", Int) = 2
+		[Enum(Add,0, Sub,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_SpritesheetBlending("en3", Int) = 6
 		_RowsColumns("vec", Vector) = (8,8,0,0)
 		_FrameClipOfs("vec", Vector) = (0,0,0,0)
 		_SpritesheetPos("vec", Vector) = (0,0,0,0)
@@ -379,7 +406,7 @@ Shader "Mochie/Uber/Uber" {
 		_Flipbook1("tex", 2DArray) = "white" {}
 		_SpritesheetCol1("col", Color) = (1,1,1,1)
 		_SpritesheetBrightness1("fl", Float) = 1
-		[Enum(Add,0, Mult,1, Alpha,2)]_SpritesheetBlending1("en3", Int) = 2
+		[Enum(Add,0, Sub,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_SpritesheetBlending1("en3", Int) = 6
 		_RowsColumns1("vec", Vector) = (8,8,0,0)
 		_FrameClipOfs1("vec", Vector) = (0,0,0,0)
 		_SpritesheetPos1("vec", Vector) = (0,0,0,0)
@@ -440,9 +467,14 @@ Shader "Mochie/Uber/Uber" {
 		// AUDIO LINK
 		//----------------------------
 		[ToggleUI]_AudioLinkToggle("tog", Int) = 0
+		_AudioLinkStrength("ra", Range(0,1)) = 1
+		_AudioLinkRemapMin("fl", Float) = 0
+		_AudioLinkRemapMax("fl", Float) = 1
 
 		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkEmissionBand("en03", Int) = 0
 		_AudioLinkEmissionMultiplier("ra", Range(0,1)) = 0
+		_AudioLinkRemapEmissionMin("fl", Float) = 0
+		_AudioLinkRemapEmissionMax("fl", Float) = 1
 
 		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkRimBand("en03", Int) = 0
 		_AudioLinkRimMultiplier("ra", Range(0,1)) = 0
@@ -450,15 +482,30 @@ Shader "Mochie/Uber/Uber" {
 		_AudioLinkRimPulse("ra", Range(0,1)) = 0
 		_AudioLinkRimPulseWidth("ra", Range(0,1)) = 0.5
 		_AudioLinkRimPulseSharp("ra", Range(0, 0.5)) = 0.3
+		_AudioLinkRemapRimMin("fl", Float) = 0
+		_AudioLinkRemapRimMax("fl", Float) = 1
+		_AudioLinkRemapRimPulseMin("fl", Float) = 0
+		_AudioLinkRemapRimPulseMax("fl", Float) = 1
 
 		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkDissolveBand("en03", Int) = 0
 		_AudioLinkDissolveMultiplier("ra", Range(0,1)) = 0
+		_AudioLinkRemapDissolveMin("fl", Float) = 0
+		_AudioLinkRemapDissolveMax("fl", Float) = 1
 
 		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkBCDissolveBand("en03", Int) = 0
 		_AudioLinkBCDissolveMultiplier("ra", Range(0,1)) = 0
+		_AudioLinkRemapBCDissolveMin("fl", Float) = 0
+		_AudioLinkRemapBCDissolveMax("fl", Float) = 1
 
 		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkVertManipBand("en03", Int) = 0
 		_AudioLinkVertManipMultiplier("ra", Range(0,1)) = 0
+		_AudioLinkRemapVertManipMin("fl", Float) = 0
+		_AudioLinkRemapVertManipMax("fl", Float) = 1
+
+		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkUVDistortionBand("en03", Int) = 0
+		_AudioLinkUVDistortionMultiplier("ra", Range(0,1)) = 0
+		_AudioLinkRemapUVDistortionMin("fl", Float) = 0
+		_AudioLinkRemapUVDistortionMax("fl", Float) = 1
 
 		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkTriOffsetBand("en03", Int) = 0
 		[Enum(X,0, Y,1, Z,2)]_AudioLinkTriOffsetCoords("en02", Int) = 1
@@ -470,6 +517,8 @@ Shader "Mochie/Uber/Uber" {
 		_AudioLinkTriOffsetMask("tex", 2D) = "white" {}
 		_AudioLinkTriOffsetStrength("ra", Range(0,1)) = 0
 		_AudioLinkTriOffsetMaskScroll("vec", Vector) = (0,0,0,0)
+		_AudioLinkRemapTriOffsetMin("fl", Float) = 0
+		_AudioLinkRemapTriOffsetMax("fl", Float) = 1
 
 		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkWireframeBand("en03", Int) = 0
 		[Enum(X,0, Y,1, Z,2)]_AudioLinkWireframeCoords("en02", Int) = 1
@@ -482,7 +531,9 @@ Shader "Mochie/Uber/Uber" {
 		_AudioLinkWireframeMask("tex", 2D) = "white" {}
 		_AudioLinkWireframeStrength("ra", Range(0,1)) = 0
 		_AudioLinkWireframeMaskScroll("vec", Vector) = (0,0,0,0)
-		
+		_AudioLinkRemapWireframeMin("fl", Float) = 0
+		_AudioLinkRemapWireframeMax("fl", Float) = 1
+
 		//----------------------------
 		// SPECIAL FEATURES
 		//----------------------------
@@ -592,7 +643,7 @@ Shader "Mochie/Uber/Uber" {
 		}
 		GrabPass {
 			Tags {"LightMode"="Always"}
-			"_SSRGrab"
+			"_MUSGrab"
 		}
 		ZTest [_ZTest]
 		Cull [_CullingMode]
@@ -612,42 +663,45 @@ Shader "Mochie/Uber/Uber" {
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-			#pragma shader_feature _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON // Blend Mode
-			#pragma shader_feature _ _MAPPING_6_FRAMES_LAYOUT _TERRAIN_NORMAL_MAP // Cubemap mode
-			#pragma shader_feature _ _METALLICGLOSSMAP _SPECGLOSSMAP FXAA // PBR Workflow
-			#pragma shader_feature _ _SUNDISK_SIMPLE _SUNDISK_HIGH_QUALITY	// Specular style
-			#pragma shader_feature _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A		// Cubemap Reflections
-			#pragma shader_feature _GLOSSYREFLECTIONS_OFF	// Reflections
-			#pragma shader_feature _SPECULARHIGHLIGHTS_OFF	// Specular highlights
-			#pragma shader_feature _REQUIRE_UV2				// Packed masking
-			#pragma shader_feature _COLORCOLOR_ON			// Filtering toggle
-			#pragma shader_feature _COLOROVERLAY_ON			// Post filtering toggle
-			#pragma shader_feature _COLORADDSUBDIFF_ON 		// Separate masking
-			#pragma shader_feature _EMISSION				// Emission
-			#pragma shader_feature _PARALLAXMAP				// Height map
-			#pragma shader_feature _DETAIL_MULX2			// Detail normal map
-			#pragma shader_feature _NORMALMAP				// Base normal map
-			#pragma shader_feature _SUNDISK_NONE			// Primary shading toggle
-			#pragma shader_feature _FADING_ON				// Matcap toggle
-			#pragma shader_feature USER_LUT					// PBR filtering previews
-			#pragma shader_feature EFFECT_BUMP				// UV Distortion toggle
-			#pragma shader_feature GRAIN					// Normal map UV distortion
-			#pragma shader_feature CHROMATIC_ABBERATION_LOW	// SSR toggle
-			#pragma shader_feature BLOOM_LENS_DIRT			// Emission pulse toggle
-			#pragma shader_feature PIXELSNAP_ON				// Environment rim Toggle
-			#pragma shader_feature EFFECT_HUE_VARIATION		// Spritesheet toggle
-			#pragma shader_feature DISTORT					// Refraction toggle
-			#pragma shader_feature CHROMATIC_ABBERATION		// Refraction CA toggle
-			#pragma shader_feature GEOM_TYPE_MESH			// Vertex manip toggle
-			#pragma shader_feature GEOM_TYPE_BRANCH			// Mask SOS toggle
-			#pragma shader_feature VIGNETTE_MASKED			// Reflection cubemap check
-			#pragma shader_feature DITHERING				// Base Color Dissolve
-			#pragma shader_feature DEPTH_OF_FIELD_COC_VIEW// Audio Link Toggle
-			#pragma shader_feature GEOM_TYPE_FROND			// Rim toggle
-			#pragma multi_compile _ VERTEXLIGHT_ON			// Vertex lighting
-			#pragma multi_compile_fog						// Fog
+			#pragma shader_feature_local _SHADING_ON
+			#pragma shader_feature_local _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
+			#pragma shader_feature_local _ _CUBEMAP_ON _COMBINED_CUBEMAP_ON
+			#pragma shader_feature_local _ _PACKED_WORKFLOW_ON _SPECULAR_WORKFLOW_ON
+			#pragma shader_feature_local _ _SPECULAR_ANISO_ON _SPECULAR_COMBINED_ON
+			#pragma shader_feature_local _CUBEMAP_REFLECTIONS_ON
+			#pragma shader_feature_local _REFLECTIONS_ON
+			#pragma shader_feature_local _SPECULAR_ON
+			#pragma shader_feature_local _PACKED_MASKING_ON
+			#pragma shader_feature_local _SEPARATE_MASKING_ON
+			#pragma shader_feature_local _FILTERING_ON
+			#pragma shader_feature_local _POST_FILTERING_ON
+			#pragma shader_feature_local _EMISSION_ON
+			#pragma shader_feature_local _PARALLAXMAP_ON
+			#pragma shader_feature_local _NORMALMAP_ON
+			#pragma shader_feature_local _DETAIL_NORMALMAP_ON
+			#pragma shader_feature_local _MATCAP_ON
+			#pragma shader_feature_local _PBR_PREVIEW_ON
+			#pragma shader_feature_local _UV_DISTORTION_ON
+			#pragma shader_feature_local _UV_DISTORTION_NORMALMAP_ON
+			#pragma shader_feature_local _SCREENSPACE_REFLECTIONS_ON
+			#pragma shader_feature_local _PULSE_ON
+			#pragma shader_feature_local _ENVIRONMENT_RIM_ON
+			#pragma shader_feature_local _FLIPBOOK_ON
+			#pragma shader_feature_local _REFRACTION_ON
+			#pragma shader_feature_local _CHROMATIC_ABBERATION_ON
+			#pragma shader_feature_local _VERTEX_MANIP_ON
+			#pragma shader_feature_local _MASK_TRANSFORMS_ON
+			#pragma shader_feature_local _REFLECTION_FALLBACK_ON
+			#pragma shader_feature_local _BASECOLOR_DISSOLVE_ON
+			#pragma shader_feature_local _AUDIOLINK_ON
+			#pragma shader_feature_local _RIM_ON
+			#pragma shader_feature_local _SUBSURFACE_ON
+
+			#pragma multi_compile _ VERTEXLIGHT_ON
+			#pragma multi_compile_fog
 			#pragma multi_compile_fwdbase
-			#pragma multi_compile_istancing
+			// #pragma multi_compile_instancing
+			// #pragma skip_variants FOG_LINEAR FOG_EXP FOG_EXP2
 			#pragma skip_variants DIRLIGHTMAP_COMBINED DIRLIGHTMAP_SEPARATE 
 			#pragma skip_variants DYNAMICLIGHTMAP_ON LIGHTMAP_ON LIGHTMAP_SHADOW_MIXING
 			#ifndef UNITY_PASS_FORWARDBASE
@@ -675,32 +729,35 @@ Shader "Mochie/Uber/Uber" {
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-			#pragma shader_feature _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON // Blend Mode
-			#pragma shader_feature _ _MAPPING_6_FRAMES_LAYOUT _TERRAIN_NORMAL_MAP // Cubemap mode
-			#pragma shader_feature _ _METALLICGLOSSMAP _SPECGLOSSMAP FXAA // PBR Workflow
-			#pragma shader_feature _ _SUNDISK_SIMPLE _SUNDISK_HIGH_QUALITY	// Specular style
-			#pragma shader_feature _GLOSSYREFLECTIONS_OFF	// Reflections
-			#pragma shader_feature _SPECULARHIGHLIGHTS_OFF	// Specular highlights
-			#pragma shader_feature _REQUIRE_UV2				// Packed masking
-			#pragma shader_feature _COLORCOLOR_ON			// Filtering toggle
-			#pragma shader_feature _COLOROVERLAY_ON			// Post filtering toggle
-			#pragma shader_feature _COLORADDSUBDIFF_ON 		// Separate masking
-			#pragma shader_feature _PARALLAXMAP				// Height map
-			#pragma shader_feature _DETAIL_MULX2			// Detail normal map
-			#pragma shader_feature _NORMALMAP				// Base normal map
-			#pragma shader_feature _SUNDISK_NONE			// Primary shading toggle
-			#pragma shader_feature EFFECT_BUMP				// UV Distortion toggle
-			#pragma shader_feature GRAIN					// Normal map UV distortion
-			#pragma shader_feature EFFECT_HUE_VARIATION		// Spritesheet toggle
-			#pragma shader_feature DISTORT					// Refraction toggle
-			#pragma shader_feature CHROMATIC_ABBERATION		// Refraction CA toggle
-			#pragma shader_feature GEOM_TYPE_MESH			// Vertex manip toggle
-			#pragma shader_feature GEOM_TYPE_BRANCH			// Mask SOS toggle
-			#pragma shader_feature DITHERING				// Base Color Dissolve
-			#pragma shader_feature DEPTH_OF_FIELD_COC_VIEW// Audio Link Toggle
-			#pragma multi_compile_fog						// Fog
+			#pragma shader_feature_local _SHADING_ON
+			#pragma shader_feature_local _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
+			#pragma shader_feature_local _ _CUBEMAP_ON _COMBINED_CUBEMAP_ON
+			#pragma shader_feature_local _ _PACKED_WORKFLOW_ON _SPECULAR_WORKFLOW_ON
+			#pragma shader_feature_local _ _SPECULAR_ANISO_ON _SPECULAR_COMBINED_ON
+			#pragma shader_feature_local _REFLECTIONS_ON
+			#pragma shader_feature_local _SPECULAR_ON
+			#pragma shader_feature_local _PACKED_MASKING_ON
+			#pragma shader_feature_local _SEPARATE_MASKING_ON
+			#pragma shader_feature_local _FILTERING_ON
+			#pragma shader_feature_local _POST_FILTERING_ON
+			#pragma shader_feature_local _PARALLAXMAP_ON
+			#pragma shader_feature_local _NORMALMAP_ON
+			#pragma shader_feature_local _DETAIL_NORMALMAP_ON
+			#pragma shader_feature_local _UV_DISTORTION_ON
+			#pragma shader_feature_local _UV_DISTORTION_NORMALMAP_ON
+			#pragma shader_feature_local _FLIPBOOK_ON
+			#pragma shader_feature_local _REFRACTION_ON
+			#pragma shader_feature_local _CHROMATIC_ABBERATION_ON
+			#pragma shader_feature_local _VERTEX_MANIP_ON
+			#pragma shader_feature_local _MASK_TRANSFORMS_ON
+			#pragma shader_feature_local _BASECOLOR_DISSOLVE_ON
+			#pragma shader_feature_local _AUDIOLINK_ON
+			#pragma shader_feature_local _SUBSURFACE_ON
+
+			#pragma multi_compile_fog
 			#pragma multi_compile_fwdadd_fullshadows
-			#pragma multi_compile_istancing
+			// #pragma multi_compile_instancing
+			// #pragma skip_variants FOG_LINEAR FOG_EXP FOG_EXP2
 			#pragma skip_variants DIRLIGHTMAP_COMBINED DIRLIGHTMAP_SEPARATE 
 			#pragma skip_variants DYNAMICLIGHTMAP_ON LIGHTMAP_ON LIGHTMAP_SHADOW_MIXING 
 			#ifndef UNITY_PASS_FORWARDADD
@@ -727,23 +784,22 @@ Shader "Mochie/Uber/Uber" {
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-			#pragma shader_feature _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON // Blend mode
-			#pragma shader_feature _ _METALLICGLOSSMAP _SPECGLOSSMAP FXAA // PBR Workflow
-			#pragma shader_feature _GLOSSYREFLECTIONS_OFF	// Reflections
-			#pragma shader_feature _SPECULARHIGHLIGHTS_OFF	// Specular highlights
-			#pragma shader_feature _REQUIRE_UV2				// Packed masking
-			#pragma shader_feature _COLORADDSUBDIFF_ON		// Separate masking
-			#pragma shader_feature _SUNDISK_NONE			// Main shading toggle
-			#pragma shader_feature USER_LUT					// PBR filtering previews
-			#pragma shader_feature DISTORT					// Refraction toggle
-			#pragma shader_feature GEOM_TYPE_MESH			// Vertex manip toggle
-			#pragma shader_feature EFFECT_HUE_VARIATION		// Spritesheet toggle
-			#pragma shader_feature GEOM_TYPE_BRANCH			// Mask SOS toggle
-			#pragma shader_feature DITHERING				// Base Color Dissolve
-			#pragma shader_feature DEPTH_OF_FIELD_COC_VIEW// Audio Link Toggle
-			#pragma multi_compile_fog						// Fog
+			#pragma shader_feature_local _SHADING_ON
+			#pragma shader_feature_local _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
+			#pragma shader_feature_local _ _PACKED_WORKFLOW_ON _SPECULAR_WORKFLOW_ON
+			#pragma shader_feature_local _PACKED_MASKING_ON
+			#pragma shader_feature_local _SEPARATE_MASKING_ON
+			#pragma shader_feature_local _PBR_PREVIEW_ON
+			#pragma shader_feature_local _REFRACTION_ON
+			#pragma shader_feature_local _FLIPBOOK_ON
+			#pragma shader_feature_local _VERTEX_MANIP_ON
+			#pragma shader_feature_local _MASK_TRANSFORMS_ON
+			#pragma shader_feature_local _BASECOLOR_DISSOLVE_ON
+			#pragma shader_feature_local _AUDIOLINK_ON
+
 			#pragma multi_compile_shadowcaster
-			#pragma multi_compile_istancing
+			// #pragma multi_compile_instancing
+			// #pragma skip_variants FOG_LINEAR FOG_EXP FOG_EXP2
 			#pragma skip_variants DIRLIGHTMAP_COMBINED DIRLIGHTMAP_SEPARATE 
 			#pragma skip_variants DYNAMICLIGHTMAP_ON LIGHTMAP_ON LIGHTMAP_SHADOW_MIXING 
 			#ifndef UNITY_PASS_SHADOWCASTER

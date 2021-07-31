@@ -28,31 +28,6 @@ float2 ParallaxOffsetMultiStep(float surfaceHeight, float strength, float2 uv, f
 			prevSurfaceHeight = surfaceHeight;
 			uvOffset -= uvDelta;
 			stepHeight -= stepSize;
-			surfaceHeight = SampleTexture(_PackedMap, uv+uvOffset).a + _ParallaxOffset;
-		}
-		[unroll(3)]
-		for (int k = 0; k < 3; k++) {
-			uvDelta *= 0.5;
-			stepSize *= 0.5;
-
-			if (stepHeight < surfaceHeight) {
-				uvOffset += uvDelta;
-				stepHeight += stepSize;
-			}
-			else {
-				uvOffset -= uvDelta;
-				stepHeight -= stepSize;
-			}
-			surfaceHeight = SampleTexture(_PackedMap, uv+uvOffset).a + _ParallaxOffset;
-		}
-	#elif WORKFLOW_MODULAR
-		[unroll(50)]
-		for (int j = 1; j <= _ParallaxSteps && stepHeight > surfaceHeight; j++){
-			prevUVOffset = uvOffset;
-			prevStepHeight = stepHeight;
-			prevSurfaceHeight = surfaceHeight;
-			uvOffset -= uvDelta;
-			stepHeight -= stepSize;
 			float4 heightSample = SampleTexture(_PackedMap, uv+uvOffset);
 			surfaceHeight = ChannelCheck(heightSample, _HeightChannel) + _ParallaxOffset;
 		}

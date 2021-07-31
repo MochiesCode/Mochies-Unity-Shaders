@@ -3,7 +3,6 @@ bool IsInMirror(){
 }
 
 void MirrorCheck(){
-	UNITY_BRANCH
     if (IsInMirror()) discard;
 }
 
@@ -431,15 +430,7 @@ float2 GetGrabPos(float4 grabPos){
 }
 
 float ChannelCheck(float4 rgba, int channel){
-	float selection = 0;
-	switch (channel){
-		case 0: selection = rgba.r; break;
-		case 1: selection = rgba.g; break;
-		case 2: selection = rgba.b; break;
-		case 3: selection = rgba.a; break;
-		default: break;
-	}
-	return selection;
+	return rgba[channel];
 }
 
 void ApplyPBRFiltering(inout float value, float contrast, float intensity, float lightness, int shouldApply, inout float previewValue){

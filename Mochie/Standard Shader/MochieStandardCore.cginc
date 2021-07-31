@@ -37,8 +37,8 @@ float3 NormalizePerPixelNormal (float3 n)
 //-------------------------------------------------------------------------------------
 
 float GSAARoughness(float3 normal, float roughness){
-	float3 normalDDX = ddx_fine(normal);
-	float3 normalDDY = ddy_fine(normal); 
+	float3 normalDDX = ddx(normal);
+	float3 normalDDY = ddy(normal); 
 	float dotX = dot(normalDDX, normalDDX);
 	float dotY = dot(normalDDY, normalDDY);
 	float base = saturate(max(dotX, dotY));
@@ -512,8 +512,8 @@ void GetDepthData(VertexOutputForwardBase i, inout SampleData sd){
 	i.raycast = i.raycast * (_ProjectionParams.z / i.raycast.z);
 	float4 vpos = float4(i.raycast * depth, 1);
 	float3 wpos = mul(unity_CameraToWorld, vpos).xyz;
-	float3 wposX = ddx_fine(wpos);
-	float3 wposY = ddy_fine(wpos);
+	float3 wposX = ddx(wpos);
+	float3 wposY = ddy(wpos);
 	sd.depthNormal = abs(normalize(cross(wposY, wposX)));
 	sd.worldPixelPos = wpos;
 }
@@ -660,8 +660,8 @@ void GetDepthData(VertexOutputForwardAdd i, inout SampleData sd){
 	i.raycast = i.raycast * (_ProjectionParams.z / i.raycast.z);
 	float4 vpos = float4(i.raycast * depth, 1);
 	float3 wpos = mul(unity_CameraToWorld, vpos).xyz;
-	float3 wposX = ddx_fine(wpos);
-	float3 wposY = ddy_fine(wpos);
+	float3 wposX = ddx(wpos);
+	float3 wposY = ddy(wpos);
 	sd.depthNormal = abs(normalize(cross(wposY, wposX)));
 	sd.worldPixelPos = wpos;
 }

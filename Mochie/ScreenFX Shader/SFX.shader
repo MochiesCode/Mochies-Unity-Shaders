@@ -53,8 +53,8 @@ Shader "Mochie/Screen FX/Screen FX" {
 		_DistortionMinRange("", Float) = 8
 		_DistortionMaxRange("", Float) = 15
 		_NormalMap("", 2D) = "bump" {}
-		_DistortionStr("", Range(0,1)) = 0.5
-		_DistortionSpeed("", Range(0,1)) = 0
+		_DistortionStr("", Float) = 0.5
+		_DistortionSpeed("", Float) = 0
 		_DistortionRadius("", Float) = 2
 		_DistortionFade("", Float) = 1
 		_DistortionP2O("", Range(0,1)) = 1
@@ -181,7 +181,7 @@ Shader "Mochie/Screen FX/Screen FX" {
 		[ToggleUI]_Pulse("", Int) = 0
 		[ToggleUI]_PulseColor("", Int) = 0
 		_PulseSpeed("", Range(0.5,8)) = 1
-		[Enum(NONE,0, Sin,1, Saw,2, Reverse Saw,3, Square,4, Triangle,5)]_WaveForm("", Int) = 0
+		[Enum(None,0, Sin,1, Saw,2, Reverse Saw,3, Square,4, Triangle,5)]_WaveForm("", Int) = 0
 		[ToggleUI]_Shift("", Int) = 0
 		[ToggleUI]_InvertX("", Int) = 0
 		[ToggleUI]_InvertY("", Int) = 0
@@ -221,17 +221,14 @@ Shader "Mochie/Screen FX/Screen FX" {
 			#pragma target 5.0
             #pragma vertex vert
             #pragma fragment frag
-			#pragma shader_feature _COLORCOLOR_ON 			// Filtering
-			#pragma shader_feature FXAA 					// Shake
-			#pragma shader_feature EFFECT_BUMP				// Distortion
-			#pragma shader_feature _TERRAIN_NORMAL_MAP		// Triplanar Distortion
-			#pragma shader_feature BLOOM					// Pixel Blur
-			#pragma shader_feature GRAIN					// Dither Blur
-			#pragma shader_feature _SUNDISK_SIMPLE			// Radial Blur
-			#pragma shader_feature BLOOM_LENS_DIRT			// Blur Y
-			#pragma shader_feature CHROMATIC_ABBERATION_LOW	// Chromatic Abberation
-			#pragma shader_feature DEPTH_OF_FIELD			// Depth of Field
-			#pragma shader_feature _REQUIRE_UV2				// Noise
+			#pragma shader_feature_local _COLOR_ON
+			#pragma shader_feature_local _SHAKE_ON
+			#pragma shader_feature_local _ _DISTORTION_ON _DISTORITON_WORLD_ON
+			#pragma shader_feature_local _ _BLUR_PIXEL_ON _BLUR_DITHER_ON _BLUR_RADIAL_ON
+			#pragma shader_feature_local _BLUR_Y_ON
+			#pragma shader_feature_local _CHROMATIC_ABBERATION_ON
+			#pragma shader_feature_local _DOF_ON
+			#pragma shader_feature_local _NOISE_ON
 			#define MAIN
 			#include "SFXDefines.cginc"
             ENDCG

@@ -6,24 +6,8 @@ namespace Mochie {
 
 		bool[] toggles; 
 		string[] headers;
-		List<int> mainFoldouts = new List<int>();
-		List<int> subFoldouts = new List<int>();
-
-		// public Toggles(string[] s){
-		// 	headers = s;
-		// 	toggles = new bool[s.Length];
-		// 	toggles[0] = true;
-			
-		// 	for (int i = 0; i < s.Length; i++){
-		// 		if (s[i].ToUpper() == s[i])
-		// 			mainFoldouts.Add(i);
-		// 		else
-		// 			subFoldouts.Add(i);
-		// 		if (i > 0)
-		// 			toggles[i] = false;
-		// 	}
-		// }
-
+		List<int> foldouts = new List<int>();
+		
 		public Toggles(string[] s, int defaultOffset){
 			headers = s;
 			toggles = new bool[s.Length];
@@ -34,10 +18,7 @@ namespace Mochie {
 			}
 			
 			for (int i = 0; i < s.Length; i++){
-				if (s[i].ToUpper() == s[i])
-					mainFoldouts.Add(i);
-				else
-					subFoldouts.Add(i);
+					foldouts.Add(i);
 			}
 		}
 

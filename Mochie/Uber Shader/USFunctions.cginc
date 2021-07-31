@@ -2,28 +2,9 @@
 #define US_FUNCTIONS_INCLUDED
 
 #if !X_FEATURES
-float GetPackedAudioLinkBand(float4 al, int band){
-	float value = 1;
-	switch (band){
-		case 0: value = al.x; break;
-		case 1: value = al.y; break;
-		case 2: value = al.z; break;
-		case 3: value = al.w; break;
-		default: break;
-	}
-	return value;
-}
-
-float GetAudioLinkBand(audioLinkData al, int band){
-	float value = 1;
-	switch (band){
-		case 0: value = al.bass; break;
-		case 1: value = al.lowMid; break;
-		case 2: value = al.upperMid; break;
-		case 3: value = al.treble; break;
-		default: break;
-	}
-	return value;
+float GetAudioLinkBand(audioLinkData al, int band, float remapMin, float remapMax){
+	float4 bands = float4(al.bass, al.lowMid, al.upperMid, al.treble);
+	return Remap(bands[band], _AudioLinkRemapMin, _AudioLinkRemapMax, remapMin, remapMax);
 }
 #endif
 
@@ -38,7 +19,13 @@ void ApplyGeneralFilters(inout float3 albedo){
     albedo *= _Brightness;
 }
 
-float3 GetTeamColors(masks m, float3 albedo){;
+void ApplyHSVFilter(inout float3 albedo){
+	_Hue += lerp(0, frac(_Time.y*_AutoShiftSpeed), _AutoShift);
+	if (_Hue > 0 && _Hue < 1)
+		albedo = HSVShift(albedo, _Hue, 0, 0);
+}
+
+void ApplyTeamColors(masks m, inout float3 albedo){;
 
 	// Alloy team colors implementation
 	if (_TeamFiltering == 1){
@@ -53,15 +40,15 @@ float3 GetTeamColors(masks m, float3 albedo){;
 		albedo *= teamColor;
 		albedo = baseCol + 2 * (albedo-baseCol);
 	}
-	return albedo;
 }
 
 void ApplyFiltering(g2f i, masks m, inout float3 albedo){
-	float3 rgb = GetTeamColors(m, albedo) * _RGB;
-	_Hue += lerp(0, frac(_Time.y*_AutoShiftSpeed), _AutoShift);
-	float3 hsv = HSVShift(rgb, _Hue, 0, 0);
-	ApplyGeneralFilters(hsv);
-	albedo = lerp(albedo, hsv, m.filterMask);
+	float3 albedoOut = albedo;
+	ApplyTeamColors(m, albedoOut);
+	ApplyHSVFilter(albedoOut);
+	albedoOut *= _RGB;
+	ApplyGeneralFilters(albedoOut);
+	albedo = lerp(albedo, albedoOut, m.filterMask);
 }
 
 //------------------------------------
@@ -107,46 +94,38 @@ float3 GetSpritesheetUV(float2 uv, float2 rowsColumns, float scrubPos, float fps
 	return float3(uv,0);
 }
 
-float3 GetFlipbookUV(Texture2DArray tex2da, float2 uv, float scrubPos, float fps, int manualScrub){
+float3 GetFlipbookUV(Texture2DArray flipbook, SamplerState ss, float2 uv, float scrubPos, float fps, int manualScrub){
 	float width, height, elements;
-	tex2da.GetDimensions(width, height, elements);
+	flipbook.GetDimensions(width, height, elements);
 	uint arrayIndex = frac(_Time.y*fps*(1/elements))*elements;
 	uint index = lerp(arrayIndex, scrubPos, manualScrub);
 	return float3(uv, index);
 }
 
 float4 GetSpritesheetColor(g2f i, 
-		Texture2D tex, UNITY_ARGS_TEX2DARRAY(tex2da), float4 spriteColor,
+		Texture2D tex, Texture2DArray flipbook, SamplerState ss, float4 spriteColor,
 		float2 pos, float2 scale, float2 rowsColumns, float2 fco, 
 		float rot, float scrubPos, float fps, float brightness, int manualScrub, int mode
 	) {
 	float2 scaledUV = ScaleUV(i.rawUV, pos, scale, rot);
 	float3 uv = lerp(
-		GetFlipbookUV(tex2da, scaledUV, scrubPos, fps, manualScrub), 
+		GetFlipbookUV(flipbook, ss, scaledUV, scrubPos, fps, manualScrub), 
 		GetSpritesheetUV(scaledUV, rowsColumns, scrubPos, fps, manualScrub), 
 		mode
 	);
 	float4 col = 0;
 	UNITY_BRANCH
 	if (mode == 1){
-		col = UNITY_SAMPLE_TEX2D_SAMPLER(tex, _MainTex, uv.xy) * spriteColor * brightness * FrameClip(scaledUV, rowsColumns, fco);
+		col = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, sampler_MainTex, uv.xy) * spriteColor * brightness * FrameClip(scaledUV, rowsColumns, fco);
 	}
 	else {
-		col = UNITY_SAMPLE_TEX2DARRAY(tex2da, uv) * spriteColor * brightness;
+		col = MOCHIE_SAMPLE_TEX2DARRAY_SAMPLER(flipbook, ss, uv) * spriteColor * brightness;
 	}
 	return col;
 }
 
 void ApplySpritesheetBlending(g2f i, inout float4 col, float4 gifCol, int blendMode){
-
-	if (blendMode == 0){
-		col.rgb += (gifCol.rgb * gifCol.a); 
-	}
-	else if (blendMode == 1){
-		col.rgb *= lerp(1, gifCol.rgb, gifCol.a);
-	}
-	else col.rgb = lerp(col.rgb, gifCol.rgb, gifCol.a);
-
+	col.rgb = BlendColors(col.rgb, gifCol.rgb, blendMode, gifCol.a);
 	if (_UseSpritesheetAlpha == 1){
 		col.a = gifCol.a;
 		#if ALPHA_TEST
@@ -158,42 +137,80 @@ void ApplySpritesheetBlending(g2f i, inout float4 col, float4 gifCol, int blendM
 
 void ApplySpritesheet0(g2f i, inout float4 col){
 	float4 spriteCol = GetSpritesheetColor(i, 
-		_Spritesheet,
-		UNITY_PASS_TEX2DARRAY(_Flipbook0),
-		_SpritesheetCol,
-		_SpritesheetPos,
-		_SpritesheetScale,
-		_RowsColumns,
-		_FrameClipOfs,
-		_SpritesheetRot,
-		_ScrubPos,
-		_FPS,
-		_SpritesheetBrightness,
-		_ManualScrub,
-		_SpritesheetMode0
+		_Spritesheet, _Flipbook0, sampler_Flipbook0,
+		_SpritesheetCol, _SpritesheetPos, _SpritesheetScale,
+		_RowsColumns, _FrameClipOfs, _SpritesheetRot, _ScrubPos, _FPS,
+		_SpritesheetBrightness, _ManualScrub, _SpritesheetMode0
 	);
 	ApplySpritesheetBlending(i, col, spriteCol, _SpritesheetBlending);
 }
 
 void ApplySpritesheet1(g2f i, inout float4 col){
 	float4 spriteCol = GetSpritesheetColor(i, 
-		_Spritesheet1,
-		UNITY_PASS_TEX2DARRAY(_Flipbook1),
-		_SpritesheetCol1,
-		_SpritesheetPos1,
-		_SpritesheetScale1,
-		_RowsColumns1,
-		_FrameClipOfs1,
-		_SpritesheetRot1,
-		_ScrubPos1,
-		_FPS1,
-		_SpritesheetBrightness1,
-		_ManualScrub1,
-		_SpritesheetMode1
+		_Spritesheet1, _Flipbook1, sampler_Flipbook1, 
+		_SpritesheetCol1, _SpritesheetPos1, _SpritesheetScale1,
+		_RowsColumns1, _FrameClipOfs1, _SpritesheetRot1, _ScrubPos1, _FPS1,
+		_SpritesheetBrightness1, _ManualScrub1, _SpritesheetMode1
 	);
 	ApplySpritesheetBlending(i, col, spriteCol, _SpritesheetBlending1);
 }
 
+float GetDetailRough(g2f i, float roughIn){
+	float detailRough = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailRoughnessMap, sampler_MainTex, i.uv2.xy);
+	return BlendScalars(roughIn, detailRough, _DetailRoughBlending);
+}
+
+float GetRoughness(g2f i, masks m){
+	float rough = 0;
+	float dummy;
+	#if DEFAULT_WORKFLOW
+		rough = lerp(_Glossiness, MOCHIE_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, sampler_MainTex, i.uv.xy), _UseSpecMap);
+		rough = lerp(rough, GetDetailRough(i, rough), _DetailRoughStrength * m.detailMask * _UsingDetailRough);
+		rough = lerp(rough, Remap(rough, 0, 1, _RoughRemapMin, _RoughRemapMax), _RoughnessFiltering);
+		ApplyPBRFiltering(rough, _RoughContrast, _RoughIntensity, _RoughLightness, _RoughnessFiltering, dummy);
+	#elif SPECULAR_WORKFLOW
+		float smooth = 0;
+		float4 specMap = MOCHIE_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, sampler_MainTex, i.uv.xy);
+		if (_PBRWorkflow == 1){
+			if (_UseSmoothMap == 1){
+				smooth = MOCHIE_SAMPLE_TEX2D_SAMPLER(_SmoothnessMap, sampler_MainTex, i.uv.xy).r * _GlossMapScale;
+				smooth = lerp(smooth, Remap(smooth, 0, 1, _SmoothRemapMin, _SmoothRemapMax), _SmoothnessFiltering);
+				ApplyPBRFiltering(smooth, _SmoothContrast, _SmoothIntensity, _SmoothLightness, _SmoothnessFiltering, dummy);
+			}
+			else smooth = _GlossMapScale;
+		}
+		else {
+			smooth = specMap.a * _GlossMapScale;
+			smooth = lerp(smooth, Remap(smooth, 0, 1, _SmoothRemapMin, _SmoothRemapMax), _SmoothnessFiltering);
+			ApplyPBRFiltering(smooth, _SmoothContrast, _SmoothIntensity, _SmoothLightness, _SmoothnessFiltering, dummy);
+		}
+		rough = 1-smooth;
+	#elif PACKED_WORKFLOW
+		rough = ChannelCheck(packedTex, _RoughnessChannel);
+		rough = lerp(rough, GetDetailRough(i, rough), _DetailRoughStrength * m.detailMask * _UsingDetailRough);
+		rough = lerp(rough, Remap(rough, 0, 1, _RoughRemapMin, _RoughRemapMax), _RoughnessFiltering);
+		ApplyPBRFiltering(rough, _RoughContrast, _RoughIntensity, _RoughLightness, _RoughnessFiltering, dummy);
+	#endif
+
+	return rough;
+}
+
+float3 BlurSample(float2 uv, float2 strength){
+	float3 blurCol = 0;
+	float2 uvb = uv;
+	strength *= 0.015;
+	#if UNITY_SINGLE_PASS_STEREO
+		strength.y *= 0.5555555;
+	#else
+		strength.x *= 0.5625;
+	#endif
+	[unroll(16)]
+	for (int j = 0; j < 16; j++){
+		uvb = uv + (kernel[j] * strength);
+		blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MUSGrab, uvb);
+	}
+	return blurCol / 16;
+}
 
 void ApplyRefraction(g2f i, lighting l, masks m, inout float3 albedo){
 	float2 screenUV = GetGrabPos(i.grabPos);
@@ -205,12 +222,23 @@ void ApplyRefraction(g2f i, lighting l, masks m, inout float3 albedo){
 	#if REFRACTION_CA_ENABLED
 		float2 uvG = screenUV + (offset * (1 + _RefractionCAStr));
 		float2 uvB = screenUV + (offset * (1 - _RefractionCAStr));
-		float chromR = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_SSRGrab, _MainTex, float4(refractUV,0,0)).r;
-		float chromG = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_SSRGrab, _MainTex, float4(uvG,0,0)).g;
-		float chromB = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_SSRGrab, _MainTex, float4(uvB,0,0)).b;
+		float chromR = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MUSGrab, refractUV).r;
+		float chromG = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MUSGrab, uvG).g;
+		float chromB = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MUSGrab, uvB).b;
 		float3 refractionCol = float3(chromR, chromG, chromB);
 	#else
-		float3 refractionCol = UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_SSRGrab, _MainTex, float4(refractUV,0,0));
+		float3 refractionCol = 0;
+		UNITY_BRANCH
+		if (_RefractionBlur == 1){
+			float blurStrength = _RefractionBlurStrength;
+			if (_RefractionBlurRough == 1){
+				blurStrength *= GetRoughness(i, m);
+			}
+			refractionCol = BlurSample(refractUV, blurStrength);
+		}
+		else {
+			refractionCol = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MUSGrab, refractUV);
+		}
 	#endif
 	float alpha = step(m.refractDissolveMask, _RefractionDissolveMaskStr);
 	refractionCol = lerp(albedo, refractionCol * _RefractionTint, alpha * m.refractMask);
@@ -222,11 +250,11 @@ void ApplyBCDissolve(g2f i, audioLinkData al, inout float4 albedo, out float3 bc
 	#if BCDISSOLVE_ENABLED
 		float2 texUV = TRANSFORM_TEX(i.rawUV, _MainTex2);
 		float2 noiseUV = TRANSFORM_TEX(i.rawUV, _BCNoiseTex);
-		float4 albedo2 = UNITY_SAMPLE_TEX2D_SAMPLER(_MainTex2, _MainTex, texUV) * _BCColor;
-		float noise = UNITY_SAMPLE_TEX2D_SAMPLER(_BCNoiseTex, _MainTex, noiseUV);
+		float4 albedo2 = MOCHIE_SAMPLE_TEX2D_SAMPLER(_MainTex2, sampler_MainTex, texUV) * _BCColor;
+		float noise = MOCHIE_SAMPLE_TEX2D_SAMPLER(_BCNoiseTex, sampler_MainTex, noiseUV);
 		#if AUDIOLINK_ENABLED
-			float bcDissolveValueAL = GetAudioLinkBand(al, _AudioLinkBCDissolveBand);
-			_BCDissolveStr *= lerp(1, bcDissolveValueAL, _AudioLinkBCDissolveMultiplier);
+			float bcDissolveValueAL = GetAudioLinkBand(al, _AudioLinkBCDissolveBand, _AudioLinkRemapBCDissolveMin, _AudioLinkRemapBCDissolveMax);
+			_BCDissolveStr *= lerp(1, bcDissolveValueAL, _AudioLinkBCDissolveMultiplier*_AudioLinkStrength);
 		#endif
 		float dissolveStr = noise - _BCDissolveStr;
 		float rimInner = step(dissolveStr, _BCRimWidth*0.035);
@@ -237,30 +265,9 @@ void ApplyBCDissolve(g2f i, audioLinkData al, inout float4 albedo, out float3 bc
 	#endif
 }
 
-float3 BlendCubemap(float3 baseCol, float3 cubeCol, float blend, int blendMode){
-	switch (blendMode){
-		case 0: baseCol = lerp(baseCol, cubeCol, blend); break;
-		case 1: baseCol += cubeCol * blend; break;
-		case 2: baseCol -= cubeCol * blend; break;
-		case 3: baseCol *= lerp(1, cubeCol, blend); break;
-		default: break;
-	}
-	return baseCol;
-}
-
-float3 GetDetailAlbedo(g2f i, float3 alIn){
-	float3 detailAlbedo = UNITY_SAMPLE_TEX2D_SAMPLER(_DetailAlbedoMap, _MainTex, i.uv2.xy);
-	float3 alOut = 0;
-	switch (_DetailAlbedoBlending){
-		case 0: alOut = lerp(alIn, detailAlbedo, 0.5); break;
-		case 1: alOut = alIn + detailAlbedo; break;
-		case 2: alOut = alIn - detailAlbedo; break;
-		case 3: alOut = alIn * detailAlbedo; break;
-		case 4: alOut = alIn * detailAlbedo * unity_ColorSpaceDouble; break;
-		case 5: alOut = BlendOverlay(detailAlbedo, alIn); break;
-		case 6: alOut = BlendScreen(detailAlbedo, alIn); break;		
-	}
-	return alOut;
+float3 GetDetailAlbedo(g2f i, float3 albedo){
+	float3 detailAlbedo = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailAlbedoMap, sampler_MainTex, i.uv2.xy);
+	return BlendColors(albedo, detailAlbedo, _DetailAlbedoBlending);
 }
 
 float4 GetAlbedo(g2f i, lighting l, masks m, audioLinkData al){
@@ -269,12 +276,13 @@ float4 GetAlbedo(g2f i, lighting l, masks m, audioLinkData al){
 		if (_UnlitRefraction == 0)
 			ApplyRefraction(i, l, m, mainTex.rgb);
 	#endif
+	
 	float4 albedo = 1;
 	cubeMask = 1;
 	
 	#if !CUBEMAP_ENABLED && !COMBINED_CUBEMAP_ENABLED
 		albedo = mainTex;
-		float4 mirrorTex = UNITY_SAMPLE_TEX2D_SAMPLER(_MirrorTex, _MainTex, i.uv.xy);
+		float4 mirrorTex = MOCHIE_SAMPLE_TEX2D_SAMPLER(_MirrorTex, sampler_MainTex, i.uv.xy);
 		if (i.isReflection && _MirrorBehavior == 2)
 			albedo = mirrorTex;
 		albedo *= _Color;
@@ -290,14 +298,14 @@ float4 GetAlbedo(g2f i, lighting l, masks m, audioLinkData al){
 		_CubeRotate0 = lerp(_CubeRotate0, _CubeRotate0 *_Time.y, _AutoRotate0);
 		float3 vDir = Rotate3D(l.viewDir, _CubeRotate0);
 		float4 albedo0 = mainTex;
-		float4 mirrorTex = UNITY_SAMPLE_TEX2D_SAMPLER(_MirrorTex, _MainTex, i.uv.xy);
+		float4 mirrorTex = MOCHIE_SAMPLE_TEX2D_SAMPLER(_MirrorTex, sampler_MainTex, i.uv.xy);
 		if (i.isReflection && _MirrorBehavior == 2)
 			albedo0 = mirrorTex;
 		float4 albedo1 = texCUBE(_MainTexCube0, vDir);
 		albedo0 *= _Color;
 		albedo1 *= _CubeColor0;
-		cubeMask = lerp(str, UNITY_SAMPLE_TEX2D_SAMPLER(tex, _MainTex, uv).r, _IsCubeBlendMask); 
-		albedo.rgb = BlendCubemap(albedo0, albedo1, cubeMask, _CubeBlendMode);
+		cubeMask = lerp(_CubeBlend, MOCHIE_SAMPLE_TEX2D_SAMPLER(_CubeBlendMask, sampler_MainTex, i.rawUV.xy).r, _IsCubeBlendMask); 
+		albedo.rgb = BlendColors(albedo0, albedo1, _CubeBlendMode, cubeMask);
 	#endif
 
 	ApplyBCDissolve(i, al, albedo, bcRimColor);
@@ -310,7 +318,7 @@ float4 GetAlbedo(g2f i, lighting l, masks m, audioLinkData al){
 	#if NON_OPAQUE_RENDERING
 		if (_UseAlphaMask == 1){
 			float2 alphaMaskUV = TRANSFORM_TEX(i.rawUV, _AlphaMask);
-			float4 alphaMask = UNITY_SAMPLE_TEX2D_SAMPLER(_AlphaMask, _MainTex, alphaMaskUV) * _Color.a;
+			float4 alphaMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_AlphaMask, sampler_MainTex, alphaMaskUV) * _Color.a;
 			albedo.a = ChannelCheck(alphaMask, _AlphaMaskChannel);
 		}
 	#endif
@@ -347,7 +355,7 @@ void GrabExists(inout audioLinkData al, inout float versionBand, inout float ver
 }
 
 float SampleAudioTexture(float time, float band){
-	return UNITY_SAMPLE_TEX2D_LOD_SAMPLER(_AudioTexture, _MainTex, float4(time, band,0,0));
+	return MOCHIE_SAMPLE_TEX2D_LOD(_AudioTexture, float2(time,band),0);
 }
 
 void InitializeAudioLink(inout audioLinkData al, float time){
@@ -368,6 +376,7 @@ void InitializeAudioLink(inout audioLinkData al, float time){
 //----------------------------
 float GetPulse(g2f i){
 	float pulse = 1;
+	[flatten]
 	switch (_PulseWaveform){
 		case 0: pulse = 0.5*(sin(_Time.y * _PulseSpeed)+1); break; 			// Sin
 		case 1: pulse = round((sin(_Time.y * _PulseSpeed)+1)*0.5); break; 	// Square
@@ -376,85 +385,67 @@ float GetPulse(g2f i){
 		case 4: pulse = 1-frac(_Time.y * (_PulseSpeed * 0.2)); break; 		// Reverse Saw
 		default: break;
 	}
-	float mask = UNITY_SAMPLE_TEX2D_SAMPLER(_PulseMask, _MainTex, i.uv.xy);
+	float mask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_PulseMask, sampler_MainTex, i.uv.xy);
 	pulse = lerp(1, pulse, _PulseStr*mask);
 	return pulse;
 }
 
 float3 GetEmission(g2f i, masks m, audioLinkData al){
-	float3 emiss = UNITY_SAMPLE_TEX2D(_EmissionMap, i.uv.zw).rgb * _EmissionColor.rgb;
+	float3 emiss = MOCHIE_SAMPLE_TEX2D(_EmissionMap, i.uv.zw).rgb * _EmissionColor.rgb;
 	emiss *= m.emissMask;
 	#if !OUTLINE_PASS
 		#if PULSE_ENABLED
 			emiss *= GetPulse(i);
 		#endif
 		#if AUDIOLINK_ENABLED
-			float emissValueAL = GetAudioLinkBand(al, _AudioLinkEmissionBand);
-			emiss *= lerp(1, emissValueAL, _AudioLinkEmissionMultiplier);
+			float emissValueAL = GetAudioLinkBand(al, _AudioLinkEmissionBand, _AudioLinkRemapEmissionMin, _AudioLinkRemapEmissionMax);
+			emiss *= lerp(1, emissValueAL, _AudioLinkEmissionMultiplier*_AudioLinkStrength);
 		#endif
 	#endif
 	return emiss * _EmissIntensity;
 }
 
+#if SHADING_ENABLED
 float GetRim(lighting l, float width){
-	float VdotL = abs(dot(l.viewDir, l.normal));
-	float rim = pow((1-VdotL), (1-width) * 10);
-	rim = smoothstep(_RimEdge, 1-_RimEdge, rim);
+	float rim = GetFresnel(l.VdotL, width, _RimEdge);
 	#if AUDIOLINK_ENABLED
 		audioLinkData ral = (audioLinkData)0;
 		float VVRdotL = abs(dot(l.viewDirVR, l.normal));
 		InitializeAudioLink(ral, 1-VVRdotL);
-		float pulseValueAL = 1-GetAudioLinkBand(ral, _AudioLinkRimBand);
+		float pulseValueAL = 1-GetAudioLinkBand(ral, _AudioLinkRimBand, _AudioLinkRemapRimMin, _AudioLinkRemapRimMax);
 		float pulseRim = pow((1-pulseValueAL), (1-_AudioLinkRimPulseWidth) * 10);
 		pulseRim = smoothstep(_AudioLinkRimPulseSharp, 1-_AudioLinkRimPulseSharp, pulseRim);
-		rim += (pulseRim * _AudioLinkRimPulse);
+		rim += (pulseRim * _AudioLinkRimPulse * _AudioLinkStrength);
 	#endif
 	return rim;
 }
 
 void ApplyRimLighting(g2f i, lighting l, masks m, audioLinkData al, inout float3 diffuse){
 	#if AUDIOLINK_ENABLED
-		float rimValueAL = GetAudioLinkBand(al, _AudioLinkRimBand);
+		float rimValueAL = GetAudioLinkBand(al, _AudioLinkRimBand, _AudioLinkRemapRimMin, _AudioLinkRemapRimMax);
 		_RimWidth *= lerp(1, rimValueAL, _AudioLinkRimWidth);
 	#endif
 	float rim = GetRim(l, _RimWidth);
 	rim *= m.rimMask;
-	float3 rimCol = UNITY_SAMPLE_TEX2D_SAMPLER(_RimTex, _MainTex, i.uv2.zw).rgb * _RimCol.rgb;
+	float3 rimCol = MOCHIE_SAMPLE_TEX2D_SAMPLER(_RimTex, sampler_MainTex, i.uv2.zw).rgb * _RimCol.rgb;
 	float interpolator = rim*_RimStr*lerp(l.worldBrightness, 1, _UnlitRim);
 	#if AUDIOLINK_ENABLED
-		interpolator *= lerp(1, rimValueAL, _AudioLinkRimMultiplier);
+		interpolator *= lerp(1, rimValueAL, _AudioLinkRimMultiplier*_AudioLinkStrength);
 	#endif
-	switch (_RimBlending){
-		case 0: diffuse = lerp(diffuse, rimCol, interpolator); break;
-		case 1: diffuse += rimCol*interpolator; break;
-		case 2: diffuse -= rimCol*interpolator; break;
-		case 3: diffuse *= lerp(1, rimCol, interpolator); break;
-	}
+	diffuse = BlendColors(diffuse, rimCol, _RimBlending, interpolator);
 }
+#endif
 
 //----------------------------
 // Workflows
 //----------------------------
-float GetDetailRough(g2f i, float roughIn){
-	float detailRough = UNITY_SAMPLE_TEX2D_SAMPLER(_DetailRoughnessMap, _MainTex, i.uv2.xy);
-	float roughOut = 0;
-	switch (_DetailRoughBlending){
-		case 0: roughOut = lerp(roughIn, detailRough, 0.5); break;
-		case 1: roughOut = roughIn + detailRough; break;
-		case 2: roughOut = roughIn - detailRough; break;
-		case 3: roughOut = roughIn * detailRough; break;
-		case 4: roughOut = BlendOverlay(detailRough, roughIn); break;
-		case 5: roughOut = BlendScreen(detailRough, roughIn); break;
-		default: break;
-	}
-	return roughOut;
-}
+
 
 float3 GetMetallicWorkflow(g2f i, lighting l, masks m, float3 albedo){
-
-	metallic = lerp(_Metallic, UNITY_SAMPLE_TEX2D_SAMPLER(_MetallicGlossMap, _MainTex, i.uv.xy), _UseMetallicMap);
-	roughness = lerp(_Glossiness, UNITY_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, _MainTex, i.uv.xy), _UseSpecMap);
+	metallic = lerp(_Metallic, MOCHIE_SAMPLE_TEX2D_SAMPLER(_MetallicGlossMap, sampler_MainTex, i.uv.xy), _UseMetallicMap);
+	roughness = lerp(_Glossiness, MOCHIE_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, sampler_MainTex, i.uv.xy), _UseSpecMap);
 	roughness = lerp(roughness, GetDetailRough(i, roughness), _DetailRoughStrength * m.detailMask * _UsingDetailRough);
+	roughness = lerp(roughness, Remap(roughness, 0, 1, _RoughRemapMin, _RoughRemapMax), _RoughnessFiltering);
 	ApplyPBRFiltering(roughness, _RoughContrast, _RoughIntensity, _RoughLightness, _RoughnessFiltering, prevRough);
 
 	smoothness = 1-roughness;
@@ -471,17 +462,19 @@ float3 GetMetallicWorkflow(g2f i, lighting l, masks m, float3 albedo){
 
 float3 GetSpecWorkflow(g2f i, lighting l, masks m, float3 albedo){
 	if (_UseSpecMap == 1){
-		float4 specMap = UNITY_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, _MainTex, i.uv.xy);
+		float4 specMap = MOCHIE_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, sampler_MainTex, i.uv.xy);
 		specularTint = specMap.rgb;
 		if (_PBRWorkflow == 1){
 			if (_UseSmoothMap == 1){
-				smoothness = UNITY_SAMPLE_TEX2D_SAMPLER(_SmoothnessMap, _MainTex, i.uv.xy).r * _GlossMapScale;
+				smoothness = MOCHIE_SAMPLE_TEX2D_SAMPLER(_SmoothnessMap, sampler_MainTex, i.uv.xy).r * _GlossMapScale;
+				smoothness = lerp(smoothness, Remap(smoothness, 0, 1, _SmoothRemapMin, _SmoothRemapMax), _SmoothnessFiltering);
 				ApplyPBRFiltering(smoothness, _SmoothContrast, _SmoothIntensity, _SmoothLightness, _SmoothnessFiltering, prevSmooth);
 			}
 			else smoothness = _GlossMapScale;
 		}
 		else {
 			smoothness = specMap.a * _GlossMapScale;
+			smoothness = lerp(smoothness, Remap(smoothness, 0, 1, _SmoothRemapMin, _SmoothRemapMax), _SmoothnessFiltering);
 			ApplyPBRFiltering(smoothness, _SmoothContrast, _SmoothIntensity, _SmoothLightness, _SmoothnessFiltering, prevSmooth);
 		}
 	}
@@ -489,25 +482,15 @@ float3 GetSpecWorkflow(g2f i, lighting l, masks m, float3 albedo){
 		specularTint = _SpecCol.rgb;
 		smoothness = _GlossMapScale;
 	}
-	
 	omr = 1-max(max(specularTint.r, specularTint.g), specularTint.b);
 	albedo = albedo * (float3(1,1,1) - specularTint);
 	return albedo;
 }
 
-void InitializeModularChannels(){
-	metallic = ChannelCheck(packedTex, _MetallicChannel);
-	roughness = ChannelCheck(packedTex, _RoughnessChannel);
-}
-
-void InitializeBakedChannels(){
-	metallic = packedTex.r;
-	roughness = packedTex.g;
-}
 
 float3 GetPackedWorkflow(g2f i, lighting l, masks m, float3 albedo){
 	roughness = lerp(roughness, GetDetailRough(i, roughness), _DetailRoughStrength * m.detailMask * _UsingDetailRough);
-
+	roughness = lerp(roughness, Remap(roughness, 0, 1, _RoughRemapMin, _RoughRemapMax), _RoughnessFiltering);
 	ApplyPBRFiltering(roughness, _RoughContrast, _RoughIntensity, _RoughLightness, _RoughnessFiltering, prevRough);
 
 	smoothness = 1-roughness;
@@ -524,17 +507,19 @@ float3 GetPackedWorkflow(g2f i, lighting l, masks m, float3 albedo){
 	
 }
 
+void InitializeModularChannels(){
+	metallic = ChannelCheck(packedTex, _MetallicChannel);
+	roughness = ChannelCheck(packedTex, _RoughnessChannel);
+}
+
 float3 GetWorkflow(g2f i, lighting l, masks m, float3 albedo){
 	float3 diffuse = albedo;
-	#if !SPECULAR_WORKFLOW && !PACKED_WORKFLOW && !PACKED_WORKFLOW_BAKED
+	#if DEFAULT_WORKFLOW
 		diffuse = GetMetallicWorkflow(i, l, m, albedo);
 	#elif SPECULAR_WORKFLOW
 		diffuse = GetSpecWorkflow(i, l, m, albedo);
 	#elif PACKED_WORKFLOW
 		InitializeModularChannels();
-		diffuse = GetPackedWorkflow(i, l, m, albedo);
-	#elif PACKED_WORKFLOW_BAKED
-		InitializeBakedChannels();
 		diffuse = GetPackedWorkflow(i, l, m, albedo);
 	#endif
 	return diffuse;
@@ -580,11 +565,11 @@ float2 GetSimplexOffset(g2f i){
 
 float3 GetUVOffset(g2f i){
 
-	_DistortUVStr *= UNITY_SAMPLE_TEX2D_SAMPLER(_DistortUVMask, _MainTex, i.uv.xy);
+	_DistortUVStr *= MOCHIE_SAMPLE_TEX2D_SAMPLER(_DistortUVMask, sampler_MainTex, i.uv.xy);
 	float3 ofs = 0;
 
 	#if UV_DISTORTION_NORMALMAP
-		ofs = UnpackScaleNormal(UNITY_SAMPLE_TEX2D_SAMPLER(_DistortUVMap, _MainTex, i.uv3.xy), _DistortUVStr);
+		ofs = UnpackScaleNormal(MOCHIE_SAMPLE_TEX2D_SAMPLER(_DistortUVMap, sampler_MainTex, i.uv3.xy), _DistortUVStr);
 	#else
 		ofs.xy = GetSimplexOffset(i);
 	#endif
@@ -595,8 +580,12 @@ float3 GetUVOffset(g2f i){
 	return ofs;
 }
 
-void ApplyUVDistortion(inout g2f i, inout float3 uvOffset){
+void ApplyUVDistortion(inout g2f i, audioLinkData al, inout float3 uvOffset){
 	uvOffset = GetUVOffset(i);
+	#if AUDIOLINK_ENABLED
+		float alValue = GetAudioLinkBand(al, _AudioLinkUVDistortionBand, _AudioLinkRemapUVDistortionMin, _AudioLinkRemapUVDistortionMax);
+		uvOffset *= lerp(1, alValue, _AudioLinkUVDistortionMultiplier * _AudioLinkStrength);
+	#endif
 	i.uv.xy += uvOffset.xy * _DistortMainUV;
 	i.uv.zw += uvOffset.xy * _DistortEmissUV;
 	i.uv2.xy += uvOffset.xy * _DistortDetailUV;
@@ -615,7 +604,7 @@ float2 GetParallaxOffset(g2f i){
 	float surfaceHeight = 0;
 
 	#if PACKED_WORKFLOW
-		packedTex = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy);
+		packedTex = MOCHIE_SAMPLE_TEX2D_SAMPLER(_PackedMap, sampler_MainTex, i.uv.xy);
 		surfaceHeight = ChannelCheck(packedTex, _HeightChannel);
 		surfaceHeight = clamp(surfaceHeight, 0, 0.999);
 		float prevStepHeight = stepHeight;
@@ -628,7 +617,8 @@ float2 GetParallaxOffset(g2f i){
 			prevSurfaceHeight = surfaceHeight;
 			uvOffset -= uvDelta;
 			stepHeight -= stepSize;
-			surfaceHeight = ChannelCheck(UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy+uvOffset), _HeightChannel);
+			surfaceHeight = ChannelCheck(MOCHIE_SAMPLE_TEX2D_SAMPLER(_PackedMap, sampler_MainTex, i.uv.xy+uvOffset), _HeightChannel);
+			surfaceHeight = lerp(surfaceHeight, Remap(surfaceHeight, 0, 1, _HeightRemapMin, _HeightRemapMax), _HeightFiltering);
 			ApplyPBRFiltering(surfaceHeight, _HeightContrast, _HeightIntensity, _HeightLightness, _HeightFiltering, prevHeight);
 		}
 
@@ -645,46 +635,12 @@ float2 GetParallaxOffset(g2f i){
 				uvOffset -= uvDelta;
 				stepHeight -= stepSize;
 			}
-			surfaceHeight = ChannelCheck(UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy+uvOffset), _HeightChannel);
-			ApplyPBRFiltering(surfaceHeight, _HeightContrast, _HeightIntensity, _HeightLightness, _HeightFiltering, prevHeight);
-		}
-
-	#elif PACKED_WORKFLOW_BAKED
-		packedTex = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy);
-		surfaceHeight = packedTex.a;
-		surfaceHeight = clamp(surfaceHeight, 0, 0.999);
-		float prevStepHeight = stepHeight;
-		float prevSurfaceHeight = surfaceHeight;
-
-		[unroll(15)]
-		for (int j = 1; j <= 15 && stepHeight > surfaceHeight; j++){
-			prevUVOffset = uvOffset;
-			prevStepHeight = stepHeight;
-			prevSurfaceHeight = surfaceHeight;
-			uvOffset -= uvDelta;
-			stepHeight -= stepSize;
-			surfaceHeight = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy+uvOffset).a;
-			ApplyPBRFiltering(surfaceHeight, _HeightContrast, _HeightIntensity, _HeightLightness, _HeightFiltering, prevHeight);
-		}
-
-		[unroll(4)]
-		for (int k = 0; k < 4; k++) {
-			uvDelta *= 0.5;
-			stepSize *= 0.5;
-
-			if (stepHeight < surfaceHeight) {
-				uvOffset += uvDelta;
-				stepHeight += stepSize;
-			}
-			else {
-				uvOffset -= uvDelta;
-				stepHeight -= stepSize;
-			}
-			surfaceHeight = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy+uvOffset).a;
+			surfaceHeight = ChannelCheck(MOCHIE_SAMPLE_TEX2D_SAMPLER(_PackedMap, sampler_MainTex, i.uv.xy+uvOffset), _HeightChannel);
+			surfaceHeight = lerp(surfaceHeight, Remap(surfaceHeight, 0, 1, _HeightRemapMin, _HeightRemapMax), _HeightFiltering);
 			ApplyPBRFiltering(surfaceHeight, _HeightContrast, _HeightIntensity, _HeightLightness, _HeightFiltering, prevHeight);
 		}
 	#else
-		surfaceHeight = UNITY_SAMPLE_TEX2D_SAMPLER(_ParallaxMap, _MainTex, i.uv.xy+uvOffset);
+		surfaceHeight = MOCHIE_SAMPLE_TEX2D_SAMPLER(_ParallaxMap, sampler_MainTex, i.uv.xy+uvOffset);
 		surfaceHeight = clamp(surfaceHeight, 0, 0.999);
 		float prevStepHeight = stepHeight;
 		float prevSurfaceHeight = surfaceHeight;
@@ -696,7 +652,8 @@ float2 GetParallaxOffset(g2f i){
 			prevSurfaceHeight = surfaceHeight;
 			uvOffset -= uvDelta;
 			stepHeight -= stepSize;
-			surfaceHeight = UNITY_SAMPLE_TEX2D_SAMPLER(_ParallaxMap, _MainTex, i.uv.xy+uvOffset);
+			surfaceHeight = MOCHIE_SAMPLE_TEX2D_SAMPLER(_ParallaxMap, sampler_MainTex, i.uv.xy+uvOffset);
+			surfaceHeight = lerp(surfaceHeight, Remap(surfaceHeight, 0, 1, _HeightRemapMin, _HeightRemapMax), _HeightFiltering);
 			ApplyPBRFiltering(surfaceHeight, _HeightContrast, _HeightIntensity, _HeightLightness, _HeightFiltering, prevHeight);
 		}
 		
@@ -713,7 +670,8 @@ float2 GetParallaxOffset(g2f i){
 				uvOffset -= uvDelta;
 				stepHeight -= stepSize;
 			}
-			surfaceHeight = UNITY_SAMPLE_TEX2D_SAMPLER(_ParallaxMap, _MainTex, i.uv.xy+uvOffset);
+			surfaceHeight = MOCHIE_SAMPLE_TEX2D_SAMPLER(_ParallaxMap, sampler_MainTex, i.uv.xy+uvOffset);
+			surfaceHeight = lerp(surfaceHeight, Remap(surfaceHeight, 0, 1, _HeightRemapMin, _HeightRemapMax), _HeightFiltering);
 			ApplyPBRFiltering(surfaceHeight, _HeightContrast, _HeightIntensity, _HeightLightness, _HeightFiltering, prevHeight);
 		}
 	#endif
@@ -760,17 +718,14 @@ float4 PremultiplyAlpha(float4 diffuse, float omr){
 float GetOneMinusReflectivity(g2f i){
 	float omr = 0;
 	#if DEFAULT_WORKFLOW
-		metallic = lerp(_Metallic, UNITY_SAMPLE_TEX2D_SAMPLER(_MetallicGlossMap, _MainTex, i.uv.xy), _UseMetallicMap);
+		metallic = lerp(_Metallic, MOCHIE_SAMPLE_TEX2D_SAMPLER(_MetallicGlossMap, sampler_MainTex, i.uv.xy), _UseMetallicMap);
 		omr = unity_ColorSpaceDielectricSpec.a - metallic * unity_ColorSpaceDielectricSpec.a;
 	#elif SPECULAR_WORKFLOW
-		float3 specularTint = UNITY_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, _MainTex, i.uv.xy).rgb;
+		float3 specularTint = MOCHIE_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, sampler_MainTex, i.uv.xy).rgb;
 		omr = 1-max(max(specularTint.r, specularTint.g), specularTint.b);
 	#elif PACKED_WORKFLOW
-		float4 packedTex = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy);
+		float4 packedTex = MOCHIE_SAMPLE_TEX2D_SAMPLER(_PackedMap, sampler_MainTex, i.uv.xy);
 		metallic = ChannelCheck(packedTex, _MetallicChannel);
-		omr = unity_ColorSpaceDielectricSpec.a - metallic * unity_ColorSpaceDielectricSpec.a;
-	#elif PACKED_WORKFLOW_BAKED
-		metallic = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMap, _MainTex, i.uv.xy).r;
 		omr = unity_ColorSpaceDielectricSpec.a - metallic * unity_ColorSpaceDielectricSpec.a;
 	#endif
 	return omr;
@@ -789,7 +744,7 @@ void NearClip(g2f i){
         #else
             float camDist = distance(i.worldPos, _WorldSpaceCameraPos.xyz);
         #endif
-        float ncMask = UNITY_SAMPLE_TEX2D_SAMPLER(_NearClipMask, _MainTex, i.rawUV);
+        float ncMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_NearClipMask, sampler_MainTex, i.rawUV);
         if (camDist < _NearClip && ncMask > 0.5){
             discard;
         }
@@ -829,28 +784,30 @@ masks GetMasks(g2f i){
 					refractUV = TRANSFORM_TEX(i.rawUV, _RefractionMask) + (_Time.y*_RefractionMaskScroll);
 				#endif
 				#if REFLECTIONS_ENABLED
-					m.reflectionMask = UNITY_SAMPLE_TEX2D_SAMPLER(_ReflectionMask, _MainTex, reflUV);
+					m.reflectionMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_ReflectionMask, sampler_MainTex, reflUV);
 				#endif
 				#if SPECULAR_ENABLED
-					m.specularMask = UNITY_SAMPLE_TEX2D_SAMPLER(_SpecularMask, _MainTex, specUV);
+					m.specularMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_SpecularMask, sampler_MainTex, specUV);
 				#endif
 				#if ENVIRONMENT_RIM_ENABLED
-					m.eRimMask = UNITY_SAMPLE_TEX2D_SAMPLER(_ERimMask, _MainTex, erimUV);
+					m.eRimMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_ERimMask, sampler_MainTex, erimUV);
 				#endif
 				#if MATCAP_ENABLED
-					m.matcapMask = UNITY_SAMPLE_TEX2D_SAMPLER(_MatcapMask, _MainTex, matcapUV);
-					m.matcapBlendMask = UNITY_SAMPLE_TEX2D_SAMPLER(_MatcapBlendMask, _MainTex, matcapBlendUV);
+					m.matcapMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_MatcapMask, sampler_MainTex, matcapUV);
+					m.matcapBlendMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_MatcapBlendMask, sampler_MainTex, matcapBlendUV);
 				#endif
 				#if COMBINED_SPECULAR
-					m.anisoMask = 1-UNITY_SAMPLE_TEX2D_SAMPLER(_InterpMask, _MainTex, anisoUV);
+					m.anisoMask = 1-MOCHIE_SAMPLE_TEX2D_SAMPLER(_InterpMask, sampler_MainTex, anisoUV);
 				#endif
 				#if REFRACTION_ENABLED
 					refractDissUV = TRANSFORM_TEX(i.rawUV, _RefractionDissolveMask) + (_Time.y*_RefractionDissolveMaskScroll);
-					m.refractMask = UNITY_SAMPLE_TEX2D_SAMPLER(_RefractionMask, _MainTex, refractUV);
-					m.refractDissolveMask = UNITY_SAMPLE_TEX2D_SAMPLER(_RefractionDissolveMask, _MainTex, refractDissUV);
+					m.refractMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_RefractionMask, sampler_MainTex, refractUV);
+					m.refractDissolveMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_RefractionDissolveMask, sampler_MainTex, refractDissUV);
 				#endif
-				m.subsurfMask = UNITY_SAMPLE_TEX2D_SAMPLER(_SubsurfaceMask, _MainTex, subsurfUV);
-				m.rimMask = UNITY_SAMPLE_TEX2D_SAMPLER(_RimMask, _MainTex, rimUV);
+				#if SUBSURFACE_ENABLED
+					m.subsurfMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_SubsurfaceMask, sampler_MainTex, subsurfUV);
+				#endif
+				m.rimMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_RimMask, sampler_MainTex, rimUV);
 			#endif
 			#if MASK_SOS_ENABLED
 				detailUV = TRANSFORM_TEX(i.rawUV, _DetailMask) + (_Time.y*_DetailMaskScroll);
@@ -861,45 +818,45 @@ masks GetMasks(g2f i){
 				emissUV = TRANSFORM_TEX(i.rawUV, _EmissMask) + (_Time.y*_EmissMaskScroll);
 				emissPulseUV = TRANSFORM_TEX(i.rawUV, _EmissPulseMask) + (_Time.y*_EmissPulseMaskScroll);
 			#endif
-			m.detailMask = UNITY_SAMPLE_TEX2D_SAMPLER(_DetailMask, _MainTex, detailUV);
-			m.shadowMask = UNITY_SAMPLE_TEX2D_SAMPLER(_ShadowMask, _MainTex, shadowUV);
-			m.diffuseMask = UNITY_SAMPLE_TEX2D_SAMPLER(_DiffuseMask, _MainTex, diffuseUV);
+			m.detailMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailMask, sampler_MainTex, detailUV);
+			m.shadowMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_ShadowMask, sampler_MainTex, shadowUV);
+			m.diffuseMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DiffuseMask, sampler_MainTex, diffuseUV);
 		#endif
 		#if FILTERING_ENABLED
 			#if OUTLINE_PASS
-				m.filterMask = lerp(UNITY_SAMPLE_TEX2D_SAMPLER(_FilterMask, _MainTex, filterUV), 1, _IgnoreFilterMask);
+				m.filterMask = lerp(MOCHIE_SAMPLE_TEX2D_SAMPLER(_FilterMask, sampler_MainTex, filterUV), 1, _IgnoreFilterMask);
 			#else
-				m.filterMask = UNITY_SAMPLE_TEX2D_SAMPLER(_FilterMask, _MainTex, filterUV);
+				m.filterMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_FilterMask, sampler_MainTex, filterUV);
 			#endif
-			m.teamMask = UNITY_SAMPLE_TEX2D_SAMPLER(_TeamColorMask, _MainTex, teamUV);
+			m.teamMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_TeamColorMask, sampler_MainTex, teamUV);
 		#endif
 		#if EMISSION_ENABLED
-			m.emissMask = UNITY_SAMPLE_TEX2D_SAMPLER(_EmissMask, _MainTex, emissUV);
-			m.emissPulseMask = UNITY_SAMPLE_TEX2D_SAMPLER(_PulseMask, _MainTex, emissPulseUV);
+			m.emissMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_EmissMask, sampler_MainTex, emissUV);
+			m.emissPulseMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_PulseMask, sampler_MainTex, emissPulseUV);
 		#endif
 
 	// Packed
 	#elif PACKED_MASKING
 		#if SHADING_ENABLED
 			#if !OUTLINE_PASS
-				float4 mask0 = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMask0, _MainTex, i.uv.xy);
+				float4 mask0 = MOCHIE_SAMPLE_TEX2D_SAMPLER(_PackedMask0, sampler_MainTex, i.uv.xy);
 				m.reflectionMask = mask0.r;
 				m.specularMask = mask0.g;
 				m.matcapMask = mask0.b;
 				m.refractMask = mask0.a;
-				float4 mask2 = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMask2, _MainTex, i.uv.xy);
+				float4 mask2 = MOCHIE_SAMPLE_TEX2D_SAMPLER(_PackedMask2, sampler_MainTex, i.uv.xy);
 				m.rimMask = mask2.r;
 				m.eRimMask = mask2.g;
 				m.matcapBlendMask = mask2.b;
 				m.anisoMask = mask2.a;
 			#endif
-			float4 mask1 = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMask1, _MainTex, i.uv.xy);
+			float4 mask1 = MOCHIE_SAMPLE_TEX2D_SAMPLER(_PackedMask1, sampler_MainTex, i.uv.xy);
 			m.shadowMask = mask1.r;
 			m.diffuseMask = mask1.g;
 			m.subsurfMask = mask1.b;
 			m.detailMask = mask1.a;
 		#endif
-		float4 mask3 = UNITY_SAMPLE_TEX2D_SAMPLER(_PackedMask3, _MainTex, i.uv.xy);
+		float4 mask3 = MOCHIE_SAMPLE_TEX2D_SAMPLER(_PackedMask3, sampler_MainTex, i.uv.xy);
 		m.emissMask = mask3.r;
 		m.emissPulseMask = mask3.g;
 		#if OUTLINE_PASS
@@ -908,15 +865,21 @@ masks GetMasks(g2f i){
 			m.filterMask = mask3.b;
 		#endif
 		#if FILTERING_ENABLED
-			m.teamMask = UNITY_SAMPLE_TEX2D_SAMPLER(_TeamColorMask, _MainTex, i.uv.xy);
+			m.teamMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_TeamColorMask, sampler_MainTex, i.uv.xy);
 		#endif
 	#elif FILTERING_ENABLED
-		m.teamMask = UNITY_SAMPLE_TEX2D_SAMPLER(_TeamColorMask, _MainTex, i.uv.xy);
+		m.teamMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_TeamColorMask, sampler_MainTex, i.uv.xy);
 	#endif
 
 	#if REFRACTION_ENABLED
 		refractDissUV = TRANSFORM_TEX(i.rawUV, _RefractionDissolveMask) + (_Time.y*_RefractionDissolveMaskScroll);
-		m.refractDissolveMask = UNITY_SAMPLE_TEX2D_SAMPLER(_RefractionDissolveMask, _MainTex, refractDissUV);
+		m.refractDissolveMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_RefractionDissolveMask, sampler_MainTex, refractDissUV);
+	#endif
+
+	#if SHADING_ENABLED
+		if (_Iridescence == 1){
+			m.iridescenceMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_IridescenceMask, sampler_MainTex, i.rawUV);
+		}
 	#endif
 
 	return m;

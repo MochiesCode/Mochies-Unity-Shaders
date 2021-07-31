@@ -23,8 +23,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		public static GUIContent detailNormalMapText = EditorGUIUtility.TrTextContent("Detail Normal Map", "Normal Map");
 		public static GUIContent detailRoughnessMapText = EditorGUIUtility.TrTextContent("Detail Roughness", "Roughness (R)");
 		public static GUIContent detailAOMapText = EditorGUIUtility.TrTextContent("Detail Occlusion", "Ambient Occlusion (G)");
-		public static GUIContent packedMapText = EditorGUIUtility.TrTextContent("Packed Map (ARMH)", "AO, Roughness, Metallic, Height");
-		public static GUIContent packedMapModText = EditorGUIUtility.TrTextContent("Packed Map");
+		public static GUIContent packedMapText = EditorGUIUtility.TrTextContent("Packed Map");
 		public static GUIContent reflCubeText = EditorGUIUtility.TrTextContent("Reflection Fallback", "Replace environment reflections below the luminance threshold with this cubemap");
 		public static GUIContent reflOverrideText = EditorGUIUtility.TrTextContent("Reflection Override", "Override the primary reflection probe sample with this cubemap");
 		public static GUIContent ssrText = EditorGUIUtility.TrTextContent("Screen Space Reflections");
@@ -46,9 +45,8 @@ internal class MochieStandardGUI : ShaderGUI {
 		"Render Settings"
 	}, 1);
 
-	string watermark = "Watermark_Pro";
-	string patIcon = "Patreon_Icon";
-	string versionLabel = "v1.5";
+	string versionLabel = "v1.6";
+	// β
 
 	MaterialProperty blendMode = null;
 	MaterialProperty workflow = null;
@@ -243,17 +241,14 @@ internal class MochieStandardGUI : ShaderGUI {
 		EditorGUI.BeginChangeCheck();{
 			
 			// Core Shader Variant
-			MGUI.Space8();
-			bool variantFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, m_MaterialEditor, "Shader Variant");
-			if (variantFoldout){
-				DoVariantArea();
-			}
+			MGUI.BoldLabel("Shader Variant");
+			DoVariantArea();
+			MGUI.Space4();
 
 			// Primary properties
-			bool primaryFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, m_MaterialEditor, "Primary Textures");
-			if (primaryFoldout){
-				DoPrimaryArea(material);
-			}
+			MGUI.BoldLabel("Primary Textures");
+			DoPrimaryArea(material);
+			MGUI.Space4();
 
 			// Detail properties
 			bool detailFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, m_MaterialEditor, "Detail Textures");
@@ -270,7 +265,7 @@ internal class MochieStandardGUI : ShaderGUI {
 			// Rendering options
 			bool renderFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, m_MaterialEditor, "Render Settings");
 			if (renderFoldout){
-				DoRenderingArea();
+				DoRenderingArea(material);
 			}
 
 			// Watermark and version display
@@ -311,20 +306,20 @@ internal class MochieStandardGUI : ShaderGUI {
 			m_MaterialEditor.TexturePropertySingleLine(Styles.albedoText, albedoMap, albedoColor, albedoMap.textureValue ? saturation : null);
 			if (albedoMap.textureValue)
 				MGUI.TexPropLabel("Saturation", 118);
-			if (workflow.floatValue > 0){
-				m_MaterialEditor.TexturePropertySingleLine(workflow.floatValue == 1 ? Styles.packedMapText : Styles.packedMapModText, packedMap);
+			if (workflow.floatValue == 1){
+				m_MaterialEditor.TexturePropertySingleLine(Styles.packedMapText, packedMap);
 				MGUI.sRGBWarning(packedMap);
 				if (packedMap.textureValue){
-					if (workflow.floatValue == 2){
-						MGUI.PropertyGroupLayer(() => {
-							m_MaterialEditor.ShaderProperty(metallicChannel, "Metallic");
-							m_MaterialEditor.ShaderProperty(roughChannel, "Roughness");
-							m_MaterialEditor.ShaderProperty(occlusionChannel, "Occlusion");
-							if (useHeight.floatValue == 1 && samplingMode.floatValue < 3){
-								m_MaterialEditor.ShaderProperty(heightChannel, "Height");
-							}
-						});
-					}
+					MGUI.PropertyGroupLayer(() => {
+						MGUI.SpaceN1();
+						m_MaterialEditor.ShaderProperty(metallicChannel, "Metallic");
+						m_MaterialEditor.ShaderProperty(roughChannel, "Roughness");
+						m_MaterialEditor.ShaderProperty(occlusionChannel, "Occlusion");
+						if (useHeight.floatValue == 1 && samplingMode.floatValue < 3){
+							m_MaterialEditor.ShaderProperty(heightChannel, "Height");
+						}
+						MGUI.SpaceN1();
+					});
 					MGUI.PropertyGroupLayer( () => {
 						MGUI.ToggleSlider(m_MaterialEditor, "Metallic Strength", metalMult, metallic);
 						MGUI.ToggleSlider(m_MaterialEditor, "Roughness Strength", roughMult, roughness);
@@ -378,11 +373,14 @@ internal class MochieStandardGUI : ShaderGUI {
 			emissionEnabled = true;
 			bool hadEmissionTexture = emissionMap.textureValue != null;
 			MGUI.PropertyGroupLayer( () => {
+				MGUI.SpaceN2();
 				m_MaterialEditor.LightmapEmissionFlagsProperty(0, true);
 				MGUI.Space2();
 				m_MaterialEditor.TexturePropertySingleLine(Styles.emissionText, emissionMap, emissionColorForRendering, emissIntensity);
-				MGUI.TexPropLabel("Intensity", 111);
+				MGUI.TexPropLabel("Intensity", 105);
+				MGUI.SpaceN2();
 				m_MaterialEditor.TexturePropertySingleLine(Styles.maskText, emissionMask);
+				MGUI.SpaceN4();
 			});
 			float brightness = emissionColorForRendering.colorValue.maxColorComponent;
 			if (emissionMap.textureValue != null && !hadEmissionTexture && brightness <= 0f)
@@ -396,10 +394,11 @@ internal class MochieStandardGUI : ShaderGUI {
 	void DoSubsurfaceArea(){
 		m_MaterialEditor.ShaderProperty(subsurface, "Subsurface Scattering");
 		if (subsurface.floatValue == 1){
-			MGUI.PropertyGroup(() => {
+			MGUI.PropertyGroupLayer(() => {
+				MGUI.SpaceN1();
 				m_MaterialEditor.TexturePropertySingleLine(Styles.thicknessMapText, thicknessMap, thicknessMap.textureValue ? thicknessMapPower : null);
 				if (thicknessMap.textureValue)
-					MGUI.TexPropLabel("Power", 96);
+					MGUI.TexPropLabel("Power", 94);
 				m_MaterialEditor.ShaderProperty(scatterCol, "Subsurface Color");
 				m_MaterialEditor.ShaderProperty(scatterAlbedoTint, "Base Color Tint");
 				MGUI.Space8();
@@ -408,6 +407,7 @@ internal class MochieStandardGUI : ShaderGUI {
 				m_MaterialEditor.ShaderProperty(scatterPow, "Power");
 				m_MaterialEditor.ShaderProperty(scatterDist, "Distance");
 				m_MaterialEditor.ShaderProperty(wrappingFactor, "Wrapping Factor");
+				MGUI.SpaceN3();
 			});
 		}
 	}
@@ -425,99 +425,132 @@ internal class MochieStandardGUI : ShaderGUI {
 	}
 
 	void DoUVArea(){
-		bool needsDetailUV = detailAlbedoMap.textureValue || detailNormalMap.textureValue || detailRoughnessMap.textureValue || detailAOMap.textureValue;
 		bool needsHeightMaskUV = (((workflow.floatValue > 0 && useHeight.floatValue == 1) || (workflow.floatValue == 0 && heightMap.textureValue)) && parallaxMask.textureValue) && samplingMode.floatValue < 3;
 		bool needsEmissMaskUV = emissionEnabled && emissionMask.textureValue;
 		MGUI.PropertyGroup( () => {
-			if (needsDetailUV || needsHeightMaskUV){
-				GUILayout.Label("Primary", EditorStyles.boldLabel);
-				MGUI.SpaceN2();
-			}
+			GUILayout.Label("Primary", EditorStyles.boldLabel);
 			EditorGUI.BeginChangeCheck();
-			if (samplingMode.floatValue < 3){
-				MGUI.TextureSOScroll(m_MaterialEditor, albedoMap, uv0Scroll);
-			}
-			else {
-				MGUI.TextureSO(m_MaterialEditor, albedoMap);
-			}
-			if (EditorGUI.EndChangeCheck())
-				emissionMap.textureScaleAndOffset = albedoMap.textureScaleAndOffset; 
-			m_MaterialEditor.ShaderProperty(uv0Rot, "Rotation");
-			if (needsDetailUV || needsHeightMaskUV){
-				MGUI.Space2();
-			}
-			if (needsDetailUV){
-				GUILayout.Label("Detail", EditorStyles.boldLabel);
+			MGUI.PropertyGroupLayer(()=>{
+				MGUI.SpaceN1();
+				if (samplingMode.floatValue < 3){
+					MGUI.TextureSOScroll(m_MaterialEditor, albedoMap, uv0Scroll);
+				}
+				else {
+					MGUI.TextureSO(m_MaterialEditor, albedoMap);
+				}
+				if (EditorGUI.EndChangeCheck())
+					emissionMap.textureScaleAndOffset = albedoMap.textureScaleAndOffset; 
+				m_MaterialEditor.ShaderProperty(uv0Rot, "Rotation");
+				MGUI.SpaceN2();
+			});
+			MGUI.Space4();
+			GUILayout.Label("Detail", EditorStyles.boldLabel);
+			MGUI.PropertyGroupLayer(()=>{
 				MGUI.SpaceN2();
 				if (samplingMode.floatValue < 3){
 					m_MaterialEditor.ShaderProperty(uvSetSecondary, Styles.uvSetLabel.text);
-					MGUI.Space2();
-				}
-				if (samplingMode.floatValue < 3){
 					MGUI.TextureSOScroll(m_MaterialEditor, detailAlbedoMap, uv1Scroll);
 				}
 				else {
 					MGUI.TextureSO(m_MaterialEditor, detailAlbedoMap);
 				}
 				m_MaterialEditor.ShaderProperty(uv1Rot, "Rotation");
-			}
-			if (needsHeightMaskUV){
-				MGUI.Space2();
-				GUILayout.Label("Height Mask", EditorStyles.boldLabel);
 				MGUI.SpaceN2();
-				MGUI.TextureSOScroll(m_MaterialEditor, parallaxMask, uv2Scroll);
+			});
+			if (needsHeightMaskUV){
+				MGUI.Space4();
+				GUILayout.Label("Height Mask", EditorStyles.boldLabel);
+				MGUI.PropertyGroupLayer(()=>{
+					MGUI.SpaceN1();
+					MGUI.TextureSOScroll(m_MaterialEditor, parallaxMask, uv2Scroll);
+					MGUI.SpaceN2();
+				});
 			}
 			if (needsEmissMaskUV){
-				MGUI.Space2();
+				MGUI.Space4();
 				GUILayout.Label("Emission Mask", EditorStyles.boldLabel);
-				MGUI.SpaceN2();
-				MGUI.TextureSOScroll(m_MaterialEditor, emissionMask, uv3Scroll);
+				MGUI.PropertyGroupLayer(()=>{
+					MGUI.SpaceN1();
+					MGUI.TextureSOScroll(m_MaterialEditor, emissionMask, uv3Scroll);
+					MGUI.SpaceN2();
+				});
 			}
 		});
 	}
 
-	void DoRenderingArea(){
-		MGUI.PropertyGroup( () => {
-			if (samplingMode.floatValue != 4){
-				m_MaterialEditor.ShaderProperty(culling, "Culling");
-			}
-			queueOffset.floatValue = (int)queueOffset.floatValue;
-			m_MaterialEditor.ShaderProperty(queueOffset, "Render Queue Offset");
-		});
-		MGUI.PropertyGroup( () => {
-			MGUI.ToggleFloat(m_MaterialEditor, Styles.highlightsText.text, highlights, specularStrength);
-			MGUI.ToggleFloat(m_MaterialEditor, Styles.reflectionsText.text, reflections, reflectionStrength);
-			MGUI.ToggleFloat(m_MaterialEditor, "Screen Space Reflections", ssr, ssrStrength);
-			if (ssr.floatValue == 1){
-				m_MaterialEditor.ShaderProperty(edgeFade, Styles.edgeFadeText);
-				MGUI.DisplayInfo("\nSSR in VRChat requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs\n\nIt is also is VERY expensive, please use it sparingly!\n");
+	void DoRenderingArea(Material mat){
+		MGUI.PropertyGroup(()=>{
+			MGUI.PropertyGroupLayer(() => {
 				MGUI.SpaceN2();
+				if (samplingMode.floatValue != 4){
+					m_MaterialEditor.ShaderProperty(culling, "Culling");
+				}
+				queueOffset.floatValue = (int)queueOffset.floatValue;
+				m_MaterialEditor.ShaderProperty(queueOffset, "Render Queue Offset");
+				MGUI.SpaceN1();
+				MGUI.DummyProperty("Render Queue:", mat.renderQueue.ToString());
+				MGUI.SpaceN4();
+			});
+			MGUI.Space1();
+			MGUI.PropertyGroupLayer(() => {
+				MGUI.SpaceN2();
+				MGUI.ToggleFloat(m_MaterialEditor, Styles.highlightsText.text, highlights, specularStrength);
+				MGUI.ToggleFloat(m_MaterialEditor, Styles.reflectionsText.text, reflections, reflectionStrength);
+				MGUI.ToggleFloat(m_MaterialEditor, "Screen Space Reflections", ssr, ssrStrength);
+				if (ssr.floatValue == 1){
+					m_MaterialEditor.ShaderProperty(edgeFade, Styles.edgeFadeText);
+				}
+			});
+			MGUI.Space1();
+			MGUI.PropertyGroupLayer(() => {
+				MGUI.SpaceN3();
+				m_MaterialEditor.ShaderProperty(gsaa, "Specular Antialiasing");
+				m_MaterialEditor.EnableInstancingField();
+				MGUI.SpaceN2();
+				m_MaterialEditor.DoubleSidedGIField();
+				MGUI.SpaceN3();
+			});
+			MGUI.Space1();
+			if (ssr.floatValue == 1){
+				MGUI.DisplayInfo("\nScreenspace reflections in VRChat requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs\n\nIt is also is VERY expensive, please use it sparingly!\n");
 			}
-		});
-		MGUI.PropertyGroup( () => {
-			m_MaterialEditor.ShaderProperty(gsaa, "Specular Antialiasing");
-			m_MaterialEditor.EnableInstancingField();
-			MGUI.SpaceN2();
-			m_MaterialEditor.DoubleSidedGIField();
 		});
 	}
 
 	void DoFooter(){
-		MGUI.Space16();
-		if (!EditorGUIUtility.isProSkin){
-			watermark = "Watermark";
-		}
-		Texture2D watermarkTex = (Texture2D)Resources.Load(watermark, typeof(Texture2D));
-		Texture2D patIconTex = (Texture2D)Resources.Load(patIcon, typeof(Texture2D));
-		float buttonSize = 24.0f;
-		float xPos = 53.0f;
-		MGUI.CenteredTexture(watermarkTex, 0, 0);
-		GUILayout.Space(-buttonSize);
-		if (MGUI.LinkButton(patIconTex, buttonSize, buttonSize, xPos)){
+		GUILayout.Space(20);
+		float buttonSize = 35f;
+		Rect footerRect = EditorGUILayout.GetControlRect();
+		footerRect.x += (MGUI.GetInspectorWidth()/2f)-buttonSize-5f;
+		footerRect.width = buttonSize;
+		footerRect.height = buttonSize;
+		if (GUI.Button(footerRect, MGUI.patIconTex))
 			Application.OpenURL("https://www.patreon.com/mochieshaders");
+		footerRect.x += buttonSize + 5f;
+		footerRect.y += 17f;
+		GUIStyle formatting = new GUIStyle();
+		formatting.fontSize = 15;
+		formatting.fontStyle = FontStyle.Bold;
+		if (EditorGUIUtility.isProSkin){
+			formatting.normal.textColor = new Color(0.8f, 0.8f, 0.8f, 1);
+			formatting.hover.textColor = new Color(0.8f, 0.8f, 0.8f, 1);
+			GUI.Label(footerRect, versionLabel, formatting);
+			footerRect.y += 20f;
+			footerRect.x -= 35f;
+			footerRect.width = 70f;
+			footerRect.height = 70f;
+			GUI.Label(footerRect, MGUI.mochieLogoPro);
+			GUILayout.Space(90);
 		}
-		GUILayout.Space(buttonSize);
-		MGUI.VersionLabel(versionLabel, 12,-16,-30);
+		else {
+			GUI.Label(footerRect, versionLabel, formatting);
+			footerRect.y += 20f;
+			footerRect.x -= 35f;
+			footerRect.width = 70f;
+			footerRect.height = 70f;
+			GUI.Label(footerRect, MGUI.mochieLogo);
+			GUILayout.Space(90);
+		}
 	}
 	public override void AssignNewShaderToMaterial(Material material, Shader oldShader, Shader newShader){
 		// _Emission property is lost after assigning Standard shader to the material
@@ -592,24 +625,23 @@ internal class MochieStandardGUI : ShaderGUI {
 		int workflow =  material.GetInt("_Workflow");
 		int samplingMode = material.GetInt("_SamplingMode");
 		MGUI.SetKeyword(material, "_NORMALMAP", material.GetTexture("_BumpMap") || material.GetTexture("_DetailNormalMap"));
-		MGUI.SetKeyword(material, "BLOOM_LENS_DIRT", workflow == 1);
-		MGUI.SetKeyword(material, "_FADING_ON", workflow == 2);
+		MGUI.SetKeyword(material, "_WORKFLOW_PACKED_ON", workflow == 1);
 		MGUI.SetKeyword(material, "_SPECGLOSSMAP", material.GetTexture("_SpecGlossMap"));
 		MGUI.SetKeyword(material, "_METALLICGLOSSMAP", material.GetTexture("_MetallicGlossMap"));
 		MGUI.SetKeyword(material, "_DETAIL_MULX2", material.GetTexture("_DetailAlbedoMap") || material.GetTexture("_DetailNormalMap"));
-		MGUI.SetKeyword(material, "_MAPPING_6_FRAMES_LAYOUT", material.GetTexture("_ReflCube"));
-		MGUI.SetKeyword(material, "_COLOROVERLAY_ON", material.GetTexture("_ReflCubeOverride"));
-		MGUI.SetKeyword(material, "FXAA", material.GetInt("_GSAA") == 1);
-		MGUI.SetKeyword(material, "GRAIN", material.GetInt("_SSR") == 1);
+		MGUI.SetKeyword(material, "_REFLECTION_FALLBACK_ON", material.GetTexture("_ReflCube"));
+		MGUI.SetKeyword(material, "_REFLECTION_OVERRIDE_ON", material.GetTexture("_ReflCubeOverride"));
+		MGUI.SetKeyword(material, "_GSAA_ON", material.GetInt("_GSAA") == 1);
+		MGUI.SetKeyword(material, "_SCREENSPACE_REFLECTIONS_ON", material.GetInt("_SSR") == 1);
 		MGUI.SetKeyword(material, "_SPECULARHIGHLIGHTS_OFF", material.GetInt("_SpecularHighlights") == 0);
 		MGUI.SetKeyword(material, "_GLOSSYREFLECTIONS_OFF", material.GetInt("_GlossyReflections") == 0);
-		MGUI.SetKeyword(material, "EFFECT_HUE_VARIATION",  samplingMode == 1);
-		MGUI.SetKeyword(material, "BLOOM", samplingMode == 2);
-		MGUI.SetKeyword(material, "_COLORCOLOR_ON", samplingMode == 3);
-		MGUI.SetKeyword(material, "EFFECT_BUMP", samplingMode == 4);
-		MGUI.SetKeyword(material, "GEOM_TYPE_LEAF", material.GetTexture("_DetailRoughnessMap"));
-		MGUI.SetKeyword(material, "GEOM_TYPE_FROND", material.GetTexture("_DetailAOMap"));
-		MGUI.SetKeyword(material, "GEOM_TYPE_MESH", material.GetInt("_Subsurface") == 1);
+		MGUI.SetKeyword(material, "_STOCHASTIC_ON",  samplingMode == 1);
+		MGUI.SetKeyword(material, "_TSS_ON", samplingMode == 2);
+		MGUI.SetKeyword(material, "_TRIPLANAR_ON", samplingMode == 3);
+		MGUI.SetKeyword(material, "_DECAL_ON", samplingMode == 4);
+		MGUI.SetKeyword(material, "_DETAIL_ROUGH_ON", material.GetTexture("_DetailRoughnessMap"));
+		MGUI.SetKeyword(material, "_DETAIL_AO_ON", material.GetTexture("_DetailAOMap"));
+		MGUI.SetKeyword(material, "_SUBSURFACE_ON", material.GetInt("_Subsurface") == 1);
 		if (samplingMode < 3){
 			if (!material.GetTexture("_PackedMap"))
 				MGUI.SetKeyword(material, "_PARALLAXMAP", material.GetTexture("_ParallaxMap"));

@@ -9,12 +9,15 @@ using UnityEditor;
 
 namespace Mochie {
 	public static class MGUI {
-
-		public enum BlendMode {Opaque, Cutout, Dithered, A2C, Fade, Transparent}
-
-		public static string parentPath = "Assets/Mochie/Unity/Presets";
-		public static string presetPath = "Assets/Mochie/Unity";
-
+		
+		public static Texture2D resetIcon = (Texture2D)Resources.Load("ResetIcon", typeof(Texture2D));
+		public static Texture2D collapseIcon = (Texture2D)Resources.Load("CollapseIcon", typeof(Texture2D));
+		public static Texture2D mochieLogo = (Texture2D)Resources.Load("MochieLogo", typeof(Texture2D));
+		public static Texture2D mochieLogoPro = (Texture2D)Resources.Load("MochieLogo_Pro", typeof(Texture2D));
+		public static Texture2D patIconTex = (Texture2D)Resources.Load("Patreon_Icon", typeof(Texture2D));
+		public static GUIContent collapseLabel = new GUIContent(collapseIcon, "Collapse all foldout tabs.");
+		public static GUIContent resetLabel = new GUIContent(resetIcon, "Reset all properties in this tab to their default values.");
+		
 		public static List<T> FindAssetsByType<T>() where T : UnityEngine.Object {
 			List<T> assets = new List<T>();
 			string[] guids = AssetDatabase.FindAssets(string.Format("t:{0}", typeof (T).ToString().Replace("UnityEngine.", "")));
@@ -50,57 +53,6 @@ namespace Mochie {
 
 		public static bool IsOutline(Material mat){
 			return mat.shader.name.Contains("(Outline)");
-		}
-		public static void SetBlendMode(Material material, BlendMode blendMode){
-			switch (blendMode){
-				
-				case BlendMode.Opaque:
-					material.SetOverrideTag("RenderType", "");
-					material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-					material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
-					material.SetInt("_ZWrite", 1);
-					material.DisableKeyword("_ALPHATEST_ON");
-					material.DisableKeyword("_ALPHABLEND_ON");
-					material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-					material.renderQueue = -1;
-					break;
-
-				case BlendMode.Cutout:
-				case BlendMode.Dithered:
-				case BlendMode.A2C:
-					material.SetOverrideTag("RenderType", "TransparentCutout");
-					material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-					material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
-					material.SetInt("_ZWrite", 1);
-					material.EnableKeyword("_ALPHATEST_ON");
-					material.DisableKeyword("_ALPHABLEND_ON");
-					material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-					material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
-					break;
-
-				case BlendMode.Fade:
-					material.SetOverrideTag("RenderType", "Transparent");
-					material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-					material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-					material.DisableKeyword("_ALPHATEST_ON");
-					material.EnableKeyword("_ALPHABLEND_ON");
-					material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-					material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-					break;
-
-				case BlendMode.Transparent:
-					material.SetOverrideTag("RenderType", "Transparent");
-					material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-					material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-					material.SetInt("_ZWrite", 0);
-					material.DisableKeyword("_ALPHATEST_ON");
-					material.DisableKeyword("_ALPHABLEND_ON");
-					material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
-					material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
-					break;
-
-				default: break;
-			}
 		}
 
 		public static void FillArray<T>(T[] array, T value){
@@ -143,23 +95,6 @@ namespace Mochie {
 			}
 		}
 
-		public static void FramebufferSection(MaterialEditor me, MaterialProperty[] toggles, MaterialProperty gs){
-			DisplayWarning("\nFramebuffer features DO NOT WORK IN UNITY 2018 due to Unity fixing the technique/bug used to create the effects.\n\nThey will still function in versions before 2018, but I would not recommend downgrading.\n");
-			for (int i = 0; i < toggles.Length; i++){
-				if (i == 0)
-					me.ShaderProperty(toggles[i], toggles[i].displayName);
-				else 
-					ToggleSlider(me, "Ghosting", toggles[1], gs);
-				if (toggles[i].floatValue == 1){
-					for (int j = 0; j < toggles.Length; j++){
-						if (j != i)
-							toggles[j].floatValue = 0;
-					}
-				}
-			}
-
-		}
-
 		public static void DisplayError(string message){
 			EditorGUILayout.HelpBox(message, MessageType.Error);
 		}
@@ -174,6 +109,14 @@ namespace Mochie {
 		
 		public static void DisplayText(string message){
 			EditorGUILayout.HelpBox(message, MessageType.None);
+		}
+
+		public static void DummyProperty(string label, string property){
+			Rect r = EditorGUILayout.GetControlRect();
+			r.x -= 1f;
+			GUI.Label(r, label);
+			r.x += EditorGUIUtility.labelWidth;
+			GUI.Label(r, property);
 		}
 
 		public static void MaskProperty(Material mat, MaterialEditor me, bool display, MaterialProperty mask, MaterialProperty scroll){
@@ -198,13 +141,6 @@ namespace Mochie {
 			buttonRect.height = height;
 			buttonRect.x += ((GetInspectorWidth()/2f)-width/2f)-xPos;
 			return GUI.Button(buttonRect, g);
-		}
-
-		public static void DummyProperty(string label, string property){
-			Rect r = EditorGUILayout.GetControlRect();
-			GUI.Label(r, label);
-			r.x += EditorGUIUtility.labelWidth;
-			GUI.Label(r, property);
 		}
 
 		public static bool SimpleButton(string text, float width, float xPos){
@@ -288,7 +224,7 @@ namespace Mochie {
 				toggle.floatValue = tog;
 			EditorGUI.showMixedValue = false;
 
-			SpaceN18();
+			SpaceN20();
 			Rect r = EditorGUILayout.GetControlRect();
 			r.x += indent;
 			r.width -= indent;
@@ -329,6 +265,28 @@ namespace Mochie {
 				slider.floatValue = slide;
 			EditorGUI.showMixedValue = false;
 		}
+		
+		public static void CustomToggleSlider(string label, MaterialProperty toggle, MaterialProperty value, float min, float max){
+			SpaceN2();
+			float iw = GetInspectorWidth();
+			float lw = EditorGUIUtility.labelWidth;
+			GUILayoutOption clickArea = GUILayout.MaxWidth(lw+13);
+			Rect r0 = EditorGUILayout.GetControlRect();
+			Rect r1 = r0;
+			GUI.Label(r0, label);
+			
+			r0.width = iw-lw-(77);
+			r0.x += lw+22;
+			r1.width = 50;
+			r1.x += iw-50;
+
+			SpaceN20();
+			toggle.floatValue = EditorGUILayout.Toggle(" ", toggle.floatValue==1, clickArea)?1:0;
+			EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
+			value.floatValue = GUI.HorizontalSlider(r0, value.floatValue, min, max);
+			value.floatValue = EditorGUI.IntField(r1, (int)value.floatValue);
+			EditorGUI.EndDisabledGroup();
+		}
 
 		// Float with a toggle
 		public static void ToggleFloat(MaterialEditor me, string label, MaterialProperty toggle, MaterialProperty floatProp){
@@ -343,7 +301,7 @@ namespace Mochie {
 				toggle.floatValue = tog;
 			EditorGUI.showMixedValue = false;
 
-			SpaceN18();
+			SpaceN20();
 			Rect r = EditorGUILayout.GetControlRect();
 			r.x += indent;
 			r.width -= indent;
@@ -358,7 +316,7 @@ namespace Mochie {
 			EditorGUI.showMixedValue = false;
 		}
 
-		public static void ToggleVector3(string label, MaterialProperty toggle, MaterialProperty vec){
+		public static void Vector3FieldToggle(string label, MaterialProperty toggle, MaterialProperty vec){
 			SpaceN2();
 			Vector4 newVec = vec.vectorValue;
 			float labelWidth = EditorGUIUtility.labelWidth;
@@ -367,7 +325,7 @@ namespace Mochie {
 			Rect r = EditorGUILayout.GetControlRect();
 			r.x += labelWidth+18f;
 
-			GUILayout.Space(-19);
+			SpaceN20();
 			GUILayoutOption clickArea = GUILayout.MaxWidth(labelWidth+7f);
 
 			EditorGUI.BeginChangeCheck();
@@ -377,22 +335,23 @@ namespace Mochie {
 				toggle.floatValue = tog;
 			EditorGUI.showMixedValue = false;
 
-			EditorGUIUtility.labelWidth = 13f;
+			EditorGUIUtility.labelWidth = 10f;
 			EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
 
 			EditorGUI.BeginChangeCheck();
 			EditorGUI.showMixedValue = vec.hasMixedValue;
 
 				// X Field
-				r.width = fieldWidth-1f;
+				r.width = fieldWidth-2f;
 				newVec.x = EditorGUI.FloatField(r, "X", newVec.x);
-				
+				r.width = fieldWidth-4;
+
 				// Y Field
-				r.x += fieldWidth+1;
+				r.x += fieldWidth+2f;
 				newVec.y = EditorGUI.FloatField(r, "Y", newVec.y);
 
 				// Z Field
-				r.x += fieldWidth;
+				r.x += fieldWidth+2f;
 				newVec.z = EditorGUI.FloatField(r, "Z", newVec.z);
 
 			if (EditorGUI.EndChangeCheck())
@@ -401,10 +360,10 @@ namespace Mochie {
 			EditorGUIUtility.labelWidth = labelWidth;
 
 			EditorGUI.EndDisabledGroup();
-			GUILayout.Space(1);
+			Space1();
 		}
 
-		public static void ToggleVector3W(string label, int toggle, MaterialProperty vec){
+		public static void Vector3FieldToggleW(string label, int toggle, MaterialProperty vec){
 			SpaceN2();
 			Vector4 newVec = vec.vectorValue;
 			float labelWidth = EditorGUIUtility.labelWidth;
@@ -413,7 +372,7 @@ namespace Mochie {
 			Rect r = EditorGUILayout.GetControlRect();
 			r.x += labelWidth+18f;
 
-			GUILayout.Space(-19);
+			SpaceN20();
 			GUILayoutOption clickArea = GUILayout.MaxWidth(labelWidth+14f);
 
 			EditorGUI.BeginChangeCheck();
@@ -423,18 +382,18 @@ namespace Mochie {
 				vec.vectorValue = new Vector4(vec.vectorValue.x, vec.vectorValue.y, vec.vectorValue.z, tog);
 			EditorGUI.showMixedValue = false;
 
-			EditorGUIUtility.labelWidth = 13f;
+			EditorGUIUtility.labelWidth = 10f;
 			EditorGUI.BeginDisabledGroup(toggle == 0);
 
 			EditorGUI.BeginChangeCheck();
 			EditorGUI.showMixedValue = vec.hasMixedValue;
 
 				// X Field
-				r.width = fieldWidth-1f;
+				r.width = fieldWidth-2f;
 				newVec.x = EditorGUI.FloatField(r, "X", newVec.x);
 				
 				// Y Field
-				r.x += fieldWidth+1;
+				r.x += fieldWidth+2;
 				newVec.y = EditorGUI.FloatField(r, "Y", newVec.y);
 
 				// Z Field
@@ -447,68 +406,36 @@ namespace Mochie {
 			EditorGUIUtility.labelWidth = labelWidth;
 
 			EditorGUI.EndDisabledGroup();
-			GUILayout.Space(1);
+			Space1();
 		}
 
 		// Vector3 property with corrected width scaling
-		public static void Vector3Field(MaterialProperty vec, string label){
+		public static void Vector3Field(MaterialProperty vec, string label, bool needsIndent){
 			SpaceN2();
 			Vector4 newVec = vec.vectorValue;
 			float labelWidth = EditorGUIUtility.labelWidth;
 			float fieldWidth = GetPropertyWidth()/3;
-
-			EditorGUILayout.LabelField("        "+ label);
-			SpaceN18();
-			Rect r = EditorGUILayout.GetControlRect();
-			r.x += labelWidth;
-			EditorGUIUtility.labelWidth = 13f;
-
-			EditorGUI.BeginChangeCheck();
-			EditorGUI.showMixedValue = vec.hasMixedValue;
-
-				// X Field
-				r.width = fieldWidth-1f;
-				newVec.x = EditorGUI.FloatField(r, "X", newVec.x);
-				
-				// Y Field
-				r.x += fieldWidth+1;
-				newVec.y = EditorGUI.FloatField(r, "Y", newVec.y);
-
-				// Z Field
-				r.x += fieldWidth;
-				newVec.z = EditorGUI.FloatField(r, "Z", newVec.z);
-
-			if (EditorGUI.EndChangeCheck())
-				vec.vectorValue = newVec;
-			EditorGUI.showMixedValue = false;
-			EditorGUIUtility.labelWidth = labelWidth;
-		}
-
-		// Vector3 property with corrected width scaling and no label indent
-		public static void Vector3FieldNoIndent(MaterialProperty vec, string label){
-			SpaceN2();
-			Vector4 newVec = vec.vectorValue;
-			float labelWidth = EditorGUIUtility.labelWidth;
-			float fieldWidth = GetPropertyWidth()/3;
-
+			if (needsIndent) label = "        "+ label;
 			EditorGUILayout.LabelField(label);
-			SpaceN18();
+			SpaceN20();
 			Rect r = EditorGUILayout.GetControlRect();
 			r.x += labelWidth;
-			EditorGUIUtility.labelWidth = 13f;
+			EditorGUIUtility.labelWidth = 10f;
 
 			EditorGUI.BeginChangeCheck();
 			EditorGUI.showMixedValue = vec.hasMixedValue;
 
-				// X Field
-				r.width = fieldWidth-1f;
+				// R Field
+				r.width = fieldWidth-2;
 				newVec.x = EditorGUI.FloatField(r, "X", newVec.x);
-				
-				// Y Field
-				r.x += fieldWidth+1;
-				newVec.y = EditorGUI.FloatField(r, "Y", newVec.y);
+				r.width = fieldWidth-4;
 
-				// Z Field
+				// G Field
+				r.x += fieldWidth+2;
+				newVec.y = EditorGUI.FloatField(r, "Y", newVec.y);
+				r.width = fieldWidth-2;
+				
+				// B Field
 				r.x += fieldWidth;
 				newVec.z = EditorGUI.FloatField(r, "Z", newVec.z);
 
@@ -517,6 +444,7 @@ namespace Mochie {
 			EditorGUI.showMixedValue = false;
 			EditorGUIUtility.labelWidth = labelWidth;
 		}
+
 
 		// Vector3 property with corrected width scaling
 		public static void Vector3FieldRGB(MaterialProperty vec, string label){
@@ -526,23 +454,25 @@ namespace Mochie {
 			float fieldWidth = GetPropertyWidth()/3;
 
 			EditorGUILayout.LabelField(label);
-			SpaceN18();
+			SpaceN20();
 			Rect r = EditorGUILayout.GetControlRect();
 			r.x += labelWidth;
-			EditorGUIUtility.labelWidth = 13f;
+			EditorGUIUtility.labelWidth = 10f;
 
 			EditorGUI.BeginChangeCheck();
 			EditorGUI.showMixedValue = vec.hasMixedValue;
 
-				// X Field
-				r.width = fieldWidth-1f;
+				// R Field
+				r.width = fieldWidth-2;
 				newVec.x = EditorGUI.FloatField(r, "R", newVec.x);
-				
-				// Y Field
-				r.x += fieldWidth+1;
-				newVec.y = EditorGUI.FloatField(r, "G", newVec.y);
+				r.width = fieldWidth-4;
 
-				// Z Field
+				// G Field
+				r.x += fieldWidth+2;
+				newVec.y = EditorGUI.FloatField(r, "G", newVec.y);
+				r.width = fieldWidth-2;
+
+				// B Field
 				r.x += fieldWidth;
 				newVec.z = EditorGUI.FloatField(r, "B", newVec.z);
 
@@ -554,36 +484,71 @@ namespace Mochie {
 
 		// Vector2 property with corrected width scaling
 		public static void Vector2Field(MaterialProperty vec, string label){
-			#if UNITY_2019_1_OR_NEWER
-				Space2();
-			#else
-				SpaceN2();
-			#endif
+			SpaceN2();
 			Vector4 newVec = vec.vectorValue;
 			float labelWidth = EditorGUIUtility.labelWidth;
 			float fieldWidth = GetPropertyWidth()/2;
 
 			EditorGUILayout.LabelField(label);
-			SpaceN18();
+			SpaceN20();
 			Rect r = EditorGUILayout.GetControlRect();
 			r.x += labelWidth;
-			EditorGUIUtility.labelWidth = 13f;
+			EditorGUIUtility.labelWidth = 10f;
 
 			EditorGUI.BeginChangeCheck();
 			EditorGUI.showMixedValue = vec.hasMixedValue;
 
 				// X Field
-				r.width = fieldWidth-1f;
+				r.width = fieldWidth-2f;
 				newVec.x = EditorGUI.FloatField(r, "X", newVec.x);
 				
 				// Y Field
-				r.x += fieldWidth+1;
+				r.x += fieldWidth+2f;
 				newVec.y = EditorGUI.FloatField(r, "Y", newVec.y);
 
 			if (EditorGUI.EndChangeCheck())
 				vec.vectorValue = newVec;
 			EditorGUI.showMixedValue = false;
 			EditorGUIUtility.labelWidth = labelWidth;
+		}
+
+		public static void SliderMinMax(MaterialProperty minRange, MaterialProperty maxRange, float minLimit, float maxLimit, string label, int groupLayers){
+			DoMinMaxSlider(minRange, maxRange, minLimit, maxLimit, label, groupLayers);
+		}
+
+		public static void SliderMinMax01(MaterialProperty minRange, MaterialProperty maxRange, string label, int groupLayers){
+			DoMinMaxSlider(minRange, maxRange, 0f, 1f, label, groupLayers);
+		}
+		
+		public static void DoMinMaxSlider(MaterialProperty minRange, MaterialProperty maxRange, float minLimit, float maxLimit, string label, int groupLayers){
+			SpaceN2();
+			float offset0 = groupLayers == 1 ? 16f : 20f;
+			string numFormat = "F";
+			float minR = minRange.floatValue;
+			float maxR = maxRange.floatValue;
+			float propWidth = GetPropertyWidth();
+
+			GUILayout.BeginHorizontal();
+				Rect r = EditorGUILayout.GetControlRect();
+				GUI.Label(r, label);
+
+				r.x += EditorGUIUtility.labelWidth;
+				GUI.Label(r, minR.ToString(numFormat));
+
+				Rect prevRect = GUILayoutUtility.GetLastRect();
+				r.x += prevRect.x+offset0;
+				r.width = propWidth-97f;
+
+				EditorGUI.BeginChangeCheck();
+				EditorGUI.MinMaxSlider(r, ref minR, ref maxR, minLimit, maxLimit);
+				prevRect = GUILayoutUtility.GetLastRect();
+				if (EditorGUI.EndChangeCheck()){
+					minRange.floatValue = Mathf.Floor(minR*100f)/100f;
+					maxRange.floatValue = Mathf.Clamp(Mathf.Floor(maxR*100f)/100f, minRange.floatValue+0.01f, 2f);
+				}
+				r.x += propWidth-87f;
+				GUI.Label(r, maxR.ToString(numFormat));
+			GUILayout.EndHorizontal();
 		}
 
 		public static void CenteredTexture(Texture2D tex1, Texture2D tex2, float spacing, float upperMargin, float lowerMargin){
@@ -632,38 +597,17 @@ namespace Mochie {
 
 		// Label for the third property in TexturePropertySingleLine
 		public static void TexPropLabel(string text, int offset){
-			GUILayout.Space(-20);
+			GUILayout.Space(-22);
 			Rect rm = EditorGUILayout.GetControlRect();
 			rm.x += GetInspectorWidth()-offset;
 			EditorGUI.LabelField(rm, text);
 		}
 
 		public static void PropLabel(string text, int offset){
-			SpaceN18();
+			SpaceN20();
 			Rect rm = EditorGUILayout.GetControlRect();
 			rm.x += EditorGUIUtility.labelWidth+offset+14.0f;
 			EditorGUI.LabelField(rm, text);
-		}
-		
-		// Draws a tinted box behind properties
-		public static void ContentBox(int boxSize){
-			Rect pos = GUILayoutUtility.GetRect(0f, boxSize);
-			pos.width = GetInspectorWidth()+6f;
-			pos.x -= 4f;
-			Space4();
-			GUI.Box(pos, "");
-			GUILayout.Space(-boxSize);
-		}
-		
-		// Draws a line across the inspector window
-		static public void Divider(){
-			Space4();
-			Rect pos = EditorGUILayout.GetControlRect();
-			pos.width = GetInspectorWidth();
-			pos.height = 0.5f;
-			pos.x -= 5f;
-			GUI.Box(pos, "");
-			GUILayout.Space(-8);
 		}
 
 		// Need this because the provided parameter doesn't include the width of the scrollbar
@@ -688,7 +632,6 @@ namespace Mochie {
 		// Shorthand Scale Offset func with fixed spacing
 		public static void TextureSO(MaterialEditor me, MaterialProperty prop){
 			me.TextureScaleOffsetProperty(prop);
-			Space2();
 		}
 
 		// Scale offset property with added scrolling x/y
@@ -710,7 +653,6 @@ namespace Mochie {
 		public static void TextureSO(MaterialEditor me, MaterialProperty prop, bool shouldDisplay){
 			if (shouldDisplay){
 				me.TextureScaleOffsetProperty(prop);
-				Space2();
 			}
 		}
 
@@ -721,9 +663,9 @@ namespace Mochie {
 
 		public static void PropertyGroup(Action action){
 			EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-			Space2();
+			Space1();
 			action();
-			Space2();
+			Space1();
 			EditorGUILayout.EndVertical();
 			Space2();
 		}
@@ -733,34 +675,21 @@ namespace Mochie {
 				EditorGUILayout.BeginVertical(EditorStyles.helpBox);
 				Space2();
 				action();
-				#if UNITY_2019_1_OR_NEWER
-					Space4();
-					EditorGUILayout.EndVertical();
-					Space4();
-				#else
-					Space2();
-					EditorGUILayout.EndVertical();
-					Space2();
-				#endif
+				Space2();
+				EditorGUILayout.EndVertical();
+				Space2();
 			}
 		}
 
 		public static void PropertyGroupLayer(Action action){
 			Color col = GUI.backgroundColor;
-			GUI.backgroundColor = new Color(0.85f,0.85f,0.85f,1);
+			GUI.backgroundColor = new Color(col.r * 0.3f, col.g * 0.3f, col.b * 0.3f);
 			EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-			Space2();
+			GUI.backgroundColor = col;
+			Space4();
 			action();
-			#if UNITY_2019_1_OR_NEWER
-				Space4();
-				GUI.backgroundColor = col;
-				EditorGUILayout.EndVertical();
-			#else
-				Space2();
-				GUI.backgroundColor = col;
-				EditorGUILayout.EndVertical();
-				SpaceN2();
-			#endif
+			Space4();
+			EditorGUILayout.EndVertical();
 		}
 
 		// Replace invalid windows characters with underscores
@@ -788,7 +717,7 @@ namespace Mochie {
 		static bool TextureImportWarningBox(string message){
 			GUILayout.BeginVertical(new GUIStyle(EditorStyles.helpBox));
 			EditorGUILayout.LabelField(message, new GUIStyle(EditorStyles.label) {
-				fontSize = 9, wordWrap = true
+				fontSize = 11, wordWrap = true
 			});
 			EditorGUILayout.BeginHorizontal(new GUIStyle() {
 				alignment = TextAnchor.MiddleRight
@@ -823,92 +752,40 @@ namespace Mochie {
 		}
 
 		// Shorthand spacing funcs
-		#if !UNITY_2019_1_OR_NEWER
-			public static void SpaceN18(){ GUILayout.Space(-18); }
-			public static void SpaceN16(){ GUILayout.Space(-16); }
-			public static void SpaceN14(){ GUILayout.Space(-14); }
-			public static void SpaceN12(){ GUILayout.Space(-12); }
-			public static void SpaceN10(){ GUILayout.Space(-10); }
-			public static void SpaceN8(){ GUILayout.Space(-8); }
-			public static void SpaceN6(){ GUILayout.Space(-6); }
-			public static void SpaceN4(){ GUILayout.Space(-4); }
-			public static void SpaceN3(){ GUILayout.Space(-3); }
-			public static void SpaceN2(){ GUILayout.Space(-2); }
-			public static void Space2(){ GUILayout.Space(2); }
-			public static void Space3(){ GUILayout.Space(3); }
-			public static void Space4(){ GUILayout.Space(4); }
-			public static void Space6(){ GUILayout.Space(6); }
-			public static void Space8(){ GUILayout.Space(8); }
-			public static void Space10(){ GUILayout.Space(10); }
-			public static void Space12(){ GUILayout.Space(12); }
-			public static void Space14(){ GUILayout.Space(14); }
-			public static void Space16(){ GUILayout.Space(16); }
-			public static void Space18(){ GUILayout.Space(18); }
-		#else
-			public static void SpaceN18(){ GUILayout.Space(-20); }
-			public static void SpaceN16(){ GUILayout.Space(-18); }
-			public static void SpaceN14(){ GUILayout.Space(-16); }
-			public static void SpaceN12(){ GUILayout.Space(-14); }
-			public static void SpaceN10(){ GUILayout.Space(-12); }
-			public static void SpaceN8(){ GUILayout.Space(-10); }
-			public static void SpaceN6(){ GUILayout.Space(-8); }
-			public static void SpaceN4(){ GUILayout.Space(-6); }
-			public static void SpaceN3(){ GUILayout.Space(-3); }
-			public static void SpaceN2(){ GUILayout.Space(-4); }
-			public static void Space2(){ GUILayout.Space(2); }
-			public static void Space3(){ GUILayout.Space(3); }
-			public static void Space4(){ GUILayout.Space(2); }
-			public static void Space6(){ GUILayout.Space(4); }
-			public static void Space8(){ GUILayout.Space(6); }
-			public static void Space10(){ GUILayout.Space(8); }
-			public static void Space12(){ GUILayout.Space(10); }
-			public static void Space14(){ GUILayout.Space(12); }
-			public static void Space16(){ GUILayout.Space(14); }
-			public static void Space18(){ GUILayout.Space(16); }
-		#endif
+		public static void SpaceN24(){ GUILayout.Space(-24); }
+		public static void SpaceN22(){ GUILayout.Space(-22); }
+		public static void SpaceN20(){ GUILayout.Space(-20); }
+		public static void SpaceN18(){ GUILayout.Space(-18); }
+		public static void SpaceN16(){ GUILayout.Space(-16); }
+		public static void SpaceN14(){ GUILayout.Space(-14); }
+		public static void SpaceN12(){ GUILayout.Space(-12); }
+		public static void SpaceN10(){ GUILayout.Space(-10); }
+		public static void SpaceN8(){ GUILayout.Space(-8); }
+		public static void SpaceN6(){ GUILayout.Space(-6); }
+		public static void SpaceN5(){ GUILayout.Space(-5); }
+		public static void SpaceN4(){ GUILayout.Space(-4); }
+		public static void SpaceN3(){ GUILayout.Space(-3); }
+		public static void SpaceN2(){ GUILayout.Space(-2); }
+		public static void SpaceN1(){ GUILayout.Space(-1); }
+		public static void Space1(){ GUILayout.Space(1); }
+		public static void Space2(){ GUILayout.Space(2); }
+		public static void Space3(){ GUILayout.Space(3); }
+		public static void Space4(){ GUILayout.Space(4); }
+		public static void Space5(){ GUILayout.Space(5); }
+		public static void Space6(){ GUILayout.Space(6); }
+		public static void Space8(){ GUILayout.Space(8); }
+		public static void Space10(){ GUILayout.Space(10); }
+		public static void Space12(){ GUILayout.Space(12); }
+		public static void Space14(){ GUILayout.Space(14); }
+		public static void Space16(){ GUILayout.Space(16); }
+		public static void Space18(){ GUILayout.Space(18); }
+		public static void Space20(){ GUILayout.Space(20); }
+		public static void Space22(){ GUILayout.Space(22); }
+		public static void Space24(){ GUILayout.Space(24); }
 
 		public static void SetKeyword(Material mat, string keyword, bool state){
 			if (state) mat.EnableKeyword(keyword);
 			else mat.DisableKeyword(keyword);
 		}
-
-		public static void CustomToggleSlider(string label, MaterialProperty toggle, MaterialProperty value, float min, float max){
-			float iw = GetInspectorWidth();
-			float lw = EditorGUIUtility.labelWidth;
-			GUILayoutOption clickArea = GUILayout.MaxWidth(lw+13);
-			Rect r0 = EditorGUILayout.GetControlRect();
-			Rect r1 = r0;
-			GUI.Label(r0, label);
-			
-			r0.width = iw-lw-(77);
-			r0.x += lw+22;
-			r1.width = 50;
-			r1.x += iw-50;
-
-			SpaceN18();
-			toggle.floatValue = EditorGUILayout.Toggle(" ", toggle.floatValue==1, clickArea)?1:0;
-			EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
-			value.floatValue = GUI.HorizontalSlider(r0, value.floatValue, min, max);
-			value.floatValue = EditorGUI.IntField(r1, (int)value.floatValue);
-			EditorGUI.EndDisabledGroup();
-		}
 	}
-
-	// public public void FoldoutDivider(){
-	// 	Rect pos = EditorGUILayout.GetControlRect();
-	// 	pos.width = GetPropertyWidth();
-	// 	pos.height = 0.5f;
-	// 	pos.x += EditorGUIUtility.labelWidth;
-	// 	GUI.Box(pos, "");
-	// }
-
-	// public public void FoldoutDividerToggle(){
-	// 	GUILayout.Space(-10);
-	// 	Rect pos = EditorGUILayout.GetControlRect();
-	// 	pos.width = GetPropertyWidth()-24f;
-	// 	pos.height = 0.5f;
-	// 	pos.x += EditorGUIUtility.labelWidth+24f;
-	// 	GUI.Box(pos, "");
-	// 	GUILayout.Space(-8);
-	// }
 }
