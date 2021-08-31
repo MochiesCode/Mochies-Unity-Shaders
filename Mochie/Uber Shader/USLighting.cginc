@@ -39,7 +39,9 @@ float3 GetAO(g2f i, masks m){
 	if (_AOFiltering == 1){
 		_AOTint.rgb *= tintTex;
 		ao = lerp(_AOTint, 1, ao);
+		ao = Remap(ao, 0, 1, _AORemapMin, _AORemapMax);
 		ApplyPBRFiltering(ao, _AOContrast, _AOIntensity, _AOLightness, _AOFiltering, prevAO);
+		
 	}
 	ao = lerp(1, ao, _OcclusionStrength);
 	return ao;

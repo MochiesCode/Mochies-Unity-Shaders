@@ -12,6 +12,14 @@ float4 permute(float4 x){ return mod289((x * 34.0 + 10.0) * x); }
 
 float4 taylorInvSqrt(float4 r){ return 1.79284291400159 - r * 0.85373472095314; }
 
+float4 mod(float4 x, float y) { return x - y * floor(x/y); }
+float3 mod(float3 x, float y) { return x - y * floor(x/y); }
+
+// Permutation polynomial: (34x^2 + x) mod 289
+float3 Permutation(float3 x){
+	return mod((34.0 * x + 1.0) * x, 289.0);
+}
+
 float4 grad4(float j, float4 ip){
   const float4 ones = float4(1.0, 1.0, 1.0, -1.0);
   float4 p,s;
@@ -285,6 +293,106 @@ float3 GetCurl(float3 p, float2 scale) {
 	const float divisor = 1.0 / (2.0 * e);
 	return normalize(float3(x, y, z) * divisor);
 
+}
+
+float2 Voronoi4D(float4 P){			
+	float4 Pi = mod(floor(P), 289.0);
+	float4 Pf = frac(P);
+	float3 oi = float3(-1.0, 0.0, 1.0);
+	float3 of = float3(-0.5, 0.5, 1.5);
+	float3 px = Permutation(Pi.x + oi);
+	float3 py = Permutation(Pi.y + oi);
+	float3 pz = Permutation(Pi.z + oi);
+	const float K = 0.142857142857;
+	const float Ko = 0.428571428571;
+	float3 p, ox, oy, oz, ow, dx, dy, dz, dw, d;
+	float2 F = 1e6;
+	int i, j, k, n;
+
+	for(i = 0; i < 3; i++)
+	{
+		for(j = 0; j < 3; j++)
+		{
+			for(k = 0; k < 3; k++)
+			{
+				p = Permutation(px[i] + py[j] + pz[k] + Pi.w + oi); // pijk1, pijk2, pijk3
+	
+				ox = frac(p*K) - Ko;
+				oy = mod(floor(p*K),7.0)*K - Ko;
+				
+				p = Permutation(p);
+				
+				oz = frac(p*K) - Ko;
+				ow = mod(floor(p*K),7.0)*K - Ko;
+			
+				dx = Pf.x - of[i] + 1*ox;
+				dy = Pf.y - of[j] + 1*oy;
+				dz = Pf.z - of[k] + 1*oz;
+				dw = Pf.w - of + 1*ow;
+				
+				d = dx * dx + dy * dy + dz * dz + dw * dw; // dijk1, dijk2 and dijk3, squared
+				
+				//Find the lowest and second lowest distances
+				for(n = 0; n < 3; n++)
+				{
+					if(d[n] < F[0])
+					{
+						F[1] = F[0];
+						F[0] = d[n];
+					}
+					else if(d[n] < F[1])
+					{
+						F[1] = d[n];
+					}
+				}
+			}
+		}
+	}
+	return F;
+}
+
+float GetVoronoi4D(float4 p, int octaves){
+	float sum = 0;
+	[unroll]
+	for(int i = 0; i < octaves; i++){
+		float2 F = Voronoi4D(p);
+		sum += 0.1 + sqrt(F[0]);
+	}
+	return sum;
+}
+
+float2 VoronoiHash(float2 p){
+	p = p - 1000 * floor(p/1000);
+	p = float2(dot(p, float2(127.1, 311.7)), dot(p, float2(269.5, 183.3)));
+	return frac(sin(p) *43758.5453);
+}
+
+float GetVoronoi(float2 v, float time, float smoothness){
+	float2 n = floor(v);
+	float2 f = frac(v);
+	float F1 = 8.0;
+	float F2 = 8.0; 
+	float2 mr = 0; 
+	float2 mg = 0;
+	for (int j = -1; j <= 1; j++){
+		for (int i = -1; i <= 1; i++){
+			float2 g = float2(i,j);
+			float2 o = VoronoiHash(n+g);
+			o = (sin(time + o * 6.2831) * 0.5 + 0.5); 
+			float2 r = g - f + o;
+			float d = 0.5 * dot(r,r);
+			if (d < F1) {
+				F2 = F1;
+				F1 = d; 
+				mg = g; 
+				mr = r;
+			} 
+			else if (d < F2) {
+				F2 = d;
+			}
+		}
+	}
+	return (F2 + F1) * 0.5;
 }
 
 #endif // NOISE_INCLUDED

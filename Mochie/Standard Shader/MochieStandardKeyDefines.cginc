@@ -13,7 +13,7 @@
 
 #define REFLECTION_OVERRIDE defined(_REFLECTION_OVERRIDE_ON)
 
-#define GSAA_ENABLED defined(_GASS_ON)
+#define GSAA_ENABLED defined(_GSAA_ON)
 
 #define SSR_ENABLED defined(_SCREENSPACE_REFLECTIONS_ON)
 

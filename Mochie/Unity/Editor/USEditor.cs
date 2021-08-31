@@ -154,7 +154,7 @@ internal class USEditor : ShaderGUI {
 
 	static readonly string unityFolderPath = "Assets/Mochie/Unity";
 	string header = "Header_Pro";
-	string versionLabel = "v1.19";
+	string versionLabel = "v1.20";
 	// β
 	
 	GUIContent maskLabel = new GUIContent("Mask");
@@ -693,6 +693,7 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _RefractionBlur = null;
 	MaterialProperty _RefractionBlurStrength = null;
 	MaterialProperty _RefractionBlurRough = null;
+	MaterialProperty _AddCont = null;
 
 	MaterialProperty _NaNLmao = null;
 
@@ -1136,6 +1137,7 @@ internal class USEditor : ShaderGUI {
 						me.ShaderProperty(_RTDirectCont, "Direct Intensity");
 						me.ShaderProperty(_RTIndirectCont, "Indirect Intensity");
 						me.ShaderProperty(_VLightCont, "Vertex Intensity");
+						me.ShaderProperty(_AddCont, "Additive Intensity");
 						me.ShaderProperty(_ClampAdditive, "Clamp Additive");
 					});
 					MGUI.BoldLabel("Baked Light");
@@ -2269,8 +2271,8 @@ internal class USEditor : ShaderGUI {
 
 		SetKeyword(mat, "_PACKED_WORKFLOW_ON", workflow >= 3 && renderMode > 0);
 		SetKeyword(mat, "_SPECULAR_WORKFLOW_ON", (workflow == 1 || workflow == 2) && renderMode > 0);
-		SetKeyword(mat, "_REFLECTIONS_ON", reflToggle == 1 && renderMode > 0);
-		SetKeyword(mat, "_SPECULAR_ON", specToggle == 1 && renderMode > 0);
+		SetKeyword(mat, "_REFLECTIONS_ON", reflToggle > 0 && renderMode > 0);
+		SetKeyword(mat, "_SPECULAR_ON", specToggle > 0 && renderMode > 0);
 		SetKeyword(mat, "_CUBEMAP_ON", cubeMode == 1);
 		SetKeyword(mat, "_CUBEMAP_COMBINED_ON",  cubeMode == 2);
 		SetKeyword(mat, "_PACKED_MASKING_ON", maskingMode == 2);

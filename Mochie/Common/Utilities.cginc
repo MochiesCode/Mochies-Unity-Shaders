@@ -1,3 +1,6 @@
+#ifndef UTILITIES_INCLUDED
+#define UTILITIES_INCLUDED
+
 bool IsInMirror(){
 	return unity_CameraProjection[2][0] != 0.f || unity_CameraProjection[2][1] != 0.f;
 }
@@ -241,6 +244,16 @@ float3 GetWorldSpacePixelPos(float4 vertex, float2 screenOffset){
 	return worldSpacePos;
 }
 
+float3 GetWorldSpacePixelPosSP(float4 vertex, float2 scrnPos){
+	float4 worldPos = mul(unity_ObjectToWorld, float4(vertex.xyz, 1));
+	float4 screenPos = mul(UNITY_MATRIX_VP, worldPos); 
+	worldPos = mul(inverse(UNITY_MATRIX_VP), screenPos);
+	float3 worldDir = worldPos.xyz - _WorldSpaceCameraPos;
+	float depth = LinearEyeDepth(UNITY_SAMPLE_DEPTH(tex2D(_CameraDepthTexture, scrnPos))) / screenPos.w;
+	float3 worldSpacePos = worldDir * depth + _WorldSpaceCameraPos;
+	return worldSpacePos;
+}
+
 void GetWorldNormals(float4 localPos, out float3 worldNormal, out float3 worldPos){
 	float2 offset = 1.01 / _ScreenParams.xy; 
 	worldPos = GetWorldSpacePixelPos(localPos, float2(0,0));
@@ -465,3 +478,5 @@ void ApplyPBRFiltering(inout float3 value, float contrast, float intensity, floa
             //     UNITY_TRANSFER_FOG(o,o.vertex);
             //     return o;
             // }
+
+#endif

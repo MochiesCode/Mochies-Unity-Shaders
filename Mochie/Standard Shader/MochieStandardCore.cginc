@@ -36,15 +36,6 @@ float3 NormalizePerPixelNormal (float3 n)
 // MOCHIE ADDITIONS
 //-------------------------------------------------------------------------------------
 
-float GSAARoughness(float3 normal, float roughness){
-	float3 normalDDX = ddx(normal);
-	float3 normalDDY = ddy(normal); 
-	float dotX = dot(normalDDX, normalDDX);
-	float dotY = dot(normalDDY, normalDDY);
-	float base = saturate(max(dotX, dotY));
-	return max(roughness, pow(base, 0.333));
-}
-
 half3 Mochie_GlossyEnvironment (UNITY_ARGS_TEXCUBE(tex), half4 hdr, Unity_GlossyEnvironmentData glossIn)
 {
     half perceptualRoughness = glossIn.roughness /* perceptualRoughness */ ;
@@ -69,13 +60,12 @@ inline half3 MochieGI_IndirectSpecular(UnityGIInput data, half3 occlusion, Unity
 {
     half3 specular;
 	half3 originalReflUVW = glossIn.reflUVW;
-	#if GSAA_ENABLED
-		glossIn.roughness = GSAARoughness(normal, glossIn.roughness);
-	#endif
     #ifdef UNITY_SPECCUBE_BOX_PROJECTION
         glossIn.reflUVW = BoxProjectedCubemapDirection(originalReflUVW, data.worldPos, data.probePosition[0], data.boxMin[0], data.boxMax[0]);
     #endif
-
+	#if GSAA_ENABLED
+		glossIn.roughness = GSAARoughness(normal, glossIn.roughness);
+	#endif
     #ifdef _GLOSSYREFLECTIONS_OFF
         specular = unity_IndirectSpecColor.rgb;
     #else

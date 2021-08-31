@@ -377,7 +377,7 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
 			float3 specBiasCol = lerp(specCol, albedo, _SpecBiasOverride*_SpecBiasOverrideToggle);
 			float specRough = lerp(brdfRoughness, _SpecRough, _SpecUseRough);
 			GetSpecFresTerm(i, l, m, specularTerm, fresnelTerm, specBiasCol, specRough, _SharpSpecStr);
-			specular = lerp(lighting, 1, _ManualSpecBright) * specularTerm * fresnelTerm * m.specularMask * _SpecCol * l.ao;
+			specular = lerp(lighting, 1, _ManualSpecBright) * specularTerm * fresnelTerm * m.specularMask * _SpecCol * l.ao * atten;
 			if (_SharpSpecular == 1){
 				float specInterp = smoothstep(0.5, 1, saturate(specRough*8));
 				float sharpSpec = floor(specular * _SharpSpecStr) / _SharpSpecStr;

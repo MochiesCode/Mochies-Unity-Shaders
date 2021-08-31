@@ -16,7 +16,7 @@ float3 GetBlurredGP(const float2 texelSize, const float2 uvs, const float dim){
 	float3 refTotal = float3(0,0,0);
 	for (int i = 0; i < floor(dim); i++){
 		for (int j = 0; j < floor(dim); j++){
-			float4 refl = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MUSGrab, float2(uvs.x + pixSize.x*(i-center), uvs.y + pixSize.y*(j-center)),0);
+			float4 refl = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MUSGrab, float2(uvs.x + pixSize.x*(i-center), uvs.y + pixSize.y*(j-center)));
 			refTotal += refl.rgb;
 		}
 	}
@@ -51,7 +51,7 @@ float4 ReflectRay(float3 reflectedRay, float3 rayDir, float _LRad, float _SRad, 
 			break;
 		}
 
-		float rawDepth = DecodeFloatRG(UNITY_SAMPLE_SCREENSPACE_TEXTURE(_CameraDepthTexture,uvDepth));
+		float rawDepth = DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture,uvDepth));
 		float linearDepth = Linear01Depth(rawDepth);
 		float sampleDepth = -reflectedRay.z;
 		float realDepth = linearDepth * _ProjectionParams.z;
@@ -125,7 +125,7 @@ float4 GetSSRColor(const float4 wPos, const float3 viewDir, float3 rayDir, const
 		float fade = xfade * yfade * lengthFade;
 
 		float blurFac = max(1,min(12, 12 * (-2)*(smoothness-1)));
-		float4 reflection = float4(GetBlurredGP(_MUSGrab, _MUSGrab_TexelSize.zw, uvs.xy, blurFac),1);
+		float4 reflection = float4(GetBlurredGP(_MUSGrab_TexelSize.zw, uvs.xy, blurFac),1);
 		
 		reflection.rgb = lerp(reflection.rgb, reflection.rgb*albedo.rgb, metallic);
 

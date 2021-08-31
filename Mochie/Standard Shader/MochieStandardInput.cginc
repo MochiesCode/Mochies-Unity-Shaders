@@ -88,6 +88,8 @@ int 			_ScatterAlbedoTint;
 int 			_Subsurface;
 
 float _ReflectionStrength, _SpecularStrength;
+int _ReflShadows;
+int _UseSmoothness;
 
 Texture2D _PackedMap;
 UNITY_DECLARE_TEXCUBE(_ReflCube);
@@ -105,6 +107,15 @@ int _RoughnessChannel, _MetallicChannel, _OcclusionChannel, _HeightChannel;
 	float _EdgeFade;
 	float _SSRStrength;
 #endif
+
+float GSAARoughness(float3 normal, float roughness){
+	float3 normalDDX = ddx(normal);
+	float3 normalDDY = ddy(normal); 
+	float dotX = dot(normalDDX, normalDDX);
+	float dotY = dot(normalDDY, normalDDY);
+	float base = saturate(max(dotX, dotY));
+	return max(roughness, pow(base, 0.333));
+}
 
 //-------------------------------------------------------------------------------------
 // Input functions
@@ -211,7 +222,7 @@ half2 MetallicRough(float4 uv, SampleData sd)
 		rough *= lerp(1, _Glossiness, _RoughnessMult);
 		metal *= lerp(1, _Metallic, _MetallicMult);
 		mg.r = metal;
-		mg.g = 1-rough;
+		mg.g = lerp(1-rough, rough, _UseSmoothness);
 		return mg;
 	#else
 		#ifdef _METALLICGLOSSMAP
@@ -234,7 +245,7 @@ half2 MetallicRough(float4 uv, SampleData sd)
 			mg.g = BlendScalars(mg.g, detailRough, _DetailRoughBlend);
 		#endif
 
-		mg.g = 1-mg.g;
+		mg.g = lerp(1-mg.g, mg.g, _UseSmoothness);
 		return mg;
 	#endif
 }

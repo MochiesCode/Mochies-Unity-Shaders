@@ -172,12 +172,13 @@ Shader "Mochie/Uber/Uber" {
 		_DisneyDiffuse("ra", Range(0,1)) = 0 // Diffuse Shading
 		_SHStr("ra", Range(0,1)) = 0
 		[ToggleUI]_NonlinearSHToggle("tog", Int) = 1
-		_RTDirectCont("ra", Range(0,1)) = 1 // Realtime Lighting
-		_RTIndirectCont("ra", Range(0,1)) = 1
-		_VLightCont("ra", Range(0,1)) = 1
+		_RTDirectCont("fl", Float) = 1 // Realtime Lighting
+		_RTIndirectCont("fl", Float) = 1
+		_VLightCont("fl", Float) = 1
+		_AddCont("fl", Float) = 1
 		[ToggleUI]_ClampAdditive("tog", Int) = 1
-		_DirectCont("ra", Range(0,1)) = 0.6 // Baked Lighting
-		_IndirectCont("ra", Range(0,1)) = 0.5
+		_DirectCont("fl", Float) = 0.6 // Baked Lighting
+		_IndirectCont("fl", Float) = 0.5
 
 		// REFLECTIONS
 		[Enum(Off,0, Environment,1, Cubemap,2)]_Reflections("en3", Int) = 0

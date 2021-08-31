@@ -12,8 +12,11 @@ half4 BRDF1_Mochie_PBS (
     half3 normal, half3 viewDir, half3 worldPos, half2 screenUVs, half4 screenPos,
     half metallic, half thickness, half3 ssColor, half atten, UnityLight light, UnityIndirect gi)
 {
-
-    half perceptualRoughness = SmoothnessToPerceptualRoughness (smoothness);
+	
+    half perceptualRoughness = SmoothnessToPerceptualRoughness(smoothness);
+	#if GSAA_ENABLED
+		perceptualRoughness = GSAARoughness(normal, perceptualRoughness);
+	#endif
     half3 halfDir = Unity_SafeNormalize (half3(light.dir) + viewDir);
     half nv = abs(dot(normal, viewDir));
     half nl = saturate(dot(normal, light.dir));
@@ -76,14 +79,14 @@ half4 BRDF1_Mochie_PBS (
 					thickness, gi.diffuse, ssColor
 				);
 	#endif
-
+	reflCol *= lerp(1, lerp(1, atten, 0.9), _ReflShadows);
     return half4(diffCol + specCol + reflCol + subsurfaceCol, 1);
 }
 
 half4 BRDF2_Mochie_PBS (
 	half3 diffColor, half3 specColor, half oneMinusReflectivity, half smoothness,
-    half3 normal, half3 viewDir, half3 worldPos, half2 screenUVs, half4 screenPos, half metallic,
-	UnityLight light, UnityIndirect gi)
+    half3 normal, half3 viewDir, half3 worldPos, half2 screenUVs, half4 screenPos,
+    half metallic, half thickness, half3 ssColor, half atten, UnityLight light, UnityIndirect gi)
 {
     float3 halfDir = Unity_SafeNormalize(float3(light.dir) + viewDir);
 
@@ -143,6 +146,7 @@ half4 BRDF2_Mochie_PBS (
 		ssrCol.rgb *= _SSRStrength;
 		reflCol = lerp(reflCol, ssrCol.rgb, ssrCol.a);
 	#endif
+	reflCol *= lerp(1, lerp(1, atten, 0.5), _ReflShadows);
 
     return half4(diffCol + reflCol, 1);
 }

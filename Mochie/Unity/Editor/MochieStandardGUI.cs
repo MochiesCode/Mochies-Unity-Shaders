@@ -45,7 +45,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		"Render Settings"
 	}, 1);
 
-	string versionLabel = "v1.6";
+	string versionLabel = "v1.7";
 	// β
 
 	MaterialProperty blendMode = null;
@@ -81,6 +81,7 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty packedMap = null;
 	MaterialProperty useHeight = null;
 	MaterialProperty saturation = null;
+	MaterialProperty reflShadows = null;
 
 	MaterialProperty subsurface = null;
 	MaterialProperty thicknessMap = null;
@@ -130,6 +131,7 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty triplanarFalloff = null;
 	MaterialProperty edgeFadeMin = null;
 	MaterialProperty edgeFadeMax = null;
+	MaterialProperty useSmoothness = null;
 
 	MaterialEditor m_MaterialEditor;
 
@@ -214,6 +216,8 @@ internal class MochieStandardGUI : ShaderGUI {
 		scatterDist = FindProperty("_ScatterDist", props);
 		scatterAlbedoTint = FindProperty("_ScatterAlbedoTint", props);
 		wrappingFactor = FindProperty("_WrappingFactor", props);
+		reflShadows = FindProperty("_ReflShadows", props);
+		useSmoothness = FindProperty("_UseSmoothness", props);
 	}
 
 	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props){
@@ -304,6 +308,15 @@ internal class MochieStandardGUI : ShaderGUI {
 	void DoPrimaryArea(Material material){
 		MGUI.PropertyGroup( () => {
 			m_MaterialEditor.TexturePropertySingleLine(Styles.albedoText, albedoMap, albedoColor, albedoMap.textureValue ? saturation : null);
+			string roughLabel = "Roughness";
+			string roughStrLabel = "Roughness Strength";
+			if (useSmoothness.floatValue == 1){
+				roughLabel = "Smoothness";
+				roughStrLabel = "Smoothness Strength";
+				Styles.roughnessText.text = "Smoothness";
+			}
+			else Styles.roughnessText.text = "Roughness";
+
 			if (albedoMap.textureValue)
 				MGUI.TexPropLabel("Saturation", 118);
 			if (workflow.floatValue == 1){
@@ -313,7 +326,7 @@ internal class MochieStandardGUI : ShaderGUI {
 					MGUI.PropertyGroupLayer(() => {
 						MGUI.SpaceN1();
 						m_MaterialEditor.ShaderProperty(metallicChannel, "Metallic");
-						m_MaterialEditor.ShaderProperty(roughChannel, "Roughness");
+						m_MaterialEditor.ShaderProperty(roughChannel, roughLabel);
 						m_MaterialEditor.ShaderProperty(occlusionChannel, "Occlusion");
 						if (useHeight.floatValue == 1 && samplingMode.floatValue < 3){
 							m_MaterialEditor.ShaderProperty(heightChannel, "Height");
@@ -322,7 +335,7 @@ internal class MochieStandardGUI : ShaderGUI {
 					});
 					MGUI.PropertyGroupLayer( () => {
 						MGUI.ToggleSlider(m_MaterialEditor, "Metallic Strength", metalMult, metallic);
-						MGUI.ToggleSlider(m_MaterialEditor, "Roughness Strength", roughMult, roughness);
+						MGUI.ToggleSlider(m_MaterialEditor, roughStrLabel, roughMult, roughness);
 						MGUI.ToggleSlider(m_MaterialEditor, "AO Strength", occMult, occlusionStrength);
 						if (useHeight.floatValue == 1 && samplingMode.floatValue < 3){
 							MGUI.ToggleSlider(m_MaterialEditor, "Height Strength", heightMult, heightMapScale);
@@ -358,6 +371,7 @@ internal class MochieStandardGUI : ShaderGUI {
 			m_MaterialEditor.TexturePropertySingleLine(Styles.reflCubeText, reflCube, reflCube.textureValue ? cubeThreshold : null);
 
 			MGUI.Space2();
+			m_MaterialEditor.ShaderProperty(useSmoothness, "Smoothness");
 			if (workflow.floatValue > 0 && samplingMode.floatValue < 3)
 				m_MaterialEditor.ShaderProperty(useHeight, "Packed Height");
 
@@ -504,6 +518,7 @@ internal class MochieStandardGUI : ShaderGUI {
 			MGUI.Space1();
 			MGUI.PropertyGroupLayer(() => {
 				MGUI.SpaceN3();
+				m_MaterialEditor.ShaderProperty(reflShadows, "Shadowed Reflections");
 				m_MaterialEditor.ShaderProperty(gsaa, "Specular Antialiasing");
 				m_MaterialEditor.EnableInstancingField();
 				MGUI.SpaceN2();

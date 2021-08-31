@@ -68,7 +68,7 @@ Shader "Mochie/Standard" {
 		[Enum(Add,0, Sub,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailRoughBlend("Detail Roughness Blend", Int) = 2
 		_DetailAOMap("Detail AO Map", 2D) = "white" {}
 		[Enum(Add,0, Sub,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailAOBlend("Detail AO Blend", Int) = 2
-        [Enum(UV0,0,UV2,1)]_UVSec("UV Set for secondary textures", Float) = 0
+        [Enum(UV0,0,UV1,1)]_UVSec("UV Set for secondary textures", Float) = 0
 
 		_ReflCube("Reflection Fallback", CUBE) = "" {}
 		_ReflCubeOverride("Reflection Override", CUBE) = "" {}
@@ -94,7 +94,9 @@ Shader "Mochie/Standard" {
         [ToggleOff]_GlossyReflections("Glossy Reflections", Float) = 1.0
 		[ToggleUI]_SSR("Screenspace Reflections", Int) = 0
 		[ToggleUI]_UseHeight("Use Heightmap", Int) = 0
+		[ToggleUI]_ReflShadows("Shadowed Reflections", Int) = 0
 		[ToggleUI]_GSAA("GSAA", Int) = 0
+		[ToggleUI]_UseSmoothness("Use Smoothness", Int) = 0
 		_SSRStrength("SSR Strength", Float) = 1
 		_ReflectionStrength("Relfection Strength", Float) = 1
 		_SpecularStrength("Specular Strength", Float) = 1
@@ -114,7 +116,10 @@ Shader "Mochie/Standard" {
 
     SubShader
     {
-        Tags { "RenderType"="Opaque" "PerformanceChecks"="False" }
+        Tags {
+			"RenderType"="Opaque" 
+			"PerformanceChecks"="False"
+		}
         LOD 300
 		
 		Cull [_Cull]
@@ -154,6 +159,7 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _DETAIL_ROUGH_ON
 			#pragma shader_feature_local _DETAIL_AO_ON
 			#pragma shader_feature_local _SUBSURFACE_ON
+			#pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma multi_compile_fwdbase
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
@@ -187,6 +193,7 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _DETAIL_ROUGH_ON
 			#pragma shader_feature_local _DETAIL_AO_ON
 			#pragma shader_feature_local _SUBSURFACE_ON
+			#pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma multi_compile_fwdadd_fullshadows
             #pragma multi_compile_fog
             #include "MochieStandardCoreForward.cginc"
@@ -209,6 +216,7 @@ Shader "Mochie/Standard" {
             #pragma shader_feature_local _PARALLAXMAP
 			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON _DECAL_ON
 			#pragma shader_feature_local _SUBSURFACE_ON
+			#pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma multi_compile_shadowcaster
             #pragma multi_compile_instancing
 			#pragma skip_variants FOG_LINEAR FOG_EXP FOG_EXP2

@@ -6,6 +6,7 @@
 #include "UnityStandardConfig.cginc"
 #include "UnityStandardUtils.cginc"
 #include "MochieStandardKeyDefines.cginc"
+#include "../Common/Utilities.cginc"
 
 #include "../Common/Sampling.cginc"
 #include "MochieStandardSampling.cginc"
@@ -60,7 +61,7 @@ half		_UV1Rotate;
 float2		_UV0Scroll;
 float2		_UV1Scroll;
 
-#if WORKFLOW_MODULAR
+#if WORKFLOW_PACKED
 	Texture2D _PackedMap;
 	int _RoughnessMult, _MetallicMult, _OcclusionMult, _HeightMult;
 	int _RoughnessChannel, _MetallicChannel, _OcclusionChannel, _HeightChannel;
