@@ -73,7 +73,7 @@ float3 GetReflections(g2f i, lighting l, float roughness){
 				reflections = GetWorldReflections(l.reflectionDir, i.worldPos.xyz, roughness);
 			}
 			else {
-				reflections = texCUBElod(_ReflCube, float4(l.reflectionDir, roughness * UNITY_SPECCUBE_LOD_STEPS))*linearstep(-0.5, 1, l.worldBrightness);
+				reflections = texCUBElod(_ReflCube, float4(l.reflectionDir, roughness * UNITY_SPECCUBE_LOD_STEPS));
 				reflections = DecodeHDR(float4(reflections,1), _ReflCube_HDR);
 			}
 		#else
@@ -81,7 +81,7 @@ float3 GetReflections(g2f i, lighting l, float roughness){
 		#endif
 	#else
 		#if REFLCUBE_EXISTS
-			reflections = texCUBElod(_ReflCube, float4(l.reflectionDir, roughness * UNITY_SPECCUBE_LOD_STEPS))*linearstep(-0.5, 1, l.worldBrightness);
+			reflections = texCUBElod(_ReflCube, float4(l.reflectionDir, roughness * UNITY_SPECCUBE_LOD_STEPS));
 			reflections = DecodeHDR(float4(reflections,1), _ReflCube_HDR);
 		#endif
 	#endif

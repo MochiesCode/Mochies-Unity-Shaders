@@ -3,11 +3,14 @@ guid: 7e018b47cc1d059439656129107b3445
 ShaderImporter:
   externalObjects: {}
   defaultTextures:
+  - _MainTex: {instanceID: 0}
   - _NormalMap0: {fileID: 2800000, guid: 7ad1e725b3c53a34dae68f092ff297cf, type: 3}
   - _NormalMap1: {fileID: 2800000, guid: 8c0fe4ffb1eaa3748a17395d8c9bd71a, type: 3}
   - _FlowMap: {fileID: 2800000, guid: 923a20e8c8f439648bdf7025c790db42, type: 3}
   - _NoiseTex: {fileID: 2800000, guid: f0f3d4dc7c5a4f74c8417ea2f593fa7b, type: 3}
   - _FoamTex: {fileID: 2800000, guid: 6706fbb4d4df9f04eac5dd6ef24e6ecf, type: 3}
+  - _FoamNoiseTex: {fileID: 2800000, guid: dfbb7eeed695dc14d82b08d887041406, type: 3}
+  - _NoiseTexSSR: {fileID: 2800000, guid: b7359cc7e3e84444b88656ff6c166220, type: 3}
   nonModifiableTextures: []
   userData: 
   assetBundleName: 

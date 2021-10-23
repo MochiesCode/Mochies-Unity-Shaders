@@ -6,6 +6,15 @@ float2 ScaleUV(float2 uv, float2 scale, float2 scroll){
 	return (uv + scroll * _Time.y * 0.1) * scale;
 }
 
+void ParallaxOffset(v2f i, inout float2 uv, float offset){
+	uv -= (i.tangentViewDir.xy * offset);
+}
+
+void CalculateTangentViewDir(inout v2f i){
+	i.tangentViewDir = normalize(i.tangentViewDir);
+	i.tangentViewDir.xy /= (i.tangentViewDir.z + 0.42);
+}
+
 float3 BoxProjection(float3 dir, float3 pos, float4 cubePos, float3 boxMin, float3 boxMax){
 	#if UNITY_SPECCUBE_BOX_PROJECTION
 		UNITY_BRANCH
@@ -92,6 +101,15 @@ float3 FlowUV (float2 uv, float2 flowVector, float time, float phase) {
 	uvw.xy += (time - progress) * jump;
 	uvw.z = 1 - abs(1 - 2 * progress);
 	return uvw;
+}
+
+float3 GerstnerWave(float4 wave, float3 vertex, float speed){
+	float k = 2 * UNITY_PI / wave.w;
+	float c = sqrt(9.8/k);
+	float2 dir = normalize(wave.xy);
+	float f = k * (dot(dir,vertex.xz) - c * _Time.y*0.2*speed);
+	float a = wave.z / k;
+	return float3(0, a * sin(f), dir.y * (a*cos(f)));
 }
 
 #endif // WATER_FUNCTIONS_INCLUDED
