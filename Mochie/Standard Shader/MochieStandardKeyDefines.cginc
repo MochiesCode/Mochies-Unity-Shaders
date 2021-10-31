@@ -19,6 +19,8 @@
 
 #define WORKFLOW_PACKED defined(_WORKFLOW_PACKED_ON)
 
+#define DETAIL_BASECOLOR defined (_DETAIL_MULX2)
+
 #define DETAIL_AO defined(_DETAIL_AO_ON)
 
 #define DETAIL_ROUGH defined(_DETAIL_ROUGH_ON)

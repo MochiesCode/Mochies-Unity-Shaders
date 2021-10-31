@@ -8,6 +8,7 @@ public class LEDEditor : ShaderGUI {
 	public static GUIContent mainTex = new GUIContent("Main Texture", "The main texture, used to drive the emission.");
 	public static GUIContent RGBMatrixTex = new GUIContent("RGB Matrix Texture", "The RGB pixel layout pattern.");
 	public static GUIContent smoothTex = new GUIContent("Roughness");
+	public static GUIContent flipbookTex = new GUIContent("Flipbook");
 
 	MaterialProperty _MainTex = null;
 	MaterialProperty _RGBSubPixelTex = null;
@@ -18,6 +19,11 @@ public class LEDEditor : ShaderGUI {
     MaterialProperty _Backlight = null;
 	MaterialProperty _SpecGlossMap = null;
 	MaterialProperty _UVScroll = null;
+	MaterialProperty _BoostAmount = null;
+	MaterialProperty _BoostThreshold = null;
+	// MaterialProperty _FlipbookMode = null;
+	// MaterialProperty _Flipbook = null;
+	// MaterialProperty _FPS = null;
 
     BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
@@ -33,11 +39,23 @@ public class LEDEditor : ShaderGUI {
         EditorGUI.BeginChangeCheck(); {
 			MGUI.BoldLabel("Image");
 			MGUI.Space2();
-        	m_MaterialEditor.TexturePropertySingleLine(mainTex, _MainTex);
-			if (_MainTex.textureValue){
-				MGUI.TextureSOScroll(m_MaterialEditor, _MainTex, _UVScroll);
-				MGUI.Space6();
-			}
+			// if (_FlipbookMode.floatValue == 0){
+				m_MaterialEditor.TexturePropertySingleLine(mainTex, _MainTex);
+				// MGUI.TexPropLabel("Flipbook", 105);
+				if (_MainTex.textureValue){
+					MGUI.TextureSOScroll(m_MaterialEditor, _MainTex, _UVScroll);
+					MGUI.Space6();
+				}
+			// }
+			// else {
+			// 	m_MaterialEditor.TexturePropertySingleLine(flipbookTex, _Flipbook, _FlipbookMode);
+			// 	MGUI.TexPropLabel("Flipbook", 105);
+			// 	if (_Flipbook.textureValue){
+			// 		m_MaterialEditor.ShaderProperty(_FPS, "FPS",2);
+			// 		MGUI.Space6();
+			// 	}
+			// }
+			// MGUI.SetKeyword(material, "_FLIPBOOK_MODE", material.GetInt("_FlipbookMode") == 1);
 			m_MaterialEditor.TexturePropertySingleLine(smoothTex, _SpecGlossMap, _Glossiness);
 			MGUI.TextureSO(m_MaterialEditor, _SpecGlossMap, _SpecGlossMap.textureValue);
 			MGUI.SetKeyword(material, "_SPECGLOSSMAP", material.GetTexture("_SpecGlossMap"));
@@ -46,6 +64,8 @@ public class LEDEditor : ShaderGUI {
 			MGUI.SetKeyword(material, "_EMISSION", true);
             m_MaterialEditor.ShaderProperty(_EmissionIntensity, "Emission Strength");
 			m_MaterialEditor.ShaderProperty(_LightmapEmissionScale, "Lightmap Emission Strength");
+			m_MaterialEditor.ShaderProperty(_BoostAmount, "Boost Multiplier");
+			m_MaterialEditor.ShaderProperty(_BoostThreshold, "Boost Threshold");
 			material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
 			MGUI.Space4();
 

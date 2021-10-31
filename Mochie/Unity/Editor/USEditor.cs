@@ -62,6 +62,7 @@ internal class USEditor : ShaderGUI {
 	Dictionary<Action, GUIContent> shatterTabButtons = new Dictionary<Action, GUIContent>();
 	Dictionary<Action, GUIContent> wfTabButtons = new Dictionary<Action, GUIContent>();
 	Dictionary<Action, GUIContent> renderTabButtons = new Dictionary<Action, GUIContent>();
+	Dictionary<Action, GUIContent> alOutlineTabButtons = new Dictionary<Action, GUIContent>();
 	
 	Toggles toggles = new Toggles(new string[] {
 			"BASE", 
@@ -141,6 +142,7 @@ internal class USEditor : ShaderGUI {
 			"Wireframe 1",
 			"Iridescence",
 			"UV Distortion 1",
+			"Outline 1",
 			"DEBUG"
 	}, 0);
 
@@ -154,7 +156,7 @@ internal class USEditor : ShaderGUI {
 
 	static readonly string unityFolderPath = "Assets/Mochie/Unity";
 	string header = "Header_Pro";
-	string versionLabel = "v1.20";
+	string versionLabel = "v1.21";
 	// β
 	
 	GUIContent maskLabel = new GUIContent("Mask");
@@ -694,6 +696,10 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _RefractionBlurStrength = null;
 	MaterialProperty _RefractionBlurRough = null;
 	MaterialProperty _AddCont = null;
+	MaterialProperty _AudioLinkOutlineBand = null;
+	MaterialProperty _AudioLinkOutlineMultiplier = null;
+	MaterialProperty _AudioLinkRemapOutlineMin = null;
+	MaterialProperty _AudioLinkRemapOutlineMax = null;
 
 	MaterialProperty _NaNLmao = null;
 
@@ -1777,6 +1783,18 @@ internal class USEditor : ShaderGUI {
 				});
 			};
 			Foldouts.SubFoldout("UV Distortion 1", foldouts, aluvdTabButtons, mat, me, aluvdTabAction);
+
+			if (isOutline){
+				alOutlineTabButtons.Add(()=>{DoAudioLinkOutlineReset();}, MGUI.resetLabel);
+				Action alOutlineTabAction = ()=>{
+					MGUI.PropertyGroup(() => {
+						me.ShaderProperty(_AudioLinkOutlineBand, "Band");
+						me.ShaderProperty(_AudioLinkOutlineMultiplier, "Strength");
+						MGUI.SliderMinMax(_AudioLinkRemapOutlineMin, _AudioLinkRemapOutlineMax, 0f, 2f, "Remap", 1);
+					});
+				};
+				Foldouts.SubFoldout("Outline 1", foldouts, alOutlineTabButtons, mat, me, alOutlineTabAction);
+			}
 
 			if (isUberX){
 				alVertManipTabButtons.Add(()=>{DoAudioLinkVertManipReset();}, MGUI.resetLabel);
@@ -2983,6 +3001,13 @@ internal class USEditor : ShaderGUI {
 		_AudioLinkRemapEmissionMax.floatValue = 1f;
 	}
 
+	void DoAudioLinkOutlineReset(){
+		_AudioLinkOutlineBand.floatValue = 0f;
+		_AudioLinkOutlineMultiplier.floatValue = 0f;
+		_AudioLinkRemapOutlineMin.floatValue = 0f;
+		_AudioLinkRemapOutlineMax.floatValue = 1f;
+	}
+
 	void DoLRReset(){
 		_CrossMode.floatValue = 0f;
 		_Crossfade.floatValue = 0.1f;
@@ -3265,5 +3290,6 @@ internal class USEditor : ShaderGUI {
 		shatterTabButtons.Clear();
 		wfTabButtons.Clear();
 		renderTabButtons.Clear();
+		alOutlineTabButtons.Clear();
 	}
 }

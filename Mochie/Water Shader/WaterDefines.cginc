@@ -83,6 +83,7 @@ float _FoamNoiseTexCrestStrength, _FoamNoiseTexStrength;
 float _BaseColorDistortionStrength;
 float _FoamDistortionStrength;
 float _VertRemapMin, _VertRemapMax;
+float _WaveDirection0, _WaveDirection1, _WaveDirection2;
 
 const static float2 jump = float2(0.1, 0.25);
 
@@ -106,10 +107,11 @@ struct v2f {
 	float4 localPos : TEXCOORD9;
 	float3 wave : TEXCOORD10;
 	float3 tangentViewDir : TEXCOORD11;
+	bool isInVRMirror : TEXCOORD12;
 	#if SPECULAR_ENABLED && defined(UNITY_PASS_FORWARDADD)
-		UNITY_SHADOW_COORDS(12)
+		UNITY_SHADOW_COORDS(13)
 	#endif
-	UNITY_FOG_COORDS(13)
+	UNITY_FOG_COORDS(14)
 };
 
 #include "WaterSSR.cginc"

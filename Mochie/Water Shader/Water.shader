@@ -62,6 +62,9 @@ Shader "Mochie/Water" {
 		_WaveStrength0("Wave 1 Strength", Range(0,1)) = 0.1
 		_WaveStrength1("Wave 2 Strength", Range(0,1)) = 0.1
 		_WaveStrength2("Wave 3 Strength", Range(0,1)) = 0.1
+		_WaveDirection0("Wave 1 Direction", Range(0,360)) = 0
+		_WaveDirection1("Wave 2 Direction", Range(0,360)) = 0
+		_WaveDirection2("Wave 3 Direction", Range(0,360)) = 0
 		_Turbulence("Turbulence", Float) = 1
 		_TurbulenceScale("Turbulence Scale", Float) = 3
 		_TurbulenceSpeed("Turbulence Speed", Float) = 0.3

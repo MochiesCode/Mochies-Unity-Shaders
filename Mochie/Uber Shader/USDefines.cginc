@@ -214,6 +214,7 @@ int _MatcapCenter, _MatcapCenter1;
 int _Iridescence;
 int _RefractionBlur;
 int _RefractionBlurRough;
+int _AudioLinkOutlineBand;
 
 float _RefractionBlurStrength;
 float _IridescenceStrength;
@@ -314,6 +315,8 @@ float _AudioLinkWireframeStrength;
 float _AudioLinkWireframeFalloff;
 float _AudioLinkTriOffsetFalloff;
 float _AudioLinkStrength;
+float _AudioLinkOutlineMultiplier;
+float _AudioLinkRemapOutlineMax, _AudioLinkRemapOutlineMin;
 
 int _PreviewRough, _PreviewAO, _PreviewHeight;
 int _AOFiltering, _HeightFiltering, _RoughnessFiltering, _SmoothnessFiltering;

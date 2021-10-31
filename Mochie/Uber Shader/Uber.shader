@@ -534,6 +534,11 @@ Shader "Mochie/Uber/Uber" {
 		_AudioLinkWireframeMaskScroll("vec", Vector) = (0,0,0,0)
 		_AudioLinkRemapWireframeMin("fl", Float) = 0
 		_AudioLinkRemapWireframeMax("fl", Float) = 1
+		
+		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkOutlineBand("en03", Int) = 0
+		_AudioLinkOutlineMultiplier("fl", Float) = 0
+		_AudioLinkRemapOutlineMin("fl", Float) = 0
+		_AudioLinkRemapOutlineMax("fl", Float) = 1
 
 		//----------------------------
 		// SPECIAL FEATURES

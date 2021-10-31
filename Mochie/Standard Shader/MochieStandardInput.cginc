@@ -22,9 +22,6 @@
     #define _TANGENT_TO_WORLD 1
 #endif
 
-#if (_DETAIL_MULX2 || _DETAIL_MUL || _DETAIL_ADD || _DETAIL_LERP)
-    #define _DETAIL 1
-#endif
 //---------------------------------------
 
 half4       	_Color;
@@ -35,6 +32,7 @@ Texture2D   	_BumpMap;
 half        	_BumpScale;
 
 Texture2D   	_DetailMask;
+int				_DetailMaskChannel;
 Texture2D   	_DetailAlbedoMap;
 float4      	_DetailAlbedoMap_ST;
 int				_DetailAlbedoBlend;
@@ -158,19 +156,20 @@ void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1)
 
 half DetailMask(float2 uv)
 {
-    return _DetailMask.Sample(sampler_MainTex, uv).a;
+	float4 detailMask = _DetailMask.Sample(sampler_MainTex, uv);
+    return detailMask[_DetailMaskChannel];
 }
 
 half3 Albedo(float4 texcoords, SampleData sd)
 {
 	half3 albedo = _Color.rgb * SampleTexture(_MainTex, texcoords.xy, sd).rgb;
 	albedo = lerp(dot(albedo, float3(0.3,0.59,0.11)), albedo, _Saturation);
-	#if _DETAIL
+	#if DETAIL_BASECOLOR
 		half mask = DetailMask(texcoords.xy);
 		sd.scaleTransform = _DetailAlbedoMap_ST;
 		sd.rotation = _UV1Rotate;
 		half3 detailAlbedo = SampleTexture(_DetailAlbedoMap, texcoords.zw, sd).rgb;
-		albedo = BlendColors(albedo, detailAlbedo, _DetailAlbedoBlend);
+		albedo = BlendColors(albedo, detailAlbedo, _DetailAlbedoBlend, mask);
 	#endif
     return albedo;
 }
@@ -192,14 +191,14 @@ half Occlusion(float4 uv, SampleData sd)
 		half occ = ChannelCheck(map, _OcclusionChannel);
 		#if DETAIL_AO
 			half occDetail = SampleTexture(_DetailAOMap, uv.zw, sd);
-			occ = BlendScalars(occ, occDetail, _DetailAOBlend);
+			occ = BlendScalars(occ, occDetail, _DetailAOBlend, DetailMask(uv.xy));
 		#endif
 		return LerpOneTo(occ, lerp(1, _OcclusionStrength, _OcclusionMult));
 	#else
 		half occ = SampleTexture(_OcclusionMap, uv.xy, sd).g;
 		#if DETAIL_AO
 			half occDetail = SampleTexture(_DetailAOMap, uv.zw, sd).g;
-			occ = BlendScalars(occ, occDetail, _DetailAOBlend);
+			occ = BlendScalars(occ, occDetail, _DetailAOBlend, DetailMask(uv.xy));
 		#endif
 		return LerpOneTo (occ, _OcclusionStrength);
 	#endif
@@ -217,7 +216,7 @@ half2 MetallicRough(float4 uv, SampleData sd)
 		#endif
 		#if DETAIL_ROUGH
 			float detailRough = SampleTexture(_DetailRoughnessMap, uv.zw, sd).r;
-			rough = BlendScalars(rough, detailRough, _DetailRoughBlend);
+			rough = BlendScalars(rough, detailRough, _DetailRoughBlend, DetailMask(uv.xy));
 		#endif
 		rough *= lerp(1, _Glossiness, _RoughnessMult);
 		metal *= lerp(1, _Metallic, _MetallicMult);
@@ -242,7 +241,7 @@ half2 MetallicRough(float4 uv, SampleData sd)
 
 		#if DETAIL_ROUGH
 			float detailRough = SampleTexture(_DetailRoughnessMap, uv.zw, sd).r;
-			mg.g = BlendScalars(mg.g, detailRough, _DetailRoughBlend);
+			mg.g = BlendScalars(mg.g, detailRough, _DetailRoughBlend, DetailMask(uv.xy));
 		#endif
 
 		mg.g = lerp(1-mg.g, mg.g, _UseSmoothness);
@@ -266,22 +265,12 @@ half3 Emission(float2 uv, float2 uvMask, SampleData sd)
 half3 NormalInTangentSpace(float4 texcoords, SampleData sd)
 {
 	half3 normalTangent = SampleTexture(_BumpMap, texcoords.xy, sd, _BumpScale);
-	#if _DETAIL && defined(UNITY_ENABLE_DETAIL_NORMALMAP)
+	#if defined(UNITY_ENABLE_DETAIL_NORMALMAP)
 		sd.scaleTransform = _DetailAlbedoMap_ST;
 		sd.rotation = _UV1Rotate;
 		half mask = DetailMask(texcoords.xy);
 		half3 detailNormalTangent = SampleTexture(_DetailNormalMap, texcoords.zw, sd, _DetailNormalMapScale);
-		#if _DETAIL_LERP
-			normalTangent = lerp(
-				normalTangent,
-				detailNormalTangent,
-				mask);
-		#else
-			normalTangent = lerp(
-				normalTangent,
-				BlendNormals(normalTangent, detailNormalTangent),
-				mask);
-		#endif
+		normalTangent = lerp(normalTangent, BlendNormals(normalTangent, detailNormalTangent), mask);
 	#endif
 
     return normalTangent;

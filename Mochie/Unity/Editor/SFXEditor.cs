@@ -807,7 +807,7 @@ public class SFXEditor : ShaderGUI {
 							MGUI.ToggleGroupEnd();
 						});
 					};
-					Foldouts.SubFoldout("Letterbox", foldouts, null, mat, me, letterboxTabAction);
+					Foldouts.SubFoldout("Letterbox", foldouts, null, mat, me, letterboxTabAction, _Letterbox);
 
 					Action pulseTabAction = ()=>{
 						MGUI.PropertyGroup(() => {

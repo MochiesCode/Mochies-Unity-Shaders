@@ -38,7 +38,7 @@ public class WaterEditor : ShaderGUI {
 	}, 0);
 
     string header = "WaterHeader_Pro";
-	string versionLabel = "v1.1";
+	string versionLabel = "v1.2";
 
 	MaterialProperty _Color = null;
 	MaterialProperty _MainTex = null;
@@ -90,6 +90,9 @@ public class WaterEditor : ShaderGUI {
 	MaterialProperty _WaveStrength0 = null;
 	MaterialProperty _WaveStrength1 = null;
 	MaterialProperty _WaveStrength2 = null;
+	MaterialProperty _WaveDirection0 = null;
+	MaterialProperty _WaveDirection1 = null;
+	MaterialProperty _WaveDirection2 = null;
 	MaterialProperty _Turbulence = null;
 	MaterialProperty _TurbulenceSpeed = null;
 	MaterialProperty _TurbulenceScale = null;
@@ -281,18 +284,21 @@ public class WaterEditor : ShaderGUI {
 						me.ShaderProperty(_WaveStrength0, "Strength");
 						me.ShaderProperty(_WaveScale0, "Scale");
 						me.ShaderProperty(_WaveSpeed0, "Speed");
+						me.ShaderProperty(_WaveDirection0, "Direction");
 					});
 					MGUI.BoldLabel("Wave 2");
 					MGUI.PropertyGroup(() => {
 						me.ShaderProperty(_WaveStrength1, "Strength");
 						me.ShaderProperty(_WaveScale1, "Scale");
 						me.ShaderProperty(_WaveSpeed1, "Speed");
+						me.ShaderProperty(_WaveDirection1, "Direction");
 					});
 					MGUI.BoldLabel("Wave 3");
 					MGUI.PropertyGroup(() => {
 						me.ShaderProperty(_WaveStrength2, "Strength");
 						me.ShaderProperty(_WaveScale2, "Scale");
 						me.ShaderProperty(_WaveSpeed2, "Speed");
+						me.ShaderProperty(_WaveDirection2, "Direction");
 					});
 					MGUI.BoldLabel("Turbulence");
 					MGUI.PropertyGroup(() => {
@@ -496,10 +502,12 @@ public class WaterEditor : ShaderGUI {
 		_WaveScale0.floatValue = 4f;
 		_WaveScale1.floatValue = 2f;
 		_WaveScale2.floatValue = 1f;
+		_WaveDirection0.floatValue = 0f;
+		_WaveDirection1.floatValue = 0f;
+		_WaveDirection2.floatValue = 0f;
 		_TurbulenceSpeed.floatValue = 0.3f;
 		_Turbulence.floatValue = 1f;
 		_TurbulenceScale.floatValue = 3f;
-		_VertOffsetMode.floatValue = 0f;
 		_VertRemapMin.floatValue = -1f;
 		_VertRemapMax.floatValue = 1f;
 	}

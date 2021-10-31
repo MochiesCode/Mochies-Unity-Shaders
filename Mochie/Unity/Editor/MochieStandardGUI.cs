@@ -45,7 +45,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		"Render Settings"
 	}, 1);
 
-	string versionLabel = "v1.7";
+	string versionLabel = "v1.8";
 	// β
 
 	MaterialProperty blendMode = null;
@@ -132,6 +132,7 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty edgeFadeMin = null;
 	MaterialProperty edgeFadeMax = null;
 	MaterialProperty useSmoothness = null;
+	MaterialProperty detailMaskChannel = null;
 
 	MaterialEditor m_MaterialEditor;
 
@@ -218,6 +219,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		wrappingFactor = FindProperty("_WrappingFactor", props);
 		reflShadows = FindProperty("_ReflShadows", props);
 		useSmoothness = FindProperty("_UseSmoothness", props);
+		detailMaskChannel = FindProperty("_DetailMaskChannel", props);
 	}
 
 	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props){
@@ -428,7 +430,7 @@ internal class MochieStandardGUI : ShaderGUI {
 
 	void DoDetailArea(){
 		MGUI.PropertyGroup(() => {
-			m_MaterialEditor.TexturePropertySingleLine(Styles.detailMaskText, detailMask);
+			m_MaterialEditor.TexturePropertySingleLine(Styles.detailMaskText, detailMask, detailMask.textureValue ? detailMaskChannel : null);
 			m_MaterialEditor.TexturePropertySingleLine(Styles.detailAlbedoText, detailAlbedoMap, detailAlbedoMap.textureValue ? detailAlbedoBlend : null);
 			m_MaterialEditor.TexturePropertySingleLine(Styles.detailNormalMapText, detailNormalMap, detailNormalMap.textureValue ? detailNormalMapScale : null);
 			m_MaterialEditor.TexturePropertySingleLine(Styles.detailRoughnessMapText, detailRoughnessMap, detailRoughnessMap.textureValue ? detailRoughBlend : null);
@@ -643,7 +645,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		MGUI.SetKeyword(material, "_WORKFLOW_PACKED_ON", workflow == 1);
 		MGUI.SetKeyword(material, "_SPECGLOSSMAP", material.GetTexture("_SpecGlossMap"));
 		MGUI.SetKeyword(material, "_METALLICGLOSSMAP", material.GetTexture("_MetallicGlossMap"));
-		MGUI.SetKeyword(material, "_DETAIL_MULX2", material.GetTexture("_DetailAlbedoMap") || material.GetTexture("_DetailNormalMap"));
+		MGUI.SetKeyword(material, "_DETAIL_MULX2", material.GetTexture("_DetailAlbedoMap"));
 		MGUI.SetKeyword(material, "_REFLECTION_FALLBACK_ON", material.GetTexture("_ReflCube"));
 		MGUI.SetKeyword(material, "_REFLECTION_OVERRIDE_ON", material.GetTexture("_ReflCubeOverride"));
 		MGUI.SetKeyword(material, "_GSAA_ON", material.GetInt("_GSAA") == 1);

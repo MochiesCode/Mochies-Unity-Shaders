@@ -264,6 +264,19 @@ float BlendScalars(float scalar0, float scalar1, int blendType){
 	return blends[blendType];
 }
 
+float BlendScalars(float scalar0, float scalar1, int blendType, float interpolator){
+	float blends[7] = {
+		scalar0 + (scalar1*interpolator),
+		scalar0 - (scalar1*interpolator),
+		scalar0 * lerp(1, scalar1, interpolator),
+		scalar0 * lerp(1, scalar1 * mochie_ColorSpaceDouble.x, interpolator),
+		BlendOverlay(scalar0, scalar1 * interpolator),
+		BlendScreen(scalar0, scalar1 * interpolator),
+		lerp(scalar0, scalar1, interpolator)
+	};
+	return blends[blendType];
+}
+
 // ---------------------------
 // Fake HDR
 // ---------------------------

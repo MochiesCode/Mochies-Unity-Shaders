@@ -486,7 +486,13 @@ v2g vert (appdata v) {
 		#elif PACKED_MASKING
 			thicknessMask = MOCHIE_SAMPLE_TEX2D_SAMPLER_LOD(_PackedMask3, sampler_MainTex, v.uv.xy, 0).a;
 		#endif
-		v.vertex.xyz += _OutlineThicc*v.normal*0.01*_OutlineMult*thicknessMask*lerp(1,v.color.xyz,_UseVertexColor);
+		float outlineThickness = _OutlineThicc*v.normal*0.01*_OutlineMult*thicknessMask*lerp(1,v.color.xyz,_UseVertexColor);
+		#if AUDIOLINK_ENABLED
+			float alThicc = GetAudioLinkBand(al, _AudioLinkOutlineBand, _AudioLinkRemapOutlineMin, _AudioLinkRemapOutlineMax);
+			alThicc = lerp(1, alThicc, _AudioLinkOutlineMultiplier * _AudioLinkStrength);
+			outlineThickness *= alThicc;
+		#endif
+		v.vertex.xyz += outlineThickness; 
 	#endif
 	o.objPos = mul(unity_ObjectToWorld, float4(0,0,0,1)).xyz;
 	o.cameraPos = _WorldSpaceCameraPos;

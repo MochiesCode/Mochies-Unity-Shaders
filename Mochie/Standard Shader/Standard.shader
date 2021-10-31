@@ -60,6 +60,7 @@ Shader "Mochie/Standard" {
 		_UV3Scroll("Mask Scrolling", Vector) = (0,0,0,0)
 
         _DetailMask("Detail Mask", 2D) = "white" {}
+		[Enum(Red,0, Green,1, Blue,2, Alpha,3)]_DetailMaskChannel("Detail Mask Channel", Int) = 3
         _DetailAlbedoMap("Detail Base Color", 2D) = "gray" {}
 		[Enum(Add,0, Sub,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailAlbedoBlend("Detail Base Color Blend", Int) = 2
 		_DetailNormalMap("Detail Normal Map", 2D) = "bump" {}

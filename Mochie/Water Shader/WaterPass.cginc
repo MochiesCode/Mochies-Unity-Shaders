@@ -22,15 +22,15 @@ v2f vert (appdata v) {
 		}
 		if (_WaveStrength0 > 0){
 			float4 waveProperties0 = float4(0,1, _WaveStrength0 + turb, _WaveScale0);
-			wave0 = GerstnerWave(waveProperties0, v.vertex.xyz, _WaveSpeed0);
+			wave0 = GerstnerWave(waveProperties0, v.vertex.xyz, _WaveSpeed0, _WaveDirection0);
 		}
 		if (_WaveStrength1 > 0){
 			float4 waveProperties1 = float4(0,1, _WaveStrength1 + turb, _WaveScale1);
-			wave1 = GerstnerWave(waveProperties1, v.vertex.xyz, _WaveSpeed1);
+			wave1 = GerstnerWave(waveProperties1, v.vertex.xyz, _WaveSpeed1, _WaveDirection1);
 		}
 		if (_WaveStrength2 > 0){
 			float4 waveProperties2 = float4(0,1, _WaveStrength2 + turb, _WaveScale2);
-			wave2 = GerstnerWave(waveProperties2, v.vertex.xyz, _WaveSpeed2);
+			wave2 = GerstnerWave(waveProperties2, v.vertex.xyz, _WaveSpeed2, _WaveDirection2);
 		}
 		o.wave = wave0 + wave1 + wave2;
 		v.vertex.xyz += o.wave;
@@ -46,6 +46,11 @@ v2f vert (appdata v) {
 	o.localPos = v.vertex;
 	o.uv = v.uv;
 
+	o.isInVRMirror = false;
+	#if UNITY_SINGLE_PASS_STEREO
+		if (IsInMirror())
+			o.isInVRMirror = true;
+	#endif
 	v.tangent.xyz = normalize(v.tangent.xyz);
 	v.normal = normalize(v.normal);
 	float3x3 objectToTangent = float3x3(v.tangent.xyz, (cross(v.normal, v.tangent.xyz) * v.tangent.w), v.normal);
@@ -56,7 +61,7 @@ v2f vert (appdata v) {
 }
 
 float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
-
+	
 	#if defined(UNITY_PASS_FORWARDADD)
 		UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos);
 		atten = FadeShadows(i.worldPos, atten);
@@ -187,10 +192,13 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		float foamTexNoise = lerp(1, foamNoise, _FoamNoiseTexStrength);
 		float foamCrestNoise = lerp(1, foamNoise, _FoamNoiseTexCrestStrength);
 		#undef tex2D
-		float foam = saturate(foamTex.a * foamDepth * _FoamOpacity * foamTexNoise * Average(foamTex.rgb));
+		float foam = 0;
+		if (!i.isInVRMirror)
+			foam = saturate(foamTex.a * foamDepth * _FoamOpacity * foamTexNoise * Average(foamTex.rgb));
+		col.rgb = lerp(col.rgb, foamTex.rgb, foam);
+		
 		float crestThreshold = smoothstep(_FoamCrestThreshold, 1, i.wave.y);
 		float crestFoam = saturate(foamTex.a * _FoamOpacity * _FoamCrestStrength * crestThreshold * foamCrestNoise * 10);
-		col.rgb = lerp(col.rgb, foamTex.rgb, foam);
 		col.rgb = lerp(col.rgb, foamTex.rgb, crestFoam);
 	#endif
 
@@ -247,12 +255,15 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	#endif
 	
 	#if EDGEFADE_ENABLED
-		float edgeFadeDepth = saturate(1-GetDepth(i, baseUV));
-		edgeFadeDepth = (1-saturate(pow(edgeFadeDepth, _EdgeFadePower)));
-		edgeFadeDepth = saturate(Remap(edgeFadeDepth, 0, 1, -_EdgeFadeOffset, 1));
+		float edgeFadeDepth = 1;
+		if (!i.isInVRMirror){
+			edgeFadeDepth = saturate(1-GetDepth(i, baseUV));
+			edgeFadeDepth = (1-saturate(pow(edgeFadeDepth, _EdgeFadePower)));
+			edgeFadeDepth = saturate(Remap(edgeFadeDepth, 0, 1, -_EdgeFadeOffset, 1));
+		}
 	#endif
 
-	if (isFrontFace){
+	if (isFrontFace && !i.isInVRMirror){
 		#if CAUSTICS_ENABLED
 			float caustDepth = 0;
 			#if FOAM_ENABLED
