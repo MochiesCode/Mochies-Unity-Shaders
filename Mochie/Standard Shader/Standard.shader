@@ -18,9 +18,7 @@ Shader "Mochie/Standard" {
 		_EdgeFadeMin("Edge Fade Min", Float) = 0.25
 		_EdgeFadeMax("Edge Fade Max", Float) = 0.5
         _Color("Color", Color) = (1,1,1,1)
-		_Saturation("Saturation", Float) = 1
         _MainTex("Albedo", 2D) = "white" {}
-
         _Cutoff("Alpha Cutoff", Range(0.0, 1.0)) = 0.5
 
 		_PackedMap("Packed Texture", 2D) = "white" {}
@@ -47,10 +45,12 @@ Shader "Mochie/Standard" {
 		_ParallaxOffset("Parallax Offset", Range(-1, 1)) = 0
         _OcclusionStrength("Strength", Range(0.0, 1.0)) = 1.0
         _OcclusionMap("Occlusion", 2D) = "white" {}
+
         [HDR]_EmissionColor("Color", Color) = (0,0,0)
         _EmissionMap("Emission", 2D) = "white" {}
 		_EmissionMask("Mask", 2D) = "white" {}
 		_EmissionIntensity("Intensity", Float) = 1
+
 
 		_UV0Rotate("UV0 Rotation", Float) = 0
 		_UV0Scroll("UV0 Scrolling", Vector) = (0,0,0,0)
@@ -62,14 +62,35 @@ Shader "Mochie/Standard" {
         _DetailMask("Detail Mask", 2D) = "white" {}
 		[Enum(Red,0, Green,1, Blue,2, Alpha,3)]_DetailMaskChannel("Detail Mask Channel", Int) = 3
         _DetailAlbedoMap("Detail Base Color", 2D) = "gray" {}
-		[Enum(Add,0, Sub,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailAlbedoBlend("Detail Base Color Blend", Int) = 2
+		[Enum(Add,0, Alpha,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailAlbedoBlend("Detail Base Color Blend", Int) = 2
 		_DetailNormalMap("Detail Normal Map", 2D) = "bump" {}
         _DetailNormalMapScale("Scale", Float) = 1.0
         _DetailRoughnessMap("Detail Roughness Map", 2D) = "gray" {}
-		[Enum(Add,0, Sub,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailRoughBlend("Detail Roughness Blend", Int) = 2
+		[Enum(Add,0, Alpha,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailRoughBlend("Detail Roughness Blend", Int) = 2
 		_DetailAOMap("Detail AO Map", 2D) = "white" {}
-		[Enum(Add,0, Sub,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailAOBlend("Detail AO Blend", Int) = 2
-        [Enum(UV0,0,UV1,1)]_UVSec("UV Set for secondary textures", Float) = 0
+		[Enum(Add,0, Alpha,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailAOBlend("Detail AO Blend", Int) = 2
+        [Enum(UV0,0,UV1,1, UV2,2, UV3,3, UV4,4)]_UVSec("UV Set for secondary textures", Float) = 0
+		[ToggleUI]_DetailSamplingMode("Use Sampling Mode", Int) = 0
+		
+		_Hue("Hue", Range(0,1)) = 0
+		_Contrast("Contrast", Float) = 1
+		_Saturation("Saturation", Float) = 1
+		_Brightness("Brightness", Float) = 1
+
+		_HueDet("Hue", Range(0,1)) = 0
+		_ContrastDet("Contrast", Float) = 1
+		_BrightnessDet("Brightness", Float) = 1
+		_SaturationDet("Saturation", Float) = 1
+
+		_HueEmiss("Hue", Range(0,1)) = 0
+		_ContrastEmiss("Contrast", Float) = 1
+		_SaturationEmiss("Saturation", Float) = 1
+		_BrightnessEmiss("Brightness", Float) = 1
+
+		_HuePost("Hue", Range(0,1)) = 0
+		_ContrastPost("Contrast", Float) = 1
+		_SaturationPost("Saturation", Float) = 1
+		_BrightnessPost("Brightness", Float) = 1
 
 		_ReflCube("Reflection Fallback", CUBE) = "" {}
 		_ReflCubeOverride("Reflection Override", CUBE) = "" {}
@@ -102,6 +123,9 @@ Shader "Mochie/Standard" {
 		_ReflectionStrength("Relfection Strength", Float) = 1
 		_SpecularStrength("Specular Strength", Float) = 1
 		_QueueOffset("Queue Offset", Int) = 0
+
+		[Enum(Off,0, Bass,1, Low Mids,2, Upper Mids,3, Highs,4)]_AudioLinkEmission("Emission Band", Int) = 0
+		_AudioLinkEmissionStrength("Emission Strength", Range(0,1)) = 1
 
         [HideInInspector]_SrcBlend("__src", Float) = 1.0
         [HideInInspector]_DstBlend("__dst", Float) = 0.0
@@ -160,6 +184,8 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _DETAIL_ROUGH_ON
 			#pragma shader_feature_local _DETAIL_AO_ON
 			#pragma shader_feature_local _SUBSURFACE_ON
+			#pragma shader_feature_local _AUDIOLINK_ON
+			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma multi_compile_fwdbase
             #pragma multi_compile_fog
@@ -194,6 +220,7 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _DETAIL_ROUGH_ON
 			#pragma shader_feature_local _DETAIL_AO_ON
 			#pragma shader_feature_local _SUBSURFACE_ON
+			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma multi_compile_fwdadd_fullshadows
             #pragma multi_compile_fog
@@ -244,6 +271,7 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _DETAIL_ROUGH_ON
 			#pragma shader_feature_local _DETAIL_AO_ON
 			#pragma shader_feature_local _SUBSURFACE_ON
+			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
             #pragma shader_feature_local EDITOR_VISUALIZATION
             #include "UnityStandardMeta.cginc"
             ENDCG

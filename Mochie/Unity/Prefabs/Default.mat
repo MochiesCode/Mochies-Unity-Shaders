@@ -33,7 +33,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _TPNoiseTex:
-        m_Texture: {fileID: 2800000, guid: dfbb7eeed695dc14d82b08d887041406, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _TPTexture:
@@ -117,7 +117,7 @@ Material:
     - _NoiseMode: 0
     - _NoiseStrength: 1
     - _NoiseUseGlobal: 0
-    - _NormalMapFilter: 0.74
+    - _NormalMapFilter: 0.75
     - _OLMaxRange: 15
     - _OLMinRange: 8
     - _OLUseGlobal: 1

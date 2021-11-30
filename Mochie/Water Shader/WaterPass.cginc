@@ -242,6 +242,11 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 				#if SSR_ENABLED
 					half4 ssrCol = GetSSR(i.worldPos, viewDir, reflDir, normalDir, 1-_Roughness, col.rgb, _Metallic, screenUV, i.uvGrab);
 					ssrCol.rgb *= _SSRStrength * lerp(10, 7, linearstep(0,1,_Metallic));
+					#if FOAM_ENABLED
+						float foamLerp = 1-(foam + crestFoam);
+						foamLerp = smoothstep(0.7, 1, foamLerp);
+						ssrCol.a *= foamLerp;
+					#endif
 					reflCol = lerp(reflCol, ssrCol.rgb, ssrCol.a);
 					#if SPECULAR_ENABLED
 						specCol *= (1-smoothstep(0, 0.1, ssrCol.a));
@@ -311,7 +316,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		col = lerp(baseCol, col, _Opacity);
 	#endif
 	UNITY_APPLY_FOG(i.fogCoord, col);
-	
+
 	return col;
 }
 

@@ -1,13 +1,21 @@
-﻿float4 RGBSubPixelConvert(sampler2D mainTex, sampler2D rgbTex, float2 uv0, float2 uv1, float3 viewDir, float3 worldNormal)
+﻿
+float4 RGBSubPixelConvert(sampler2D mainTex, sampler2D rgbTex, float2 uv0, float2 uv1, float3 viewDir, float3 worldNormal)
 {
 	//our emission map
 	uv0 = round(uv0 * _RGBSubPixelTex_ST.xy) / _RGBSubPixelTex_ST.xy;
-	// #ifdef _FLIPBOOK_MODE
-	// 	float3 flipbookUV = GetFlipbookUV(_Flipbook, sampler_Flipbook, uv0, _FPS);
-	// 	float4 e = UNITY_SAMPLE_TEX2DARRAY_SAMPLER(flipbook, ss, flipbookUV);
-	// #else
+	#ifdef _FLIPBOOK_MODE
+		#ifndef SHADER_TARGET_SURFACE_ANALYSIS
+			float width, height, elements;
+			_Flipbook.GetDimensions(width, height, elements);
+			uint index = frac(_Time.y*_FPS*(1/elements))*elements;
+			float3 flipbookUV = float3(uv0, index);
+			float4 e = UNITY_SAMPLE_TEX2DARRAY_SAMPLER(_Flipbook, _Flipbook, flipbookUV);
+		#else
+			float4 e = tex2D(mainTex, uv0);
+		#endif
+	#else
 		float4 e = tex2D(mainTex, uv0);
-	// #endif
+	#endif
 	float3 interp = smoothstep(_BoostThreshold,1,e);
 	e.rgb = lerp(e.rgb, e.rgb*_BoostAmount, interp);
 

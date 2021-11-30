@@ -224,7 +224,7 @@ float3 GetSaturation(float3 col, float interpolator){
     return lerp(dot(col, float3(0.3,0.59,0.11)), col, interpolator);
 }
 
-// 0 Add, 1 Sub, 2 Mul, 3 Mulx2, 4 Overlay, 5 Screen, 6 Lerp
+// 0 Add, 1 Sub (or alpha), 2 Mul, 3 Mulx2, 4 Overlay, 5 Screen, 6 Lerp
 float3 BlendColors(float3 col0, float3 col1, int blendType){
 	float3 blends[7] = {
 		col0 + col1,
@@ -251,6 +251,19 @@ float3 BlendColors(float3 col0, float3 col1, int blendType, float interpolator){
 	return blends[blendType];
 }
 
+float3 BlendColorsAlpha(float3 col0, float3 col1, int blendType, float interpolator, float alpha){
+	float3 blends[7] = {
+		col0 + (col1*interpolator),
+		lerp(col0, col1, interpolator*alpha),
+		col0 * lerp(1, col1, interpolator),
+		col0 * lerp(1, col1 * mochie_ColorSpaceDouble, interpolator),
+		BlendOverlay(col0, col1 * interpolator),
+		BlendScreen(col0, col1 * interpolator),
+		lerp(col0, col1, interpolator)
+	};
+	return blends[blendType];
+}
+
 float BlendScalars(float scalar0, float scalar1, int blendType){
 	float blends[7] = {
 		scalar0 + scalar1,
@@ -268,6 +281,19 @@ float BlendScalars(float scalar0, float scalar1, int blendType, float interpolat
 	float blends[7] = {
 		scalar0 + (scalar1*interpolator),
 		scalar0 - (scalar1*interpolator),
+		scalar0 * lerp(1, scalar1, interpolator),
+		scalar0 * lerp(1, scalar1 * mochie_ColorSpaceDouble.x, interpolator),
+		BlendOverlay(scalar0, scalar1 * interpolator),
+		BlendScreen(scalar0, scalar1 * interpolator),
+		lerp(scalar0, scalar1, interpolator)
+	};
+	return blends[blendType];
+}
+
+float BlendScalarsAlpha(float scalar0, float scalar1, int blendType, float interpolator, float alpha){
+	float blends[7] = {
+		scalar0 + (scalar1*interpolator),
+		lerp(scalar0, scalar1, interpolator*alpha),
 		scalar0 * lerp(1, scalar1, interpolator),
 		scalar0 * lerp(1, scalar1 * mochie_ColorSpaceDouble.x, interpolator),
 		BlendOverlay(scalar0, scalar1 * interpolator),

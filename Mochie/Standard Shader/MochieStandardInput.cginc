@@ -1,4 +1,6 @@
 #ifndef MOCHIE_STANDARD_INPUT_INCLUDED
+// Upgrade NOTE: excluded shader from DX11, OpenGL ES 2.0 because it uses unsized arrays
+#pragma exclude_renderers d3d11 gles
 #define MOCHIE_STANDARD_INPUT_INCLUDED
 
 #include "UnityCG.cginc"
@@ -27,20 +29,30 @@
 half4       	_Color;
 half        	_Cutoff;
 float			_Saturation;
+float			_Hue;
+float			_Contrast;
+float			_Brightness;
+float			_SaturationDet;
+float			_HueDet;
+float			_ContrastDet;
+float			_BrightnessDet;
+float			_SaturationEmiss;
+float			_HueEmiss;
+float			_ContrastEmiss;
+float			_BrightnessEmiss;
+float			_HuePost;
+float			_SaturationPost;
+float			_BrightnessPost;
+float			_ContrastPost;
 
 Texture2D   	_BumpMap;
 half        	_BumpScale;
 
 Texture2D   	_DetailMask;
 int				_DetailMaskChannel;
-Texture2D   	_DetailAlbedoMap;
-float4      	_DetailAlbedoMap_ST;
 int				_DetailAlbedoBlend;
-Texture2D   	_DetailNormalMap;
 half        	_DetailNormalMapScale;
-Texture2D		_DetailRoughnessMap;
 int				_DetailRoughBlend;
-Texture2D		_DetailAOMap;
 int				_DetailAOBlend;
 
 Texture2D   	_SpecGlossMap;
@@ -106,6 +118,13 @@ int _RoughnessChannel, _MetallicChannel, _OcclusionChannel, _HeightChannel;
 	float _SSRStrength;
 #endif
 
+#if AUDIOLINK_ENABLED
+	Texture2D		_AudioTexture;
+	SamplerState	sampler_AudioTexture;
+	int				_AudioLinkEmission;
+	float			_AudioLinkEmissionStrength;
+#endif
+
 float GSAARoughness(float3 normal, float roughness){
 	float3 normalDDX = ddx(normal);
 	float3 normalDDY = ddy(normal); 
@@ -124,22 +143,69 @@ struct VertexInput
     half3 normal    : NORMAL;
     float2 uv0      : TEXCOORD0;
     float2 uv1      : TEXCOORD1;
-	#if defined(DYNAMICLIGHTMAP_ON) || defined(UNITY_PASS_META)
-		float2 uv2      : TEXCOORD2;
-	#endif
+	float2 uv2      : TEXCOORD2;
+	float2 uv3		: TEXCOORD3;
+	float2 uv4		: TEXCOORD4;
 	#ifdef _TANGENT_TO_WORLD
 		half4 tangent   : TANGENT;
 	#endif
     UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
+#if AUDIOLINK_ENABLED
+struct audioLinkData {
+	bool textureExists;
+	float bass;
+	float lowMid;
+	float upperMid;
+	float treble;
+};
+
+float GetAudioLinkBand(audioLinkData al, int band){
+	float4 bands = float4(al.bass, al.lowMid, al.upperMid, al.treble);
+	return bands[band-1];
+}
+
+void GrabExists(inout audioLinkData al, inout float versionBand, inout float versionTime){
+	float width = 0;
+	float height = 0;
+	_AudioTexture.GetDimensions(width, height);
+	if (width > 64){
+		versionBand = 0.0625;
+		versionTime = 0.25;
+	}
+	al.textureExists = width > 16;
+}
+
+float SampleAudioTexture(float time, float band){
+	return MOCHIE_SAMPLE_TEX2D_LOD(_AudioTexture, float2(time,band),0);
+}
+
+void InitializeAudioLink(inout audioLinkData al, float time){
+	float versionBand = 1;
+	float versionTime = 1;
+	GrabExists(al, versionBand, versionTime);
+	if (al.textureExists){
+		time *= versionTime;
+		al.bass = SampleAudioTexture(time, 0.125 * versionBand);
+		al.lowMid = SampleAudioTexture(time, 0.375 * versionBand);
+		al.upperMid = SampleAudioTexture(time, 0.625 * versionBand);
+		al.treble = SampleAudioTexture(time, 0.875 * versionBand);
+	}
+}
+#endif
+
+float2 SelectDetailUVSet(VertexInput v){
+	float2 uvs[] = {v.uv0, v.uv1, v.uv2, v.uv3, v.uv4};
+	return uvs[_UVSec];
+}
 void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1)
 {
 	texcoord.xy = Rotate2D(v.uv0, _UV0Rotate);
 	texcoord.xy = TRANSFORM_TEX(texcoord.xy, _MainTex);
 	texcoord.xy += _Time.y * _UV0Scroll;
 
-	texcoord.zw = Rotate2D((_UVSec == 0 ? v.uv0 : v.uv1), _UV1Rotate);
+	texcoord.zw = Rotate2D((SelectDetailUVSet(v)), _UV1Rotate);
 	texcoord.zw = TRANSFORM_TEX(texcoord.zw, _DetailAlbedoMap);
 	texcoord.zw += _Time.y * _UV1Scroll;
 
@@ -154,6 +220,15 @@ void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1)
 	#endif
 }
 
+half3 Filtering(float3 col, float hue, float saturation, float brightness, float contrast){
+	if (hue > 0 && hue < 1)
+		col = HSVShift(col, hue, 0, 0);
+	col = lerp(dot(col, float3(0.3,0.59,0.11)), col, saturation);
+	col = GetContrast(col, contrast);
+	col *= brightness;
+	return col;
+}
+
 half DetailMask(float2 uv)
 {
 	float4 detailMask = _DetailMask.Sample(sampler_MainTex, uv);
@@ -163,13 +238,18 @@ half DetailMask(float2 uv)
 half3 Albedo(float4 texcoords, SampleData sd)
 {
 	half3 albedo = _Color.rgb * SampleTexture(_MainTex, texcoords.xy, sd).rgb;
-	albedo = lerp(dot(albedo, float3(0.3,0.59,0.11)), albedo, _Saturation);
+	albedo = Filtering(albedo, _Hue, _Saturation, _Brightness, _Contrast);
 	#if DETAIL_BASECOLOR
 		half mask = DetailMask(texcoords.xy);
 		sd.scaleTransform = _DetailAlbedoMap_ST;
 		sd.rotation = _UV1Rotate;
-		half3 detailAlbedo = SampleTexture(_DetailAlbedoMap, texcoords.zw, sd).rgb;
-		albedo = BlendColors(albedo, detailAlbedo, _DetailAlbedoBlend, mask);
+		#if DETAIL_SAMPLEMODE_ENABLED
+			half4 detailAlbedo = SampleTexture(_DetailAlbedoMap, sampler_DetailAlbedoMap, texcoords.zw, sd);
+		#else
+			half4 detailAlbedo = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailAlbedoMap, sampler_DetailAlbedoMap, texcoords.zw);
+		#endif
+		detailAlbedo.rgb = Filtering(detailAlbedo.rgb, _HueDet, _SaturationDet, _BrightnessDet, _ContrastDet);
+		albedo = BlendColorsAlpha(albedo, detailAlbedo.rgb, _DetailAlbedoBlend, mask, detailAlbedo.a);
 	#endif
     return albedo;
 }
@@ -190,15 +270,23 @@ half Occlusion(float4 uv, SampleData sd)
 		half4 map = SampleTexture(_PackedMap, uv.xy, sd);
 		half occ = ChannelCheck(map, _OcclusionChannel);
 		#if DETAIL_AO
-			half occDetail = SampleTexture(_DetailAOMap, uv.zw, sd);
-			occ = BlendScalars(occ, occDetail, _DetailAOBlend, DetailMask(uv.xy));
+			#if DETAIL_SAMPLEMODE_ENABLED
+				half4 occDetail = SampleTexture(_DetailAOMap, sampler_DetailAOMap, uv.zw, sd);
+			#else
+				half4 occDetail = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailAOMap, sampler_DetailAOMap, uv.zw);
+			#endif
+			occ = BlendScalarsAlpha(occ, occDetail, _DetailAOBlend, DetailMask(uv.xy), occDetail.a);
 		#endif
 		return LerpOneTo(occ, lerp(1, _OcclusionStrength, _OcclusionMult));
 	#else
 		half occ = SampleTexture(_OcclusionMap, uv.xy, sd).g;
 		#if DETAIL_AO
-			half occDetail = SampleTexture(_DetailAOMap, uv.zw, sd).g;
-			occ = BlendScalars(occ, occDetail, _DetailAOBlend, DetailMask(uv.xy));
+			#if DETAIL_SAMPLEMODE_ENABLED
+				half4 occDetail = SampleTexture(_DetailAOMap, sampler_DetailAOMap, uv.zw, sd);
+			#else
+				half4 occDetail = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailAOMap, sampler_DetailAOMap, uv.zw);
+			#endif
+			occ = BlendScalarsAlpha(occ, occDetail.g, _DetailAOBlend, DetailMask(uv.xy), occDetail.a);
 		#endif
 		return LerpOneTo (occ, _OcclusionStrength);
 	#endif
@@ -215,8 +303,12 @@ half2 MetallicRough(float4 uv, SampleData sd)
 			metal = smoothstep(0,0.1, metal);
 		#endif
 		#if DETAIL_ROUGH
-			float detailRough = SampleTexture(_DetailRoughnessMap, uv.zw, sd).r;
-			rough = BlendScalars(rough, detailRough, _DetailRoughBlend, DetailMask(uv.xy));
+			#if DETAIL_SAMPLEMODE_ENABLED	
+				float4 detailRough = SampleTexture(_DetailRoughnessMap, sampler_DetailRoughnessMap, uv.zw, sd);
+			#else
+				float4 detailRough = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailRoughnessMap, sampler_DetailRoughnessMap, uv.zw);
+			#endif
+			rough = BlendScalarsAlpha(rough, detailRough.r, _DetailRoughBlend, DetailMask(uv.xy), detailRough.a);
 		#endif
 		rough *= lerp(1, _Glossiness, _RoughnessMult);
 		metal *= lerp(1, _Metallic, _MetallicMult);
@@ -240,8 +332,12 @@ half2 MetallicRough(float4 uv, SampleData sd)
 		#endif
 
 		#if DETAIL_ROUGH
-			float detailRough = SampleTexture(_DetailRoughnessMap, uv.zw, sd).r;
-			mg.g = BlendScalars(mg.g, detailRough, _DetailRoughBlend, DetailMask(uv.xy));
+			#if DETAIL_SAMPLEMODE_ENABLED
+				float4 detailRough = SampleTexture(_DetailRoughnessMap, sampler_DetailRoughnessMap, uv.zw, sd);
+			#else
+				float4 detailRough = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailRoughnessMap, sampler_DetailRoughnessMap, uv.zw);
+			#endif
+			mg.g = BlendScalarsAlpha(mg.g, detailRough, _DetailRoughBlend, DetailMask(uv.xy), detailRough.a);
 		#endif
 
 		mg.g = lerp(1-mg.g, mg.g, _UseSmoothness);
@@ -255,6 +351,12 @@ half3 Emission(float2 uv, float2 uvMask, SampleData sd)
 		float3 emissTex = SampleTexture(_EmissionMap, uv, sd);
 		float emissMask = _EmissionMask.Sample(sampler_MainTex, uvMask).r;
 		emissTex *= _EmissionColor.rgb * _EmissionIntensity * emissMask;
+		emissTex = Filtering(emissTex, _HueEmiss, _SaturationEmiss, _BrightnessEmiss, _ContrastEmiss);
+		#if AUDIOLINK_ENABLED
+			audioLinkData al = (audioLinkData)0;
+			InitializeAudioLink(al, 0);
+			emissTex *= lerp(1, GetAudioLinkBand(al, _AudioLinkEmission), _AudioLinkEmissionStrength * al.textureExists);
+		#endif
 		return emissTex;
 	#else
 		return 0;
@@ -269,7 +371,11 @@ half3 NormalInTangentSpace(float4 texcoords, SampleData sd)
 		sd.scaleTransform = _DetailAlbedoMap_ST;
 		sd.rotation = _UV1Rotate;
 		half mask = DetailMask(texcoords.xy);
-		half3 detailNormalTangent = SampleTexture(_DetailNormalMap, texcoords.zw, sd, _DetailNormalMapScale);
+		#if DETAIL_SAMPLEMODE_ENABLED
+			half3 detailNormalTangent = SampleTexture(_DetailNormalMap, sampler_DetailNormalMap, texcoords.zw, sd, _DetailNormalMapScale);
+		#else
+			half3 detailNormalTangent = UnpackScaleNormal(MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailNormalMap, sampler_DetailNormalMap, texcoords.zw), _DetailNormalMapScale);
+		#endif
 		normalTangent = lerp(normalTangent, BlendNormals(normalTangent, detailNormalTangent), mask);
 	#endif
 
