@@ -98,7 +98,10 @@ inline half3 MochieGI_IndirectSpecular(UnityGIInput data, half3 occlusion, Unity
 			specular = lerp(env2, specular, smoothstep(0, _CubeThreshold * 0.01, interpolant));
 		#endif
     #endif
-
+	// #if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
+	// 	float lightmap = saturate(lerp(1, Desaturate(DecodeLightmap(UNITY_SAMPLE_TEX2D(unity_Lightmap, data.lightmapUV))), _ReflShadows*_ReflShadowStrength));
+	// 	specular *= lightmap;
+	// #endif
     return specular * occlusion;
 }
 
@@ -428,7 +431,7 @@ struct VertexOutputForwardBase
 		float3 raycast                    : TEXCOORD12;
 		float3 objPos                     : TEXCOORD13;
 	#endif
-
+	float4 color                          : COLOR;
     UNITY_VERTEX_INPUT_INSTANCE_ID
     UNITY_VERTEX_OUTPUT_STEREO
 };
@@ -457,7 +460,7 @@ VertexOutputForwardBase vertForwardBase (VertexInput v)
 		o.raycast = UnityObjectToViewPos(v.vertex).xyz * float3(-1,-1,1);
 	#endif
 	o.localPos = v.vertex;
-
+	o.color = v.color;
     TexCoords(v, o.tex, o.tex1);
     o.eyeVec.xyz = NormalizePerVertexNormal(posWorld.xyz - _WorldSpaceCameraPos);
     float3 normalWorld = UnityObjectToWorldNormal(v.normal);
@@ -549,7 +552,7 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i)
 	half4 c = MOCHIE_BRDF(
 				s.diffColor, s.specColor, s.oneMinusReflectivity, 
 				s.smoothness, s.normalWorld, -s.eyeVec, s.posWorld, screenUVs, screenPos,
-				s.metallic, s.thickness, s.subsurfaceColor, atten, gi.light, gi.indirect
+				s.metallic, s.thickness, s.subsurfaceColor, atten, i.ambientOrLightmapUV, i.color, gi.light, gi.indirect
 			);
     c.rgb += Emission(i.tex.xy, i.tex1.zw, sd);
 
@@ -584,7 +587,7 @@ struct VertexOutputForwardAdd
 		float3 raycast                  : TEXCOORD12;
 		float3 objPos                   : TEXCOORD13;
 	#endif
-
+	float4 color                          : COLOR;
     UNITY_VERTEX_OUTPUT_STEREO
 };
 
@@ -629,7 +632,7 @@ VertexOutputForwardAdd vertForwardAdd (VertexInput v)
     o.tangentToWorldAndLightDir[0].w = lightDir.x;
     o.tangentToWorldAndLightDir[1].w = lightDir.y;
     o.tangentToWorldAndLightDir[2].w = lightDir.z;
-
+	o.color = v.color;
     #if defined(_PARALLAXMAP)
         TANGENT_SPACE_ROTATION;
         o.viewDirForParallax = mul (rotation, ObjSpaceViewDir(v.vertex));
@@ -695,7 +698,7 @@ half4 fragForwardAddInternal (VertexOutputForwardAdd i)
 
 	half4 c = MOCHIE_BRDF (s.diffColor, s.specColor, s.oneMinusReflectivity, 
 								s.smoothness, s.normalWorld, -s.eyeVec, s.posWorld, 0, 0,
-								s.metallic, s.thickness, s.subsurfaceColor, atten, light, noIndirect);
+								s.metallic, s.thickness, s.subsurfaceColor, atten, 0, i.color, light, noIndirect);
 								
     UNITY_EXTRACT_FOG_FROM_EYE_VEC(i);
     UNITY_APPLY_FOG_COLOR(_unity_fogCoord, c.rgb, half4(0,0,0,0)); // fog towards black in additive pass

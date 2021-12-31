@@ -57,6 +57,7 @@ Shader "Mochie/Standard" {
 		_UV1Rotate("UV1 Rotation", Float) = 0
 		_UV1Scroll("UV1 Scrolling", Vector) = (0,0,0,0)
 		_UV2Scroll("Mask Scrolling", Vector) = (0,0,0,0)
+		_UV3Rotate("UV3 Rotation", Float) = 0
 		_UV3Scroll("Mask Scrolling", Vector) = (0,0,0,0)
 
         _DetailMask("Detail Mask", 2D) = "white" {}
@@ -113,19 +114,26 @@ Shader "Mochie/Standard" {
 		_MetaCull("", Int) = 0
 		[Enum(UnityEngine.Rendering.CullMode)]_CullingMode("", Int) = 2
 		[ToggleOff]_SpecularHighlights("Specular Highlights", Float) = 1.0
-        [ToggleOff]_GlossyReflections("Glossy Reflections", Float) = 1.0
+		[ToggleOff]_GlossyReflections("Glossy Reflections", Float) = 1.0
 		[ToggleUI]_SSR("Screenspace Reflections", Int) = 0
 		[ToggleUI]_UseHeight("Use Heightmap", Int) = 0
 		[ToggleUI]_ReflShadows("Shadowed Reflections", Int) = 0
+		[ToggleUI]_ReflVertexColor("Vertex Color Reflections", Int) = 0
 		[ToggleUI]_GSAA("GSAA", Int) = 0
 		[ToggleUI]_UseSmoothness("Use Smoothness", Int) = 0
 		_SSRStrength("SSR Strength", Float) = 1
 		_ReflectionStrength("Relfection Strength", Float) = 1
 		_SpecularStrength("Specular Strength", Float) = 1
 		_QueueOffset("Queue Offset", Int) = 0
-
+		_GSAAStrength("GSAA Strength", Float) = 1
+		_ReflShadowStrength("Shadowed Reflection Strength", Float) = 1
+		_ReflVertexColorStrength("Vertex Color Reflection Strength", Float) = 1
 		[Enum(Off,0, Bass,1, Low Mids,2, Upper Mids,3, Highs,4)]_AudioLinkEmission("Emission Band", Int) = 0
 		_AudioLinkEmissionStrength("Emission Strength", Range(0,1)) = 1
+
+		_ContrastReflShad("Contrast", Float) = 1
+		_BrightnessReflShad("Brightness", Float) = 1
+		_HDRReflShad("HDR", Float) = 0
 
         [HideInInspector]_SrcBlend("__src", Float) = 1.0
         [HideInInspector]_DstBlend("__dst", Float) = 0.0

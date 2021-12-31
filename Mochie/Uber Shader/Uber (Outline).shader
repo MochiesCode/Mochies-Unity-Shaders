@@ -641,6 +641,9 @@ Shader "Mochie/Uber/Uber (Outline)" {
         [Enum(UnityEngine.Rendering.StencilOp)]_StencilFail("emx", Float) = 0
         [Enum(UnityEngine.Rendering.StencilOp)]_StencilZFail("enx", Float) = 0
         [Enum(UnityEngine.Rendering.CompareFunction)]_StencilCompare("enx", Float) = 8
+
+		[Enum(Unlit,0, Toon,1, Particle,2, Matcap,3, Sprite,4, DoubleSided,5, Hidden,6)]_VRCFallback("en06", Int) = 1
+
     }
 
     SubShader {
@@ -648,6 +651,7 @@ Shader "Mochie/Uber/Uber (Outline)" {
 			"RenderType"="Opaque" 
 			"Queue"="Geometry"
 			"DisableBatching"="True"
+			"VRCFallback"="Toon"
 		}
 		GrabPass {
 			Tags {"LightMode"="Always"}

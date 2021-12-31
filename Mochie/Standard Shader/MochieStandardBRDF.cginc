@@ -10,7 +10,8 @@
 half4 BRDF1_Mochie_PBS (
 	half3 diffColor, half3 specColor, half oneMinusReflectivity, half smoothness,
     half3 normal, half3 viewDir, half3 worldPos, half2 screenUVs, half4 screenPos,
-    half metallic, half thickness, half3 ssColor, half atten, UnityLight light, UnityIndirect gi)
+    half metallic, half thickness, half3 ssColor, half atten, float2 lightmapUV, float3 vertexColor,
+	UnityLight light, UnityIndirect gi)
 {
 	
     half perceptualRoughness = SmoothnessToPerceptualRoughness(smoothness);
@@ -79,7 +80,20 @@ half4 BRDF1_Mochie_PBS (
 					thickness, gi.diffuse, ssColor
 				);
 	#endif
-	reflCol *= lerp(1, lerp(1, atten, 0.9), _ReflShadows);
+	
+	#if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
+		if (_ReflShadows == 1){
+			float lightmap = Desaturate(DecodeLightmap(UNITY_SAMPLE_TEX2D(unity_Lightmap, lightmapUV)));
+			lightmap = GetContrast(lightmap, _ContrastReflShad);
+			lightmap = lerp(lightmap, GetHDR(lightmap), _HDRReflShad);
+			lightmap *= _BrightnessReflShad;
+			reflCol *= saturate(lerp(1, lightmap, _ReflShadowStrength));
+		}
+	#else
+		reflCol *= lerp(1, lerp(1, atten, 0.9), _ReflShadows*_ReflShadowStrength);
+	#endif
+	reflCol *= lerp(1, vertexColor, _ReflVertexColor*_ReflVertexColorStrength);
+	
     return half4(diffCol + specCol + reflCol + subsurfaceCol, 1);
 }
 

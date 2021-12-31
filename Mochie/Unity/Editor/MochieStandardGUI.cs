@@ -46,7 +46,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		"Render Settings"
 	}, 1);
 
-	string versionLabel = "v1.9";
+	string versionLabel = "v1.10";
 	// β
 
 	MaterialProperty blendMode = null;
@@ -113,6 +113,7 @@ internal class MochieStandardGUI : ShaderGUI {
 	
 	MaterialProperty uv0Rot = null;
 	MaterialProperty uv1Rot = null;
+	MaterialProperty uv3Rot = null;
 	MaterialProperty uv0Scroll = null;
 	MaterialProperty uv1Scroll = null;
 	MaterialProperty uv2Scroll = null;
@@ -151,7 +152,15 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty useSmoothness = null;
 	MaterialProperty detailMaskChannel = null;
 	MaterialProperty detailSamplingMode = null;
+	MaterialProperty gsaaStrength = null;
+	MaterialProperty reflShadowStrength = null;
+	MaterialProperty reflVertexColor = null;
+	MaterialProperty reflVertexColorStrength = null;
 
+	MaterialProperty brightnessReflShad = null;
+	MaterialProperty contrastReflShad = null;
+	MaterialProperty hdrReflShad = null;
+	
 	MaterialProperty audioLinkEmission = null;
 	MaterialProperty audioLinkEmissionStrength = null;
 
@@ -260,6 +269,14 @@ internal class MochieStandardGUI : ShaderGUI {
 		audioLinkEmission = FindProperty("_AudioLinkEmission", props);
 		audioLinkEmissionStrength = FindProperty("_AudioLinkEmissionStrength", props);
 		detailSamplingMode = FindProperty("_DetailSamplingMode", props);
+		reflShadowStrength = FindProperty("_ReflShadowStrength", props);
+		gsaaStrength = FindProperty("_GSAAStrength", props);
+		reflVertexColor = FindProperty("_ReflVertexColor", props);
+		reflVertexColorStrength = FindProperty("_ReflVertexColorStrength", props);
+		contrastReflShad = FindProperty("_ContrastReflShad", props);
+		brightnessReflShad = FindProperty("_BrightnessReflShad", props);
+		hdrReflShad = FindProperty("_HDRReflShad", props);
+		uv3Rot = FindProperty("_UV3Rotate", props);
 	}
 
 	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props){
@@ -534,6 +551,7 @@ internal class MochieStandardGUI : ShaderGUI {
 				MGUI.PropertyGroupLayer(()=>{
 					MGUI.SpaceN1();
 					MGUI.TextureSOScroll(m_MaterialEditor, emissionMask, uv3Scroll);
+					m_MaterialEditor.ShaderProperty(uv3Rot, "Rotation");
 					MGUI.SpaceN2();
 				});
 			}
@@ -562,12 +580,18 @@ internal class MochieStandardGUI : ShaderGUI {
 				if (ssr.floatValue == 1){
 					m_MaterialEditor.ShaderProperty(edgeFade, Styles.edgeFadeText);
 				}
+				MGUI.ToggleFloat(m_MaterialEditor, "Vertex Color Reflections", reflVertexColor, reflVertexColorStrength);
+				MGUI.ToggleFloat(m_MaterialEditor, "Shadowed Reflections", reflShadows, reflShadowStrength);
+				if (reflShadows.floatValue == 1){
+					m_MaterialEditor.ShaderProperty(brightnessReflShad, "Brightness", 1);
+					m_MaterialEditor.ShaderProperty(contrastReflShad, "Contrast", 1);
+					m_MaterialEditor.ShaderProperty(hdrReflShad, "HDR", 1);
+				}
+				MGUI.ToggleFloat(m_MaterialEditor, "Specular Antialiasing", gsaa, gsaaStrength);
 			});
 			MGUI.Space1();
 			MGUI.PropertyGroupLayer(() => {
 				MGUI.SpaceN3();
-				m_MaterialEditor.ShaderProperty(reflShadows, "Shadowed Reflections");
-				m_MaterialEditor.ShaderProperty(gsaa, "Specular Antialiasing");
 				m_MaterialEditor.EnableInstancingField();
 				MGUI.SpaceN2();
 				m_MaterialEditor.DoubleSidedGIField();

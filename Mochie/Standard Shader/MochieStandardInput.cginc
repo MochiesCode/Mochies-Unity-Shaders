@@ -76,6 +76,7 @@ float2			lightmapOffset;
 half        	_UVSec;
 half			_UV0Rotate;
 half			_UV1Rotate;
+half			_UV3Rotate;
 float2			_UV0Scroll;
 float2			_UV1Scroll;
 
@@ -97,9 +98,17 @@ float			_WrappingFactor;
 int 			_ScatterAlbedoTint;
 int 			_Subsurface;
 
+float			_BrightnessReflShad;
+float			_ContrastReflShad;
+float			_HDRReflShad;
+
 float _ReflectionStrength, _SpecularStrength;
+float _ReflShadowStrength;
+float _GSAAStrength;
+float _ReflVertexColorStrength;
 int _ReflShadows;
 int _UseSmoothness;
+int _ReflVertexColor;
 
 Texture2D _PackedMap;
 UNITY_DECLARE_TEXCUBE(_ReflCube);
@@ -131,7 +140,7 @@ float GSAARoughness(float3 normal, float roughness){
 	float dotX = dot(normalDDX, normalDDX);
 	float dotY = dot(normalDDY, normalDDY);
 	float base = saturate(max(dotX, dotY));
-	return max(roughness, pow(base, 0.333));
+	return max(roughness, pow(base, 0.333)*_GSAAStrength);
 }
 
 //-------------------------------------------------------------------------------------
@@ -141,6 +150,7 @@ struct VertexInput
 {
     float4 vertex   : POSITION;
     half3 normal    : NORMAL;
+	float4 color	: COLOR;
     float2 uv0      : TEXCOORD0;
     float2 uv1      : TEXCOORD1;
 	float2 uv2      : TEXCOORD2;
@@ -215,7 +225,8 @@ void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1)
 	#endif
 
 	#ifdef _EMISSION
-		texcoord1.zw = TRANSFORM_TEX(v.uv0, _EmissionMask);
+		texcoord1.zw = Rotate2D(v.uv0, _UV3Rotate);
+		texcoord1.zw = TRANSFORM_TEX(texcoord1.zw, _EmissionMask);
 		texcoord1.zw += _Time.y * _UV3Scroll;
 	#endif
 }

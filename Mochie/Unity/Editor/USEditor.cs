@@ -700,7 +700,7 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _AudioLinkOutlineMultiplier = null;
 	MaterialProperty _AudioLinkRemapOutlineMin = null;
 	MaterialProperty _AudioLinkRemapOutlineMax = null;
-
+	MaterialProperty _VRCFallback = null;
 	MaterialProperty _NaNLmao = null;
 
     BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
@@ -1504,8 +1504,8 @@ internal class USEditor : ShaderGUI {
 				});
 				MGUI.ToggleGroupEnd();
 			};
-			MGUI.ToggleGroupEnd();
 			Foldouts.SubFoldout("Pulse", foldouts, pulseTabButtons, mat, me, pulseTabAction, _PulseToggle);
+			MGUI.ToggleGroupEnd();
 		};
 		Foldouts.Foldout("EMISSION 0", foldouts, emissTabButtons, mat, me, emissTabAction);
 			
@@ -2073,6 +2073,10 @@ internal class USEditor : ShaderGUI {
 			MGUI.PropertyGroup(() => {
 				me.ShaderProperty(_ZWrite, "ZWrite");
 				me.ShaderProperty(_ZTest, "ZTest");
+				EditorGUI.BeginChangeCheck();
+				me.ShaderProperty(_VRCFallback, "Fallback Shader");
+				if (EditorGUI.EndChangeCheck())
+					SetFallback(mat);
 				me.ShaderProperty(_Hide, "Invisible");
 			});
 			MGUI.BoldLabel("Near Clipping");
@@ -2365,6 +2369,35 @@ internal class USEditor : ShaderGUI {
 				break;
 			default: break;
 		}
+	}
+
+	void SetFallback(Material mat){
+		int fallback = mat.GetInt("_VRCFallback");
+		int blendMode = mat.GetInt("_BlendMode");
+		string tag = "";
+		switch (fallback){
+			case 0: tag = "Unlit"; break;
+			case 1: tag = "Toon"; break;
+			case 2: tag = "Particle"; break;
+			case 3: tag = "Matcap"; break;
+			case 4: tag = "Sprite"; break;
+			case 5: tag = "DoubleSided"; break;
+			case 6: tag = "Hidden"; break;
+			default: break;
+		}
+		if (fallback != 6){
+			switch (blendMode){
+				case 1: // Cutout
+				case 2:	// Dithered
+				case 3:	// Alpha to Coverage
+					tag += "Cutout";
+					break;
+				case 4: tag += "Fade"; break;
+				case 5: tag += "Transparent"; break;
+				default: break;
+			}
+		}
+		mat.SetOverrideTag("VRCFallback", tag);
 	}
 
 	void ApplyOutlineStencilConfig(Material mat){

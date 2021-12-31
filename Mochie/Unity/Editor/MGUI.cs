@@ -326,7 +326,7 @@ namespace Mochie {
 			r.x += labelWidth+18f;
 
 			SpaceN20();
-			GUILayoutOption clickArea = GUILayout.MaxWidth(labelWidth+7f);
+			GUILayoutOption clickArea = GUILayout.MaxWidth(labelWidth+14f);
 
 			EditorGUI.BeginChangeCheck();
 			EditorGUI.showMixedValue = toggle.hasMixedValue;
