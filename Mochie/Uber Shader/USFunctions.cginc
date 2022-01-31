@@ -598,32 +598,32 @@ void ApplyUVDistortion(inout g2f i, audioLinkData al, inout float3 uvOffset){
 float2 GetParallaxOffset(g2f i){
     float2 uvOffset = 0;
 	float2 prevUVOffset = 0;
-	float stepSize = 1.0/15.0;
+	float stepSize = 1.0/_ParallaxSteps;
 	float stepHeight = 1;
 	float2 uvDelta = i.tangentViewDir.xy * (stepSize * _Parallax);
 	float surfaceHeight = 0;
 
 	#if PACKED_WORKFLOW
 		packedTex = MOCHIE_SAMPLE_TEX2D_SAMPLER(_PackedMap, sampler_MainTex, i.uv.xy);
-		surfaceHeight = ChannelCheck(packedTex, _HeightChannel);
+		surfaceHeight = ChannelCheck(packedTex, _HeightChannel)+_ParallaxOffset;
 		surfaceHeight = clamp(surfaceHeight, 0, 0.999);
 		float prevStepHeight = stepHeight;
 		float prevSurfaceHeight = surfaceHeight;
 
-		[unroll(15)]
-		for (int j = 1; j <= 15 && stepHeight > surfaceHeight; j++){
+		[unroll(50)]
+		for (int j = 1; j <= _ParallaxSteps && stepHeight > surfaceHeight; j++){
 			prevUVOffset = uvOffset;
 			prevStepHeight = stepHeight;
 			prevSurfaceHeight = surfaceHeight;
 			uvOffset -= uvDelta;
 			stepHeight -= stepSize;
-			surfaceHeight = ChannelCheck(MOCHIE_SAMPLE_TEX2D_SAMPLER(_PackedMap, sampler_MainTex, i.uv.xy+uvOffset), _HeightChannel);
+			surfaceHeight = ChannelCheck(MOCHIE_SAMPLE_TEX2D_SAMPLER(_PackedMap, sampler_MainTex, i.uv.xy+uvOffset), _HeightChannel)+_ParallaxOffset;
 			surfaceHeight = lerp(surfaceHeight, Remap(surfaceHeight, 0, 1, _HeightRemapMin, _HeightRemapMax), _HeightFiltering);
 			ApplyPBRFiltering(surfaceHeight, _HeightContrast, _HeightIntensity, _HeightLightness, _HeightFiltering, prevHeight);
 		}
 
-		[unroll(4)]
-		for (int k = 0; k < 4; k++) {
+		[unroll(3)]
+		for (int k = 0; k < 3; k++) {
 			uvDelta *= 0.5;
 			stepSize *= 0.5;
 
@@ -635,30 +635,30 @@ float2 GetParallaxOffset(g2f i){
 				uvOffset -= uvDelta;
 				stepHeight -= stepSize;
 			}
-			surfaceHeight = ChannelCheck(MOCHIE_SAMPLE_TEX2D_SAMPLER(_PackedMap, sampler_MainTex, i.uv.xy+uvOffset), _HeightChannel);
+			surfaceHeight = ChannelCheck(MOCHIE_SAMPLE_TEX2D_SAMPLER(_PackedMap, sampler_MainTex, i.uv.xy+uvOffset), _HeightChannel)+_ParallaxOffset;
 			surfaceHeight = lerp(surfaceHeight, Remap(surfaceHeight, 0, 1, _HeightRemapMin, _HeightRemapMax), _HeightFiltering);
 			ApplyPBRFiltering(surfaceHeight, _HeightContrast, _HeightIntensity, _HeightLightness, _HeightFiltering, prevHeight);
 		}
 	#else
-		surfaceHeight = MOCHIE_SAMPLE_TEX2D_SAMPLER(_ParallaxMap, sampler_MainTex, i.uv.xy+uvOffset);
+		surfaceHeight = MOCHIE_SAMPLE_TEX2D_SAMPLER(_ParallaxMap, sampler_MainTex, i.uv.xy+uvOffset)+_ParallaxOffset;
 		surfaceHeight = clamp(surfaceHeight, 0, 0.999);
 		float prevStepHeight = stepHeight;
 		float prevSurfaceHeight = surfaceHeight;
 
-		[unroll(15)]
-		for (int j = 1; j <= 15 && stepHeight > surfaceHeight; j++){
+		[unroll(50)]
+		for (int j = 1; j <= _ParallaxSteps && stepHeight > surfaceHeight; j++){
 			prevUVOffset = uvOffset;
 			prevStepHeight = stepHeight;
 			prevSurfaceHeight = surfaceHeight;
 			uvOffset -= uvDelta;
 			stepHeight -= stepSize;
-			surfaceHeight = MOCHIE_SAMPLE_TEX2D_SAMPLER(_ParallaxMap, sampler_MainTex, i.uv.xy+uvOffset);
+			surfaceHeight = MOCHIE_SAMPLE_TEX2D_SAMPLER(_ParallaxMap, sampler_MainTex, i.uv.xy+uvOffset)+_ParallaxOffset;
 			surfaceHeight = lerp(surfaceHeight, Remap(surfaceHeight, 0, 1, _HeightRemapMin, _HeightRemapMax), _HeightFiltering);
 			ApplyPBRFiltering(surfaceHeight, _HeightContrast, _HeightIntensity, _HeightLightness, _HeightFiltering, prevHeight);
 		}
 		
-		[unroll(4)]
-		for (int k = 0; k < 4; k++) {
+		[unroll(3)]
+		for (int k = 0; k < 3; k++) {
 			uvDelta *= 0.5;
 			stepSize *= 0.5;
 
@@ -670,17 +670,11 @@ float2 GetParallaxOffset(g2f i){
 				uvOffset -= uvDelta;
 				stepHeight -= stepSize;
 			}
-			surfaceHeight = MOCHIE_SAMPLE_TEX2D_SAMPLER(_ParallaxMap, sampler_MainTex, i.uv.xy+uvOffset);
+			surfaceHeight = MOCHIE_SAMPLE_TEX2D_SAMPLER(_ParallaxMap, sampler_MainTex, i.uv.xy+uvOffset)+_ParallaxOffset;
 			surfaceHeight = lerp(surfaceHeight, Remap(surfaceHeight, 0, 1, _HeightRemapMin, _HeightRemapMax), _HeightFiltering);
 			ApplyPBRFiltering(surfaceHeight, _HeightContrast, _HeightIntensity, _HeightLightness, _HeightFiltering, prevHeight);
 		}
 	#endif
-
-	// prevHeight = surfaceHeight;
-	// float prevDifference = prevStepHeight - prevSurfaceHeight;
-	// float difference = surfaceHeight - stepHeight;
-	// float t = prevDifference / (prevDifference + difference);
-	// uvOffset = lerp(prevUVOffset, uvOffset, t);
 	
     return uvOffset;
 }

@@ -14,7 +14,7 @@ Shader "Mochie/LED Screen" {
 		_EmissionIntensity ("Screen Intensity", Float) = 1
 		_BoostAmount("Boost Threshold", Float) = 1
 		_BoostThreshold("Boost Treshold", Range(0,1)) = 0
-		[ToggleUI]_ApplyGamma("Apply Gamma", Float) = 0
+		[ToggleUI]_IsAVProInput("Fix for AVPro", Int) = 0
 		[ToggleUI]_Backlight("Backlit Panel", Int) = 0
 		[HideInInspector]_texcoord2( "", 2D ) = "white" {}
 	}
@@ -43,7 +43,7 @@ Shader "Mochie/LED Screen" {
 		sampler2D _SpecGlossMap;
 		float2 _UVScroll;
 		float _Glossiness;
-		int _ApplyGamma;
+		int _IsAVProInput;
 
 		float _EmissionIntensity;
 		float _LightmapEmissionScale;
@@ -63,6 +63,9 @@ Shader "Mochie/LED Screen" {
 		#include "RGBSubPixel.cginc"
 
 		void surf (Input IN, inout SurfaceOutputStandard o) {
+			if (_IsAVProInput == 1){
+				IN.uv_MainTex.y = 1-IN.uv_MainTex.y;
+			}
 			float3 worldNormal = WorldNormalVector(IN, IN.worldNormal);
 			float3 viewDir = IN.viewDir;
 			float2 uv = IN.uv_MainTex + (_Time.y * _UVScroll * 0.1);

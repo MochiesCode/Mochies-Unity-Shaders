@@ -156,7 +156,7 @@ internal class USEditor : ShaderGUI {
 
 	static readonly string unityFolderPath = "Assets/Mochie/Unity";
 	string header = "Header_Pro";
-	string versionLabel = "v1.21";
+	string versionLabel = "v1.22";
 	// β
 	
 	GUIContent maskLabel = new GUIContent("Mask");
@@ -700,6 +700,8 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _AudioLinkOutlineMultiplier = null;
 	MaterialProperty _AudioLinkRemapOutlineMin = null;
 	MaterialProperty _AudioLinkRemapOutlineMax = null;
+	MaterialProperty _ParallaxOffset = null;
+	MaterialProperty _ParallaxSteps = null;
 	MaterialProperty _VRCFallback = null;
 	MaterialProperty _NaNLmao = null;
 
@@ -888,6 +890,10 @@ internal class USEditor : ShaderGUI {
 							me.ShaderProperty(_HeightChannel, "Height");
 							me.ShaderProperty(_OcclusionStrength, "Occlusion Strength");
 							MGUI.ToggleSlider(me, "Height Strength", _EnablePackedHeight, _Parallax);
+							if (_EnablePackedHeight.floatValue > 0){
+								me.ShaderProperty(_ParallaxOffset, "Offset", 1);
+								me.ShaderProperty(_ParallaxSteps, "Steps", 1);
+							}
 							break;
 							
 						default: break;
@@ -895,8 +901,13 @@ internal class USEditor : ShaderGUI {
 					if (workflow < 3)
 						me.TexturePropertySingleLine(occlusionTexLabel, _OcclusionMap, _OcclusionMap.textureValue ? _OcclusionStrength : null);
 					me.TexturePropertySingleLine(normalTexLabel, _BumpMap, _BumpMap.textureValue ? _BumpScale : null);
-					if (workflow < 3)
+					if (workflow < 3){
 						me.TexturePropertySingleLine(heightTexLabel, _ParallaxMap, _ParallaxMap.textureValue ? _Parallax : null);
+						if (_ParallaxMap.textureValue){
+							me.ShaderProperty(_ParallaxOffset, "Offset", 2);
+							me.ShaderProperty(_ParallaxSteps, "Steps", 2);
+						}
+					}
 				});
 
 				MGUI.BoldLabel("Detail Maps");

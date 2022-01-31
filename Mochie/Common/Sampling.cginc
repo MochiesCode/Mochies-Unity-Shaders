@@ -61,6 +61,18 @@ float3 tex2Dnormal(Texture2D tex, SamplerState ss, float2 uv, float offset, floa
 	return normalize(cross(va, vb));
 }
 
+float3 tex2Dnormal(sampler2D tex, float2 uv, float offset, float strength){
+	offset = pow(offset, 3) * 0.1;
+	float2 offsetU = float2(uv.x + offset, uv.y);
+	float2 offsetV = float2(uv.x, uv.y + offset);
+	float normalSample = tex2D(tex, uv);
+	float uSample = tex2D(tex, offsetU);
+	float vSample = tex2D(tex, offsetV);
+	float3 va = float3(1, 0, (uSample - normalSample) * strength);
+	float3 vb = float3(0, 1, (vSample - normalSample) * strength);
+	return normalize(cross(va, vb));
+}
+
 // From https://www.willpodpechan.com/blog/2020/10/16/de-tiled-triplanar-mapping-in-unity
 float4 tex2Dstoch(Texture2D tex, SamplerState ss, float2 uv){
 	//skew the uv to create triangular grid

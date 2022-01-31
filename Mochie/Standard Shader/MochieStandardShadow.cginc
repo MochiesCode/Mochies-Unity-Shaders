@@ -29,6 +29,7 @@
 #define UNITY_STANDARD_USE_STEREO_SHADOW_OUTPUT_STRUCT 1
 #endif
 
+float		_NaNLmao;
 half4       _Color;
 half        _Cutoff;
 #ifdef UNITY_STANDARD_USE_DITHER_MASK
@@ -56,10 +57,18 @@ half        _Metallic;
 	float2 		uvOffset;
 #endif
 
+Texture2D 	_AlphaMask;
+SamplerState sampler_AlphaMask;
+float4		_AlphaMask_ST;
+float		_AlphaMaskOpacity;
+int			_AlphaMaskChannel;
+half		_UVAlphaMask;
+half		_UV4Rotate;
 half		_UV0Rotate;
 half		_UV1Rotate;
 float2		_UV0Scroll;
 float2		_UV1Scroll;
+float2		_UV4Scroll;
 
 #if WORKFLOW_PACKED
 	Texture2D _PackedMap;
@@ -102,6 +111,10 @@ struct VertexInput
     float4 vertex   : POSITION;
     float3 normal   : NORMAL;
     float2 uv0      : TEXCOORD0;
+	float2 uv1      : TEXCOORD1;
+	float2 uv2      : TEXCOORD2;
+	float2 uv3      : TEXCOORD3;
+	float2 uv4      : TEXCOORD4;
     half4 tangent   : TANGENT;
     UNITY_VERTEX_INPUT_INSTANCE_ID
 };
@@ -111,15 +124,32 @@ struct VertexOutputShadowCaster
     V2F_SHADOW_CASTER_NOPOS
 	float2 tex : TEXCOORD1;
 	float2 tex1 : TEXCOORD2;
-	float4 localPos : TEXCOORD3;
-	float3 normal : TEXCOORD4;
-	half3 viewDirForParallax : TEXCOORD5;
+	float2 tex2 : TEXCOORD3;
+	float4 localPos : TEXCOORD4;
+	float3 normal : TEXCOORD5;
+	half3 viewDirForParallax : TEXCOORD6;
 	#if DECAL_ENABLED
-		float4 screenPos : TEXCOORD6;
-		float3 objPos : TEXCOORD7;
-		float3 raycast : TEXCOORD8;
+		float4 screenPos : TEXCOORD7;
+		float3 objPos : TEXCOORD8;
+		float3 raycast : TEXCOORD9;
 	#endif
 };
+
+float2 SelectUVSet(VertexInput v, int selection){
+	float2 uvs[] = {v.uv0, v.uv1, v.uv2, v.uv3, v.uv4};
+	return uvs[selection];
+}
+
+float2 GetAlphaMaskUV(VertexInput v){
+	#ifdef _ALPHAMASK_ON
+		float2 coords = Rotate2D(SelectUVSet(v, _UVAlphaMask), _UV4Rotate);
+		coords = TRANSFORM_TEX(coords.xy, _AlphaMask);
+		coords += _Time.y * _UV4Scroll;
+	#else
+		float2 coords = 0;
+	#endif
+	return coords;
+}
 
 #ifdef UNITY_STANDARD_USE_STEREO_SHADOW_OUTPUT_STRUCT
 struct VertexOutputStereoShadowCaster
@@ -153,6 +183,7 @@ void vertShadowCaster (VertexInput v
     #if defined(UNITY_STANDARD_USE_SHADOW_UVS)
         o.tex = TRANSFORM_TEX(v.uv0, _MainTex);
 		o.tex1 = v.uv0;
+		o.tex2 = GetAlphaMaskUV(v);
 		o.localPos = v.vertex;
 		o.normal = UnityObjectToWorldNormal(v.normal);
 		#if DECAL_ENABLED
@@ -240,16 +271,16 @@ half4 fragShadowCaster (UNITY_POSITION(vpos)
             i.tex.xy += offset;
         #endif
 
-        #if defined(_SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A)
-            half alpha = _Color.a;
-        #else
-			SampleData sd = SampleDataSetup(vpos
-			#ifdef UNITY_STANDARD_USE_SHADOW_OUTPUT_STRUCT
-			,	i
-			#endif
-			);
-			half alpha = SampleTexture(_MainTex, i.tex.xy, sd).a * _Color.a;
-        #endif
+		SampleData sd = SampleDataSetup(vpos
+		#ifdef UNITY_STANDARD_USE_SHADOW_OUTPUT_STRUCT
+		,	i
+		#endif
+		);
+		#ifdef _ALPHAMASK_ON
+			half alpha = ChannelCheck(SampleTexture(_AlphaMask, sampler_AlphaMask, i.tex2), _AlphaMaskChannel) * _AlphaMaskOpacity;
+		#else
+			half alpha = SampleTexture(_MainTex, i.tex.xy, sd);
+		#endif
         #if defined(_ALPHATEST_ON)
             clip (alpha - _Cutoff);
         #endif

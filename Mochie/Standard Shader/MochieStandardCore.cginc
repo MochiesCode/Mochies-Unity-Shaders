@@ -63,9 +63,9 @@ inline half3 MochieGI_IndirectSpecular(UnityGIInput data, half3 occlusion, Unity
     #ifdef UNITY_SPECCUBE_BOX_PROJECTION
         glossIn.reflUVW = BoxProjectedCubemapDirection(originalReflUVW, data.worldPos, data.probePosition[0], data.boxMin[0], data.boxMax[0]);
     #endif
-	#if GSAA_ENABLED
+	if (_GSAA == 1){
 		glossIn.roughness = GSAARoughness(normal, glossIn.roughness);
-	#endif
+	}
     #ifdef _GLOSSYREFLECTIONS_OFF
         specular = unity_IndirectSpecColor.rgb;
     #else
@@ -98,10 +98,6 @@ inline half3 MochieGI_IndirectSpecular(UnityGIInput data, half3 occlusion, Unity
 			specular = lerp(env2, specular, smoothstep(0, _CubeThreshold * 0.01, interpolant));
 		#endif
     #endif
-	// #if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
-	// 	float lightmap = saturate(lerp(1, Desaturate(DecodeLightmap(UNITY_SAMPLE_TEX2D(unity_Lightmap, data.lightmapUV))), _ReflShadows*_ReflShadowStrength));
-	// 	specular *= lightmap;
-	// #endif
     return specular * occlusion;
 }
 
@@ -296,12 +292,16 @@ float3 CalculateTangentViewDir(inout float3 tangentViewDir){
 }
 
 // parallax transformed texcoord is used to sample occlusion
-inline FragmentCommonData FragmentSetup (inout float4 i_tex, float3 i_eyeVec, half3 i_viewDirForParallax, float4 tangentToWorld[3], float3 i_posWorld, SampleData sd)
+inline FragmentCommonData FragmentSetup (inout float4 i_tex, float4 i_tex2, float3 i_eyeVec, half3 i_viewDirForParallax, float4 tangentToWorld[3], float3 i_posWorld, SampleData sd)
 {
 	
     i_tex = Parallax(i_tex, CalculateTangentViewDir(i_viewDirForParallax), uvOffset);
 
-    half alpha = Alpha(i_tex.xy, sd);
+    #ifdef _ALPHAMASK_ON
+        half alpha = Alpha(i_tex2, sd);
+    #else
+        half alpha = Alpha(i_tex.xy, sd);
+    #endif
     #if defined(_ALPHATEST_ON)
         clip (alpha - _Cutoff);
     #endif
@@ -431,6 +431,7 @@ struct VertexOutputForwardBase
 		float3 raycast                    : TEXCOORD12;
 		float3 objPos                     : TEXCOORD13;
 	#endif
+    float4 tex2                       : TEXCOORD14;
 	float4 color                          : COLOR;
     UNITY_VERTEX_INPUT_INSTANCE_ID
     UNITY_VERTEX_OUTPUT_STEREO
@@ -461,7 +462,7 @@ VertexOutputForwardBase vertForwardBase (VertexInput v)
 	#endif
 	o.localPos = v.vertex;
 	o.color = v.color;
-    TexCoords(v, o.tex, o.tex1);
+    TexCoords(v, o.tex, o.tex1, o.tex2);
     o.eyeVec.xyz = NormalizePerVertexNormal(posWorld.xyz - _WorldSpaceCameraPos);
     float3 normalWorld = UnityObjectToWorldNormal(v.normal);
     #ifdef _TANGENT_TO_WORLD
@@ -540,7 +541,7 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i)
 	#endif
 
 	SampleData sd = SampleDataSetup(i);
-    FragmentCommonData s = FragmentSetup(i.tex, i.eyeVec.xyz, IN_VIEWDIR4PARALLAX(i), i.tangentToWorldAndPackedData, IN_WORLDPOS(i), sd);
+    FragmentCommonData s = FragmentSetup(i.tex, i.tex2, i.eyeVec.xyz, IN_VIEWDIR4PARALLAX(i), i.tangentToWorldAndPackedData, IN_WORLDPOS(i), sd);
     UNITY_SETUP_INSTANCE_ID(i);
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
 
@@ -587,7 +588,8 @@ struct VertexOutputForwardAdd
 		float3 raycast                  : TEXCOORD12;
 		float3 objPos                   : TEXCOORD13;
 	#endif
-	float4 color                          : COLOR;
+    float4 tex2                     : TEXCOORD14;
+	float4 color                        : COLOR;
     UNITY_VERTEX_OUTPUT_STEREO
 };
 
@@ -606,7 +608,7 @@ VertexOutputForwardAdd vertForwardAdd (VertexInput v)
 	#endif
 	o.localPos = v.vertex;
 
-    TexCoords(v, o.tex, o.tex1);
+    TexCoords(v, o.tex, o.tex1, o.tex2);
     o.eyeVec.xyz = NormalizePerVertexNormal(posWorld.xyz - _WorldSpaceCameraPos);
     o.posWorld = posWorld.xyz;
     float3 normalWorld = UnityObjectToWorldNormal(v.normal);
@@ -690,7 +692,7 @@ half4 fragForwardAddInternal (VertexOutputForwardAdd i)
 	#endif
 
 	SampleData sd = SampleDataSetup(i);
-    FragmentCommonData s = FragmentSetup(i.tex, i.eyeVec.xyz, IN_VIEWDIR4PARALLAX_FWDADD(i), i.tangentToWorldAndLightDir, IN_WORLDPOS_FWDADD(i), sd);
+    FragmentCommonData s = FragmentSetup(i.tex, i.tex2, i.eyeVec.xyz, IN_VIEWDIR4PARALLAX_FWDADD(i), i.tangentToWorldAndLightDir, IN_WORLDPOS_FWDADD(i), sd);
 
     UNITY_LIGHT_ATTENUATION(atten, i, s.posWorld)
     UnityLight light = AdditiveLight (IN_LIGHTDIR_FWDADD(i), atten);

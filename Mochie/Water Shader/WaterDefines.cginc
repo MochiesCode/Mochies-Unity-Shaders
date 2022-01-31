@@ -12,22 +12,27 @@ float4 _CameraDepthTexture_TexelSize;
 #include "../Common/Noise.cginc"
 #include "../Common/Sampling.cginc"
 
-#define NORMALMAP1_ENABLED defined(_NORMALMAP_1_ON)
-#define REFLECTIONS_ENABLED defined(_REFLECTIONS_ON) && !defined(UNITY_PASS_FORWARDADD)
-#define SPECULAR_ENABLED defined(_SPECULAR_ON)
-#define PBR_ENABLED defined(_REFLECTIONS_ON) || defined(_SPECULAR_ON)
-#define FLOW_ENABLED defined(_FLOW_ON)
-#define VERTEX_OFFSET_ENABLED defined(_VERTEX_OFFSET_ON)
-#define DEPTHFOG_ENABLED defined(_DEPTHFOG_ON) && !defined(UNITY_PASS_FORWARDADD)
-#define FOAM_ENABLED defined(_FOAM_ON)
-#define CAUSTICS_ENABLED defined(_CAUSTICS_ON) && !defined(UNITY_PASS_FORWARDADD)
-#define EDGEFADE_ENABLED defined(_EDGEFADE_ON)
-#define SSR_ENABLED defined(_SCREENSPACE_REFLECTIONS_ON) && !defined(UNITY_PASS_FORWARDADD)
-#define STOCHASTIC0_ENABLED defined(_NORMALMAP_0_STOCHASTIC_ON)
-#define STOCHASTIC1_ENABLED defined(_NORMALMAP_1_STOCHASTIC_ON)
-#define FOAM_STOCHASTIC_ENABLED defined(_FOAM_STOCHASTIC_ON)
-#define BASECOLOR_STOCHASTIC_ENABLED defined(_BASECOLOR_STOCHASTIC_ON)
-#define GERSTNER_ENABLED defined(_GERSTNER_WAVES_ON)
+#define BASE_PASS 						defined(UNITY_PASS_FORWARDBASE)
+#define ADD_PASS 						defined(UNITY_PASS_FORWARDADD)
+#define NORMALMAP1_ENABLED 				defined(_NORMALMAP_1_ON)
+#define REFLECTIONS_ENABLED 			defined(_REFLECTIONS_ON) && !defined(UNITY_PASS_FORWARDADD)
+#define REFLECTIONS_MANUAL_ENABLED 		defined(_REFLECTIONS_MANUAL_ON)
+#define SPECULAR_ENABLED 				defined(_SPECULAR_ON)
+#define PBR_ENABLED 					defined(_REFLECTIONS_ON) || defined(_SPECULAR_ON)
+#define FLOW_ENABLED 					defined(_FLOW_ON)
+#define VERTEX_OFFSET_ENABLED 			defined(_VERTEX_OFFSET_ON)
+#define DEPTHFOG_ENABLED 				defined(_DEPTHFOG_ON) && !defined(UNITY_PASS_FORWARDADD)
+#define FOAM_ENABLED 					defined(_FOAM_ON)
+#define CAUSTICS_ENABLED 				defined(_CAUSTICS_ON) && !defined(UNITY_PASS_FORWARDADD)
+#define EDGEFADE_ENABLED 				defined(_EDGEFADE_ON)
+#define SSR_ENABLED 					defined(_SCREENSPACE_REFLECTIONS_ON) && !defined(UNITY_PASS_FORWARDADD)
+#define STOCHASTIC0_ENABLED 			defined(_NORMALMAP_0_STOCHASTIC_ON)
+#define STOCHASTIC1_ENABLED 			defined(_NORMALMAP_1_STOCHASTIC_ON)
+#define FOAM_STOCHASTIC_ENABLED 		defined(_FOAM_STOCHASTIC_ON)
+#define BASECOLOR_STOCHASTIC_ENABLED 	defined(_BASECOLOR_STOCHASTIC_ON)
+#define GERSTNER_ENABLED 				defined(_GERSTNER_WAVES_ON)
+#define RAIN_ENABLED 					defined(_RAIN_ON)
+#define FOAM_NORMALS_ENABLED			defined(_FOAM_NORMALS_ON)
 
 sampler2D _MWGrab;
 sampler2D _MainTex;
@@ -36,10 +41,14 @@ sampler2D _FlowMap;
 sampler2D _NoiseTex;
 sampler2D _FoamTex;
 sampler2D _FoamNoiseTex;
+samplerCUBE _ReflCube;
 
-float4 _FogTint, _Color, _FoamColor;
+float4 _FogTint, _Color, _FoamColor, _ReflTint, _SpecTint;
+float4 _ReflCube_HDR;
 float4 _MainTex_ST;
 float3 _Offset;
+float3 _LightDir;
+float3 _ReflCubeRotation;
 float2 _NormalMapScale0, _NormalMapScale1;
 float2 _NormalMapScroll0, _NormalMapScroll1;
 float2 _FlowMapScale;
@@ -84,6 +93,11 @@ float _BaseColorDistortionStrength;
 float _FoamDistortionStrength;
 float _VertRemapMin, _VertRemapMax;
 float _WaveDirection0, _WaveDirection1, _WaveDirection2;
+float _Specular;
+float _RippleStr;
+float _RippleScale;
+float _RippleSpeed;
+float _FoamNormalStrength;
 
 const static float2 jump = float2(0.1, 0.25);
 

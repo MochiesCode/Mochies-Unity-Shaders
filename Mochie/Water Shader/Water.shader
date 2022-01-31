@@ -13,13 +13,6 @@ Shader "Mochie/Water" {
 		_Roughness("Roughness", Range(0,1)) = 0
 		_Metallic("Metallic", Range(0,1)) = 0
 		_Opacity("Opacity", Range(0,1)) = 1
-		[ToggleUI]_Reflections("Probe Reflections", Int) = 1
-		_ReflStrength("Reflection Strength", Float) = 1
-		[ToggleUI]_SSR("Screenspace Reflections", Int) = 0
-		_SSRStrength("SSR Strength", Float) = 1
-		_EdgeFadeSSR("Edge Fade", Float) = 0.1
-		[ToggleUI]_Specular("Specular", Int) = 1
-		_SpecStrength("Specular Strength", Float) = 1
 		[Enum(UnityEngine.Rendering.CullMode)]_CullMode("Cull", Int) = 2
 		[Enum(Off,0, On,1)]_ZWrite("ZWrite", Int) = 0
 		
@@ -39,6 +32,19 @@ Shader "Mochie/Water" {
 		_NormalMapScroll1("Scrolling", Vector) = (-0.1,0.1,0,0)
 		_NormalMapOffset1("Parallax Offset", Float) = 0
 		[Toggle(_NORMALMAP_1_STOCHASTIC_ON)]_Normal1StochasticToggle("Stochastic Sampling", Int) = 0
+
+		[Enum(Off,0, Environment,1, Manual,2)]_Reflections("Probe Reflections", Int) = 1
+		_ReflStrength("Reflection Strength", Float) = 1
+		_ReflTint("Reflection Tint", Color) = (1,1,1,1)
+		[ToggleUI]_SSR("Screenspace Reflections", Int) = 0
+		_SSRStrength("SSR Strength", Float) = 1
+		_EdgeFadeSSR("Edge Fade", Float) = 0.1
+		_ReflCube("Cubemap", CUBE) = "gray" {}
+		_ReflCubeRotation("Rotation", Vector) = (0,0,0,0)
+		[Enum(Off,0, Directional Light,1, Manual,2)]_Specular("Specular", Int) = 1
+		_SpecStrength("Specular Strength", Float) = 1
+		_SpecTint("Specular Tint", Color) = (1,1,1,1)
+		_LightDir("LightDir", Vector) = (0,0.75,1,0)
 
 		[Toggle(_FLOW_ON)]_FlowToggle("Enable", Int) = 1
 		[NoScaleOffset]_FlowMap("Flow Map", 2D) = "black" {}
@@ -97,13 +103,20 @@ Shader "Mochie/Water" {
 		_FoamOpacity("Opacity", Float) = 3
 		_FoamOffset("Parallax Offset", Float) = 0
 		_FoamCrestThreshold("Crest Threshold", Float) = 0.5
-		_FoamCrestStrength("Crest Strength", Float) = 1
+		_FoamCrestStrength("Crest Strength", Float) = 20
 		[Toggle(_FOAM_STOCHASTIC_ON)]_FoamStochasticToggle("Stochastic Sampling", Int) = 0
 		_FoamDistortionStrength("Distortion Strength", Float) = 0.1
+		[ToggleUI]_FoamNormalToggle("Foam Normals", Int) = 0
+		_FoamNormalStrength("Foam Normal Strength", Float) = 4
 
 		[Toggle(_EDGEFADE_ON)]_EdgeFadeToggle("Enable", Int) = 1
 		_EdgeFadePower("Power", Float) = 200
 		_EdgeFadeOffset("Offset", Float) = 0.5
+
+		[Toggle(_RAIN_ON)]_RainToggle("Enable", Int) = 0
+		_RippleScale("Ripple Scale", float) = 40
+		_RippleSpeed("Ripple Speed", float) = 10
+		_RippleStr("Ripple Strength", float) = 1
 
 		[HideInInspector]_NoiseTexSSR("SSR Noise Tex", 2D) = "black"
     }
@@ -127,9 +140,11 @@ Shader "Mochie/Water" {
             #pragma fragment frag
             #pragma multi_compile_fwdbase
 			#pragma multi_compile_fog
-			#pragma shader_feature_local _REFLECTIONS_ON
-			#pragma shader_feature_local _SCREENSPACE_REFLECTIONS_ON
 			#pragma shader_feature_local _SPECULAR_ON
+			#pragma shader_feature_local _SPECULAR_MANUAL_ON
+			#pragma shader_feature_local _REFLECTIONS_ON
+			#pragma shader_feature_local _REFLECTIONS_MANUAL_ON
+			#pragma shader_feature_local _SCREENSPACE_REFLECTIONS_ON
 			#pragma shader_feature_local _NORMALMAP_1_ON
 			#pragma shader_feature_local _FLOW_ON
 			#pragma shader_feature_local _VERTEX_OFFSET_ON
@@ -142,6 +157,8 @@ Shader "Mochie/Water" {
 			#pragma shader_feature_local _FOAM_STOCHASTIC_ON
 			#pragma shader_feature_local _BASECOLOR_STOCHASTIC_ON
 			#pragma shader_feature_local _GERSTNER_WAVES_ON
+			#pragma shader_feature_local _RAIN_ON
+			#pragma shader_feature_local _FOAM_NORMALS_ON
 
             #pragma target 5.0
 
@@ -159,8 +176,9 @@ Shader "Mochie/Water" {
             #pragma fragment frag
             #pragma multi_compile_fwdadd fullshadows
 			#pragma multi_compile_fog
+			#pragma shader_feature_local _SPECULAR_ON 
+			#pragma shader_feature_local _SPECULAR_MANUAL_ON
 			#pragma shader_feature_local _NORMALMAP_1_ON
-			#pragma shader_feature_local _SPECULAR_ON
 			#pragma shader_feature_local _FLOW_ON
 			#pragma shader_feature_local _VERTEX_OFFSET_ON
 			#pragma shader_feature_local _DEPTHFOG_ON
@@ -172,6 +190,8 @@ Shader "Mochie/Water" {
 			#pragma shader_feature_local _FOAM_STOCHASTIC_ON
 			#pragma shader_feature_local _BASECOLOR_STOCHASTIC_ON
 			#pragma shader_feature_local _GERSTNER_WAVES_ON
+			#pragma shader_feature_local _RAIN_ON
+			#pragma shader_feature_local _FOAM_NORMALS_ON
 
             #pragma target 5.0
 

@@ -208,6 +208,18 @@ float4 SampleTexture(Texture2D tex, float2 uv){
 	return col;
 }
 
+float4 SampleTexture(Texture2D tex, SamplerState ss, float2 uv){
+	float4 col = 0;
+	#if STOCHASTIC_ENABLED
+		col = tex2Dstoch(tex, ss, uv);
+	#elif TSS_ENABLED
+		col = tex2Dsuper(tex, ss, uv);
+	#else
+		col = tex.Sample(ss, uv);
+	#endif
+	return col;
+}
+
 float4 SampleTexture(Texture2D tex, float2 uv, SampleData sd){
 	float4 col = 0;
 	#if STOCHASTIC_ENABLED
@@ -216,8 +228,6 @@ float4 SampleTexture(Texture2D tex, float2 uv, SampleData sd){
 		col = tex2Dsuper(tex, sampler_MainTex, uv);
 	#elif TRIPLANAR_ENABLED
 		col = tex2Dtri(tex, sd);
-	// #elif DECAL_ENABLED
-	// 	col = tex2Ddecal(tex, sd);
 	#else
 		col = tex.Sample(sampler_MainTex, uv);
 	#endif
@@ -232,8 +242,6 @@ float4 SampleTexture(Texture2D tex, SamplerState ss, float2 uv, SampleData sd){
 		col = tex2Dsuper(tex, ss, uv);
 	#elif TRIPLANAR_ENABLED
 		col = tex2Dtri(tex, ss, sd);
-	// #elif DECAL_ENABLED
-	// 	col = tex2Ddecal(tex, sd);
 	#else
 		col = tex.Sample(ss, uv);
 	#endif
@@ -250,8 +258,6 @@ float3 SampleTexture(Texture2D tex, float2 uv, SampleData sd, float normalScale)
 		col = UnpackScaleNormal(normalMap, normalScale);
 	#elif TRIPLANAR_ENABLED
 		col = tex2DtriNormal(tex, sd, normalScale);
-	// #elif DECAL_ENABLED
-	// 	col = tex2DdecalNormal(tex, sd, normalScale);
 	#else
 		float4 normalMap = tex.Sample(sampler_MainTex, uv);
 		col = UnpackScaleNormal(normalMap, normalScale);
@@ -269,8 +275,6 @@ float3 SampleTexture(Texture2D tex, SamplerState ss, float2 uv, SampleData sd, f
 		col = UnpackScaleNormal(normalMap, normalScale);
 	#elif TRIPLANAR_ENABLED
 		col = tex2DtriNormal(tex, ss, sd, normalScale);
-	// #elif DECAL_ENABLED
-	// 	col = tex2DdecalNormal(tex, sd, normalScale);
 	#else
 		float4 normalMap = tex.Sample(ss, uv);
 		col = UnpackScaleNormal(normalMap, normalScale);

@@ -27,7 +27,7 @@ float4 RGBSubPixelConvert(sampler2D mainTex, sampler2D rgbTex, float2 uv0, float
 
 	//correct for gamma if being used for a VRC Stream script.
 	//ONLY on stream panels, not video panels.
-	e.rgb = lerp(e.rgb, pow(e.rgb,2.2), _ApplyGamma);
+	e.rgb = lerp(e.rgb, pow(e.rgb,2.2), _IsAVProInput);
 
 	//do RGB pixels
 	uv1 *= _RGBSubPixelTex_ST.xy + _RGBSubPixelTex_ST.zw;

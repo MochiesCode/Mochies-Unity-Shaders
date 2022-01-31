@@ -143,6 +143,11 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		#undef tex2D
 	#endif
 
+	#if RAIN_ENABLED
+		float3 rainNormal = GetRipplesNormal(i.uv);
+		normalMap = BlendNormals(normalMap, rainNormal);
+	#endif
+
 	float2 uvOffset = normalMap.xy * _DistortionStrength;
 	#if UNITY_SINGLE_PASS_STEREO
 		uvOffset.x *= 0.5;
@@ -169,7 +174,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	#endif
 	float4 baseCol = tex2D(_MWGrab, baseUV);
 	float4 col = tex2D(_MWGrab, screenUV) * mainTex;
-
+	
 	#if FOAM_ENABLED
 		float depth = saturate(1-GetDepth(i, screenUV));
 		float foamDepth = saturate(pow(depth,_FoamPower));
@@ -200,6 +205,19 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		float crestThreshold = smoothstep(_FoamCrestThreshold, 1, i.wave.y);
 		float crestFoam = saturate(foamTex.a * _FoamOpacity * _FoamCrestStrength * crestThreshold * foamCrestNoise * 10);
 		col.rgb = lerp(col.rgb, foamTex.rgb, crestFoam);
+
+		#if FOAM_NORMALS_ENABLED
+			float foamNormalStr = lerp(0,_FoamNormalStrength,foam+crestFoam);
+			#if FLOW_ENABLED
+				float3 foamNormalTex0 = tex2Dnormal(_FoamTex, uvF0.xy, 0.15, foamNormalStr) * uvF0.z;
+				float3 foamNormalTex1 = tex2Dnormal(_FoamTex, uvF1.xy, 0.15, foamNormalStr) * uvF1.z;
+				float3 foamNormal = (foamNormalTex0 + foamNormalTex1);
+			#else
+				float3 foamNormal = tex2Dnormal(_FoamTex, uvFoam, 0.15,foamNormalStr);
+			#endif
+			// normalMap = lerp(normalMap, foamNormal, saturate((foam+crestFoam)*10)); 
+			normalMap = BlendNormals(foamNormal, normalMap);
+		#endif
 	#endif
 
 	#if PBR_ENABLED
@@ -208,7 +226,8 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPos);
 		float NdotV = abs(dot(normalDir, viewDir));
 		#if FOAM_ENABLED
-			_Roughness = lerp(_Roughness, _FoamRoughness, foam);
+			float foamLerp = (foam + crestFoam);
+			_Roughness = lerp(_Roughness, _FoamRoughness, foamLerp);
 		#endif
 		float roughSq = _Roughness * _Roughness;
 		float roughBRDF = max(roughSq, 0.003);
@@ -220,30 +239,40 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		#if SPECULAR_ENABLED
 			if (isFrontFace){
 				float roughInterp = smoothstep(0.001, 0.003, roughSq);
-				float3 lightDir = normalize(UnityWorldSpaceLightDir(i.worldPos));
+				#if BASE_PASS
+					float3 lightDir = _Specular == 1 ? UnityWorldSpaceLightDir(i.worldPos) : _LightDir;
+					lightDir = normalize(lightDir);
+				#else
+					float3 lightDir = UnityWorldSpaceLightDir(i.worldPos);
+				#endif
 				float3 halfVector = normalize(lightDir + viewDir);
 				float NdotL = dot(normalDir, lightDir);
 				float NdotH = Safe_DotClamped(normalDir, halfVector);
 				float LdotH = Safe_DotClamped(lightDir, halfVector);
 				float3 fresnelTerm = FresnelTerm(specularTint, LdotH);
 				float specularTerm = SpecularTerm(NdotL, NdotV, NdotH, roughBRDF);
-				specCol = _LightColor0 * fresnelTerm * specularTerm;
-				specCol = lerp(smootherstep(0, 0.9, specCol), specCol, roughInterp) * _SpecStrength;
+				float3 specLightCol = _Specular == 1 ? _LightColor0 : 1;
+				specCol = specLightCol * fresnelTerm * specularTerm;
+				specCol = lerp(smootherstep(0, 0.9, specCol), specCol, roughInterp) * _SpecStrength * _SpecTint;
 			}
 		#endif
 
 		#if REFLECTIONS_ENABLED
-			if (isFrontFace){
+			if (isFrontFace){			
 				float3 reflDir = reflect(-viewDir, normalDir);
 				float surfaceReduction = 1.0 / (roughBRDF*roughBRDF + 1.0);
 				float grazingTerm = saturate((1-_Roughness) + (1-omr));
 				float fresnel = FresnelLerp(specularTint, grazingTerm, NdotV);
-				reflCol = GetWorldReflections(reflDir, i.worldPos, _Roughness);
+				#if REFLECTIONS_MANUAL_ENABLED
+					reflCol = GetManualReflections(reflDir, _Roughness);
+				#else
+					reflCol = GetWorldReflections(reflDir, i.worldPos, _Roughness);
+				#endif
 				#if SSR_ENABLED
 					half4 ssrCol = GetSSR(i.worldPos, viewDir, reflDir, normalDir, 1-_Roughness, col.rgb, _Metallic, screenUV, i.uvGrab);
 					ssrCol.rgb *= _SSRStrength * lerp(10, 7, linearstep(0,1,_Metallic));
 					#if FOAM_ENABLED
-						float foamLerp = 1-(foam + crestFoam);
+						foamLerp = 1-foamLerp;
 						foamLerp = smoothstep(0.7, 1, foamLerp);
 						ssrCol.a *= foamLerp;
 					#endif
@@ -252,7 +281,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 						specCol *= (1-smoothstep(0, 0.1, ssrCol.a));
 					#endif
 				#endif
-				reflCol = reflCol * fresnel * surfaceReduction * _ReflStrength;
+				reflCol = reflCol * fresnel * surfaceReduction * _ReflStrength * _ReflTint;
 			}
 		#endif
 		col.rgb += specCol;

@@ -347,6 +347,8 @@ float _PulseSpeed, _PulseStr, _Crossfade, _ReactThresh;
 float _EmissIntensity;
 float _DetailNormalmapScale;
 float _Parallax;
+float _ParallaxOffset;
+float _ParallaxSteps;
 float _HeightLightness, _HeightIntensity, _HeightContrast;
 float _AudioLinkEmissionMultiplier;
 float _AudioLinkDissolveMultiplier;

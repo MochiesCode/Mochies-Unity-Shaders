@@ -55,6 +55,8 @@ Shader "Mochie/Uber/Uber" {
 		_BumpScale("ra", Range(-2,2)) = 1
 		_ParallaxMap("tex", 2D) = "white" {}
 		_Parallax("ra", Range(0,0.1)) = 0.01
+		_ParallaxOffset("ra", Range(-1,1)) = 0
+		[IntRange]_ParallaxSteps("ra", Range(1,50)) = 25
 		_DetailMask("tex", 2D) = "white" {}
 		_PackedMap("tex", 2D) = "white" {} // Packed workflow
 		[Enum(Red,0, Green,1, Blue,2, Alpha,3)]_MetallicChannel("en4", Int) = 0 

@@ -9,13 +9,12 @@ public class LEDEditor : ShaderGUI {
 	public static GUIContent RGBMatrixTex = new GUIContent("RGB Matrix Texture", "The RGB pixel layout pattern.");
 	public static GUIContent smoothTex = new GUIContent("Roughness");
 	public static GUIContent flipbookTex = new GUIContent("Flipbook");
-	string versionLabel = "v1.2";
+	string versionLabel = "v1.3";
 	MaterialProperty _MainTex = null;
 	MaterialProperty _RGBSubPixelTex = null;
     MaterialProperty _EmissionIntensity = null; 
     MaterialProperty _Glossiness = null; 
     MaterialProperty _LightmapEmissionScale = null; 
-    MaterialProperty _ApplyGamma = null;
     MaterialProperty _Backlight = null;
 	MaterialProperty _SpecGlossMap = null;
 	MaterialProperty _UVScroll = null;
@@ -78,7 +77,6 @@ public class LEDEditor : ShaderGUI {
 			MGUI.Space2();
 
 			m_MaterialEditor.ShaderProperty(_Backlight, "Backlit");
-			m_MaterialEditor.ShaderProperty(_ApplyGamma, "Gamma Correction");
 			MGUI.Space8();
         }
 

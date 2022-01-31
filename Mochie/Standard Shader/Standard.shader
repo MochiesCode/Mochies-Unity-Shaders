@@ -19,6 +19,9 @@ Shader "Mochie/Standard" {
 		_EdgeFadeMax("Edge Fade Max", Float) = 0.5
         _Color("Color", Color) = (1,1,1,1)
         _MainTex("Albedo", 2D) = "white" {}
+		_AlphaMask("Alpha", 2D) = "white" {}
+		[Enum(Off,0, On,1)]_UseAlphaMask("Use Alpha Mask", Int) = 0
+		_AlphaMaskOpacity("Alpha Mask Opacity", Range(0,1)) = 1
         _Cutoff("Alpha Cutoff", Range(0.0, 1.0)) = 0.5
 
 		_PackedMap("Packed Texture", 2D) = "white" {}
@@ -50,7 +53,11 @@ Shader "Mochie/Standard" {
         _EmissionMap("Emission", 2D) = "white" {}
 		_EmissionMask("Mask", 2D) = "white" {}
 		_EmissionIntensity("Intensity", Float) = 1
-
+		[Enum(Off,0, Sin,1, Square,2, Triangle,3, Saw,4, Reverse Saw,5)]_EmissPulseWave("Pulse", Int) = 0
+		_EmissPulseSpeed("Pulse Speed", Float) = 1
+		_EmissPulseStrength("Pulse Strength", Float) = 1
+		[Enum(Off,0, Bass,1, Low Mids,2, Upper Mids,3, Highs,4)]_AudioLinkEmission("Emission Band", Int) = 0
+		_AudioLinkEmissionStrength("Emission Strength", Float) = 1
 
 		_UV0Rotate("UV0 Rotation", Float) = 0
 		_UV0Scroll("UV0 Scrolling", Vector) = (0,0,0,0)
@@ -59,6 +66,8 @@ Shader "Mochie/Standard" {
 		_UV2Scroll("Mask Scrolling", Vector) = (0,0,0,0)
 		_UV3Rotate("UV3 Rotation", Float) = 0
 		_UV3Scroll("Mask Scrolling", Vector) = (0,0,0,0)
+		_UV4Rotate("UV4 Rotation", Float) = 0
+		_UV4Scroll("Mask Scrolling", Vector) = (0,0,0,0)
 
         _DetailMask("Detail Mask", 2D) = "white" {}
 		[Enum(Red,0, Green,1, Blue,2, Alpha,3)]_DetailMaskChannel("Detail Mask Channel", Int) = 3
@@ -70,7 +79,12 @@ Shader "Mochie/Standard" {
 		[Enum(Add,0, Alpha,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailRoughBlend("Detail Roughness Blend", Int) = 2
 		_DetailAOMap("Detail AO Map", 2D) = "white" {}
 		[Enum(Add,0, Alpha,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailAOBlend("Detail AO Blend", Int) = 2
+		[Enum(UV0,0,UV1,1, UV2,2, UV3,3, UV4,4)]_UVPri("UV Set for primary textures", Float) = 0
         [Enum(UV0,0,UV1,1, UV2,2, UV3,3, UV4,4)]_UVSec("UV Set for secondary textures", Float) = 0
+		[Enum(UV0,0,UV1,1, UV2,2, UV3,3, UV4,4)]_UVEmissMask("UV Set for Emission Mask", Float) = 0
+		[Enum(UV0,0,UV1,1, UV2,2, UV3,3, UV4,4)]_UVHeightMask("UV Set for height mask", Float) = 0
+		[Enum(UV0,0,UV1,1, UV2,2, UV3,3, UV4,4)]_UVAlphaMask("UV Set for alpha mask", Float) = 0
+		[Enum(Red,0, Green,1, Blue,2, Alpha,3)]_AlphaMaskChannel("Alpha Mask Channel", Int) = 3
 		[ToggleUI]_DetailSamplingMode("Use Sampling Mode", Int) = 0
 		
 		_Hue("Hue", Range(0,1)) = 0
@@ -121,6 +135,8 @@ Shader "Mochie/Standard" {
 		[ToggleUI]_ReflVertexColor("Vertex Color Reflections", Int) = 0
 		[ToggleUI]_GSAA("GSAA", Int) = 0
 		[ToggleUI]_UseSmoothness("Use Smoothness", Int) = 0
+		[ToggleUI]_UseFresnel("Use Fresnel", Int) = 1
+		_FresnelStrength("Fresnel Strength", Float) = 1
 		_SSRStrength("SSR Strength", Float) = 1
 		_ReflectionStrength("Relfection Strength", Float) = 1
 		_SpecularStrength("Specular Strength", Float) = 1
@@ -128,8 +144,6 @@ Shader "Mochie/Standard" {
 		_GSAAStrength("GSAA Strength", Float) = 1
 		_ReflShadowStrength("Shadowed Reflection Strength", Float) = 1
 		_ReflVertexColorStrength("Vertex Color Reflection Strength", Float) = 1
-		[Enum(Off,0, Bass,1, Low Mids,2, Upper Mids,3, Highs,4)]_AudioLinkEmission("Emission Band", Int) = 0
-		_AudioLinkEmissionStrength("Emission Strength", Range(0,1)) = 1
 
 		_ContrastReflShad("Contrast", Float) = 1
 		_BrightnessReflShad("Brightness", Float) = 1
@@ -140,6 +154,7 @@ Shader "Mochie/Standard" {
         [HideInInspector]_ZWrite("__zw", Float) = 1.0
 		[HideInInspector]_ZTest("__zt", Float) = 4.0
 		[HideInInspector]_NoiseTexSSR("SSR Noise Texture", 2D) = "black" {}
+		[HideInInspector]_NaNLmao("lol", Float) = 0
     }
 
     CGINCLUDE
@@ -185,15 +200,15 @@ Shader "Mochie/Standard" {
             #pragma shader_feature_local _ _GLOSSYREFLECTIONS_OFF
             #pragma shader_feature_local _PARALLAXMAP
 			#pragma shader_feature_local _REFLECTION_FALLBACK_ON
-			#pragma shader_feature_local _GSAA_ON
 			#pragma shader_feature_local _SCREENSPACE_REFLECTIONS_ON
-			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON _DECAL_ON
+			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON // _DECAL_ON
 			#pragma shader_feature_local _REFLECTION_OVERRIDE_ON
 			#pragma shader_feature_local _DETAIL_ROUGH_ON
 			#pragma shader_feature_local _DETAIL_AO_ON
 			#pragma shader_feature_local _SUBSURFACE_ON
 			#pragma shader_feature_local _AUDIOLINK_ON
 			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
+			#pragma shader_feature_local _ALPHAMASK_ON
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma multi_compile_fwdbase
             #pragma multi_compile_fog
@@ -222,13 +237,13 @@ Shader "Mochie/Standard" {
             #pragma shader_feature_local _ _SPECULARHIGHLIGHTS_OFF
             #pragma shader_feature_local ___ _DETAIL_MULX2
             #pragma shader_feature_local _PARALLAXMAP
-			#pragma shader_feature_local _GSAA_ON
-			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON _DECAL_ON
+			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON // _DECAL_ON
 			#pragma shader_feature_local _REFLECTION_OVERRIDE_ON
 			#pragma shader_feature_local _DETAIL_ROUGH_ON
 			#pragma shader_feature_local _DETAIL_AO_ON
 			#pragma shader_feature_local _SUBSURFACE_ON
 			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
+			#pragma shader_feature_local _ALPHAMASK_ON
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma multi_compile_fwdadd_fullshadows
             #pragma multi_compile_fog
@@ -250,8 +265,9 @@ Shader "Mochie/Standard" {
             #pragma shader_feature_local _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
             #pragma shader_feature_local _METALLICGLOSSMAP
             #pragma shader_feature_local _PARALLAXMAP
-			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON _DECAL_ON
+			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON // _DECAL_ON
 			#pragma shader_feature_local _SUBSURFACE_ON
+			#pragma shader_feature_local _ALPHAMASK_ON
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma multi_compile_shadowcaster
             #pragma multi_compile_instancing
@@ -274,11 +290,12 @@ Shader "Mochie/Standard" {
             #pragma shader_feature_local _METALLICGLOSSMAP
             #pragma shader_feature_local _SPECGLOSSMAP
             #pragma shader_feature_local ___ _DETAIL_MULX2
-			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON _DECAL_ON
+			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON // _DECAL_ON
 			#pragma shader_feature_local _REFLECTION_OVERRIDE_ON
 			#pragma shader_feature_local _DETAIL_ROUGH_ON
 			#pragma shader_feature_local _DETAIL_AO_ON
 			#pragma shader_feature_local _SUBSURFACE_ON
+			#pragma shader_feature_local _ALPHAMASK_ON
 			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
             #pragma shader_feature_local EDITOR_VISUALIZATION
             #include "UnityStandardMeta.cginc"

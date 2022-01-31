@@ -37,6 +37,7 @@ float max4(float4 p){
 	return max(max(max(p.x, p.y), p.z), p.w);
 }
 
+#ifndef SHADER_API_METAL
 float Pow5 (float x){
     return x*x * x*x * x;
 }
@@ -52,6 +53,7 @@ float3 Pow5 (float3 x){
 float4 Pow5 (float4 x){
     return x*x * x*x * x;
 }
+#endif
 
 // ---------------------------
 // Remapping/Interpolation
@@ -440,6 +442,20 @@ float2 GetGrabPos(float4 grabPos){
 		grabPos.w += 0.00000000001;
 	#endif
 	return(grabPos / grabPos.w).xy;
+}
+
+float GetWave(int wave, float speed, float amp){
+	float pulse = 1;
+	switch (wave){
+		case 0: break;													// None
+		case 1: pulse = 0.5*(sin(_Time.y * speed)+1); break; 			// Sin
+		case 2: pulse = round((sin(_Time.y * speed)+1)*0.5); break;		// Square
+		case 3: pulse = abs((_Time.y * (speed * 0.333)%2)-1); break;	// Triangle
+		case 4: pulse = frac(_Time.y * (speed * 0.2)); break; 			// Saw
+		case 5: pulse = 1-frac(_Time.y * (speed * 0.2)); break; 		// Reverse Saw
+		default: break;
+	}
+	return max(0, lerp(1, pulse, amp));
 }
 
 float ChannelCheck(float4 rgba, int channel){

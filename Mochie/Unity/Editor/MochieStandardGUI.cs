@@ -34,6 +34,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		public static GUIContent heightMaskText = EditorGUIUtility.TrTextContent("Height Mask");
 		public static GUIContent parallaxOfsText = EditorGUIUtility.TrTextContent("Parallax Offset");
 		public static GUIContent thicknessMapText = EditorGUIUtility.TrTextContent("Thickness Map");
+		public static GUIContent alphaMaskText = EditorGUIUtility.TrTextContent("Alpha Mask");
 	}
 
     public static Dictionary<Material, Toggles> foldouts = new Dictionary<Material, Toggles>();
@@ -46,7 +47,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		"Render Settings"
 	}, 1);
 
-	string versionLabel = "v1.10";
+	string versionLabel = "v1.11";
 	// β
 
 	MaterialProperty blendMode = null;
@@ -156,6 +157,9 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty reflShadowStrength = null;
 	MaterialProperty reflVertexColor = null;
 	MaterialProperty reflVertexColorStrength = null;
+	MaterialProperty emissPulseWave = null;
+	MaterialProperty emissPulseSpeed = null;
+	MaterialProperty emissPulseStrength = null;
 
 	MaterialProperty brightnessReflShad = null;
 	MaterialProperty contrastReflShad = null;
@@ -164,7 +168,20 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty audioLinkEmission = null;
 	MaterialProperty audioLinkEmissionStrength = null;
 
+	MaterialProperty uvPri = null;
+	MaterialProperty uvEmissMask = null;
+	MaterialProperty uvHeightMask = null;
 
+	MaterialProperty uv4Rot = null;
+	MaterialProperty uv4Scroll = null;
+	MaterialProperty alphaMask = null;
+	MaterialProperty uvAlphaMask = null;
+	MaterialProperty useAlphaMask = null;
+	MaterialProperty alphaMaskChannel = null;
+	MaterialProperty alphaMaskOpacity = null;
+	MaterialProperty useFresnel = null;
+	MaterialProperty fresnelStrength = null;
+	
 	MaterialEditor m_MaterialEditor;
 
 	bool m_FirstTimeApply = true;
@@ -277,6 +294,22 @@ internal class MochieStandardGUI : ShaderGUI {
 		brightnessReflShad = FindProperty("_BrightnessReflShad", props);
 		hdrReflShad = FindProperty("_HDRReflShad", props);
 		uv3Rot = FindProperty("_UV3Rotate", props);
+		emissPulseWave = FindProperty("_EmissPulseWave", props);
+		emissPulseSpeed = FindProperty("_EmissPulseSpeed", props);
+		emissPulseStrength = FindProperty("_EmissPulseStrength", props);
+		uvEmissMask = FindProperty("_UVEmissMask", props);
+		uvEmissMask = FindProperty("_UVEmissMask", props);
+		uvPri = FindProperty("_UVPri", props);
+		uvHeightMask = FindProperty("_UVHeightMask", props);
+		uv4Rot = FindProperty("_UV4Rotate", props);
+		uv4Scroll = FindProperty("_UV4Scroll", props);
+		uvAlphaMask = FindProperty("_UVAlphaMask", props);
+		alphaMask = FindProperty("_AlphaMask", props);
+		useAlphaMask = FindProperty("_UseAlphaMask", props);
+		alphaMaskChannel = FindProperty("_AlphaMaskChannel", props);
+		alphaMaskOpacity = FindProperty("_AlphaMaskOpacity", props);
+		useFresnel = FindProperty("_UseFresnel", props);
+		fresnelStrength = FindProperty("_FresnelStrength", props);
 	}
 
 	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props){
@@ -357,6 +390,9 @@ internal class MochieStandardGUI : ShaderGUI {
 			m_MaterialEditor.ShaderProperty(workflow, "Workflow");
 			m_MaterialEditor.ShaderProperty(blendMode, "Blending Mode");
 			m_MaterialEditor.ShaderProperty(samplingMode, "Sampling Mode");
+			if (blendMode.floatValue > 0){
+				m_MaterialEditor.ShaderProperty(useAlphaMask, "Separate Alpha");
+			}
 			if (samplingMode.floatValue == 3){
 				m_MaterialEditor.ShaderProperty(triplanarFalloff, "Triplanar Falloff");
 			}
@@ -372,6 +408,9 @@ internal class MochieStandardGUI : ShaderGUI {
 	void DoPrimaryArea(Material material){
 		MGUI.PropertyGroup( () => {
 			m_MaterialEditor.TexturePropertySingleLine(Styles.albedoText, albedoMap, albedoColor);
+			if (useAlphaMask.floatValue == 1 && blendMode.floatValue > 0){
+				m_MaterialEditor.TexturePropertySingleLine(Styles.alphaMaskText, alphaMask, alphaMaskOpacity, alphaMaskChannel);
+			}
 			string roughLabel = "Roughness";
 			string roughStrLabel = "Roughness Strength";
 			if (useSmoothness.floatValue == 1){
@@ -450,8 +489,13 @@ internal class MochieStandardGUI : ShaderGUI {
 				MGUI.SpaceN2();
 				m_MaterialEditor.LightmapEmissionFlagsProperty(0, true);
 				m_MaterialEditor.ShaderProperty(audioLinkEmission, "Audio Link");
+				m_MaterialEditor.ShaderProperty(emissPulseWave, "Pulse");
 				if (audioLinkEmission.floatValue > 0){
 					m_MaterialEditor.ShaderProperty(audioLinkEmissionStrength, "Audio Link Strength");
+				}
+				if (emissPulseWave.floatValue > 0){
+					m_MaterialEditor.ShaderProperty(emissPulseStrength, "Pulse Strength");
+					m_MaterialEditor.ShaderProperty(emissPulseSpeed, "Pulse Speed");
 				}
 				MGUI.Space2();
 				m_MaterialEditor.TexturePropertySingleLine(Styles.emissionText, emissionMap, emissionColorForRendering, emissIntensity);
@@ -505,12 +549,14 @@ internal class MochieStandardGUI : ShaderGUI {
 	void DoUVArea(){
 		bool needsHeightMaskUV = (((workflow.floatValue > 0 && useHeight.floatValue == 1) || (workflow.floatValue == 0 && heightMap.textureValue)) && parallaxMask.textureValue) && samplingMode.floatValue < 3;
 		bool needsEmissMaskUV = emissionEnabled && emissionMask.textureValue;
+		bool needsAlphaMaskUV = blendMode.floatValue > 0 && useAlphaMask.floatValue > 0;
 		MGUI.PropertyGroup( () => {
 			MGUI.BoldLabel("Primary");
 			EditorGUI.BeginChangeCheck();
 			MGUI.PropertyGroupLayer(()=>{
-				MGUI.SpaceN1();
+				MGUI.SpaceN2();
 				if (samplingMode.floatValue < 3){
+					m_MaterialEditor.ShaderProperty(uvPri, Styles.uvSetLabel.text);
 					MGUI.TextureSOScroll(m_MaterialEditor, albedoMap, uv0Scroll);
 				}
 				else {
@@ -540,7 +586,8 @@ internal class MochieStandardGUI : ShaderGUI {
 				MGUI.Space4();
 				MGUI.BoldLabel("Height Mask");
 				MGUI.PropertyGroupLayer(()=>{
-					MGUI.SpaceN1();
+					MGUI.SpaceN2();
+					m_MaterialEditor.ShaderProperty(uvHeightMask, Styles.uvSetLabel.text);
 					MGUI.TextureSOScroll(m_MaterialEditor, parallaxMask, uv2Scroll);
 					MGUI.SpaceN2();
 				});
@@ -549,9 +596,21 @@ internal class MochieStandardGUI : ShaderGUI {
 				MGUI.Space4();
 				MGUI.BoldLabel("Emission Mask");
 				MGUI.PropertyGroupLayer(()=>{
-					MGUI.SpaceN1();
+					MGUI.SpaceN2();
+					m_MaterialEditor.ShaderProperty(uvEmissMask, Styles.uvSetLabel.text);
 					MGUI.TextureSOScroll(m_MaterialEditor, emissionMask, uv3Scroll);
 					m_MaterialEditor.ShaderProperty(uv3Rot, "Rotation");
+					MGUI.SpaceN2();
+				});
+			}
+			if (needsAlphaMaskUV){
+				MGUI.Space4();
+				MGUI.BoldLabel("Alpha Mask");
+				MGUI.PropertyGroupLayer(()=>{
+					MGUI.SpaceN2();
+					m_MaterialEditor.ShaderProperty(uvAlphaMask, Styles.uvSetLabel.text);
+					MGUI.TextureSOScroll(m_MaterialEditor, alphaMask, uv4Scroll);
+					m_MaterialEditor.ShaderProperty(uv4Rot, "Rotation");
 					MGUI.SpaceN2();
 				});
 			}
@@ -574,6 +633,7 @@ internal class MochieStandardGUI : ShaderGUI {
 			MGUI.Space1();
 			MGUI.PropertyGroupLayer(() => {
 				MGUI.SpaceN2();
+				MGUI.ToggleFloat(m_MaterialEditor, "Fresnel", useFresnel, fresnelStrength);
 				MGUI.ToggleFloat(m_MaterialEditor, Styles.highlightsText.text, highlights, specularStrength);
 				MGUI.ToggleFloat(m_MaterialEditor, Styles.reflectionsText.text, reflections, reflectionStrength);
 				MGUI.ToggleFloat(m_MaterialEditor, "Screen Space Reflections", ssr, ssrStrength);
@@ -757,6 +817,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		// (MaterialProperty value might come from renderer material property block)
 		int workflow =  material.GetInt("_Workflow");
 		int samplingMode = material.GetInt("_SamplingMode");
+		int blendModeEnum = material.GetInt("_BlendMode");
 		MGUI.SetKeyword(material, "_NORMALMAP", material.GetTexture("_BumpMap") || material.GetTexture("_DetailNormalMap"));
 		MGUI.SetKeyword(material, "_WORKFLOW_PACKED_ON", workflow == 1);
 		MGUI.SetKeyword(material, "_SPECGLOSSMAP", material.GetTexture("_SpecGlossMap"));
@@ -764,7 +825,6 @@ internal class MochieStandardGUI : ShaderGUI {
 		MGUI.SetKeyword(material, "_DETAIL_MULX2", material.GetTexture("_DetailAlbedoMap"));
 		MGUI.SetKeyword(material, "_REFLECTION_FALLBACK_ON", material.GetTexture("_ReflCube"));
 		MGUI.SetKeyword(material, "_REFLECTION_OVERRIDE_ON", material.GetTexture("_ReflCubeOverride"));
-		MGUI.SetKeyword(material, "_GSAA_ON", material.GetInt("_GSAA") == 1);
 		MGUI.SetKeyword(material, "_SCREENSPACE_REFLECTIONS_ON", material.GetInt("_SSR") == 1);
 		MGUI.SetKeyword(material, "_SPECULARHIGHLIGHTS_OFF", material.GetInt("_SpecularHighlights") == 0);
 		MGUI.SetKeyword(material, "_GLOSSYREFLECTIONS_OFF", material.GetInt("_GlossyReflections") == 0);
@@ -777,6 +837,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		MGUI.SetKeyword(material, "_SUBSURFACE_ON", material.GetInt("_Subsurface") == 1);
 		MGUI.SetKeyword(material, "_AUDIOLINK_ON", material.GetInt("_AudioLinkEmission") > 0);
 		MGUI.SetKeyword(material, "_DETAIL_SAMPLEMODE_ON", material.GetInt("_DetailSamplingMode") == 1);
+		MGUI.SetKeyword(material, "_ALPHAMASK_ON", blendModeEnum > 0 && material.GetInt("_UseAlphaMask") == 1);
 		if (samplingMode < 3){
 			if (!material.GetTexture("_PackedMap"))
 				MGUI.SetKeyword(material, "_PARALLAXMAP", material.GetTexture("_ParallaxMap"));

@@ -26,8 +26,12 @@
 
 //---------------------------------------
 
+Texture2D		_AlphaMask;
+float			_AlphaMaskOpacity;
 half4       	_Color;
 half        	_Cutoff;
+int				_UseAlphaMask;
+int 			_AlphaMaskChannel;
 float			_Saturation;
 float			_Hue;
 float			_Contrast;
@@ -44,6 +48,8 @@ float			_HuePost;
 float			_SaturationPost;
 float			_BrightnessPost;
 float			_ContrastPost;
+float 			_FresnelStrength;
+int				_UseFresnel;
 
 Texture2D   	_BumpMap;
 half        	_BumpScale;
@@ -66,26 +72,38 @@ half        	_OcclusionStrength;
 
 Texture2D   	_ParallaxMap;
 Texture2D		_ParallaxMask;
-float2			_UV2Scroll;
+
 float4			_ParallaxMask_ST;
 half        	_Parallax;
 int				_ParallaxSteps;
 float			_ParallaxOffset;
+float4			_AlphaMask_ST;
 float2 			uvOffset;
 float2			lightmapOffset;
 half        	_UVSec;
+half			_UVPri;
+half			_UVEmissMask;
+half			_UVHeightMask;
+half			_UVAlphaMask;
 half			_UV0Rotate;
 half			_UV1Rotate;
 half			_UV3Rotate;
+half			_UV4Rotate;
 float2			_UV0Scroll;
 float2			_UV1Scroll;
+float2			_UV2Scroll;
+float2			_UV3Scroll;
+float2			_UV4Scroll;
 
 half4       	_EmissionColor;
 Texture2D   	_EmissionMap;
 Texture2D   	_EmissionMask;
 float			_EmissionIntensity;
-float2			_UV3Scroll;
+
 float4			_EmissionMask_ST;
+int				_EmissPulseWave;
+float			_EmissPulseStrength;
+float			_EmissPulseSpeed;
 
 Texture2D 		_ThicknessMap;
 float 			_ThicknessMapPower;
@@ -109,6 +127,7 @@ float _ReflVertexColorStrength;
 int _ReflShadows;
 int _UseSmoothness;
 int _ReflVertexColor;
+int _GSAA;
 
 Texture2D _PackedMap;
 UNITY_DECLARE_TEXCUBE(_ReflCube);
@@ -205,29 +224,35 @@ void InitializeAudioLink(inout audioLinkData al, float time){
 }
 #endif
 
-float2 SelectDetailUVSet(VertexInput v){
+float2 SelectUVSet(VertexInput v, int selection){
 	float2 uvs[] = {v.uv0, v.uv1, v.uv2, v.uv3, v.uv4};
-	return uvs[_UVSec];
+	return uvs[selection];
 }
-void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1)
+void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1, inout float4 texcoord2)
 {
-	texcoord.xy = Rotate2D(v.uv0, _UV0Rotate);
+	texcoord.xy = Rotate2D(SelectUVSet(v, _UVPri), _UV0Rotate);
 	texcoord.xy = TRANSFORM_TEX(texcoord.xy, _MainTex);
 	texcoord.xy += _Time.y * _UV0Scroll;
 
-	texcoord.zw = Rotate2D((SelectDetailUVSet(v)), _UV1Rotate);
+	texcoord.zw = Rotate2D((SelectUVSet(v, _UVSec)), _UV1Rotate);
 	texcoord.zw = TRANSFORM_TEX(texcoord.zw, _DetailAlbedoMap);
 	texcoord.zw += _Time.y * _UV1Scroll;
 
 	#ifdef _PARALLAXMAP
-		texcoord1.xy = TRANSFORM_TEX(v.uv0, _ParallaxMask);
+		texcoord1.xy = TRANSFORM_TEX(SelectUVSet(v, _UVHeightMask), _ParallaxMask);
 		texcoord1.xy += _Time.y * _UV2Scroll;
 	#endif
 
 	#ifdef _EMISSION
-		texcoord1.zw = Rotate2D(v.uv0, _UV3Rotate);
+		texcoord1.zw = Rotate2D(SelectUVSet(v, _UVEmissMask), _UV3Rotate);
 		texcoord1.zw = TRANSFORM_TEX(texcoord1.zw, _EmissionMask);
 		texcoord1.zw += _Time.y * _UV3Scroll;
+	#endif
+
+	#ifdef _ALPHAMASK_ON
+		texcoord2.xy = Rotate2D(SelectUVSet(v, _UVAlphaMask), _UV4Rotate);
+		texcoord2.xy = TRANSFORM_TEX(texcoord2.xy, _AlphaMask);
+		texcoord2.xy += _Time.y * _UV4Scroll;
 	#endif
 }
 
@@ -267,8 +292,8 @@ half3 Albedo(float4 texcoords, SampleData sd)
 
 half Alpha(float2 uv, SampleData sd)
 {
-	#ifdef _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A
-		return _Color.a;
+	#ifdef _ALPHAMASK_ON
+		return ChannelCheck(SampleTexture(_AlphaMask, uv), _AlphaMaskChannel) * _AlphaMaskOpacity;
 	#else
 		return SampleTexture(_MainTex, uv, sd).a * _Color.a;
 	#endif
@@ -361,7 +386,7 @@ half3 Emission(float2 uv, float2 uvMask, SampleData sd)
 	#ifdef _EMISSION
 		float3 emissTex = SampleTexture(_EmissionMap, uv, sd);
 		float emissMask = _EmissionMask.Sample(sampler_MainTex, uvMask).r;
-		emissTex *= _EmissionColor.rgb * _EmissionIntensity * emissMask;
+		emissTex *= _EmissionColor.rgb * _EmissionIntensity * emissMask * GetWave(_EmissPulseWave, _EmissPulseSpeed, _EmissPulseStrength);
 		emissTex = Filtering(emissTex, _HueEmiss, _SaturationEmiss, _BrightnessEmiss, _ContrastEmiss);
 		#if AUDIOLINK_ENABLED
 			audioLinkData al = (audioLinkData)0;
