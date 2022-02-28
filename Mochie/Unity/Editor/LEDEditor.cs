@@ -23,6 +23,7 @@ public class LEDEditor : ShaderGUI {
 	MaterialProperty _FlipbookMode = null;
 	MaterialProperty _Flipbook = null;
 	MaterialProperty _FPS = null;
+	MaterialProperty _Color = null;
 
     BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
@@ -41,6 +42,7 @@ public class LEDEditor : ShaderGUI {
 			if (_FlipbookMode.floatValue == 0){
 				m_MaterialEditor.TexturePropertySingleLine(mainTex, _MainTex, _FlipbookMode);
 				MGUI.TexPropLabel("Flipbook", 105);
+				m_MaterialEditor.ShaderProperty(_Color, "Color");
 				if (_MainTex.textureValue){
 					MGUI.TextureSOScroll(m_MaterialEditor, _MainTex, _UVScroll);
 					MGUI.Space6();

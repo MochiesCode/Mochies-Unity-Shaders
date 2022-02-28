@@ -318,6 +318,9 @@ float _AudioLinkStrength;
 float _AudioLinkOutlineMultiplier;
 float _AudioLinkRemapOutlineMax, _AudioLinkRemapOutlineMin;
 
+float3 _VertexRotation;
+float3 _VertexPosition;
+
 int _PreviewRough, _PreviewAO, _PreviewHeight;
 int _AOFiltering, _HeightFiltering, _RoughnessFiltering, _SmoothnessFiltering;
 float _AOLightness, _AOIntensity, _AOContrast;

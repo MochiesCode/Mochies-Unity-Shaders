@@ -43,7 +43,7 @@ public class WaterEditor : ShaderGUI {
 	}, 0);
 
     string header = "WaterHeader_Pro";
-	string versionLabel = "v1.3";
+	string versionLabel = "v1.4";
 
 	MaterialProperty _Color = null;
 	MaterialProperty _MainTex = null;
@@ -86,6 +86,9 @@ public class WaterEditor : ShaderGUI {
 	MaterialProperty _WaveHeight = null;
 	MaterialProperty _Offset = null;
 	MaterialProperty _VertOffsetMode = null;
+	MaterialProperty _WaveSpeedGlobal = null;
+	MaterialProperty _WaveStrengthGlobal = null;
+	MaterialProperty _WaveScaleGlobal = null;
 	MaterialProperty _WaveSpeed0 = null;
 	MaterialProperty _WaveSpeed1 = null;
 	MaterialProperty _WaveSpeed2 = null;
@@ -325,6 +328,12 @@ public class WaterEditor : ShaderGUI {
 					});
 				}
 				else if (_VertOffsetMode.floatValue == 2){
+					MGUI.BoldLabel("Global");
+					MGUI.PropertyGroup(() => {
+						me.ShaderProperty(_WaveStrengthGlobal, "Strength");
+						me.ShaderProperty(_WaveScaleGlobal, "Scale");
+						me.ShaderProperty(_WaveSpeedGlobal, "Speed");
+					});
 					MGUI.BoldLabel("Wave 1");
 					MGUI.PropertyGroup(() => {
 						me.ShaderProperty(_WaveStrength0, "Strength");
@@ -548,6 +557,9 @@ public class WaterEditor : ShaderGUI {
 	}
 
 	void ResetVertOffset(){
+		_WaveScaleGlobal.floatValue = 1f;
+		_WaveSpeedGlobal.floatValue = 1f;
+		_WaveStrengthGlobal.floatValue = 1f;
 		_NoiseTexScale.vectorValue = new Vector4(1,1,0,0);
 		_NoiseTexScroll.vectorValue = new Vector4(0.3f,0.06f,0,0);
 		_NoiseTexBlur.floatValue = 0.8f;

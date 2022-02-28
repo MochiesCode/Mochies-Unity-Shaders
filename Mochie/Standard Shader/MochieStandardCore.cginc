@@ -5,7 +5,7 @@
 #include "UnityShaderVariables.cginc"
 #include "UnityStandardConfig.cginc"
 #include "MochieStandardInput.cginc"
-#include "UnityPBSLighting.cginc"
+#include "MochieStandardPBSLighting.cginc"
 #include "UnityStandardUtils.cginc"
 #include "UnityGBuffer.cginc"
 #include "MochieStandardSSS.cginc"
@@ -190,6 +190,7 @@ half3 WorldNormal(half4 tan2world[3])
     }
 #endif
 
+static float3 TangentNormal = float3(0,0,1);
 float3 PerPixelWorldNormal(float4 i_tex, float4 tangentToWorld[3], SampleData sd)
 {
 #ifdef _NORMALMAP
@@ -208,6 +209,7 @@ float3 PerPixelWorldNormal(float4 i_tex, float4 tangentToWorld[3], SampleData sd
     #endif
 	
     half3 normalTangent = NormalInTangentSpace(i_tex, sd);
+    TangentNormal = normalTangent;
 	#if DECAL_ENABLED
     	float3 normalWorld = normalize(normalTangent);
 	#else	
@@ -219,7 +221,7 @@ float3 PerPixelWorldNormal(float4 i_tex, float4 tangentToWorld[3], SampleData sd
     return normalWorld;
 }
 
-#if defined(_PARALLAXMAP)
+#if defined(_PARALLAXMAP) || defined(BAKERY_LMSPEC) && defined(BAKERY_RNM)
     #define IN_VIEWDIR4PARALLAX(i) NormalizePerPixelNormal(half3(i.tangentToWorldAndPackedData[0].w,i.tangentToWorldAndPackedData[1].w,i.tangentToWorldAndPackedData[2].w))
     #define IN_VIEWDIR4PARALLAX_FWDADD(i) NormalizePerPixelNormal(i.viewDirForParallax.xyz)
 #else
@@ -483,7 +485,7 @@ VertexOutputForwardBase vertForwardBase (VertexInput v)
 
     o.ambientOrLightmapUV = VertexGIForward(v, posWorld, normalWorld);
 
-    #if defined(_PARALLAXMAP)
+    #if defined(_PARALLAXMAP) || defined(BAKERY_LMSPEC) && defined(BAKERY_RNM)
         TANGENT_SPACE_ROTATION;
         half3 viewDirForParallax = mul (rotation, ObjSpaceViewDir(v.vertex));
         o.tangentToWorldAndPackedData[0].w = viewDirForParallax.x;
@@ -526,6 +528,34 @@ SampleData SampleDataSetup(VertexOutputForwardBase i){
 	return sd;
 }
 
+float shEvaluateDiffuseL1Geomerics(float L0, float3 L1, float3 n)
+{
+    // average energy
+    float R0 = L0;
+    
+    // avg direction of incoming light
+    float3 R1 = 0.5f * L1;
+    
+    // directional brightness
+    float lenR1 = length(R1);
+    
+    // linear angle between normal and direction 0-1
+    //float q = 0.5f * (1.0f + dot(R1 / lenR1, n));
+    //float q = dot(R1 / lenR1, n) * 0.5 + 0.5;
+    float q = dot(normalize(R1), n) * 0.5 + 0.5;
+    q = saturate(q); // Thanks to ScruffyRuffles for the bug identity.
+    
+    // power for q
+    // lerps from 1 (linear) to 3 (cubic) based on directionality
+    float p = 1.0f + 2.0f * lenR1 / R0;
+    
+    // dynamic range constant
+    // should vary between 4 (highly directional) and 0 (ambient)
+    float a = (1.0f - lenR1 / R0) / (1.0f + lenR1 / R0);
+    
+    return R0 * (a + (1.0f - a) * (p + 1.0f) * pow(q, p));
+}
+
 half4 fragForwardBaseInternal (VertexOutputForwardBase i)
 {
     UNITY_APPLY_DITHER_CROSSFADE(i.pos.xy);
@@ -550,12 +580,95 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i)
 
     half3 occlusion = Occlusion(i.tex, sd);
     UnityGI gi = FragmentGI (s, occlusion, i.ambientOrLightmapUV, atten, mainLight);
+
+    #if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
+		#ifdef BAKERY_RNM
+            half3 rnm0 = DecodeLightmap(_RNM0.Sample(sampler_RNM0, i.ambientOrLightmapUV));
+            half3 rnm1 = DecodeLightmap(_RNM1.Sample(sampler_RNM1, i.ambientOrLightmapUV));
+            half3 rnm2 = DecodeLightmap(_RNM2.Sample(sampler_RNM2, i.ambientOrLightmapUV));
+
+            const float3 rnmBasis0 = float3(0.816496580927726f, 0.0f, 0.5773502691896258f);
+            const float3 rnmBasis1 = float3(-0.4082482904638631f, 0.7071067811865475f, 0.5773502691896258f);
+            const float3 rnmBasis2 = float3(-0.4082482904638631f, -0.7071067811865475f, 0.5773502691896258f);
+
+            gi.indirect.diffuse =    saturate(dot(rnmBasis0, TangentNormal)) * rnm0
+							  + saturate(dot(rnmBasis1, TangentNormal)) * rnm1
+						      + saturate(dot(rnmBasis2, TangentNormal)) * rnm2;
+        #endif
+
+        #ifdef BAKERY_SH
+            half3 L0 = gi.indirect.diffuse;
+            half3 nL1x = _RNM0.Sample(sampler_RNM0, i.ambientOrLightmapUV) * 2.0 - 1.0;
+            half3 nL1y = _RNM1.Sample(sampler_RNM1, i.ambientOrLightmapUV) * 2.0 - 1.0;
+            half3 nL1z = _RNM2.Sample(sampler_RNM2, i.ambientOrLightmapUV) * 2.0 - 1.0;
+            half3 L1x = nL1x * L0 * 2.0;
+            half3 L1y = nL1y * L0 * 2.0;
+            half3 L1z = nL1z * L0 * 2.0;
+
+            #ifdef BAKERY_SHNONLINEAR
+                float lumaL0 = dot(L0, float(1));
+                float lumaL1x = dot(L1x, float(1));
+                float lumaL1y = dot(L1y, float(1));
+                float lumaL1z = dot(L1z, float(1));
+                float lumaSH = shEvaluateDiffuseL1Geomerics(lumaL0, float3(lumaL1x, lumaL1y, lumaL1z), s.normalWorld);
+
+                gi.indirect.diffuse = L0 + s.normalWorld.x * L1x + s.normalWorld.y * L1y + s.normalWorld.z * L1z;
+                float regularLumaSH = dot(gi.indirect.diffuse, 1.0);
+                gi.indirect.diffuse *= lerp(1.0, lumaSH / regularLumaSH, saturate(regularLumaSH * 16.0));
+            #else
+                gi.indirect.diffuse = L0 + s.normalWorld.x * L1x + s.normalWorld.y * L1y + s.normalWorld.z * L1z;
+            #endif
+        #endif
+    #endif
+
+
+    #if defined(BAKERY_LMSPEC) && defined(UNITY_PASS_FORWARDBASE) && defined(LIGHTMAP_ON)
+        half perceptualRoughness = 1 - s.smoothness;
+        half roughness = perceptualRoughness * perceptualRoughness;
+        half clampedRoughness = max(roughness, 0.002);
+
+        const float3 grayscaleVec = float3(0.2125, 0.7154, 0.0721);
+        #ifdef BAKERY_RNM
+        {
+            float3 eyeVecT = - NormalizePerPixelNormal(IN_VIEWDIR4PARALLAX(i));
+            float3 dominantDirT = rnmBasis0 * dot(rnm0, grayscaleVec) +
+                                  rnmBasis1 * dot(rnm1, grayscaleVec) +
+                                  rnmBasis2 * dot(rnm2, grayscaleVec);
+
+            float3 dominantDirTN = normalize(dominantDirT);
+            half3 specColor = saturate(dot(rnmBasis0, dominantDirTN)) * rnm0 +
+                               saturate(dot(rnmBasis1, dominantDirTN)) * rnm1 +
+                               saturate(dot(rnmBasis2, dominantDirTN)) * rnm2;
+
+            half3 halfDir = Unity_SafeNormalize(dominantDirTN - eyeVecT);
+            half NoH = saturate(dot(TangentNormal, halfDir));
+            half spec = GGXTerm(NoH, clampedRoughness);
+            gi.indirect.specular += spec * specColor; 
+        }
+        #endif
+
+        #ifdef BAKERY_SH
+        {
+            float3 dominantDir = float3(dot(nL1x, grayscaleVec), dot(nL1y, grayscaleVec), dot(nL1z, grayscaleVec));
+            half3 halfDir = Unity_SafeNormalize(normalize(dominantDir) - s.eyeVec.xyz);
+            half NoH = saturate(dot(s.normalWorld, halfDir));
+            half spec = GGXTerm(NoH, clampedRoughness);
+            float3 sh = L0 + dominantDir.x * L1x + dominantDir.y * L1y + dominantDir.z * L1z;
+            dominantDir = normalize(dominantDir);
+            gi.indirect.specular += max(spec * sh, 0.0);
+        }
+        #endif
+    #endif
+    
 	half4 c = MOCHIE_BRDF(
 				s.diffColor, s.specColor, s.oneMinusReflectivity, 
 				s.smoothness, s.normalWorld, -s.eyeVec, s.posWorld, screenUVs, screenPos,
 				s.metallic, s.thickness, s.subsurfaceColor, atten, i.ambientOrLightmapUV, i.color, gi.light, gi.indirect
 			);
+
     c.rgb += Emission(i.tex.xy, i.tex1.zw, sd);
+    Rim(s.posWorld, s.normalWorld, c.rgb);
+
 
     UNITY_EXTRACT_FOG_FROM_EYE_VEC(i);
     UNITY_APPLY_FOG(_unity_fogCoord, c.rgb);
@@ -580,7 +693,7 @@ struct VertexOutputForwardAdd
 	float4 tex1                         : TEXCOORD6;
 	float4 localPos                     : TEXCOORD7;
     UNITY_LIGHTING_COORDS(8,9)
-	#if defined(_PARALLAXMAP)
+	#if defined(_PARALLAXMAP) || defined(BAKERY_LMSPEC) && defined(BAKERY_RNM)
 		half3 viewDirForParallax        : TEXCOORD10;
 	#endif
 	#if DECAL_ENABLED
@@ -635,7 +748,7 @@ VertexOutputForwardAdd vertForwardAdd (VertexInput v)
     o.tangentToWorldAndLightDir[1].w = lightDir.y;
     o.tangentToWorldAndLightDir[2].w = lightDir.z;
 	o.color = v.color;
-    #if defined(_PARALLAXMAP)
+    #if defined(_PARALLAXMAP) || defined(BAKERY_LMSPEC) && defined(BAKERY_RNM)
         TANGENT_SPACE_ROTATION;
         o.viewDirForParallax = mul (rotation, ObjSpaceViewDir(v.vertex));
     #endif

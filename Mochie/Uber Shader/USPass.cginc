@@ -36,9 +36,17 @@ v2g vert (appdata v) {
 		float expansionMask = MOCHIE_SAMPLE_TEX2D_SAMPLER_LOD(_VertexExpansionMask, sampler_MainTex, v.uv.xy, 0);
 		#if AUDIOLINK_ENABLED
 			float vertManipAL = GetAudioLinkBand(al, _AudioLinkVertManipBand, _AudioLinkRemapVertManipMin, _AudioLinkRemapVertManipMax);
-			_VertexExpansion *= lerp(1, vertManipAL, _AudioLinkVertManipMultiplier);
+			float vertManipALStr = lerp(1, vertManipAL, _AudioLinkVertManipMultiplier*_AudioLinkStrength);
+			_VertexExpansion *= vertManipALStr;
+			_VertexRotation *= vertManipALStr;
 		#endif
 		v.vertex.xyz += _VertexExpansion * lerp(v.normal.xyz, abs(v.normal.xyz), _VertexExpansionClamp) * expansionMask * 0.001;
+		if (any(_VertexRotation)){
+			v.vertex.xyz = Rotate3D(v.vertex.xyz, _VertexRotation);
+			v.normal = Rotate3D(v.normal.xyz, _VertexRotation);
+			v.tangent.xyz = Rotate3D(v.tangent.xyz, _VertexRotation);
+		}
+		v.vertex.xyz += _VertexPosition;
 	#endif
 	float4 localPos = v.vertex;
 
@@ -154,7 +162,7 @@ float4 frag (g2f i, bool frontFace : SV_IsFrontFace) : SV_Target {
 		
 		float3 reflCol = 1;
 		#if REFLECTIONS_ENABLED
-			reflCol = GetReflections(i, l, lerp(roughness, _ReflRough, _ReflUseRough)) * _ReflCol.rgb;
+			reflCol = GetReflections(i, l, m, lerp(roughness, _ReflRough, _ReflUseRough)) * _ReflCol.rgb;
 		#endif
 
 		#if ALPHA_PREMULTIPLY
@@ -277,9 +285,17 @@ v2g vert (appdata v) {
 			float expansionMask = MOCHIE_SAMPLE_TEX2D_SAMPLER_LOD(_VertexExpansionMask, sampler_MainTex, v.uv.xy, 0);
 			#if AUDIOLINK_ENABLED
 				float vertManipAL = GetAudioLinkBand(al, _AudioLinkVertManipBand, _AudioLinkRemapVertManipMin, _AudioLinkRemapVertManipMax);
-				_VertexExpansion *= lerp(1, vertManipAL, _AudioLinkVertManipMultiplier*_AudioLinkStrength);
+				float vertManipALStr = lerp(1, vertManipAL, _AudioLinkVertManipMultiplier*_AudioLinkStrength);
+				_VertexExpansion *= vertManipALStr;
+				_VertexRotation *= vertManipALStr;
 			#endif
 			v.vertex.xyz += _VertexExpansion * lerp(v.normal.xyz, abs(v.normal.xyz), _VertexExpansionClamp) * expansionMask * 0.001;
+			if (any(_VertexRotation)){
+				v.vertex.xyz = Rotate3D(v.vertex.xyz, _VertexRotation);
+				v.normal = Rotate3D(v.normal.xyz, _VertexRotation);
+				v.tangent.xyz = Rotate3D(v.tangent.xyz, _VertexRotation);
+			}
+			v.vertex.xyz += _VertexPosition;
 		#endif
 		float4 localPos = v.vertex;
 
@@ -506,9 +522,17 @@ v2g vert (appdata v) {
 		float expansionMask = MOCHIE_SAMPLE_TEX2D_SAMPLER_LOD(_VertexExpansionMask, sampler_MainTex, v.uv.xy, 0);
 		#if AUDIOLINK_ENABLED
 			float vertManipAL = GetAudioLinkBand(al, _AudioLinkVertManipBand, _AudioLinkRemapVertManipMin, _AudioLinkRemapVertManipMax);
-			_VertexExpansion *= lerp(1, vertManipAL, _AudioLinkVertManipMultiplier*_AudioLinkStrength);
+			float vertManipALStr = lerp(1, vertManipAL, _AudioLinkVertManipMultiplier*_AudioLinkStrength);
+			_VertexExpansion *= vertManipALStr;
+			_VertexRotation *= vertManipALStr;
 		#endif
 		v.vertex.xyz += _VertexExpansion * lerp(v.normal.xyz, abs(v.normal.xyz), _VertexExpansionClamp) * expansionMask * 0.001;
+		if (any(_VertexRotation)){
+			v.vertex.xyz = Rotate3D(v.vertex.xyz, _VertexRotation);
+			v.normal = Rotate3D(v.normal.xyz, _VertexRotation);
+			v.tangent.xyz = Rotate3D(v.tangent.xyz, _VertexRotation);
+		}
+		v.vertex.xyz += _VertexPosition;
 	#endif
 	float4 localPos = v.vertex;
 

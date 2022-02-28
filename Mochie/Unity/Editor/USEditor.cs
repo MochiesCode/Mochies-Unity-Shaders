@@ -702,6 +702,9 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _AudioLinkRemapOutlineMax = null;
 	MaterialProperty _ParallaxOffset = null;
 	MaterialProperty _ParallaxSteps = null;
+	MaterialProperty _VertexRotation = null;
+	MaterialProperty _VertexPosition = null;
+
 	MaterialProperty _VRCFallback = null;
 	MaterialProperty _NaNLmao = null;
 
@@ -1733,6 +1736,10 @@ internal class USEditor : ShaderGUI {
 				me.TexturePropertySingleLine(maskLabel, _VertexRoundingMask);
 				me.ShaderProperty(_VertexRounding, "Position Rounding");
 				me.ShaderProperty(_VertexRoundingPrecision, "Precision");
+			});
+			MGUI.PropertyGroup(() => {
+				MGUI.Vector3Field(_VertexRotation, "Rotation", false);
+				MGUI.Vector3Field(_VertexPosition, "Position", false);
 			});
 			MGUI.ToggleGroupEnd();
 		};
@@ -3165,6 +3172,7 @@ internal class USEditor : ShaderGUI {
 		_VertexExpansionMask.textureValue = null;
 		_VertexRoundingMask.textureValue = null;
 		_VertexManipulationToggle.floatValue = 0f;
+		_VertexRotation.vectorValue = Vector4.zero;
 	}
 
 	void DoSpecialReset(){

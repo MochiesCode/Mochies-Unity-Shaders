@@ -5,8 +5,7 @@
 // https://github.com/MochiesCode/Mochies-Unity-Shaders
 
 // Does not support deferred rendering
-// Does not meet the same instruction count restrictions as normal standard...
-// ... intended for modern PC use only
+// Does not meet the same instruction count restrictions as normal standard, intended for modern PC use only
 
 Shader "Mochie/Standard" {
     Properties {
@@ -124,6 +123,13 @@ Shader "Mochie/Standard" {
 		_ScatterShadow("Shadow Power", Range(0,1)) = 1
 		_WrappingFactor("Wrapping Factor", Range(0.001, 1)) = 0.01
 
+		[ToggleUI]_RimToggle("Enable", Int) = 0
+		[HDR]_RimCol("Rim Color", Color) = (1,1,1,1)
+		[Enum(Add,0, Sub,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_RimBlending("Rim Blending", Int) = 0
+		_RimStr("Rim Strength", Float) = 1
+		_RimWidth("Rim Width", Range (0,1)) = 0.5
+		_RimEdge("Rim Edge", Range(0,0.5)) = 0
+
 		_Cull("", Int) = 2
 		_MetaCull("", Int) = 0
 		[Enum(UnityEngine.Rendering.CullMode)]_CullingMode("", Int) = 2
@@ -136,6 +142,12 @@ Shader "Mochie/Standard" {
 		[ToggleUI]_GSAA("GSAA", Int) = 0
 		[ToggleUI]_UseSmoothness("Use Smoothness", Int) = 0
 		[ToggleUI]_UseFresnel("Use Fresnel", Int) = 1
+		[ToggleUI]_BicubicLightmap("Bicubic Lightmap", Int) = 0
+        [Toggle(LTCGI)] _LTCGI("LTCGI", Int) = 0
+        [Toggle(LTCGI_DIFFUSE_OFF)] _LTCGI_DIFFUSE_OFF("LTCGI Disable Diffuse", Int) = 0
+		[Toggle(LTCGI_SPECULAR_OFF)]_LTCGI_SPECULAR_OFF("LTCGI Disable Specular", Int) = 0
+		_LTCGI_mat("LTC Mat", 2D) = "black" {}
+        _LTCGI_amp("LTC Amp", 2D) = "black" {}
 		_FresnelStrength("Fresnel Strength", Float) = 1
 		_SSRStrength("SSR Strength", Float) = 1
 		_ReflectionStrength("Relfection Strength", Float) = 1
@@ -148,6 +160,13 @@ Shader "Mochie/Standard" {
 		_ContrastReflShad("Contrast", Float) = 1
 		_BrightnessReflShad("Brightness", Float) = 1
 		_HDRReflShad("HDR", Float) = 0
+
+		[Toggle(BAKERY_LMSPEC)] _BAKERY_LMSPEC ("Enable Lightmap Specular", Float) = 0
+		[Toggle(BAKERY_SHNONLINEAR)] _BAKERY_SHNONLINEAR ("Non-Linear SH", Float) = 0
+		[Enum(None, 0, SH, 1, RNM, 2)] _BakeryMode ("Bakery Mode", Int) = 0
+            _RNM0("RNM0", 2D) = "black" {}
+            _RNM1("RNM1", 2D) = "black" {}
+            _RNM2("RNM2", 2D) = "black" {}
 
         [HideInInspector]_SrcBlend("__src", Float) = 1.0
         [HideInInspector]_DstBlend("__dst", Float) = 0.0
@@ -167,6 +186,7 @@ Shader "Mochie/Standard" {
         Tags {
 			"RenderType"="Opaque" 
 			"PerformanceChecks"="False"
+			"LTCGI"="_LTCGI"
 		}
         LOD 300
 		
@@ -209,6 +229,13 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _AUDIOLINK_ON
 			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
 			#pragma shader_feature_local _ALPHAMASK_ON
+			#pragma shader_feature_local _BICUBIC_SAMPLING_ON
+			#pragma shader_feature_local LTCGI
+			#pragma shader_feature_local LTCGI_DIFFUSE_OFF
+			#pragma shader_feature_local LTCGI_SPECULAR_OFF
+			#pragma shader_feature_local _ BAKERY_SH BAKERY_RNM
+			#pragma shader_feature_local BAKERY_LMSPEC
+			#pragma shader_feature_local BAKERY_SHNONLINEAR
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma multi_compile_fwdbase
             #pragma multi_compile_fog

@@ -5,6 +5,7 @@ Shader "Mochie/LED Screen" {
 		[ToggleUI]_FlipbookMode("Flipbook Mode", Int) = 0
 		_FPS("FPS", Float) = 24
 		_MainTex("Emission", 2D) = "black" {}
+		_Color("Color", Color) = (1,1,1,1)
 		_Flipbook("Flippbook", 2DArray) = "black" {}
 		_UVScroll("UV Scrolling", Vector) = (0,0,0,0)
 		_RGBSubPixelTex ("RGBSubPixelTex", 2D) = "white" {}
@@ -42,6 +43,7 @@ Shader "Mochie/LED Screen" {
 		sampler2D _RGBSubPixelTex;
 		sampler2D _SpecGlossMap;
 		float2 _UVScroll;
+		float3 _Color;
 		float _Glossiness;
 		int _IsAVProInput;
 
@@ -73,7 +75,7 @@ Shader "Mochie/LED Screen" {
 
 			o.Albedo = float4(0,0,0,1);
 			o.Alpha = 1;
-			o.Emission = finalCol;
+			o.Emission = finalCol * _Color;
 			o.Metallic = 0;
 			#ifdef _SPECGLOSSMAP
 				o.Smoothness = 1-(tex2D(_SpecGlossMap, IN.uv_SpecGlossMap) * _Glossiness);

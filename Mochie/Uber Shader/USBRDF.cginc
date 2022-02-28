@@ -64,32 +64,34 @@ float3 GetWorldReflections(float3 reflDir, float3 worldPos, float roughness){
     return p0;
 }
 
-float3 GetReflections(g2f i, lighting l, float roughness){
+float3 GetReflections(g2f i, lighting l, masks m, float roughness){
     float3 reflections = 0;
-	#if !CUBEMAP_REFLECTIONS
-		#if REFLCUBE_EXISTS
-			UNITY_BRANCH
-			if (SceneHasReflections()){
+	if (m.reflectionMask > 0){
+		#if !CUBEMAP_REFLECTIONS
+			#if REFLCUBE_EXISTS
+				UNITY_BRANCH
+				if (SceneHasReflections()){
+					reflections = GetWorldReflections(l.reflectionDir, i.worldPos.xyz, roughness);
+				}
+				else {
+					reflections = texCUBElod(_ReflCube, float4(l.reflectionDir, roughness * UNITY_SPECCUBE_LOD_STEPS));
+					reflections = DecodeHDR(float4(reflections,1), _ReflCube_HDR);
+				}
+			#else
 				reflections = GetWorldReflections(l.reflectionDir, i.worldPos.xyz, roughness);
-			}
-			else {
+			#endif
+		#else
+			#if REFLCUBE_EXISTS
 				reflections = texCUBElod(_ReflCube, float4(l.reflectionDir, roughness * UNITY_SPECCUBE_LOD_STEPS));
 				reflections = DecodeHDR(float4(reflections,1), _ReflCube_HDR);
-			}
-		#else
-			reflections = GetWorldReflections(l.reflectionDir, i.worldPos.xyz, roughness);
+			#endif
 		#endif
-	#else
-		#if REFLCUBE_EXISTS
-			reflections = texCUBElod(_ReflCube, float4(l.reflectionDir, roughness * UNITY_SPECCUBE_LOD_STEPS));
-			reflections = DecodeHDR(float4(reflections,1), _ReflCube_HDR);
-		#endif
-	#endif
-	reflections *= l.ao;
-	if (_ReflStepping == 1){
-		roughness = saturate(roughness*2);
-		float3 steppedCol = round(reflections * _ReflSteps)/_ReflSteps;
-		reflections = lerp(steppedCol, reflections, roughness);
+		reflections *= l.ao;
+		if (_ReflStepping == 1){
+			roughness = saturate(roughness*2);
+			float3 steppedCol = round(reflections * _ReflSteps)/_ReflSteps;
+			reflections = lerp(steppedCol, reflections, roughness);
+		}
 	}
     return reflections;
 }
@@ -102,11 +104,13 @@ float3 GetERimReflections(g2f i, lighting l, float roughness){
 }
 
 void ApplyERimLighting(g2f i, lighting l, masks m, inout float3 diffuse, float roughness){
-	float3 reflCol = GetERimReflections(i, l, roughness);
-	float rim = GetFresnel(l.VdotL, _ERimWidth, _ERimEdge) * m.eRimMask;
-	float3 rimCol = reflCol * _ERimTint.rgb;
-	float interpolator = rim*_ERimStr;
-	diffuse = BlendColors(diffuse, rimCol, _ERimBlending, interpolator);
+	if (m.eRimMask > 0){
+		float3 reflCol = GetERimReflections(i, l, roughness);
+		float rim = GetFresnel(l.VdotL, _ERimWidth, _ERimEdge) * m.eRimMask;
+		float3 rimCol = reflCol * _ERimTint.rgb;
+		float interpolator = rim*_ERimStr;
+		diffuse = BlendColors(diffuse, rimCol, _ERimBlending, interpolator);
+	}
 }
 
 float2 GetMatcapUV(float3 viewDir, float3 normal){
@@ -212,15 +216,17 @@ float3 GetAddRamp(g2f i, lighting l, masks m, float shadows, float atten){
 float3 GetSubsurfaceLight(g2f i, lighting l, masks m, float3 albedo, float3 atten){
 	float3 sss = 0;
 	#if SUBSURFACE_ENABLED
-		float3 vLTLight = l.lightDir + l.normal * _ScatterDist; // Distortion
-		float3 fLTDot = pow(saturate(dot(l.viewDir, -vLTLight)), _ScatterPow) * _ScatterIntensity * 1.0/UNITY_PI; 
-		float3 subsurfaceColor = MOCHIE_SAMPLE_TEX2D_SAMPLER(_ScatterTex, sampler_MainTex, i.uv.xy) * _ScatterCol;
-		float thickness = MOCHIE_SAMPLE_TEX2D_SAMPLER(_ThicknessMap, sampler_MainTex, i.uv.xy);
-		subsurfaceColor *= lerp(1, albedo, _ScatterBaseColorTint);
-		thickness = pow(1-thickness, _ThicknessMapPower);
-		sss = (lerp(1, atten, float(any(_WorldSpaceLightPos0.xyz)))
-					* (fLTDot + _ScatterAmbient) * thickness
-					* (l.directCol + l.indirectCol) * subsurfaceColor) * m.subsurfMask;
+		if (m.subsurfMask > 0){
+			float3 vLTLight = l.lightDir + l.normal * _ScatterDist; // Distortion
+			float3 fLTDot = pow(saturate(dot(l.viewDir, -vLTLight)), _ScatterPow) * _ScatterIntensity * 1.0/UNITY_PI; 
+			float3 subsurfaceColor = MOCHIE_SAMPLE_TEX2D_SAMPLER(_ScatterTex, sampler_MainTex, i.uv.xy) * _ScatterCol;
+			float thickness = MOCHIE_SAMPLE_TEX2D_SAMPLER(_ThicknessMap, sampler_MainTex, i.uv.xy);
+			subsurfaceColor *= lerp(1, albedo, _ScatterBaseColorTint);
+			thickness = pow(1-thickness, _ThicknessMapPower);
+			sss = (lerp(1, atten, float(any(_WorldSpaceLightPos0.xyz)))
+						* (fLTDot + _ScatterAmbient) * thickness
+						* (l.directCol + l.indirectCol) * subsurfaceColor) * m.subsurfMask;
+		}
 	#endif
     return sss; 
 }
@@ -372,6 +378,7 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
 		#if !ADDITIVE_PASS
 		if (!(!l.lightEnv && _RealtimeSpec == 1)){
 		#endif
+		if (m.specularMask > 0){
 			float3 fresnelTerm = 1;
 			float3 specularTerm = 1;
 			float3 specBiasCol = lerp(specCol, albedo, _SpecBiasOverride*_SpecBiasOverrideToggle);
@@ -383,6 +390,7 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
 				float sharpSpec = floor(specular * _SharpSpecStr) / _SharpSpecStr;
 				specular = lerp(sharpSpec, specular, 0);
 			}
+		}
 		#if !ADDITIVE_PASS
 		}
 		#endif
@@ -390,15 +398,17 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
 
 	// Reflections
 	// Lighting based IOR from Retro's standard mod
-	#if REFLECTIONS_ENABLED && FORWARD_PASS													
-		float surfaceReduction = (1.0 / (brdfRoughness*brdfRoughness + 1.0)) * saturate(lerp(1, (l.NdotL + 0.3), _LightingBasedIOR));
-		float grazingTerm = saturate(smoothness + (1-omr));
-		reflections = surfaceReduction * reflCol * FresnelLerp(specCol, grazingTerm, l.NdotV);
-		#if SSR_ENABLED
-			float4 SSRColor = GetSSRColor(i.worldPos, l.viewDir, l.reflectionDir, normalize(i.normal), smoothness, albedo, metallic, m.reflectionMask, l.screenUVs, i.grabPos);
-			reflections = lerp(reflections, SSRColor.rgb, SSRColor.a);
-		#endif
-		reflections *= m.reflectionMask * _ReflectionStr;
+	#if REFLECTIONS_ENABLED && FORWARD_PASS			
+		if (m.reflectionMask > 0){										
+			float surfaceReduction = (1.0 / (brdfRoughness*brdfRoughness + 1.0)) * saturate(lerp(1, (l.NdotL + 0.3), _LightingBasedIOR));
+			float grazingTerm = saturate(smoothness + (1-omr));
+			reflections = surfaceReduction * reflCol * FresnelLerp(specCol, grazingTerm, l.NdotV);
+			#if SSR_ENABLED
+				float4 SSRColor = GetSSRColor(i.worldPos, l.viewDir, l.reflectionDir, normalize(i.normal), smoothness, albedo, metallic, m.reflectionMask, l.screenUVs, i.grabPos);
+				reflections = lerp(reflections, SSRColor.rgb, SSRColor.a);
+			#endif
+			reflections *= m.reflectionMask * _ReflectionStr;
+		}
 	#endif
 
 

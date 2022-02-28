@@ -465,6 +465,8 @@ Shader "Mochie/Uber/Uber" {
 		_VertexRoundingPrecision("fl", Float) = 100
 		_VertexExpansionMask("tex", 2D) = "white" {}
 		_VertexRoundingMask("tex", 2D) = "white" {}
+		_VertexRotation("vec", Vector) = (0,0,0,0)
+		_VertexPosition("vec", Vector) = (0,0,0,0)
 
 		//----------------------------
 		// AUDIO LINK

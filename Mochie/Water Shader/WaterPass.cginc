@@ -17,18 +17,30 @@ v2f vert (appdata v) {
 		float3 wave1 = 0;
 		float3 wave2 = 0;
 		if (_Turbulence > 0){
+			_Turbulence *= _WaveStrengthGlobal;
+			_TurbulenceSpeed *= _WaveSpeedGlobal;
+			_TurbulenceScale *= _WaveScaleGlobal;
 			turb = Perlin3D(float3(v.uv.xy*_TurbulenceScale, _Time.y*_TurbulenceSpeed))+1;
 			turb *= _Turbulence*0.1;
 		}
 		if (_WaveStrength0 > 0){
+			_WaveStrength0 *= _WaveStrengthGlobal;
+			_WaveSpeed0 *= _WaveSpeedGlobal;
+			_WaveScale0 *= _WaveScaleGlobal;
 			float4 waveProperties0 = float4(0,1, _WaveStrength0 + turb, _WaveScale0);
 			wave0 = GerstnerWave(waveProperties0, v.vertex.xyz, _WaveSpeed0, _WaveDirection0);
 		}
 		if (_WaveStrength1 > 0){
+			_WaveStrength1 *= _WaveStrengthGlobal;
+			_WaveSpeed1 *= _WaveSpeedGlobal;
+			_WaveScale1 *= _WaveScaleGlobal;
 			float4 waveProperties1 = float4(0,1, _WaveStrength1 + turb, _WaveScale1);
 			wave1 = GerstnerWave(waveProperties1, v.vertex.xyz, _WaveSpeed1, _WaveDirection1);
 		}
 		if (_WaveStrength2 > 0){
+			_WaveStrength2 *= _WaveStrengthGlobal;
+			_WaveSpeed2 *= _WaveSpeedGlobal;
+			_WaveScale2 *= _WaveScaleGlobal;
 			float4 waveProperties2 = float4(0,1, _WaveStrength2 + turb, _WaveScale2);
 			wave2 = GerstnerWave(waveProperties2, v.vertex.xyz, _WaveSpeed2, _WaveDirection2);
 		}

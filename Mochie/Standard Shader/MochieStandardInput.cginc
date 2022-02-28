@@ -5,7 +5,7 @@
 
 #include "UnityCG.cginc"
 #include "UnityStandardConfig.cginc"
-#include "UnityPBSLighting.cginc" // TBD: remove
+#include "MochieStandardPBSLighting.cginc" // TBD: remove
 #include "UnityStandardUtils.cginc"
 #include "MochieStandardKeyDefines.cginc"
 #include "../Common/Utilities.cginc"
@@ -20,7 +20,7 @@
 
 //---------------------------------------
 // Directional lightmaps & Parallax require tangent space too
-#if (_NORMALMAP || DIRLIGHTMAP_COMBINED || _PARALLAXMAP)
+#if (_NORMALMAP || DIRLIGHTMAP_COMBINED || _PARALLAXMAP) || defined(BAKERY_LMSPEC) && defined(BAKERY_RNM)
     #define _TANGENT_TO_WORLD 1
 #endif
 
@@ -128,6 +128,17 @@ int _ReflShadows;
 int _UseSmoothness;
 int _ReflVertexColor;
 int _GSAA;
+
+float3 _RimCol;
+float _RimWidth;
+float _RimEdge;
+float _RimStr;
+int _RimBlending;
+int _RimToggle;
+
+Texture2D _RNM0, _RNM1, _RNM2;
+SamplerState sampler_RNM0, sampler_RNM1, sampler_RNM2;
+float4 _RNM0_TexelSize;
 
 Texture2D _PackedMap;
 UNITY_DECLARE_TEXCUBE(_ReflCube);
@@ -397,6 +408,16 @@ half3 Emission(float2 uv, float2 uvMask, SampleData sd)
 	#else
 		return 0;
 	#endif
+}
+
+void Rim(float3 worldPos, float3 normal, inout float3 col){
+	if (_RimToggle == 1){
+		float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - worldPos);
+		float vdn = abs(dot(viewDir, normal));
+		float rim = pow((1-vdn), (1-_RimWidth) * 10);
+		rim = smoothstep(_RimEdge, 1-_RimEdge, rim);
+		col = BlendColors(col, _RimCol, _RimBlending, rim*_RimStr);
+	}
 }
 
 #ifdef _NORMALMAP
