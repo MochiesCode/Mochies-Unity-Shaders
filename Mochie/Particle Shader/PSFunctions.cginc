@@ -44,7 +44,13 @@ float3 GetHSVFilter(float4 col){
 
 void Softening(v2f i, inout float fade){
 	#if FADING_ENABLED
-		float sceneZ = LinearEyeDepth(SAMPLE_DEPTH_TEXTURE_PROJ(_CameraDepthTexture, UNITY_PROJ_COORD(i.projPos)));
+		float2 screenUV = i.projPos.xy / i.projPos.w;
+		#if UNITY_UV_STARTS_AT_TOP
+			if (_CameraDepthTexture_TexelSize.y < 0) {
+				screenUV.y = 1 - screenUV.y;
+			}
+		#endif
+		float sceneZ = LinearEyeDepth(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, screenUV));
 		float partZ = i.projPos.z;
 		fade = saturate((1-_SoftenStr) * (sceneZ-partZ));
 	#endif
@@ -58,7 +64,8 @@ float4 GetTexture(v2f i){
 		#if DISTORTION_UV_ENABLED
 			texCol = tex2D(_MainTex, i.uv0.xy);
 		#endif
-		float4 grabCol = float4(tex2Dproj(_GrabTexture, i.uv1).rgb, texCol.a);
+		i.uv1.xy /= i.uv1.w;
+		float4 grabCol = float4(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MPSGrab, i.uv1.xy).rgb, texCol.a);
 		texCol = lerp(texCol, grabCol*lerp(1,texCol.a,_BlendMode == 1), _DistortionBlend);
 	#else
 		float4 texCol = tex2D(_MainTex, i.uv0.xy);

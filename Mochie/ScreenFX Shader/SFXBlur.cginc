@@ -3,9 +3,9 @@
 
 #include "SFXKernel.cginc"
 
-void ApplyStandardBlur(sampler2D tex, float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol){
-	float2 uv = uv0.xy/uv0.w;
-	float4 uvb = float4(uv,0,0);
+void ApplyStandardBlur(float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol){
+	float2 uv = uv0.xy;
+	float2 uvb = uv;
 	#if UNITY_SINGLE_PASS_STEREO
 		float2 mainStr = float2(0.225, 0.375) * str * 0.0015;
 		float2 str136 = float2(0.225, 0.375) * _BlurStr * 0.002;
@@ -19,35 +19,35 @@ void ApplyStandardBlur(sampler2D tex, float2 texelSize, float4 uv0, uint sampleC
 			[fastopt]
 			for (uint si16 = 0; si16 < sampleCount; ++si16){
 				uvb.xy = uv.xy + (kDiskKernel16[si16] * mainStr);
-				blurCol += tex2Dlod(tex, uvb);
+				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
 			}
 			break;
 		case 22: 
 			[fastopt]
 			for (uint si22 = 0; si22 < sampleCount; ++si22){
 				uvb.xy = uv.xy + (kDiskKernel22[si22] * mainStr);
-				blurCol += tex2Dlod(tex, uvb);
+				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
 			}
 			break;
 		case 43:
 			[fastopt]
 			for (uint si43 = 0; si43 < sampleCount; ++si43){
 				uvb.xy = uv.xy + (kDiskKernel43[si43] * mainStr);
-				blurCol += tex2Dlod(tex, uvb);
+				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
 			}
 			break;
 		case 71:
 			[fastopt]
 			for (uint si71 = 0; si71 < sampleCount; ++si71){
 				uvb.xy = uv.xy + (kDiskKernel71[si71] * mainStr);
-				blurCol += tex2Dlod(tex, uvb);
+				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
 			}
 			break;
 		case 136:
 			[fastopt]
 			for (uint si136 = 0; si136 < sampleCount; ++si136){
 				uvb.xy = uv.xy + (kDiskKernel136[si136] * str136);
-				blurCol += tex2Dlod(tex, uvb);
+				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
 			}
 			break;
 		default: break;
@@ -55,9 +55,9 @@ void ApplyStandardBlur(sampler2D tex, float2 texelSize, float4 uv0, uint sampleC
 	blurCol /= sampleCount;
 }
 
-void StandardBlurWithDepth(sampler2D tex, float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol, inout float depth){
-	float2 uv = uv0.xy/uv0.w;
-	float4 uvb = float4(uv,0,0);
+void StandardBlurWithDepth(float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol, inout float depth){
+	float2 uv = uv0.xy;
+	float2 uvb = uv;
 	#if UNITY_SINGLE_PASS_STEREO
 		float2 mainStr = float2(0.225, 0.375) * str * 0.0015;
 		float2 str136 = float2(0.225, 0.375) * _BlurStr * 0.002;
@@ -72,40 +72,40 @@ void StandardBlurWithDepth(sampler2D tex, float2 texelSize, float4 uv0, uint sam
 			[fastopt]
 			for (uint si16 = 0; si16 < sampleCount; ++si16){
 				uvb.xy = uv.xy + (kDiskKernel16[si16] * mainStr);
-				blurCol += tex2Dlod(tex, uvb);
-				depth += DecodeFloatRG(tex2Dlod(_CameraDepthTexture, uvb));
+				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
+				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
 			}
 			break;
 		case 22: 
 			[fastopt]
 			for (uint si22 = 0; si22 < sampleCount; ++si22){
 				uvb.xy = uv.xy + (kDiskKernel22[si22] * mainStr);
-				blurCol += tex2Dlod(tex, uvb);
-				depth += DecodeFloatRG(tex2Dlod(_CameraDepthTexture, uvb));
+				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
+				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
 			}
 			break;
 		case 43:
 			[fastopt]
 			for (uint si43 = 0; si43 < sampleCount; ++si43){
 				uvb.xy = uv.xy + (kDiskKernel43[si43] * mainStr);
-				blurCol += tex2Dlod(tex, uvb);
-				depth += DecodeFloatRG(tex2Dlod(_CameraDepthTexture, uvb));
+				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
+				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
 			}
 			break;
 		case 71:
 			[fastopt]
 			for (uint si71 = 0; si71 < sampleCount; ++si71){
 				uvb.xy = uv.xy + (kDiskKernel71[si71] * mainStr);
-				blurCol += tex2Dlod(tex, uvb);
-				depth += DecodeFloatRG(tex2Dlod(_CameraDepthTexture, uvb));
+				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
+				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
 			}
 			break;
 		case 136:
 			[fastopt]
 			for (uint si136 = 0; si136 < sampleCount; ++si136){
 				uvb.xy = uv.xy + (kDiskKernel136[si136] * str136);
-				blurCol += tex2Dlod(tex, uvb);
-				depth += DecodeFloatRG(tex2Dlod(_CameraDepthTexture, uvb));
+				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
+				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
 			}
 			break;
 		default: break;
@@ -114,9 +114,9 @@ void StandardBlurWithDepth(sampler2D tex, float2 texelSize, float4 uv0, uint sam
 	blurCol /= sampleCount;
 }
 
-void ApplyStandardBlurY(sampler2D tex, float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol){
-	float2 uv = uv0.xy/uv0.w;
-	float4 uvb = float4(uv,0,0);
+void ApplyStandardBlurY(float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol){
+	float2 uv = uv0.xy;
+	float2 uvb = uv;
 	#if UNITY_SINGLE_PASS_STEREO
 		float2 mainStr = float2(0.225, 0.375) * str * 0.00275;
 		float2 str136 = float2(0.225, 0.375) * _BlurStr * 0.00325;
@@ -131,35 +131,35 @@ void ApplyStandardBlurY(sampler2D tex, float2 texelSize, float4 uv0, uint sample
 			[fastopt]
 			for (uint si16 = 0; si16 < sampleCount; ++si16){
 				uvb.y = uv.y + (kDiskKernel16[si16].y * mainStr);
-				blurCol += tex2Dlod(tex, uvb);
+				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
 			}
 			break;
 		case 22: 
 			[fastopt]
 			for (uint si22 = 0; si22 < sampleCount; ++si22){
 				uvb.y = uv.y + (kDiskKernel22[si22].y * mainStr);
-				blurCol += tex2Dlod(tex, uvb);
+				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
 			}
 			break;
 		case 43:
 			[fastopt]
 			for (uint si43 = 0; si43 < sampleCount; ++si43){
 				uvb.y = uv.y + (kDiskKernel43[si43].y * mainStr);
-				blurCol += tex2Dlod(tex, uvb);
+				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
 			}
 			break;
 		case 71:
 			[fastopt]
 			for (uint si71 = 0; si71 < sampleCount; ++si71){
 				uvb.y = uv.y + (kDiskKernel71[si71].y * mainStr);
-				blurCol += tex2Dlod(tex, uvb);
+				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
 			}
 			break;
 		case 136:
 			[fastopt]
 			for (uint si136 = 0; si136 < sampleCount; ++si136){
 				uvb.y = uv.y + (kDiskKernel136[si136].y * str136);
-				blurCol += tex2Dlod(tex, uvb);
+				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
 			}
 			break;
 		default: break;
@@ -167,9 +167,9 @@ void ApplyStandardBlurY(sampler2D tex, float2 texelSize, float4 uv0, uint sample
 	blurCol /= sampleCount;
 }
 
-void ApplyStandardBlurYWithDepth(sampler2D tex, float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol, inout float depth){
-	float2 uv = uv0.xy/uv0.w;
-	float4 uvb = float4(uv,0,0);
+void ApplyStandardBlurYWithDepth(float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol, inout float depth){
+	float2 uv = uv0.xy;
+	float2 uvb = uv;
 	#if UNITY_SINGLE_PASS_STEREO
 		float2 mainStr = float2(0.225, 0.375) * str * 0.00275;
 		float2 str136 = float2(0.225, 0.375) * _BlurStr * 0.00325;
@@ -185,40 +185,40 @@ void ApplyStandardBlurYWithDepth(sampler2D tex, float2 texelSize, float4 uv0, ui
 			[fastopt]
 			for (uint si16 = 0; si16 < sampleCount; ++si16){
 				uvb.y = uv.y + (kDiskKernel16[si16].y * mainStr);
-				blurCol += tex2Dlod(tex, uvb);
-				depth += DecodeFloatRG(tex2Dlod(_CameraDepthTexture, uvb));
+				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
+				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
 			}
 			break;
 		case 22: 
 			[fastopt]
 			for (uint si22 = 0; si22 < sampleCount; ++si22){
 				uvb.y = uv.y + (kDiskKernel22[si22].y * mainStr);
-				blurCol += tex2Dlod(tex, uvb);
-				depth += DecodeFloatRG(tex2Dlod(_CameraDepthTexture, uvb));
+				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
+				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
 			}
 			break;
 		case 43:
 			[fastopt]
 			for (uint si43 = 0; si43 < sampleCount; ++si43){
 				uvb.y = uv.y + (kDiskKernel43[si43].y * mainStr);
-				blurCol += tex2Dlod(tex, uvb);
-				depth += DecodeFloatRG(tex2Dlod(_CameraDepthTexture, uvb));
+				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
+				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
 			}
 			break;
 		case 71:
 			[fastopt]
 			for (uint si71 = 0; si71 < sampleCount; ++si71){
 				uvb.y = uv.y + (kDiskKernel71[si71].y * mainStr);
-				blurCol += tex2Dlod(tex, uvb);
-				depth += DecodeFloatRG(tex2Dlod(_CameraDepthTexture, uvb));
+				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
+				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
 			}
 			break;
 		case 136:
 			[fastopt]
 			for (uint si136 = 0; si136 < sampleCount; ++si136){
 				uvb.y = uv.y + (kDiskKernel136[si136].y * str136);
-				blurCol += tex2Dlod(tex, uvb);
-				depth += DecodeFloatRG(tex2Dlod(_CameraDepthTexture, uvb));
+				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
+				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
 			}
 			break;
 		default: break;
@@ -228,8 +228,8 @@ void ApplyStandardBlurYWithDepth(sampler2D tex, float2 texelSize, float4 uv0, ui
 }
 
 void ApplyStandardBlurDepth(float4 uv0, uint sampleCount, float str, inout float depth){
-	float2 uv = uv0.xy/uv0.w;
-	float4 uvb = float4(uv,0,0);
+	float2 uv = uv0.xy;
+	float2 uvb = uv;
 	str *= _CameraDepthTexture_TexelSize.xy;
 	float2 str136 = str * 1.225;
 	
@@ -239,35 +239,35 @@ void ApplyStandardBlurDepth(float4 uv0, uint sampleCount, float str, inout float
 			[fastopt]
 			for (uint si16 = 0; si16 < sampleCount; ++si16){
 				uvb.xy = uv.xy + (kDiskKernel16[si16] * str);
-				depth += DecodeFloatRG(tex2Dlod(_CameraDepthTexture, uvb));
+				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
 			}
 			break;
 		case 22: 
 			[fastopt]
 			for (uint si22 = 0; si22 < sampleCount; ++si22){
 				uvb.xy = uv.xy + (kDiskKernel22[si22] * str);
-				depth += DecodeFloatRG(tex2Dlod(_CameraDepthTexture, uvb));
+				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
 			}
 			break;
 		case 43:
 			[fastopt]
 			for (uint si43 = 0; si43 < sampleCount; ++si43){
 				uvb.xy = uv.xy + (kDiskKernel43[si43] * str);
-				depth += DecodeFloatRG(tex2Dlod(_CameraDepthTexture, uvb));
+				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
 			}
 			break;
 		case 71:
 			[fastopt]
 			for (uint si71 = 0; si71 < sampleCount; ++si71){
 				uvb.xy = uv.xy + (kDiskKernel71[si71] * str);
-				depth += DecodeFloatRG(tex2Dlod(_CameraDepthTexture, uvb));
+				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
 			}
 			break;
 		case 136:
 			[fastopt]
 			for (uint si136 = 0; si136 < sampleCount; ++si136){
 				uvb.xy = uv.xy + (kDiskKernel136[si136] * str136);
-				depth += DecodeFloatRG(tex2Dlod(_CameraDepthTexture, uvb));
+				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
 			}
 			break;
 		default: break;
@@ -275,9 +275,9 @@ void ApplyStandardBlurDepth(float4 uv0, uint sampleCount, float str, inout float
 	depth /= sampleCount;
 }
 
-void ApplyChromaticAbberation(sampler2D tex, float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol){
-	float2 uv = uv0.xy/uv0.w;
-	float4 uvb = float4(uv,0,0);
+void ApplyChromaticAbberation(float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol){
+	float2 uv = uv0.xy;
+	float2 uvb = uv;
 	#if UNITY_SINGLE_PASS_STEREO
 		float2 mainStr = float2(0.225, 0.375) * str * 0.0015;
 		float2 str136 = float2(0.225, 0.375) * _BlurStr * 0.002;
@@ -295,11 +295,11 @@ void ApplyChromaticAbberation(sampler2D tex, float2 texelSize, float4 uv0, uint 
 				uvb.xy = uv.xy + (kDiskKernel16[si16] * mainStr);
 				UNITY_BRANCH
 				if (si16 < 5)
-					blurCol.r += tex2Dlod(tex, uvb).r;
+					blurCol.r += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).r;
 				else if (si16 >= 5 && si16 < 10)
-					blurCol.g += tex2Dlod(tex, uvb).g;
+					blurCol.g += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).g;
 				else
-					blurCol.b += tex2Dlod(tex, uvb).b;
+					blurCol.b += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).b;
 			}
 			break;
 		case 22: 
@@ -308,11 +308,11 @@ void ApplyChromaticAbberation(sampler2D tex, float2 texelSize, float4 uv0, uint 
 				uvb.xy = uv.xy + (kDiskKernel22[si22] * mainStr);
 				UNITY_BRANCH
 				if (si22 < 7)
-					blurCol.r += tex2Dlod(tex, uvb).r;
+					blurCol.r += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).r;
 				else if (si22 >= 7 && si22 < 14)
-					blurCol.g += tex2Dlod(tex, uvb).g;
+					blurCol.g += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).g;
 				else
-					blurCol.b += tex2Dlod(tex, uvb).b;
+					blurCol.b += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).b;
 			}
 			break;
 		case 43:
@@ -321,11 +321,11 @@ void ApplyChromaticAbberation(sampler2D tex, float2 texelSize, float4 uv0, uint 
 				uvb.xy = uv.xy + (kDiskKernel43[si43] * mainStr);
 				UNITY_BRANCH
 				if (si43 < 14)
-					blurCol.r += tex2Dlod(tex, uvb).r;
+					blurCol.r += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).r;
 				else if (si43 >= 14 && si43 < 28)
-					blurCol.g += tex2Dlod(tex, uvb).g;
+					blurCol.g += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).g;
 				else
-					blurCol.b += tex2Dlod(tex, uvb).b;
+					blurCol.b += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).b;
 			}
 			break;
 		case 71:
@@ -334,11 +334,11 @@ void ApplyChromaticAbberation(sampler2D tex, float2 texelSize, float4 uv0, uint 
 				uvb.xy = uv.xy + (kDiskKernel71[si71] * mainStr);
 				UNITY_BRANCH
 				if (si71 < 23)
-					blurCol.r += tex2Dlod(tex, uvb).r;
+					blurCol.r += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).r;
 				else if (si71 >= 23 && si71 < 46)
-					blurCol.g += tex2Dlod(tex, uvb).g;
+					blurCol.g += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).g;
 				else
-					blurCol.b += tex2Dlod(tex, uvb).b;
+					blurCol.b += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).b;
 			}
 			break;
 		case 136:
@@ -347,11 +347,11 @@ void ApplyChromaticAbberation(sampler2D tex, float2 texelSize, float4 uv0, uint 
 				uvb.xy = uv.xy + (kDiskKernel136[si136] * str136);
 				UNITY_BRANCH
 				if (si136 < 45)
-					blurCol.r += tex2Dlod(tex, uvb).r;
+					blurCol.r += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).r;
 				else if (si136 >= 45 && si136 < 90)
-					blurCol.g += tex2Dlod(tex, uvb).g;
+					blurCol.g += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).g;
 				else 
-					blurCol.b += tex2Dlod(tex, uvb).b;
+					blurCol.b += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).b;
 			}
 			break;
 		default: break;
@@ -359,9 +359,9 @@ void ApplyChromaticAbberation(sampler2D tex, float2 texelSize, float4 uv0, uint 
 	blurCol /= sampleCount/3.0;
 }
 
-void ApplyChromaticAbberationY(sampler2D tex, float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol){
-	float2 uv = uv0.xy/uv0.w;
-	float4 uvb = float4(uv,0,0);
+void ApplyChromaticAbberationY(float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol){
+	float2 uv = uv0.xy;
+	float2 uvb = uv;
 	#if UNITY_SINGLE_PASS_STEREO
 		float2 mainStr = float2(0.225, 0.375) * str * 0.00275;
 		float2 str136 = float2(0.225, 0.375) * _BlurStr * 0.00325;
@@ -378,11 +378,11 @@ void ApplyChromaticAbberationY(sampler2D tex, float2 texelSize, float4 uv0, uint
 				uvb.y = uv.y + (kDiskKernel16[si16].y * mainStr);
 				UNITY_BRANCH
 				if (si16 < 5)
-					blurCol.r += tex2Dlod(tex, uvb).r;
+					blurCol.r += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).r;
 				else if (si16 >= 5 && si16 < 10)
-					blurCol.g += tex2Dlod(tex, uvb).g;
+					blurCol.g += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).g;
 				else
-					blurCol.b += tex2Dlod(tex, uvb).b;
+					blurCol.b += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).b;
 			}
 			break;
 		case 22: 
@@ -391,11 +391,11 @@ void ApplyChromaticAbberationY(sampler2D tex, float2 texelSize, float4 uv0, uint
 				uvb.y = uv.y + (kDiskKernel22[si22].y * mainStr);
 				UNITY_BRANCH
 				if (si22 < 7)
-					blurCol.r += tex2Dlod(tex, uvb).r;
+					blurCol.r += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).r;
 				else if (si22 >= 7 && si22 < 14)
-					blurCol.g += tex2Dlod(tex, uvb).g;
+					blurCol.g += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).g;
 				else
-					blurCol.b += tex2Dlod(tex, uvb).b;
+					blurCol.b += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).b;
 			}
 			break;
 		case 43:
@@ -404,11 +404,11 @@ void ApplyChromaticAbberationY(sampler2D tex, float2 texelSize, float4 uv0, uint
 				uvb.y = uv.y + (kDiskKernel43[si43].y * mainStr);
 				UNITY_BRANCH
 				if (si43 < 14)
-					blurCol.r += tex2Dlod(tex, uvb).r;
+					blurCol.r += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).r;
 				else if (si43 >= 14 && si43 < 28)
-					blurCol.g += tex2Dlod(tex, uvb).g;
+					blurCol.g += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).g;
 				else
-					blurCol.b += tex2Dlod(tex, uvb).b;
+					blurCol.b += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).b;
 			}
 			break;
 		case 71:
@@ -417,11 +417,11 @@ void ApplyChromaticAbberationY(sampler2D tex, float2 texelSize, float4 uv0, uint
 				uvb.y = uv.y + (kDiskKernel71[si71].y * mainStr);
 				UNITY_BRANCH
 				if (si71 < 23)
-					blurCol.r += tex2Dlod(tex, uvb).r;
+					blurCol.r += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).r;
 				else if (si71 >= 23 && si71 < 46)
-					blurCol.g += tex2Dlod(tex, uvb).g;
+					blurCol.g += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).g;
 				else
-					blurCol.b += tex2Dlod(tex, uvb).b;
+					blurCol.b += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).b;
 			}
 			break;
 		case 136:
@@ -430,11 +430,11 @@ void ApplyChromaticAbberationY(sampler2D tex, float2 texelSize, float4 uv0, uint
 				uvb.y = uv.y + (kDiskKernel136[si136].y * str136);
 				UNITY_BRANCH
 				if (si136 < 45)
-					blurCol.r += tex2Dlod(tex, uvb).r;
+					blurCol.r += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).r;
 				else if (si136 >= 45 && si136 < 90)
-					blurCol.g += tex2Dlod(tex, uvb).g;
+					blurCol.g += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).g;
 				else 
-					blurCol.b += tex2Dlod(tex, uvb).b;
+					blurCol.b += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).b;
 			}
 			break;
 		default: break;
@@ -442,9 +442,9 @@ void ApplyChromaticAbberationY(sampler2D tex, float2 texelSize, float4 uv0, uint
 	blurCol /= sampleCount/3.0;
 }
 
-void ApplyRadialBlur(v2f i, sampler2D tex, float4 uv0, uint sampleCount, float radius, float str, inout float3 blurCol){
+void ApplyRadialBlur(v2f i, float4 uv0, uint sampleCount, float radius, float str, inout float3 blurCol){
     float3 col = 0;
-    float2 uv = i.uv.xy/i.uv.w;
+    float2 uv = i.uv.xy;
     float2 offset = 0.5;
     #if UNITY_SINGLE_PASS_STEREO
         if (unity_StereoEyeIndex == 0)
@@ -458,7 +458,7 @@ void ApplyRadialBlur(v2f i, sampler2D tex, float4 uv0, uint sampleCount, float r
     for (uint j = 0; j < sampleCount; ++j) {
         float scale = 1-str*(j/(float)sampleCount)*(length(uv)/radius);
         float2 uvb = (uv*scale)+offset;
-        blurCol += tex2Dlod(tex, float4(uvb,0,0)).rgb;
+        blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb).rgb;
     }
 	blurCol /= sampleCount+1;
 }

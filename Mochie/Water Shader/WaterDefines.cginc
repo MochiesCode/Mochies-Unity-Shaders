@@ -1,7 +1,9 @@
 #ifndef WATER_DEFINES_INCLUDED
 #define WATER_DEFINES_INCLUDED
 
-sampler2D_float _CameraDepthTexture;
+#include "../Common/Sampling.cginc"
+
+MOCHIE_DECLARE_TEX2D_SCREENSPACE(_CameraDepthTexture);
 float4 _CameraDepthTexture_TexelSize;
 #define HAS_DEPTH_TEXTURE
 #include "UnityCG.cginc"
@@ -10,7 +12,7 @@ float4 _CameraDepthTexture_TexelSize;
 #include "../Common/Color.cginc"
 #include "../Common/Utilities.cginc"
 #include "../Common/Noise.cginc"
-#include "../Common/Sampling.cginc"
+
 
 #define BASE_PASS 						defined(UNITY_PASS_FORWARDBASE)
 #define ADD_PASS 						defined(UNITY_PASS_FORWARDADD)
@@ -34,7 +36,7 @@ float4 _CameraDepthTexture_TexelSize;
 #define RAIN_ENABLED 					defined(_RAIN_ON)
 #define FOAM_NORMALS_ENABLED			defined(_FOAM_NORMALS_ON)
 
-sampler2D _MWGrab;
+MOCHIE_DECLARE_TEX2D_SCREENSPACE(_MWGrab);
 sampler2D _MainTex;
 sampler2D _NormalMap0, _NormalMap1;
 sampler2D _FlowMap;
@@ -107,6 +109,8 @@ struct appdata {
 	float4 uv1 : TEXCOORD1;
 	float3 normal : NORMAL;
 	float4 tangent : TANGENT;
+	UNITY_VERTEX_INPUT_INSTANCE_ID
+
 };
 
 struct v2f {
@@ -126,6 +130,8 @@ struct v2f {
 		UNITY_SHADOW_COORDS(13)
 	#endif
 	UNITY_FOG_COORDS(14)
+	UNITY_VERTEX_INPUT_INSTANCE_ID 
+	UNITY_VERTEX_OUTPUT_STEREO
 };
 
 #include "WaterSSR.cginc"

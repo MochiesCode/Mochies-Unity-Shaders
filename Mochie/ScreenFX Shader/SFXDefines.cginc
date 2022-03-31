@@ -2,11 +2,12 @@
 #define SFX_DEFINES_INCLUDED
 
 #include "UnityCG.cginc"
+#include "../Common/Sampling.cginc"
 #include "SFXKeyDefines.cginc"
 
 // Global
-sampler2D _MSFXGrab; float4 _MSFXGrab_TexelSize, _MSFXGrab_ST;
-sampler2D _CameraDepthTexture; float4 _CameraDepthTexture_TexelSize;
+MOCHIE_DECLARE_TEX2D_SCREENSPACE(_MSFXGrab); float4 _MSFXGrab_TexelSize, _MSFXGrab_ST;
+MOCHIE_DECLARE_TEX2D_SCREENSPACE(_CameraDepthTexture); float4 _CameraDepthTexture_TexelSize;
 int _BlendMode;
 float _MinRange, _MaxRange;
 float _Opacity;
@@ -83,7 +84,7 @@ float depth;
 	float _LetterboxStr;
 
 	// Zoom
-	sampler2D _ZoomGrab;
+	MOCHIE_DECLARE_TEX2D_SCREENSPACE(_ZoomGrab);
 	int _Zoom, _ZoomUseGlobal, _NeedsZoomPass;
 	float _ZoomMinRange, _ZoomMaxRange;
 	float _ZoomStr, _ZoomStrR, _ZoomStrG, _ZoomStrB;
@@ -103,6 +104,7 @@ float depth;
 struct appdata {
     float4 vertex : POSITION;
     float4 uv : TEXCOORD0;
+	UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
 struct v2f {
@@ -131,6 +133,8 @@ struct v2f {
 	float letterbF : TEXCOORD21;
 	float olF : TEXCOORD22;
 	float noiseF : TEXCOORD23;
+	UNITY_VERTEX_INPUT_INSTANCE_ID 
+	UNITY_VERTEX_OUTPUT_STEREO
 };
 
 #include "../Common/Utilities.cginc"

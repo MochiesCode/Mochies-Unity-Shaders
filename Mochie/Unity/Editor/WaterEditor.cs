@@ -212,9 +212,9 @@ public class WaterEditor : ShaderGUI {
 				});
 				MGUI.PropertyGroup( () => {
 					me.TexturePropertySingleLine(texLabel, _MainTex, _Color, _BaseColorStochasticToggle);
-					MGUI.TexPropLabel("Stochastic Sampling", 172);
+					MGUI.TexPropLabel(Tips.stochasticLabel, 172);
 					MGUI.TextureSOScroll(me, _MainTex, _MainTexScroll);
-					me.ShaderProperty(_BaseColorOffset, "Parallax Offset");
+					me.ShaderProperty(_BaseColorOffset, Tips.parallaxOffsetLabel);
 					me.ShaderProperty(_BaseColorDistortionStrength, "Distortion Strength");
 				});
 				MGUI.DisplayInfo("   This shader requires a \"Depth Light\" prefab be present in the scene.\n   (Found in: Assets/Mochie/Unity/Prefabs)");
@@ -226,13 +226,13 @@ public class WaterEditor : ShaderGUI {
 			Action norm0TabAction = ()=>{
 				MGUI.Space4();
 				MGUI.PropertyGroup( () => {
-					me.TexturePropertySingleLine(normalLabel, _NormalMap0, _Normal0StochasticToggle);
-					MGUI.TexPropLabel("Stochastic Sampling", 172);
+					me.TexturePropertySingleLine(Tips.waterNormalMap, _NormalMap0, _Normal0StochasticToggle);
+					MGUI.TexPropLabel(Tips.stochasticLabel, 172);
 					me.ShaderProperty(_NormalStr0, "Strength");
 					MGUI.Vector2Field(_NormalMapScale0, "Scale");
 					MGUI.Vector2Field(_NormalMapScroll0, "Scrolling");
 					me.ShaderProperty(_Rotation0, "Rotation");
-					me.ShaderProperty(_NormalMapOffset0, "Parallax Offset");
+					me.ShaderProperty(_NormalMapOffset0, Tips.parallaxOffsetLabel);
 				});
 			};
 			Foldouts.Foldout("PRIMARY NORMAL", foldouts, norm0TabButtons, mat, me, norm0TabAction);
@@ -244,13 +244,13 @@ public class WaterEditor : ShaderGUI {
 				MGUI.Space4();
 				MGUI.PropertyGroup( () => {
 					MGUI.ToggleGroup(_Normal1Toggle.floatValue == 0);
-					me.TexturePropertySingleLine(normalLabel, _NormalMap1, _Normal1StochasticToggle);
-					MGUI.TexPropLabel("Stochastic Sampling", 172);
+					me.TexturePropertySingleLine(Tips.waterNormalMap, _NormalMap1, _Normal1StochasticToggle);
+					MGUI.TexPropLabel(Tips.stochasticLabel, 172);
 					me.ShaderProperty(_NormalStr1, "Strength");
 					MGUI.Vector2Field(_NormalMapScale1, "Scale");
 					MGUI.Vector2Field(_NormalMapScroll1, "Scrolling");
 					me.ShaderProperty(_Rotation1, "Rotation");
-					me.ShaderProperty(_NormalMapOffset1, "Parallax Offset");
+					me.ShaderProperty(_NormalMapOffset1, Tips.parallaxOffsetLabel);
 					MGUI.ToggleGroupEnd();
 				});
 			};
@@ -260,8 +260,8 @@ public class WaterEditor : ShaderGUI {
 			reflSpecTabButtons.Add(()=>{ResetReflSpec();}, MGUI.resetLabel);
 			Action reflSpecTabAction = ()=>{
 				MGUI.Space4();
-				me.ShaderProperty(_Roughness, "Roughness");
-				me.ShaderProperty(_Metallic, "Metallic");
+				me.ShaderProperty(_Roughness, Tips.waterRoughness);
+				me.ShaderProperty(_Metallic, Tips.waterMetallic);
 				MGUI.Space8();
 				me.ShaderProperty(_Reflections, "Reflections");
 				MGUI.PropertyGroup( () => {
@@ -357,7 +357,7 @@ public class WaterEditor : ShaderGUI {
 					});
 					MGUI.BoldLabel("Turbulence");
 					MGUI.PropertyGroup(() => {
-						me.ShaderProperty(_Turbulence, "Strength");
+						me.ShaderProperty(_Turbulence, Tips.turbulence);
 						me.ShaderProperty(_TurbulenceSpeed, "Speed");
 						me.ShaderProperty(_TurbulenceScale, "Scale");
 					});
@@ -376,7 +376,7 @@ public class WaterEditor : ShaderGUI {
 					me.ShaderProperty(_CausticsOpacity, "Opacity");
 					me.ShaderProperty(_CausticsPower, "Power");
 					me.ShaderProperty(_CausticsScale, "Scale");
-					me.ShaderProperty(_CausticsFade, "Fade");
+					me.ShaderProperty(_CausticsFade, Tips.causticsFade);
 					MGUI.ToggleGroupEnd();
 				});
 			};
@@ -390,27 +390,27 @@ public class WaterEditor : ShaderGUI {
 				MGUI.ToggleGroup(_FoamToggle.floatValue == 0);
 				MGUI.PropertyGroup( () => {
 					me.TexturePropertySingleLine(foamLabel, _FoamTex, _FoamColor, _FoamStochasticToggle);
-					MGUI.TexPropLabel("Stochastic Sampling", 172);
+					MGUI.TexPropLabel(Tips.stochasticLabel, 172);
 					MGUI.Space2();
 					MGUI.Vector2Field(_FoamTexScale, "Scale");
 					MGUI.Vector2Field(_FoamTexScroll, "Scrolling");
-					me.ShaderProperty(_FoamOffset, "Parallax Offset");
+					me.ShaderProperty(_FoamOffset, Tips.parallaxOffsetLabel);
 					me.ShaderProperty(_FoamDistortionStrength, "Distortion Strength");
-					MGUI.ToggleFloat(me, "Create Normals", _FoamNormalToggle, _FoamNormalStrength);
+					MGUI.ToggleFloat(me, Tips.foamNormal, _FoamNormalToggle, _FoamNormalStrength);
 				});
 				MGUI.PropertyGroup( () => {
 					me.TexturePropertySingleLine(noiseLabel, _FoamNoiseTex);
 					MGUI.Vector2Field(_FoamNoiseTexScale, "Scale");
 					MGUI.Vector2Field(_FoamNoiseTexScroll, "Scrolling");
-					me.ShaderProperty(_FoamNoiseTexStrength, "Edge Strength");
-					me.ShaderProperty(_FoamNoiseTexCrestStrength, "Crest Strength");
+					me.ShaderProperty(_FoamNoiseTexStrength, Tips.foamNoiseTexStrength);
+					me.ShaderProperty(_FoamNoiseTexCrestStrength, Tips.foamNoiseTexCrestStrength);
 				});
 				MGUI.PropertyGroup( () => {
-					me.ShaderProperty(_FoamRoughness, "Roughness");
-					me.ShaderProperty(_FoamPower, "Power");
-					me.ShaderProperty(_FoamOpacity, "Opacity");
-					me.ShaderProperty(_FoamCrestStrength, "Crest Strength");
-					me.ShaderProperty(_FoamCrestThreshold, "Crest Threshold");
+					me.ShaderProperty(_FoamRoughness, Tips.foamRoughness);
+					me.ShaderProperty(_FoamPower, Tips.foamPower);
+					me.ShaderProperty(_FoamOpacity, Tips.foamOpacity);
+					me.ShaderProperty(_FoamCrestStrength, Tips.foamCrestStrength);
+					me.ShaderProperty(_FoamCrestThreshold, Tips.foamCrestThreshold);
 				});
 				MGUI.ToggleGroupEnd();
 			};

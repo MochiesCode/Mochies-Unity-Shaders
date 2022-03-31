@@ -1,10 +1,12 @@
 #ifndef PS_DEFINES_INCLUDED
 #define PS_DEFINES_INCLUDED
 
+#include "../Common/Sampling.cginc"
 #include "PSKeyDefines.cginc"
 #include "UnityCG.cginc"
 
-sampler2D _CameraDepthTexture;
+MOCHIE_DECLARE_TEX2D_SCREENSPACE(_CameraDepthTexture);
+float4 _CameraDepthTexture_TexelSize;
 sampler2D _MainTex;
 float4 _Color, _SecondColor;
 int _Falloff, _IsCutout, _BlendMode, _Softening, _Pulse, _Waveform, _FlipbookBlending;
@@ -14,7 +16,7 @@ float _SoftenStr, _PulseStr, _PulseSpeed, fade;
 float _Brightness, _Opacity;
 float _NaNLmao;
 
-sampler2D _GrabTexture; float4 _GrabTexture_TexelSize;
+MOCHIE_DECLARE_TEX2D_SCREENSPACE(_MPSGrab); float4 _MPSGrab_TexelSize;
 sampler2D _SecondTex;
 sampler2D _NormalMap;
 float2 _NormalMapScale, _DistortionSpeed;
@@ -48,7 +50,7 @@ struct v2f {
 		float pulse : TEXCOORD6;
 	#endif
 	float4 color : COLOR;
-    UNITY_FOG_COORDS(7)
+    UNITY_FOG_COORDS(8)
 	UNITY_VERTEX_INPUT_INSTANCE_ID
     UNITY_VERTEX_OUTPUT_STEREO
 };

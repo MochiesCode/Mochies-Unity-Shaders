@@ -12,7 +12,7 @@
 #include "../Common/Color.cginc"
 
 #if SSR_ENABLED || DECAL_ENABLED
-	sampler2D _CameraDepthTexture;
+	UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
 #endif
 
 #include "../Common/Sampling.cginc"

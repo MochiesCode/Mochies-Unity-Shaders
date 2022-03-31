@@ -215,6 +215,7 @@ int _Iridescence;
 int _RefractionBlur;
 int _RefractionBlurRough;
 int _AudioLinkOutlineBand;
+int _UseOutlineTexAlpha;
 
 float _RefractionBlurStrength;
 float _IridescenceStrength;

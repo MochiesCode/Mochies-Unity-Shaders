@@ -51,7 +51,7 @@ float4 ReflectRay(float3 reflectedRay, float3 rayDir, float _LRad, float _SRad, 
 			break;
 		}
 
-		float rawDepth = DecodeFloatRG(tex2Dlod(_CameraDepthTexture,float4(uvDepth,0,0)));
+		float rawDepth = DecodeFloatRG(SAMPLE_DEPTH_TEXTURE_LOD(_CameraDepthTexture,float4(uvDepth,0,0)));
 		float linearDepth = Linear01Depth(rawDepth);
 		float sampleDepth = -reflectedRay.z;
 		float realDepth = linearDepth * _ProjectionParams.z;

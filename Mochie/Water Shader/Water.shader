@@ -162,7 +162,7 @@ Shader "Mochie/Water" {
 			#pragma shader_feature_local _GERSTNER_WAVES_ON
 			#pragma shader_feature_local _RAIN_ON
 			#pragma shader_feature_local _FOAM_NORMALS_ON
-
+			#pragma multi_compile_instancing
             #pragma target 5.0
 
 			#include "WaterDefines.cginc"
@@ -195,7 +195,7 @@ Shader "Mochie/Water" {
 			#pragma shader_feature_local _GERSTNER_WAVES_ON
 			#pragma shader_feature_local _RAIN_ON
 			#pragma shader_feature_local _FOAM_NORMALS_ON
-
+			#pragma multi_compile_instancing
             #pragma target 5.0
 
 			#include "WaterDefines.cginc"

@@ -429,6 +429,7 @@ Shader "Mochie/Uber/Uber" {
 		[ToggleUI]_ApplyAlbedoTint("tog", Int) = 0
 		[ToggleUI]_UseVertexColor("tog", Int) = 0
 		[ToggleUI]_IgnoreFilterMask("tog", Int) = 0
+		[ToggleUI]_UseOutlineTexAlpha("tog", Int) = 0
 		_OutlineTex("tex", 2D) = "white" {}
 		[HDR]_OutlineCol("col", Color) = (0.75,0.75,0.75,1)
 		_OutlineScroll("vec", Vector) = (0,0,0,0)
@@ -713,7 +714,7 @@ Shader "Mochie/Uber/Uber" {
 			#pragma multi_compile _ VERTEXLIGHT_ON
 			#pragma multi_compile_fog
 			#pragma multi_compile_fwdbase
-			// #pragma multi_compile_instancing
+			#pragma multi_compile_instancing
 			// #pragma skip_variants FOG_LINEAR FOG_EXP FOG_EXP2
 			#pragma skip_variants DIRLIGHTMAP_COMBINED DIRLIGHTMAP_SEPARATE 
 			#pragma skip_variants DYNAMICLIGHTMAP_ON LIGHTMAP_ON LIGHTMAP_SHADOW_MIXING
@@ -769,7 +770,7 @@ Shader "Mochie/Uber/Uber" {
 
 			#pragma multi_compile_fog
 			#pragma multi_compile_fwdadd_fullshadows
-			// #pragma multi_compile_instancing
+			#pragma multi_compile_instancing
 			// #pragma skip_variants FOG_LINEAR FOG_EXP FOG_EXP2
 			#pragma skip_variants DIRLIGHTMAP_COMBINED DIRLIGHTMAP_SEPARATE 
 			#pragma skip_variants DYNAMICLIGHTMAP_ON LIGHTMAP_ON LIGHTMAP_SHADOW_MIXING 
@@ -811,7 +812,7 @@ Shader "Mochie/Uber/Uber" {
 			#pragma shader_feature_local _AUDIOLINK_ON
 
 			#pragma multi_compile_shadowcaster
-			// #pragma multi_compile_instancing
+			#pragma multi_compile_instancing
 			// #pragma skip_variants FOG_LINEAR FOG_EXP FOG_EXP2
 			#pragma skip_variants DIRLIGHTMAP_COMBINED DIRLIGHTMAP_SEPARATE 
 			#pragma skip_variants DYNAMICLIGHTMAP_ON LIGHTMAP_ON LIGHTMAP_SHADOW_MIXING 

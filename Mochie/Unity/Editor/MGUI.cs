@@ -239,6 +239,33 @@ namespace Mochie {
 			EditorGUI.showMixedValue = false;
 		}
 
+		public static void ToggleSlider(MaterialEditor me, GUIContent label, MaterialProperty toggle, MaterialProperty slider){
+			float lw = EditorGUIUtility.labelWidth;
+			float indent = lw + 25f;
+			GUILayoutOption clickArea = GUILayout.MaxWidth(lw+13f);
+
+			EditorGUI.BeginChangeCheck();
+			EditorGUI.showMixedValue = toggle.hasMixedValue;
+			var tog = EditorGUILayout.Toggle(label, toggle.floatValue==1, clickArea)?1:0;
+			if (EditorGUI.EndChangeCheck())
+				toggle.floatValue = tog;
+			EditorGUI.showMixedValue = false;
+
+			SpaceN20();
+			Rect r = EditorGUILayout.GetControlRect();
+			r.x += indent;
+			r.width -= indent;
+
+			EditorGUI.BeginChangeCheck();
+			EditorGUI.showMixedValue = slider.hasMixedValue;
+			EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
+			var slide = EditorGUI.Slider(r, slider.floatValue, slider.rangeLimits.x, slider.rangeLimits.y);
+			EditorGUI.EndDisabledGroup();
+			if (EditorGUI.EndChangeCheck())
+				slider.floatValue = slide;
+			EditorGUI.showMixedValue = false;
+		}
+
 		public static void ToggleIntSlider(MaterialEditor me, string label, MaterialProperty toggle, MaterialProperty slider){
 			float lw = EditorGUIUtility.labelWidth;
 			float indent = lw + 25f;
@@ -316,7 +343,81 @@ namespace Mochie {
 			EditorGUI.showMixedValue = false;
 		}
 
+		public static void ToggleFloat(MaterialEditor me, GUIContent label, MaterialProperty toggle, MaterialProperty floatProp){
+			float lw = EditorGUIUtility.labelWidth;
+			float indent = lw + 20f;
+			GUILayoutOption clickArea = GUILayout.MaxWidth(lw+13f);
+
+			EditorGUI.BeginChangeCheck();
+			EditorGUI.showMixedValue = toggle.hasMixedValue;
+			var tog = EditorGUILayout.Toggle(label, toggle.floatValue==1, clickArea)?1:0;
+			if (EditorGUI.EndChangeCheck())
+				toggle.floatValue = tog;
+			EditorGUI.showMixedValue = false;
+
+			SpaceN20();
+			Rect r = EditorGUILayout.GetControlRect();
+			r.x += indent;
+			r.width -= indent;
+
+			EditorGUI.BeginChangeCheck();
+			EditorGUI.showMixedValue = floatProp.hasMixedValue;
+			EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
+			var floatVal = EditorGUI.FloatField(r, floatProp.floatValue);
+			EditorGUI.EndDisabledGroup();
+			if (EditorGUI.EndChangeCheck())
+				floatProp.floatValue = floatVal;
+			EditorGUI.showMixedValue = false;
+		}
+
 		public static void Vector3FieldToggle(string label, MaterialProperty toggle, MaterialProperty vec){
+			SpaceN2();
+			Vector4 newVec = vec.vectorValue;
+			float labelWidth = EditorGUIUtility.labelWidth;
+			float fieldWidth = (GetPropertyWidth()/3)-6f;
+
+			Rect r = EditorGUILayout.GetControlRect();
+			r.x += labelWidth+18f;
+
+			SpaceN20();
+			GUILayoutOption clickArea = GUILayout.MaxWidth(labelWidth+14f);
+
+			EditorGUI.BeginChangeCheck();
+			EditorGUI.showMixedValue = toggle.hasMixedValue;
+			var tog = EditorGUILayout.Toggle(label, toggle.floatValue==1, clickArea)?1:0;
+			if (EditorGUI.EndChangeCheck())
+				toggle.floatValue = tog;
+			EditorGUI.showMixedValue = false;
+
+			EditorGUIUtility.labelWidth = 10f;
+			EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
+
+			EditorGUI.BeginChangeCheck();
+			EditorGUI.showMixedValue = vec.hasMixedValue;
+
+				// X Field
+				r.width = fieldWidth-2f;
+				newVec.x = EditorGUI.FloatField(r, "X", newVec.x);
+				r.width = fieldWidth-4;
+
+				// Y Field
+				r.x += fieldWidth+2f;
+				newVec.y = EditorGUI.FloatField(r, "Y", newVec.y);
+
+				// Z Field
+				r.x += fieldWidth+2f;
+				newVec.z = EditorGUI.FloatField(r, "Z", newVec.z);
+
+			if (EditorGUI.EndChangeCheck())
+				vec.vectorValue = newVec;
+			EditorGUI.showMixedValue = false;
+			EditorGUIUtility.labelWidth = labelWidth;
+
+			EditorGUI.EndDisabledGroup();
+			Space1();
+		}
+
+		public static void Vector3FieldToggle(GUIContent label, MaterialProperty toggle, MaterialProperty vec){
 			SpaceN2();
 			Vector4 newVec = vec.vectorValue;
 			float labelWidth = EditorGUIUtility.labelWidth;
@@ -597,6 +698,13 @@ namespace Mochie {
 
 		// Label for the third property in TexturePropertySingleLine
 		public static void TexPropLabel(string text, int offset){
+			GUILayout.Space(-22);
+			Rect rm = EditorGUILayout.GetControlRect();
+			rm.x += GetInspectorWidth()-offset;
+			EditorGUI.LabelField(rm, text);
+		}
+
+		public static void TexPropLabel(GUIContent text, int offset){
 			GUILayout.Space(-22);
 			Rect rm = EditorGUILayout.GetControlRect();
 			rm.x += GetInspectorWidth()-offset;

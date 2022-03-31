@@ -5,6 +5,9 @@
 v2f vert (appdata v){
     v2f o;
 	UNITY_INITIALIZE_OUTPUT(v2f, o);
+	UNITY_SETUP_INSTANCE_ID(v);
+	UNITY_TRANSFER_INSTANCE_ID(v, o);
+	UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 
 	#if X_FEATURES
     	o.pulseSpeed = GetPulse();
@@ -42,8 +45,13 @@ v2f vert (appdata v){
 }
 
 float4 frag (v2f i) : SV_Target {
+	
+	UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
 
     MirrorCheck();
+
+	float2 uv = i.uv.xy / i.uv.w;
+	i.uv.xy = uv;
 
 	#if X_FEATURES
     	ApplyPulse(i.pulseSpeed);
@@ -68,12 +76,12 @@ float4 frag (v2f i) : SV_Target {
 			_PixelationStr = lerp(_PixelationStr, 0, dof);
 		#endif
 		ApplyRipplePixelate(i);
-		float4 col = tex2Dproj(_MSFXGrab, i.uv);
+		float4 col = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, i.uv.xy);
 		ApplyDitherBlur(i);
-		float4 blurCol = tex2Dproj(_MSFXGrab, i.uv);
+		float4 blurCol = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, i.uv.xy);
 		ApplyBlur(i, col.rgb, blurCol.rgb);
 	#else
-		float4 col = tex2Dproj(_MSFXGrab, i.uv);
+		float4 col = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, i.uv.xy);
 	#endif
 
 	#if X_FEATURES
@@ -82,7 +90,7 @@ float4 frag (v2f i) : SV_Target {
 		#if OUTLINE_ENABLED
 			ApplyOutline(i, col.rgb);
 		#endif
-		ApplyRounding(col.rgb);
+		ApplyRounding(i, col.rgb);
 	#endif
 
 	#if COLOR_ENABLED

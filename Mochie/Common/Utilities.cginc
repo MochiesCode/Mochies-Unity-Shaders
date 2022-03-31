@@ -241,7 +241,7 @@ float3 GetWorldSpacePixelPos(float4 vertex, float2 screenOffset){
 	screenUV.y *= _ProjectionParams.x;
 	screenUV = screenUV * 0.5f + 0.5f;
 	screenUV = UnityStereoTransformScreenSpaceTex(screenUV);
-	float depth = LinearEyeDepth(UNITY_SAMPLE_DEPTH(tex2D(_CameraDepthTexture, screenUV))) / screenPos.w;
+	float depth = LinearEyeDepth(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, screenUV)) / screenPos.w;
 	float3 worldSpacePos = worldDir * depth + _WorldSpaceCameraPos;
 	return worldSpacePos;
 }
@@ -251,7 +251,7 @@ float3 GetWorldSpacePixelPosSP(float4 vertex, float2 scrnPos){
 	float4 screenPos = mul(UNITY_MATRIX_VP, worldPos); 
 	worldPos = mul(inverse(UNITY_MATRIX_VP), screenPos);
 	float3 worldDir = worldPos.xyz - _WorldSpaceCameraPos;
-	float depth = LinearEyeDepth(UNITY_SAMPLE_DEPTH(tex2D(_CameraDepthTexture, scrnPos))) / screenPos.w;
+	float depth = LinearEyeDepth(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, scrnPos)) / screenPos.w;
 	float3 worldSpacePos = worldDir * depth + _WorldSpaceCameraPos;
 	return worldSpacePos;
 }

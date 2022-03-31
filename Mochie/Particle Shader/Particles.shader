@@ -66,7 +66,7 @@ Shader "Mochie/Particles" {
         }
 		GrabPass {
 			Tags {"LightMode"="Always"}
-			"_GrabTexture"
+			"_MPSGrab"
 		}
         Blend [_SrcBlend] [_DstBlend]
         Cull [_Culling]
@@ -79,7 +79,6 @@ Shader "Mochie/Particles" {
             #pragma vertex vert
             #pragma fragment frag
             #pragma target 5.0
-            #pragma multi_compile_particles
 			#pragma shader_feature_local _ _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON _ALPHA_ADD_ON _ALPHA_ADD_SOFT_ON _ALPHA_MUL_ON _ALPHA_MULX2_ON
 			#pragma shader_feature_local _ALPHATEST_ON
 			#pragma shader_feature_local _FILTERING_ON
@@ -90,14 +89,16 @@ Shader "Mochie/Particles" {
 			#pragma shader_feature_local _FALLOFF_ON
 			#pragma shader_feature_local _FLIPBOOK_BLENDING_ON
 			#pragma shader_feature_local _FADING_ON
+            #pragma multi_compile_instancing
             #include "PSDefines.cginc"
 
             v2f vert (appdata v){
                 v2f o;
+
+                UNITY_SETUP_INSTANCE_ID(v);
 				UNITY_INITIALIZE_OUTPUT(v2f, o);
 				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
-				UNITY_SETUP_INSTANCE_ID(v);
-                UNITY_TRANSFER_INSTANCE_ID(v, o);
+                
                 o.pos = UnityObjectToClipPos(v.vertex);
 				o.uv0 = v.uv0;
 				o.color = v.color;
@@ -127,6 +128,9 @@ Shader "Mochie/Particles" {
             }
 
             float4 frag (v2f i) : SV_Target {
+                
+                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
+
                 return GetColor(i);
             }
             ENDCG

@@ -14,13 +14,13 @@ float4 _MWGrab_TexelSize;
 float4 _NoiseTexSSR_TexelSize;
 sampler2D _NoiseTexSSR;
 
-float3 GetBlurredGP(const sampler2D ssrg, const float2 texelSize, const float2 uvs, const float dim){
+float3 GetBlurredGP(const float2 texelSize, const float2 uvs, const float dim){
 	float2 pixSize = 2/texelSize;
 	float center = floor(dim*0.5);
 	float3 refTotal = float3(0,0,0);
 	for (int i = 0; i < floor(dim); i++){
 		for (int j = 0; j < floor(dim); j++){
-			float4 refl = tex2Dlod(ssrg, float4(uvs.x + pixSize.x*(i-center), uvs.y + pixSize.y*(j-center),0,0));
+			float4 refl = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MWGrab, float2(uvs.x + pixSize.x*(i-center), uvs.y + pixSize.y*(j-center)));
 			refTotal += refl.rgb;
 		}
 	}
@@ -55,7 +55,7 @@ float4 ReflectRay(float3 reflectedRay, float3 rayDir, float _LRad, float _SRad, 
 			break;
 		}
 
-		float rawDepth = DecodeFloatRG(tex2Dlod(_CameraDepthTexture,float4(uvDepth,0,0)));
+		float rawDepth = DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvDepth));
 		float linearDepth = Linear01Depth(rawDepth);
 		float sampleDepth = -reflectedRay.z;
 		float realDepth = linearDepth * _ProjectionParams.z;
@@ -122,7 +122,7 @@ float4 GetSSR(const float3 wPos, const float3 viewDir, float3 rayDir, const half
 		float lengthFade = smoothstep(1, 0, 2*(totalSteps / 50)-1);
 
 		float blurFac = max(1,min(12, 12 * (-2)*(smoothness-1)));
-		float4 reflection = float4(GetBlurredGP(_MWGrab, _MWGrab_TexelSize.zw, uvs.xy, blurFac*1.5),1);
+		float4 reflection = float4(GetBlurredGP(_MWGrab_TexelSize.zw, uvs.xy, blurFac*1.5),1);
 
 		reflection.rgb = lerp(reflection.rgb, reflection.rgb*albedo.rgb,smoothstep(0, 1.75, metallic));
 

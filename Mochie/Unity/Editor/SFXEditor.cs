@@ -42,7 +42,7 @@ public class SFXEditor : ShaderGUI {
 
     // Texture file names
 	string header = "SFXHeader_Pro";
-	string versionLabel = "v1.12";
+	string versionLabel = "v1.13";
 	
     // Commonly used strings
     string modeLabel = "Mode";
@@ -814,7 +814,7 @@ public class SFXEditor : ShaderGUI {
 							MGUI.ToggleGroup(_Pulse.floatValue == 0);
 							me.ShaderProperty(_WaveForm, "Waveform");
 							MGUI.ToggleGroup(_WaveForm.floatValue == 0);
-							me.ShaderProperty(_PulseColor, "Include Color");
+							me.ShaderProperty(_PulseColor, "Include Filtering");
 							me.ShaderProperty(_PulseSpeed, speedLabel);
 							MGUI.ToggleGroupEnd();
 							MGUI.ToggleGroupEnd();

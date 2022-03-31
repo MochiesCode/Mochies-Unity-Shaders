@@ -9,9 +9,9 @@ float2 AlignWithGrabTexel(float2 uv){
 }
 
 void GetDepth(v2f i, out float3 wPos, out float3 wNorm, out float depth){
-	float2 uv = i.uv.xy / i.uv.w;
+	float2 uv = i.uv.xy;
 	uv.y = _ProjectionParams.x * 0.5 + 0.5 - uv.y * _ProjectionParams.x;
-    depth = Linear01Depth(DecodeFloatRG(tex2D(_CameraDepthTexture, uv)));
+    depth = Linear01Depth(DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uv)));
 	float3 raycast = i.raycast * (_ProjectionParams.z / i.raycast.z);
     float4 vPos = float4(raycast * depth, 1);
     wPos = mul(unity_CameraToWorld, vPos).xyz;
@@ -150,11 +150,11 @@ float4 DoZoomTransparency(v2f i, float4 col){
 
 float SampleDepthTex(float2 uv){
 	// uv.y = _ProjectionParams.x * 0.5 + 0.5 - uv.y * _ProjectionParams.x;
-    return tex2D(_CameraDepthTexture, uv);
+    return MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uv);
 }
 
 float GrayscaleSample(float2 uv){
-	float3 col = tex2D(_MSFXGrab, uv);
+	float3 col = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uv);
 	col = Desaturate(col);
 	return col.r;
 }
@@ -273,15 +273,15 @@ void ApplyPixelBlur(v2f i, inout float3 blurCol){
 	_BlurStr *= 16;
 	#if BLUR_Y_ENABLED
 		#if CHROM_ABB_ENABLED
-			ApplyChromaticAbberationY(_MSFXGrab, _MSFXGrab_TexelSize.xy, i.uv, _PixelBlurSamples, _BlurStr, blurCol);
+			ApplyChromaticAbberationY(_MSFXGrab_TexelSize.xy, i.uv, _PixelBlurSamples, _BlurStr, blurCol);
 		#else
-			ApplyStandardBlurY(_MSFXGrab, _MSFXGrab_TexelSize.xy, i.uv, _PixelBlurSamples, _BlurStr, blurCol);
+			ApplyStandardBlurY(_MSFXGrab_TexelSize.xy, i.uv, _PixelBlurSamples, _BlurStr, blurCol);
 		#endif	
 	#else
 		#if CHROM_ABB_ENABLED
-			ApplyChromaticAbberation(_MSFXGrab, _MSFXGrab_TexelSize.xy, i.uv, _PixelBlurSamples, _BlurStr, blurCol);
+			ApplyChromaticAbberation(_MSFXGrab_TexelSize.xy, i.uv, _PixelBlurSamples, _BlurStr, blurCol);
 		#else
-			ApplyStandardBlur(_MSFXGrab, _MSFXGrab_TexelSize.xy, i.uv, _PixelBlurSamples, _BlurStr, blurCol);
+			ApplyStandardBlur(_MSFXGrab_TexelSize.xy, i.uv, _PixelBlurSamples, _BlurStr, blurCol);
 		#endif
 	#endif
 	ApplyCrush(blurCol, _CrushBlur);
@@ -301,18 +301,19 @@ void ApplyDitherBlur(inout v2f i){
 void ApplyRGBDitherBlur(v2f i, inout float3 col){
 	_BlurStr *= 0.01;
 	float3 noise = GetNoiseRGB(i.uv, _BlurStr);
+	i.uv.xy /= i.uv.w;
 	#if BLUR_Y_ENABLED
-		float4 redUV = float4(i.uv.x, i.uv.y+(noise.r*0.3333), i.uv.zw);
-		float4 greenUV = float4(i.uv.x, i.uv.y+(noise.g*0.6666), i.uv.zw);
-		float4 blueUV = float4(i.uv.x, i.uv.y+noise.b, i.uv.zw);
+		float2 redUV = float2(i.uv.x, i.uv.y+(noise.r*0.3333));
+		float2 greenUV = float2(i.uv.x, i.uv.y+(noise.g*0.6666));
+		float2 blueUV = float2(i.uv.x, i.uv.y+noise.b);
 	#else
-		float4 redUV = float4(i.uv.x+noise.r, i.uv.yzw);
-		float4 greenUV = float4(i.uv.x, i.uv.y+noise.g, i.uv.zw);
-		float4 blueUV = float4(i.uv.x+noise.b, i.uv.y+noise.b, i.uv.zw);
+		float2 redUV = float2(i.uv.x+noise.r, i.uv.y);
+		float2 greenUV = float2(i.uv.x, i.uv.y+noise.g);
+		float2 blueUV = float2(i.uv.x+noise.b, i.uv.y+noise.b);
 	#endif
-	float red = tex2Dproj(_MSFXGrab, redUV).r;
-	float green = tex2Dproj(_MSFXGrab, greenUV).g;
-	float blue = tex2Dproj(_MSFXGrab, blueUV).b;
+	float red = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, redUV).r;
+	float green = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, greenUV).g;
+	float blue = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, blueUV).b;
 	col = float3(red, green, blue);
 }
 
@@ -323,7 +324,7 @@ void ApplyBlur(v2f i, inout float3 col, float3 blurCol){
 	#elif BLUR_DITHER_ENABLED && CHROM_ABB_ENABLED
 		ApplyRGBDitherBlur(i, blurCol);
 	#elif BLUR_RADIAL_ENABLED
-		ApplyRadialBlur(i, _MSFXGrab, i.uv, _BlurSamples, _BlurRadius, _BlurStr, blurCol);
+		ApplyRadialBlur(i, i.uv, _BlurSamples, _BlurRadius, _BlurStr, blurCol);
 	#endif
 	col = lerp(col, blurCol, _BlurOpacity);
 }

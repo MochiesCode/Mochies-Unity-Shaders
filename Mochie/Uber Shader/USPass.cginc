@@ -399,6 +399,9 @@ float4 frag(g2f i) : SV_Target {
 			float4 alphaMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_AlphaMask, sampler_MainTex, i.uv.xy);
 			albedo.a = ChannelCheck(alphaMask, _AlphaMaskChannel);
 		}
+		else {
+			albedo.a = lerp(baseColor.a, outlineTex.a, _UseOutlineTexAlpha);
+		}
 		ApplyCutout(i, l.screenUVs, albedo);
 		#if X_FEATURES && !DISSOLVE_GEOMETRY
 			if (_DissolveStyle > 0){

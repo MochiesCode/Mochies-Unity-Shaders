@@ -3,6 +3,10 @@
 
 v2f vert (appdata v) {
 	v2f o = (v2f)0;
+	UNITY_SETUP_INSTANCE_ID(v);
+	UNITY_TRANSFER_INSTANCE_ID(v, o);
+	UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+
 	#if VERTEX_OFFSET_ENABLED
 		float2 noiseUV = ScaleUV(v.uv, _NoiseTexScale, _NoiseTexScroll*10);
 		float noiseWaveTex = tex2Dlod(_NoiseTex, float4(noiseUV,0,lerp(0,8,_NoiseTexBlur)));
@@ -73,7 +77,9 @@ v2f vert (appdata v) {
 }
 
 float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
-	
+
+	UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
+
 	#if defined(UNITY_PASS_FORWARDADD)
 		UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos);
 		atten = FadeShadows(i.worldPos, atten);
@@ -184,8 +190,8 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	#else
 		float4 mainTex = tex2D(_MainTex, mainTexUV) * _Color;
 	#endif
-	float4 baseCol = tex2D(_MWGrab, baseUV);
-	float4 col = tex2D(_MWGrab, screenUV) * mainTex;
+	float4 baseCol = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MWGrab, baseUV);
+	float4 col = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MWGrab, screenUV) * mainTex;
 	
 	#if FOAM_ENABLED
 		float depth = saturate(1-GetDepth(i, screenUV));
