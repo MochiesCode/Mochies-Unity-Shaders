@@ -43,7 +43,7 @@ public class WaterEditor : ShaderGUI {
 	}, 0);
 
     string header = "WaterHeader_Pro";
-	string versionLabel = "v1.4";
+	string versionLabel = "v1.5";
 
 	MaterialProperty _Color = null;
 	MaterialProperty _MainTex = null;
@@ -107,10 +107,14 @@ public class WaterEditor : ShaderGUI {
 
 	MaterialProperty _CausticsToggle = null;
 	MaterialProperty _CausticsOpacity = null;
-	MaterialProperty _CausticsPower = null;
 	MaterialProperty _CausticsScale = null;
 	MaterialProperty _CausticsSpeed = null;
 	MaterialProperty _CausticsFade = null;
+	MaterialProperty _CausticsDisp = null;
+	MaterialProperty _CausticsDistortion = null;
+	MaterialProperty _CausticsDistortionScale = null;
+	MaterialProperty _CausticsDistortionSpeed = null;
+	MaterialProperty _CausticsRotation = null;
 
 	MaterialProperty _FogToggle = null;
 	MaterialProperty _FogTint = null;
@@ -271,10 +275,11 @@ public class WaterEditor : ShaderGUI {
 						MGUI.Vector3Field(_ReflCubeRotation, "Rotation", false);
 					}
 					me.ShaderProperty(_ReflStrength, "Strength");
-					me.ShaderProperty(_ReflTint, "Tint");
+					
 					MGUI.ToggleFloat(me, "Screenspace Reflections", _SSR, _SSRStrength);
 					if (_SSR.floatValue > 0)
 						me.ShaderProperty(_EdgeFadeSSR, "Edge Fade");
+					me.ShaderProperty(_ReflTint, "Tint");
 					MGUI.ToggleGroupEnd();
 				});
 				MGUI.Space8();
@@ -370,15 +375,22 @@ public class WaterEditor : ShaderGUI {
 			causticsTabButtons.Add(()=>{ResetCaustics();}, MGUI.resetLabel);
 			Action causticsTabAction = ()=>{
 				me.ShaderProperty(_CausticsToggle, "Enable");
+				MGUI.ToggleGroup(_CausticsToggle.floatValue == 0);
 				MGUI.Space4();
 				MGUI.PropertyGroup( () => {
-					MGUI.ToggleGroup(_CausticsToggle.floatValue == 0);
-					me.ShaderProperty(_CausticsOpacity, "Opacity");
-					me.ShaderProperty(_CausticsPower, "Power");
+					me.ShaderProperty(_CausticsOpacity, "Strength");
+					me.ShaderProperty(_CausticsDisp, "Phase");
+					me.ShaderProperty(_CausticsSpeed, "Speed");
 					me.ShaderProperty(_CausticsScale, "Scale");
 					me.ShaderProperty(_CausticsFade, Tips.causticsFade);
-					MGUI.ToggleGroupEnd();
+					MGUI.Vector3Field(_CausticsRotation, "Rotation", false);
 				});
+				MGUI.PropertyGroup( ()=>{
+					me.ShaderProperty(_CausticsDistortion, "Distortion Strength");
+					me.ShaderProperty(_CausticsDistortionScale, "Distortion Scale");
+					MGUI.Vector2Field(_CausticsDistortionSpeed, "Distortion Speed");
+				});
+				MGUI.ToggleGroupEnd();
 			};
 			Foldouts.Foldout("CAUSTICS", foldouts, causticsTabButtons, mat, me, causticsTabAction);
 			
@@ -534,7 +546,7 @@ public class WaterEditor : ShaderGUI {
 
 	void ResetPrimaryNormal(){
 		_NormalMapScale0.vectorValue = new Vector4(3f,3f,0,0);
-		_NormalStr0.floatValue = 0.2f;
+		_NormalStr0.floatValue = 0.1f;
 		_Rotation0.floatValue = 0f;
 		_NormalMapScroll0.vectorValue = new Vector4(0.1f,0.1f,0,0);
 		_Normal0StochasticToggle.floatValue = 0f;
@@ -542,7 +554,7 @@ public class WaterEditor : ShaderGUI {
 	}
 
 	void ResetSecondaryNormal(){
-		_NormalStr1.floatValue = 0.3f;
+		_NormalStr1.floatValue = 0.2f;
 		_NormalMapScale1.vectorValue = new Vector4(4f,4f,0,0);
 		_NormalMapScroll1.vectorValue = new Vector4(-0.1f, 0.1f, 0,0);
 		_Rotation1.floatValue = 0f;
@@ -586,15 +598,19 @@ public class WaterEditor : ShaderGUI {
 
 	void ResetCaustics(){
 		_CausticsOpacity.floatValue = 1f;
-		_CausticsPower.floatValue = 5f;
-		_CausticsScale.floatValue = 5f;
-		_CausticsSpeed.floatValue = 1f;
-		_CausticsFade.floatValue = 10f;
+		_CausticsScale.floatValue = 15f;
+		_CausticsSpeed.floatValue = 3f;
+		_CausticsFade.floatValue = 5f;
+		_CausticsDistortion.floatValue = 0.1f;
+		_CausticsDisp.floatValue = 0.25f;
+		_CausticsDistortionSpeed.vectorValue = new Vector4(-0.1f, -0.1f, 0f, 0f);
+		_CausticsDistortionScale.floatValue = 1f;
+		_CausticsRotation.vectorValue = new Vector4(-20f,0,-20f,0);
 	}
 
 	void ResetFog(){
-		_FogTint.colorValue = Color.white;
-		_FogPower.floatValue = 1f;
+		_FogTint.colorValue = new Vector4(0.11f,0.26f,0.26f,1f);
+		_FogPower.floatValue = 100f;
 	}
 
 	void ResetFoam(){
@@ -614,7 +630,7 @@ public class WaterEditor : ShaderGUI {
 		_FoamNoiseTexScale.vectorValue = new Vector4(2f,2f,0,0);
 		_FoamDistortionStrength.floatValue = 0.1f;
 		_FoamNormalStrength.floatValue = 4f;
-		_FoamNormalToggle.floatValue = 0f;
+		_FoamNormalToggle.floatValue = 1f;
 	}
 
 	void ResetReflSpec(){

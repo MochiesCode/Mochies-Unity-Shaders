@@ -1,5 +1,5 @@
 ﻿
-float4 RGBSubPixelConvert(sampler2D mainTex, sampler2D rgbTex, float2 uv0, float2 uv1, float3 viewDir, float3 worldNormal)
+float4 RGBSubPixelConvert(sampler2D mainTex, sampler2D rgbTex, float2 uv0, float2 uv1, float3 viewDir, float3 worldNormal, inout float alpha)
 {
 	//our emission map
 	uv0 = round(uv0 * _RGBSubPixelTex_ST.xy) / _RGBSubPixelTex_ST.xy;
@@ -31,7 +31,8 @@ float4 RGBSubPixelConvert(sampler2D mainTex, sampler2D rgbTex, float2 uv0, float
 
 	//do RGB pixels
 	uv1 *= _RGBSubPixelTex_ST.xy + _RGBSubPixelTex_ST.zw;
-	float3 rgbpixel = tex2D(rgbTex, uv1);
+	float3 rgbpixel = tex2D(rgbTex, uv1).rgb;
+	alpha = tex2D(rgbTex, uv1).a;
 
 	float backlight = dot(rgbpixel, 0.5);
 	backlight *= 0.005;

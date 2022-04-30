@@ -17,7 +17,7 @@ Shader "Mochie/Water" {
 		[Enum(Off,0, On,1)]_ZWrite("ZWrite", Int) = 0
 		
 		[NoScaleOffset]_NormalMap0 ("", 2D) = "bump" {}
-		_NormalStr0("Strength", Float) = 0.2
+		_NormalStr0("Strength", Float) = 0.1
 		_NormalMapScale0("Scale", Vector) = (3,3,0,0)
 		_Rotation0("Rotation", Float) = 0
 		_NormalMapScroll0("Scrolling", Vector) = (0.1,0.1,0,0)
@@ -26,7 +26,7 @@ Shader "Mochie/Water" {
 
 		[Toggle(_NORMALMAP_1_ON)]_Normal1Toggle("Enable", Int) = 1
 		[NoScaleOffset]_NormalMap1("", 2D) = "bump" {}
-		_NormalStr1("Strength", Float) = 0.3
+		_NormalStr1("Strength", Float) = 0.2
 		_NormalMapScale1("Scale", Vector) = (4,4,0,0)
 		_Rotation1("Rotation", Float) = 0
 		_NormalMapScroll1("Scrolling", Vector) = (-0.1,0.1,0,0)
@@ -80,16 +80,21 @@ Shader "Mochie/Water" {
 		_VertRemapMin("Remap Min", Float) = -1
 		_VertRemapMax("Remap Max", Float) = 1
 		
-		[Toggle(_CAUSTICS_ON)]_CausticsToggle("Enable", Int) = 0
-		_CausticsOpacity("Opacity", Range(0,1)) = 1
+		[Toggle(_CAUSTICS_ON)]_CausticsToggle("Enable", Int) = 1
+		_CausticsDisp("Dispersion", Float) = 0.25
+		_CausticsDistortion("Distortion", Float) = 0.1
+		_CausticsDistortionScale("Distortion Scale", Float) = 1
+		_CausticsDistortionSpeed("Distortion Speed", Vector) = (-0.1, -0.1,0,0)
+		_CausticsOpacity("Opacity", Float) = 1
 		_CausticsPower("Power", Float) = 5
-		_CausticsScale("Scale", Float) = 5
-		_CausticsSpeed("Speed", Float) = 1
-		_CausticsFade("Depth Fade", Float) = 10
+		_CausticsScale("Scale", Float) = 15
+		_CausticsSpeed("Speed", Float) = 3
+		_CausticsFade("Depth Fade", Float) = 5
+		_CausticsRotation("Rotation", Vector) = (-20,0,20,0)
 		
 		[Toggle(_DEPTHFOG_ON)]_FogToggle("Enable", Int) = 1
-		[HDR]_FogTint("Color", Color) = (1,1,1,0.3)
-		_FogPower("Power", Float) = 1
+		_FogTint("Color", Color) = (0.11,0.26,0.26,1)
+		_FogPower("Power", Float) = 100
 
 		[Toggle(_FOAM_ON)]_FoamToggle("Enable", Int) = 1
 		[NoScaleOffset]_FoamTex("Foam Texture", 2D) = "white" {}
@@ -109,7 +114,7 @@ Shader "Mochie/Water" {
 		_FoamCrestStrength("Crest Strength", Float) = 20
 		[Toggle(_FOAM_STOCHASTIC_ON)]_FoamStochasticToggle("Stochastic Sampling", Int) = 0
 		_FoamDistortionStrength("Distortion Strength", Float) = 0.1
-		[ToggleUI]_FoamNormalToggle("Foam Normals", Int) = 0
+		[ToggleUI]_FoamNormalToggle("Foam Normals", Int) = 1
 		_FoamNormalStrength("Foam Normal Strength", Float) = 4
 
 		[Toggle(_EDGEFADE_ON)]_EdgeFadeToggle("Enable", Int) = 1

@@ -86,6 +86,7 @@ Shader "Mochie/Standard" {
 		[Enum(Red,0, Green,1, Blue,2, Alpha,3)]_AlphaMaskChannel("Alpha Mask Channel", Int) = 3
 		[ToggleUI]_DetailSamplingMode("Use Sampling Mode", Int) = 0
 		
+		[ToggleUI]_Filtering("Filtering", Int) = 0
 		_Hue("Hue", Range(0,1)) = 0
 		_Contrast("Contrast", Float) = 1
 		_Saturation("Saturation", Float) = 1
@@ -229,6 +230,7 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _AUDIOLINK_ON
 			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
 			#pragma shader_feature_local _ALPHAMASK_ON
+			#pragma shader_feature_local _FILTERING_ON
 			#pragma shader_feature_local _BICUBIC_SAMPLING_ON
 			#pragma shader_feature_local LTCGI
 			#pragma shader_feature_local LTCGI_DIFFUSE_OFF
@@ -271,6 +273,7 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _SUBSURFACE_ON
 			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
 			#pragma shader_feature_local _ALPHAMASK_ON
+			#pragma shader_feature_local _FILTERING_ON
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma multi_compile_fwdadd_fullshadows
             #pragma multi_compile_fog
@@ -323,6 +326,7 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _DETAIL_AO_ON
 			#pragma shader_feature_local _SUBSURFACE_ON
 			#pragma shader_feature_local _ALPHAMASK_ON
+			#pragma shader_feature_local _FILTERING_ON
 			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
             #pragma shader_feature_local EDITOR_VISUALIZATION
             #include "UnityStandardMeta.cginc"

@@ -19,7 +19,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		"Render Settings"
 	}, 1);
 
-	string versionLabel = "v1.12";
+	string versionLabel = "v1.13";
 	// β
 
 	MaterialProperty blendMode = null;
@@ -160,6 +160,8 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty rimCol = null;
 	MaterialProperty rimWidth = null;
 	MaterialProperty rimEdge = null;
+
+	MaterialProperty filtering = null;
 
 	MaterialProperty bicubicLightmap = null;
 
@@ -318,6 +320,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		// _RNM2 = FindProperty("_RNM2", props);
 		_BAKERY_LMSPEC = FindProperty("_BAKERY_LMSPEC", props);
 		_BAKERY_SHNONLINEAR = FindProperty("_BAKERY_SHNONLINEAR", props);
+		filtering = FindProperty("_Filtering", props);
 	}
 
 	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props){
@@ -730,7 +733,8 @@ internal class MochieStandardGUI : ShaderGUI {
 	}
 
 	void DoFilteringArea(){
-			MGUI.PropertyGroup( () => {
+		MGUI.PropertyGroup( () => {
+			me.ShaderProperty(filtering, "Enable");
 			MGUI.BoldLabel("Base Color");
 			MGUI.PropertyGroupLayer(()=>{
 				MGUI.SpaceN1();
@@ -906,6 +910,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		MGUI.SetKeyword(material, "_BICUBIC_SAMPLING_ON", material.GetInt("_BicubicLightmap") == 1);
 		MGUI.SetKeyword(material, "BAKERY_SH", material.GetInt("_BakeryMode") == 1);
 		MGUI.SetKeyword(material, "BAKERY_RNM", material.GetInt("_BakeryMode") == 2);
+		MGUI.SetKeyword(material, "_FILTERING_ON", material.GetInt("_Filtering") == 1);
 
 		if (samplingMode < 3){
 			if (!material.GetTexture("_PackedMap"))

@@ -268,11 +268,13 @@ void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1, ino
 }
 
 half3 Filtering(float3 col, float hue, float saturation, float brightness, float contrast){
-	if (hue > 0 && hue < 1)
-		col = HSVShift(col, hue, 0, 0);
-	col = lerp(dot(col, float3(0.3,0.59,0.11)), col, saturation);
-	col = GetContrast(col, contrast);
-	col *= brightness;
+	#ifdef _FILTERING_ON
+		if (hue > 0 && hue < 1)
+			col = HSVShift(col, hue, 0, 0);
+		col = lerp(dot(col, float3(0.3,0.59,0.11)), col, saturation);
+		col = GetContrast(col, contrast);
+		col *= brightness;
+	#endif
 	return col;
 }
 
@@ -288,7 +290,7 @@ half3 Albedo(float4 texcoords, SampleData sd)
 	albedo = Filtering(albedo, _Hue, _Saturation, _Brightness, _Contrast);
 	#if DETAIL_BASECOLOR
 		half mask = DetailMask(texcoords.xy);
-		sd.scaleTransform = _DetailAlbedoMap_ST;
+		sd.scaleTransform = _DetailAlbedoMap_ST;B
 		sd.rotation = _UV1Rotate;
 		#if DETAIL_SAMPLEMODE_ENABLED
 			half4 detailAlbedo = SampleTexture(_DetailAlbedoMap, sampler_DetailAlbedoMap, texcoords.zw, sd);

@@ -100,6 +100,11 @@ float _RippleStr;
 float _RippleScale;
 float _RippleSpeed;
 float _FoamNormalStrength;
+float _CausticsDisp;
+float _CausticsDistortion;
+float _CausticsDistortionScale;
+float2 _CausticsDistortionSpeed;
+float3 _CausticsRotation;
 
 const static float2 jump = float2(0.1, 0.25);
 

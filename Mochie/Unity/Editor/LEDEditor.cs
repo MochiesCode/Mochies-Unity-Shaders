@@ -9,7 +9,8 @@ public class LEDEditor : ShaderGUI {
 	public static GUIContent RGBMatrixTex = new GUIContent("RGB Matrix Texture", "The RGB pixel layout pattern.");
 	public static GUIContent smoothTex = new GUIContent("Roughness");
 	public static GUIContent flipbookTex = new GUIContent("Flipbook");
-	string versionLabel = "v1.3";
+	string versionLabel = "v1.4";
+	bool isTransparent = false;
 	MaterialProperty _MainTex = null;
 	MaterialProperty _RGBSubPixelTex = null;
     MaterialProperty _EmissionIntensity = null; 
@@ -24,12 +25,13 @@ public class LEDEditor : ShaderGUI {
 	MaterialProperty _Flipbook = null;
 	MaterialProperty _FPS = null;
 	MaterialProperty _Color = null;
+	MaterialProperty _ZWrite = null;
 
     BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
-    public override void OnGUI(MaterialEditor m_MaterialEditor, MaterialProperty[] props){
-		Material material = (Material)m_MaterialEditor.target;
-
+    public override void OnGUI(MaterialEditor me, MaterialProperty[] props){
+		Material material = (Material)me.target;
+		isTransparent = material.shader.name.Contains("(Transparent)");
         foreach (var property in GetType().GetFields(bindingFlags)){
             if (property.FieldType == typeof(MaterialProperty)){
                 property.SetValue(this, FindProperty(property.Name, props));
@@ -40,45 +42,49 @@ public class LEDEditor : ShaderGUI {
 			MGUI.BoldLabel("Image");
 			MGUI.Space2();
 			if (_FlipbookMode.floatValue == 0){
-				m_MaterialEditor.TexturePropertySingleLine(mainTex, _MainTex, _FlipbookMode);
+				me.TexturePropertySingleLine(mainTex, _MainTex, _FlipbookMode);
 				MGUI.TexPropLabel("Flipbook", 105);
-				m_MaterialEditor.ShaderProperty(_Color, "Color");
+				me.ShaderProperty(_Color, "Color");
 				if (_MainTex.textureValue){
-					MGUI.TextureSOScroll(m_MaterialEditor, _MainTex, _UVScroll);
+					MGUI.TextureSOScroll(me, _MainTex, _UVScroll);
 					MGUI.Space6();
 				}
 			}
 			else {
-				m_MaterialEditor.TexturePropertySingleLine(flipbookTex, _Flipbook, _FlipbookMode);
+				me.TexturePropertySingleLine(flipbookTex, _Flipbook, _FlipbookMode);
 				MGUI.TexPropLabel("Flipbook", 105);
 				if (_Flipbook.textureValue){
-					MGUI.TextureSO(m_MaterialEditor, _MainTex);
+					MGUI.TextureSO(me, _MainTex);
 					MGUI.SpaceN2();
-					m_MaterialEditor.ShaderProperty(_FPS, "FPS");
+					me.ShaderProperty(_FPS, "FPS");
 					MGUI.Space6();
 				}
 			}
 			MGUI.SetKeyword(material, "_FLIPBOOK_MODE", material.GetInt("_FlipbookMode") == 1);
-			m_MaterialEditor.TexturePropertySingleLine(smoothTex, _SpecGlossMap, _Glossiness);
-			MGUI.TextureSO(m_MaterialEditor, _SpecGlossMap, _SpecGlossMap.textureValue);
+			me.TexturePropertySingleLine(smoothTex, _SpecGlossMap, _Glossiness);
+			MGUI.TextureSO(me, _SpecGlossMap, _SpecGlossMap.textureValue);
 			MGUI.SetKeyword(material, "_SPECGLOSSMAP", material.GetTexture("_SpecGlossMap"));
 			MGUI.Space4();
 
 			MGUI.SetKeyword(material, "_EMISSION", true);
-            m_MaterialEditor.ShaderProperty(_EmissionIntensity, "Emission Strength");
-			m_MaterialEditor.ShaderProperty(_LightmapEmissionScale, "Lightmap Emission Strength");
-			m_MaterialEditor.ShaderProperty(_BoostAmount, "Boost Multiplier");
-			m_MaterialEditor.ShaderProperty(_BoostThreshold, "Boost Threshold");
+            me.ShaderProperty(_EmissionIntensity, "Emission Strength");
+			me.ShaderProperty(_LightmapEmissionScale, "Lightmap Emission Strength");
+			me.ShaderProperty(_BoostAmount, "Boost Multiplier");
+			me.ShaderProperty(_BoostThreshold, "Boost Threshold");
 			material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
 			MGUI.Space4();
 
 			MGUI.BoldLabel("Panel");
 			MGUI.Space2();
-            m_MaterialEditor.TexturePropertySingleLine(RGBMatrixTex, _RGBSubPixelTex);
-			MGUI.TextureSO(m_MaterialEditor, _RGBSubPixelTex, _RGBSubPixelTex.textureValue);
-			MGUI.Space2();
-
-			m_MaterialEditor.ShaderProperty(_Backlight, "Backlit");
+            me.TexturePropertySingleLine(RGBMatrixTex, _RGBSubPixelTex);
+			MGUI.TextureSO(me, _RGBSubPixelTex, _RGBSubPixelTex.textureValue);
+			me.ShaderProperty(_Backlight, "Backlit");
+			MGUI.Space4();
+			MGUI.BoldLabel("Render Settings");
+			if (isTransparent){
+				me.ShaderProperty(_ZWrite, "ZWrite");
+			}
+			me.RenderQueueField();
 			MGUI.Space8();
         }
 

@@ -166,12 +166,30 @@ namespace Mochie {
 		public static GUIContent foamOpacity = new GUIContent("Opacity", "How visible the foam is on both crests and edges.");
 		public static GUIContent foamPower = new GUIContent("Edge Power", "Intensity of the edge foam gradient.");
 		public static GUIContent foamRoughness = new GUIContent("Roughness", "How rough the foam should be when calculating reflections and specular highlights.");
-		public static GUIContent foamNoiseTexCrestStrength = new GUIContent("Crest Strength", "How strongly the noise texture should affect crest foam.");
-		public static GUIContent foamNoiseTexStrength = new GUIContent("Edge Strength", "How strongly the noise texture should affect edge foam.");
+		public static GUIContent foamNoiseTexCrestStrength = new GUIContent("Crest Noise", "How strongly the noise texture should affect crest foam.");
+		public static GUIContent foamNoiseTexStrength = new GUIContent("Edge Noise", "How strongly the noise texture should affect edge foam.");
 		public static GUIContent causticsFade = new GUIContent("Fade", "Determines how strongly caustics will fade out at greater depths.");
 		public static GUIContent turbulence = new GUIContent("Strength", "Adds variation to the height of waves.");
 		public static GUIContent waterNormalMap = new GUIContent("Normal Map", "Determines the behavior of light on the surface. Primarily used to fake small details or smooth bevels on sharp edges. Also serves as the source for refraction and distortion effects on textures.");
 		public static GUIContent waterRoughness = new GUIContent("Roughness", roughnessText.tooltip);
 		public static GUIContent waterMetallic = new GUIContent("Metallic", "How metallic a surface should look. Higher values will decrease visibility of base color in favor of reflective color to simulate the behavior of metal surfaces in real life. Lower values will look more akin to normnal water.");
+
+		// Particles
+		public static GUIContent softening = new GUIContent("Softening", "Fades out the edges of particles where they interesect with opaque geometry to hide harsh cutoffs.");
+		public static GUIContent falloffMode = new GUIContent("Mode", "Per Particle:\nFalloff will be based on the distance from the center of the particle.\n\nPer Vertex:\nFalloff will be based on the distance from the vertex of a particle. Mostly useful for larger mesh particles.");
+		public static GUIContent autoShift = new GUIContent("Auto Shift", "Automatically shifts the hue over time based on the speed parameter.");
+		public static GUIContent flipbookBlending = new GUIContent("Flipbook Blending", "Fades between frames instead of immediately cutting to make the animation smoother.");
+
+		// Taken
+		public static GUIContent gradientRestriction = new GUIContent("Gradient Restriction", "Masks the rim effect inside the gradient, so it will only be visible where the gradient is.");
+		public static GUIContent emissionGradRestrict = new GUIContent("Gradient Restriction", "Masks the emission inside the gradient, so it will only be visible where the gradient is.");
+		public static GUIContent restrictionMask = new GUIContent("Restriction Mask", "White areas will be exempt from the gradient restriction.");
+		public static GUIContent gradientAxis = new GUIContent("Axis", "The direction the gradient will be applied. Y will come from below, Z will come from the front or behind, and X will come from the left or right. These directions are based on the mesh root position.");
+		public static GUIContent endPos = new GUIContent("End Position", "How far from the start position the gradient will reach.");
+		public static GUIContent startPos = new GUIContent("Start Position", "The position on the chosen axis that the gradient will start, measured by the distance from the mesh origin.");
+		public static GUIContent noiseSmoothing = new GUIContent("Smoothing", "Smoothens the edges of the noise patches.");
+		public static GUIContent globalTint = new GUIContent("Global Tint", "Determines the color of the majority of effects in the shader.");
+		public static GUIContent emissionAO = new GUIContent("Emission (AO)", "Takes an ambient occlusion map and inverts it to determine emission. This is the same technique used by bungie for the effect in Destiny.");
+		public static GUIContent invertTint = new GUIContent("Invert Tint", "Uses an inverted copy of the base color texture to determine outline tint.");
 	}
 }

@@ -173,8 +173,8 @@ public class PSEditor : ShaderGUI {
 				MGUI.PropertyGroup( () => {
 					me.ShaderProperty(_Opacity, "Opacity");
 					MGUI.ToggleSlider(me, "Cutout", _IsCutout, _Cutoff);
-					MGUI.ToggleSlider(me, "Softening", _Softening, _SoftenStr);
-					me.ShaderProperty(_FlipbookBlending, "Flipbook Blending");
+					MGUI.ToggleSlider(me, Tips.falloffMode, _Softening, _SoftenStr);
+					me.ShaderProperty(_FlipbookBlending, Tips.flipbookBlending);
 				});
 				MGUI.PropertyGroup( () => {
 					me.TexturePropertySingleLine(texLabel, _MainTex, _Color);
@@ -193,8 +193,8 @@ public class PSEditor : ShaderGUI {
 				MGUI.Space4();
 				MGUI.PropertyGroup( () => {
 					MGUI.ToggleGroup(_Filtering.floatValue == 0);
-					me.ShaderProperty(_AutoShift, "Auto Shift");
-					if (_AutoShift.floatValue ==1)
+					me.ShaderProperty(_AutoShift, Tips.autoShift);
+					if (_AutoShift.floatValue == 1)
 						me.ShaderProperty(_AutoShiftSpeed, "Speed");
 					else
 						me.ShaderProperty(_Hue, "Hue");
@@ -248,7 +248,7 @@ public class PSEditor : ShaderGUI {
 				MGUI.Space4();
 				MGUI.PropertyGroup( () => {
 					MGUI.ToggleGroup(_Falloff.floatValue == 0);
-					me.ShaderProperty(_FalloffMode, "Mode");
+					me.ShaderProperty(_FalloffMode, Tips.falloffMode);
 					MGUI.Space4();
 					me.ShaderProperty(_MinRange, "Far Min Range");
 					me.ShaderProperty(_MaxRange, "Far Max Range");

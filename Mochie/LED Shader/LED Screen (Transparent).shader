@@ -1,6 +1,6 @@
 ﻿// Original by Xiexe - https://github.com/Xiexe/RGBSubPixelDisplay-Shader
 
-Shader "Mochie/LED Screen/LED Screen" {
+Shader "Mochie/LED Screen/LED Screen (Transparent)" {
 	Properties {
 		[ToggleUI]_FlipbookMode("Flipbook Mode", Int) = 0
 		_FPS("FPS", Float) = 24
@@ -23,12 +23,13 @@ Shader "Mochie/LED Screen/LED Screen" {
 	SubShader {
 
 		Tags { 
-			"RenderType"="Opaque" 
-			"Queue"="Geometry"
+			"RenderType"="Transparent" 
+			"Queue"="Transparent"
 		}
+		ZWrite [_ZWrite]
 
 		CGPROGRAM
-		#pragma surface surf Standard fullforwardshadows
+		#pragma surface surf Standard fullforwardshadows alpha:premul
 		#pragma target 5.0
 		#pragma shader_feature_local _SPECGLOSSMAP
 		#pragma shader_feature_local _EMISSION

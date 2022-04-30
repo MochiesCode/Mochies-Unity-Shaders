@@ -52,6 +52,7 @@ v2f vert (appdata v) {
 		v.vertex.xyz += o.wave;
 		o.wave.y = (o.wave.y + 1) * 0.5;
 	#endif
+
 	o.pos = UnityObjectToClipPos(v.vertex);
 	o.normal = UnityObjectToWorldNormal(v.normal);
 	o.cNormal = UnityObjectToWorldNormal(v.normal);
@@ -192,9 +193,46 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	#endif
 	float4 baseCol = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MWGrab, baseUV);
 	float4 col = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MWGrab, screenUV) * mainTex;
-	
+	float depth = saturate(1-GetDepth(i, screenUV));
+
+	if (isFrontFace && !i.isInVRMirror){
+		#if CAUSTICS_ENABLED
+			float caustDepth = 0;
+			#if FOAM_ENABLED
+				caustDepth = depth;
+			#elif FOG_ENABLED
+				caustDepth = fogDepth;
+			#else
+				caustDepth = saturate(1-GetDepth(i, screenUV));
+			#endif
+			float caustFade = saturate(pow(caustDepth, _CausticsFade));
+			if (caustFade > 0){
+				float3 wPos = GetWorldSpacePixelPosSP(i.localPos, screenUV);
+				float2 depthUV = Rotate3D(wPos, _CausticsRotation).xz;
+				float3 causticsOffset = UnpackNormal(tex2D(_NormalMap1, (depthUV*_CausticsDistortionScale*0.1)+_Time.y*_CausticsDistortionSpeed*0.05));
+				float2 causticsUV = (depthUV + uvOffset + (causticsOffset.xy * _CausticsDistortion)) * _CausticsScale;
+				float voronoi0 = Voronoi2D(causticsUV, _Time.y*_CausticsSpeed);
+				float voronoi1 = Voronoi2D(causticsUV, (_Time.y*_CausticsSpeed)+_CausticsDisp);
+				float voronoi2 = Voronoi2D(causticsUV, (_Time.y*_CausticsSpeed)+_CausticsDisp*2.0);
+				float3 voronoi = float3(voronoi0, voronoi1, voronoi2);
+				float3 caustics = smoothstep(0, 1, voronoi) * _CausticsOpacity * caustFade;
+				col.rgb += caustics;
+			}
+		#endif
+
+		#if DEPTHFOG_ENABLED
+			float fogDepth = 0;
+			#if FOAM_ENABLED
+				fogDepth = depth;
+			#else
+				fogDepth = saturate(1-GetDepth(i, screenUV));
+			#endif
+			fogDepth = saturate(pow(fogDepth, _FogPower));
+			col.rgb = lerp(col.rgb, lerp(_FogTint.rgb, col.rgb, fogDepth), _FogTint.a);
+		#endif
+	}
+
 	#if FOAM_ENABLED
-		float depth = saturate(1-GetDepth(i, screenUV));
 		float foamDepth = saturate(pow(depth,_FoamPower));
 		float2 uvFoamOffset = normalMap.xy * _FoamDistortionStrength * 0.1;
 		#if FOAM_STOCHASTIC_ENABLED
@@ -314,41 +352,6 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 			edgeFadeDepth = saturate(Remap(edgeFadeDepth, 0, 1, -_EdgeFadeOffset, 1));
 		}
 	#endif
-
-	if (isFrontFace && !i.isInVRMirror){
-		#if CAUSTICS_ENABLED
-			float caustDepth = 0;
-			#if FOAM_ENABLED
-				caustDepth = depth;
-			#elif FOG_ENABLED
-				caustDepth = fogDepth;
-			#else
-				caustDepth = saturate(1-GetDepth(i, screenUV));
-			#endif
-			float caustFade = saturate(pow(caustDepth, _CausticsFade));
-			if (caustFade > 0){
-				float3 wPos = GetWorldSpacePixelPosSP(i.localPos, screenUV);
-				float4 causticsUV = float4(wPos*_CausticsScale, _Time.y*_CausticsSpeed);
-				float voronoi = GetVoronoi4D(causticsUV, 1);
-				float caustics = saturate(pow(voronoi, _CausticsPower)) * _CausticsOpacity * caustFade;
-				#if EDGEFADE_ENABLED
-					caustics *= saturate(pow(edgeFadeDepth, _EdgeFadePower));
-				#endif
-				col.rgb += col.rgb * caustics;
-			}
-		#endif
-
-		#if DEPTHFOG_ENABLED
-			float fogDepth = 0;
-			#if FOAM_ENABLED
-				fogDepth = depth;
-			#else
-				fogDepth = saturate(1-GetDepth(i, screenUV));
-			#endif
-			fogDepth = saturate(pow(fogDepth, _FogPower));
-			col.rgb = lerp(col.rgb, lerp(_FogTint.rgb, col.rgb, fogDepth), _FogTint.a);
-		#endif
-	}
 
 	#if defined(UNITY_PASS_FORWARDADD)
 		#if EDGEFADE_ENABLED
