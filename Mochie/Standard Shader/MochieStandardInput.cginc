@@ -290,7 +290,7 @@ half3 Albedo(float4 texcoords, SampleData sd)
 	albedo = Filtering(albedo, _Hue, _Saturation, _Brightness, _Contrast);
 	#if DETAIL_BASECOLOR
 		half mask = DetailMask(texcoords.xy);
-		sd.scaleTransform = _DetailAlbedoMap_ST;B
+		sd.scaleTransform = _DetailAlbedoMap_ST;
 		sd.rotation = _UV1Rotate;
 		#if DETAIL_SAMPLEMODE_ENABLED
 			half4 detailAlbedo = SampleTexture(_DetailAlbedoMap, sampler_DetailAlbedoMap, texcoords.zw, sd);
