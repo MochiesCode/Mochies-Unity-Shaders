@@ -69,6 +69,8 @@ MOCHIE_DECLARE_TEX2D_NOSAMPLER(_RimTex);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_AOTintTex);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_Matcap);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_Matcap1);
+MOCHIE_DECLARE_TEX2D_NOSAMPLER(_MatcapNormal0);
+MOCHIE_DECLARE_TEX2D_NOSAMPLER(_MatcapNormal1);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_DetailShadowMap);
 
 // FX
@@ -163,6 +165,8 @@ float4 _DissolveTex_ST;
 float4 _MUSGrab_TexelSize;
 float4 _AudioLinkTriOffsetMask_ST;
 float4 _AudioLinkWireframeMask_ST;
+float4 _MatcapNormal0_ST;
+float4 _MatcapNormal1_ST;
 
 int _Hide;
 int _IsCubeBlendMask;
@@ -216,6 +220,10 @@ int _RefractionBlur;
 int _RefractionBlurRough;
 int _AudioLinkOutlineBand;
 int _UseOutlineTexAlpha;
+int _MatcapNormal0Toggle;
+int _MatcapNormal1Toggle;
+int _MatcapNormal0Mix;
+int _MatcapNormal1Mix;
 
 float _RefractionBlurStrength;
 float _IridescenceStrength;
@@ -269,6 +277,8 @@ float2 _DissolveScroll0;
 float2 _DissolveScroll1;
 float2 _AudioLinkTriOffsetMaskScroll;
 float2 _AudioLinkWireframeMaskScroll;
+float2 _MatcapNormal0Scroll;
+float2 _MatcapNormal1Scroll;
 
 float2 _FrameClipOfs;
 float2 _SpritesheetScale;
@@ -318,6 +328,8 @@ float _AudioLinkTriOffsetFalloff;
 float _AudioLinkStrength;
 float _AudioLinkOutlineMultiplier;
 float _AudioLinkRemapOutlineMax, _AudioLinkRemapOutlineMin;
+float _MatcapNormal0Str;
+float _MatcapNormal1Str;
 
 float3 _VertexRotation;
 float3 _VertexPosition;
@@ -461,6 +473,7 @@ struct lighting {
     float3 normalDir;
     float3 reflectionDir;
 	float3 normal;
+	float3 normalMesh;
 	float3 binormal;
 	float4 tangent;
 	float2 screenUVs;
@@ -471,11 +484,11 @@ struct lighting {
 struct masks {
     float reflectionMask;
     float specularMask;
-	float matcapMask;
+	float matcapPrimMask;
 	float shadowMask;
 	float subsurfMask;
 	float diffuseMask;
-	float matcapBlendMask;
+	float matcapSecMask;
 	float rimMask;
 	float eRimMask;
 	float detailMask;
@@ -505,7 +518,7 @@ struct appdata {
 	float4 uv2 : TEXCOORD2;
     float4 tangent : TANGENT;
     float3 normal : NORMAL;
-	float4 color : COLOR;
+	float4 color : COLOR_Centroid;
 	UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
@@ -561,7 +574,9 @@ struct v2g {
 	float4 localPos : TEXCOORD12;
 	float roundingMask : TEXCOORD13;
 	float4 screenPos : TEXCOORD14;
+	float thicknessMask : TEXCOORD15;
 
+	float4 color : COLOR_Centroid;
 	float4 tangent : TANGENT;
 	float3 normal : NORMAL;
 
@@ -594,12 +609,14 @@ struct g2f {
 	float4 screenPos : TEXCOORD17;
 	float wfOpacAL : TEXCOORD18;
 	float wfStrAL : TEXCOORD19;
+	float thicknessMask : TEXCOORD20;
 
+	float4 color : COLOR_Centroid;
 	float4 tangent : TANGENT;
 	float3 normal : NORMAL;
 
-	UNITY_SHADOW_COORDS(22)
-	UNITY_FOG_COORDS(23)
+	UNITY_SHADOW_COORDS(24)
+	UNITY_FOG_COORDS(25)
 
 	UNITY_VERTEX_INPUT_INSTANCE_ID
 	UNITY_VERTEX_OUTPUT_STEREO
@@ -628,7 +645,9 @@ struct v2f {
 	bool isReflection : TEXCOORD11;
 	float4 localPos : TEXCOORD12;
 	float4 screenPos : TEXCOORD13;
+	float thicknessMask : TEXCOORD14;
 
+	float4 color : COLOR_Centroid;
 	float4 tangent : TANGENT;
 	float3 normal : NORMAL;
 

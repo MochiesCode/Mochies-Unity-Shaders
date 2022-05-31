@@ -110,6 +110,8 @@ namespace Mochie {
 		public static GUIContent basicRimLabel = new GUIContent("Basic Rim");
 		public static GUIContent shadowLabel = new GUIContent("Shadows");
 		public static GUIContent matcapLabel = new GUIContent("Matcap");
+		public static GUIContent matcapPrimaryMask = new GUIContent("Primary Matcap");
+		public static GUIContent matcapSecondaryMask = new GUIContent("Secondary Matcap");
 		public static GUIContent specLabel = new GUIContent("Specular");
 		public static GUIContent reflLabel = new GUIContent("Reflections");
 		public static GUIContent matcapBlendLabel = new GUIContent("Matcap Blend", "Interpolates between the two matcaps.");
@@ -156,6 +158,8 @@ namespace Mochie {
 		public static GUIContent useVertexColor = new GUIContent("Vertex Color Thickness", "Multiplies outline thickness by the mesh vertex colors. The darker the color, the thinner the outline.");
 		public static GUIContent outlineRange = new GUIContent("Min Range", "Parts of the outline closer to the camera than this value will not be rendered.");
 		public static GUIContent colorPreservation = new GUIContent("Tint Clamp", "Clamps the maximum brightness of the material to the base color plus reflections, specular, and subsurface scattering.");
+		public static GUIContent matcapNormal = new GUIContent("Normal", "By default the matcap will use the normal maps in the textures tab, but this can be used to overwrite them (or mix using the option below).");
+		public static GUIContent matcapNormalMix = new GUIContent("Mix Normals", "Mixes the normal maps from the textures tab into the normal map slot in this tab.");
 
 		// Water
 		public static GUIContent stochasticLabel = new GUIContent("Stochastic Sampling", "Uses uvs to generate pseudo-random positions for sampling to alleviate tiling artifacts. 3 samples per texture.");

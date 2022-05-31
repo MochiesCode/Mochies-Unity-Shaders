@@ -787,8 +787,8 @@ masks GetMasks(g2f i){
 					m.eRimMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_ERimMask, sampler_MainTex, erimUV);
 				#endif
 				#if MATCAP_ENABLED
-					m.matcapMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_MatcapMask, sampler_MainTex, matcapUV);
-					m.matcapBlendMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_MatcapBlendMask, sampler_MainTex, matcapBlendUV);
+					m.matcapPrimMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_MatcapMask, sampler_MainTex, matcapUV);
+					m.matcapSecMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_MatcapBlendMask, sampler_MainTex, matcapBlendUV);
 				#endif
 				#if COMBINED_SPECULAR
 					m.anisoMask = 1-MOCHIE_SAMPLE_TEX2D_SAMPLER(_InterpMask, sampler_MainTex, anisoUV);
@@ -836,12 +836,12 @@ masks GetMasks(g2f i){
 				float4 mask0 = MOCHIE_SAMPLE_TEX2D_SAMPLER(_PackedMask0, sampler_MainTex, i.uv.xy);
 				m.reflectionMask = mask0.r;
 				m.specularMask = mask0.g;
-				m.matcapMask = mask0.b;
-				m.refractMask = mask0.a;
+				m.matcapPrimMask = mask0.b;
+				m.matcapSecMask = mask0.a;
 				float4 mask2 = MOCHIE_SAMPLE_TEX2D_SAMPLER(_PackedMask2, sampler_MainTex, i.uv.xy);
 				m.rimMask = mask2.r;
 				m.eRimMask = mask2.g;
-				m.matcapBlendMask = mask2.b;
+				m.refractMask = mask2.b;
 				m.anisoMask = mask2.a;
 			#endif
 			float4 mask1 = MOCHIE_SAMPLE_TEX2D_SAMPLER(_PackedMask1, sampler_MainTex, i.uv.xy);

@@ -245,7 +245,8 @@ lighting GetLighting(g2f i, masks m, float3 atten, bool frontFace){
 		l.binormal = cross(i.normal, i.tangent.xyz) * (i.tangent.w * unity_WorldTransformParams.w);
 		l.binormal = lerp(-l.binormal, l.binormal, frontFace);
 		l.normalDir = GetNormalDir(i,l,m);
-		l.normal = lerp(l.normalDir, normalize(i.normal), _ClearCoat);
+		l.normalMesh = normalize(i.normal);
+		l.normal = lerp(l.normalDir, l.normalMesh, _ClearCoat);
 		l.normal = lerp(-l.normal, l.normal, frontFace);
 		l.reflectionDir = reflect(-l.viewDir, l.normal);
 		#if VERTEX_LIGHT

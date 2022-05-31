@@ -113,6 +113,20 @@ void ApplyERimLighting(g2f i, lighting l, masks m, inout float3 diffuse, float r
 	}
 }
 
+float3 GetMatcapNormal(g2f i, lighting l, Texture2D tex, float strength, float2 scroll, float4 scaleOffset, int useNormalMap, int mixNormals){
+	float3 matcapNormal = l.normal;
+	if (useNormalMap){
+		float2 uv = ApplyScaleOffset(i.rawUV, scaleOffset);
+		uv += _Time.y*scroll;
+		float3 normalMap = UnpackScaleNormal(MOCHIE_SAMPLE_TEX2D_SAMPLER(_MatcapNormal0, sampler_MainTex, uv), strength); 
+		matcapNormal = normalize(normalMap.x * l.tangent + normalMap.y * l.binormal + normalMap.z * i.normal);
+		if (mixNormals){
+			matcapNormal = BlendNormals(matcapNormal, l.normal);
+		}
+	}
+	return matcapNormal;
+}
+
 float2 GetMatcapUV(float3 viewDir, float3 normal){
 	float3 worldViewUp = normalize(float3(0,1,0) - viewDir * dot(viewDir, float3(0,1,0)));
 	float3 worldViewRight = normalize(cross(viewDir, worldViewUp));
@@ -122,32 +136,27 @@ float2 GetMatcapUV(float3 viewDir, float3 normal){
 void ApplyMatcap(g2f i, lighting l, masks m, inout float3 environment, float roughness){
 
 	float3 vd0 = lerp(l.viewDir, l.viewDirVR, _MatcapCenter);
-	float3 vd1 = lerp(l.viewDir, l.viewDirVR, _MatcapCenter1);
-	float2 matcapUV0 = GetMatcapUV(vd0, l.normal);
-	float2 matcapUV1 = GetMatcapUV(vd1, l.normal);
-
+	float3 matcapNormal0 = GetMatcapNormal(i, l, _MatcapNormal0, _MatcapNormal0Str, _MatcapNormal0Scroll, _MatcapNormal0_ST, _MatcapNormal0Toggle, _MatcapNormal0Mix);
+	float2 matcapUV0 = GetMatcapUV(vd0, matcapNormal0);
 	float isUnlit0 = lerp(l.worldBrightness, 1, _UnlitMatcap);
 	float lod0 = lerp(roughness, _MatcapRough, _MatcapUseRough) * UNITY_SPECCUBE_LOD_STEPS;
 	float2 uv0 = (matcapUV0 * _Matcap_ST.xy) + (uvOffsetOut.xy*20*_DistortMatcap0);
 	float4 matcap = MOCHIE_SAMPLE_TEX2D_SAMPLER_LOD(_Matcap, sampler_MainTex, uv0, lod0) * _MatcapColor;
-	matcap.rgb *= _MatcapStr * m.matcapMask * isUnlit0;
+	matcap.rgb *= _MatcapStr * m.matcapPrimMask * isUnlit0;
 
 	if (_UseMatcap1 == 1){
+		float3 vd1 = lerp(l.viewDir, l.viewDirVR, _MatcapCenter1);
+		float3 matcapNormal1 = GetMatcapNormal(i, l, _MatcapNormal1, _MatcapNormal1Str, _MatcapNormal1Scroll, _MatcapNormal1_ST, _MatcapNormal1Toggle, _MatcapNormal1Mix);
+		float2 matcapUV1 = GetMatcapUV(vd1, matcapNormal1);
 		float isUnlit1 = lerp(l.worldBrightness, 1, _UnlitMatcap1);
 		float lod1 = lerp(roughness, _MatcapRough1, _MatcapUseRough1) * UNITY_SPECCUBE_LOD_STEPS;
 		float2 uv1 = (matcapUV1 * _Matcap1_ST.xy) + (uvOffsetOut.xy*20*_DistortMatcap1);
 		float4 matcap1 = MOCHIE_SAMPLE_TEX2D_SAMPLER_LOD(_Matcap1, sampler_MainTex, uv1, lod1) * _MatcapColor1;
-		matcap1.rgb *= _MatcapStr1 * m.matcapMask * isUnlit1;
-
-		float blendMask = 1-m.matcapBlendMask;
-		float3 blend10 = matcap1.rgb * blendMask;
-		float3 blend11 = matcap1.rgb * matcap1.a * blendMask;
-		environment = lerp(environment + blend10, environment + blend11, _MatcapBlending1);
+		matcap1.rgb *= _MatcapStr1 * m.matcapSecMask * isUnlit1;
+		environment = lerp(environment + matcap1.rgb, environment + (matcap1.rgb*matcap1.a), _MatcapBlending1);
 	}
 
-	float3 blend00 = matcap.rgb * m.matcapBlendMask;
-	float3 blend01 = matcap.rgb * matcap.a * m.matcapBlendMask;
-	environment = lerp(environment + blend00, environment + blend01, _MatcapBlending);
+	environment = lerp(environment + matcap.rgb, environment + (matcap.rgb*matcap.a), _MatcapBlending);
 }
 
 void ApplyDithering(g2f i, inout float3 ramp){

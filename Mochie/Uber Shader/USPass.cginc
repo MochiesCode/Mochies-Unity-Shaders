@@ -83,6 +83,7 @@ v2g vert (appdata v) {
 	o.uv2.xy = TRANSFORM_TEX(detailUV, _DetailAlbedoMap) + (_Time.y * _DetailScroll);
 	o.uv2.zw = TRANSFORM_TEX(v.uv, _RimTex) + (_Time.y * _RimScroll);
 	o.uv3.xy = TRANSFORM_TEX(v.uv, _DistortUVMap) + (_Time.y * _DistortUVScroll);
+	o.color = v.color;
 
 	UNITY_TRANSFER_SHADOW(o, v.uv1);
 	UNITY_TRANSFER_FOG(o, o.pos);
@@ -262,17 +263,17 @@ v2g vert (appdata v) {
 			InitializeAudioLink(al, 0);
 		#endif
 		o.isReflection = IsInMirror();
-		float thicknessMask = 1;
+		o.thicknessMask = 1;
 		#if SEPARATE_MASKING
 			float2 thickMaskUV = v.uv.xy;
 			#if MASK_SOS_ENABLED
 				thickMaskUV = TRANSFORM_TEX(v.uv, _OutlineMask) + (_Time.y * _OutlineMaskScroll);
 			#endif
-			thicknessMask = MOCHIE_SAMPLE_TEX2D_SAMPLER_LOD(_OutlineMask, sampler_MainTex, thickMaskUV,0);
+			o.thicknessMask = MOCHIE_SAMPLE_TEX2D_SAMPLER_LOD(_OutlineMask, sampler_MainTex, thickMaskUV,0);
 		#elif PACKED_MASKING
-			thicknessMask = MOCHIE_SAMPLE_TEX2D_SAMPLER_LOD(_PackedMask3, sampler_MainTex, v.uv.xy, 0).a;
+			o.thicknessMask = MOCHIE_SAMPLE_TEX2D_SAMPLER_LOD(_PackedMask3, sampler_MainTex, v.uv.xy, 0).a;
 		#endif
-		v.vertex.xyz += _OutlineThicc*v.normal*0.01*_OutlineMult*thicknessMask*lerp(1,v.color.xyz,_UseVertexColor);
+		v.vertex.xyz += _OutlineThicc*v.normal*0.01*_OutlineMult*o.thicknessMask*lerp(1,v.color.rgb,_UseVertexColor);
 		o.objPos = mul(unity_ObjectToWorld, float4(0,0,0,1)).xyz;
 		o.cameraPos = _WorldSpaceCameraPos;
 		#if UNITY_SINGLE_PASS_STEREO
@@ -332,6 +333,8 @@ v2g vert (appdata v) {
 		o.uv2.xy = TRANSFORM_TEX(detailUV, _DetailAlbedoMap) + (_Time.y * _DetailScroll);
 		o.uv2.zw = TRANSFORM_TEX(v.uv, _OutlineTex) + (_Time.y * _OutlineScroll);
 		o.uv3.xy = TRANSFORM_TEX(v.uv, _DistortUVMap) + (_Time.y * _DistortUVScroll);
+		o.color = v.color;
+
 		UNITY_TRANSFER_SHADOW(o, v.uv1);
 		UNITY_TRANSFER_FOG(o, o.pos);
 	#endif
@@ -349,6 +352,12 @@ float4 frag(g2f i) : SV_Target {
 		if (_Hide == 1)
 			discard;
 	#endif
+
+	if (i.thicknessMask < 0.0001)
+		discard;
+
+	if (_UseVertexColor == 1 && !any(i.color.rgb))
+		discard;
 
 	float4 mainTexSampler = MOCHIE_SAMPLE_TEX2D(_MainTex, i.uv.xy);
 	i.uv2 = lerp(i.uv2, mainTexSampler, _NaNLmao);
@@ -559,6 +568,8 @@ v2g vert (appdata v) {
 
 	o.localPos = localPos;
 	o.uv.xy = TRANSFORM_TEX(v.uv, _MainTex) + (_Time.y * _MainTexScroll);
+	o.color = v.color;
+
 	TRANSFER_SHADOW_CASTER(o)
     return o;
 }

@@ -251,6 +251,19 @@ float3 BlendColors(float3 col0, float3 col1, int blendType, float interpolator){
 	return blends[blendType];
 }
 
+float3 BlendColorsAlpha(float3 col0, float3 col1, int blendType, float alpha){
+	float3 blends[7] = {
+		col0 + col1,
+		lerp(col0, col1, alpha),
+		col0 * col1,
+		col0 * col1 * mochie_ColorSpaceDouble,
+		BlendOverlay(col0, col1),
+		BlendScreen(col0, col1),
+		BlendLerp(col0, col1)
+	};
+	return blends[blendType];
+}
+
 float3 BlendColorsAlpha(float3 col0, float3 col1, int blendType, float interpolator, float alpha){
 	float3 blends[7] = {
 		col0 + (col1*interpolator),

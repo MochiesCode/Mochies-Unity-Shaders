@@ -156,7 +156,7 @@ internal class USEditor : ShaderGUI {
 
 	static readonly string unityFolderPath = "Assets/Mochie/Unity";
 	string header = "Header_Pro";
-	string versionLabel = "v1.23";
+	string versionLabel = "v1.24";
 	// β
 	
 	MaterialProperty _RenderMode = null; 
@@ -661,6 +661,14 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _VertexRotation = null;
 	MaterialProperty _VertexPosition = null;
 	MaterialProperty _UseOutlineTexAlpha = null;
+	MaterialProperty _MatcapNormal0 = null;
+	MaterialProperty _MatcapNormal0Str = null;
+	MaterialProperty _MatcapNormal0Scroll = null;
+	MaterialProperty _MatcapNormal0Mix = null;
+	MaterialProperty _MatcapNormal1 = null;
+	MaterialProperty _MatcapNormal1Str = null;
+	MaterialProperty _MatcapNormal1Scroll = null;
+	MaterialProperty _MatcapNormal1Mix = null;
 
 	MaterialProperty _VRCFallback = null;
 	MaterialProperty _NaNLmao = null;
@@ -898,8 +906,8 @@ internal class USEditor : ShaderGUI {
 								me.TexturePropertySingleLine(Tips.reflLabel, _ReflectionMask);
 								me.TexturePropertySingleLine(Tips.specLabel, _SpecularMask);
 								me.TexturePropertySingleLine(Tips.anisoBlendLabel, _InterpMask); 
-								me.TexturePropertySingleLine(Tips.matcapLabel, _MatcapMask);
-								me.TexturePropertySingleLine(Tips.matcapBlendLabel, _MatcapBlendMask);
+								me.TexturePropertySingleLine(Tips.matcapPrimaryMask, _MatcapMask);
+								me.TexturePropertySingleLine(Tips.matcapSecondaryMask, _MatcapBlendMask);
 								me.TexturePropertySingleLine(Tips.shadowLabel, _ShadowMask);
 								me.TexturePropertySingleLine(Tips.basicRimLabel, _RimMask);
 								me.TexturePropertySingleLine(Tips.eRimLabel, _ERimMask);
@@ -921,9 +929,9 @@ internal class USEditor : ShaderGUI {
 								MGUI.MaskProperty(mat, me, specMask, _SpecularMask, _SpecularMaskScroll);
 								bool interpMask = Foldouts.DoMaskFoldout(foldouts, mat, me, Tips.anisoBlendLabel, "Specular Blend Mask");
 								MGUI.MaskProperty(mat, me, interpMask, _InterpMask, _InterpMaskScroll);
-								bool matcapMask = Foldouts.DoMaskFoldout(foldouts, mat, me, Tips.matcapLabel, "Matcap Mask");
+								bool matcapMask = Foldouts.DoMaskFoldout(foldouts, mat, me, Tips.matcapPrimaryMask, "Primary Matcap Mask");
 								MGUI.MaskProperty(mat, me, matcapMask, _MatcapMask, _MatcapMaskScroll);
-								bool matcapBlendMask = Foldouts.DoMaskFoldout(foldouts, mat, me, Tips.matcapBlendLabel, "Matcap Blend Mask");
+								bool matcapBlendMask = Foldouts.DoMaskFoldout(foldouts, mat, me, Tips.matcapSecondaryMask, "Secondary Matcap Mask");
 								MGUI.MaskProperty(mat, me, matcapBlendMask, _MatcapBlendMask, _MatcapBlendMaskScroll);
 								bool shadowMask = Foldouts.DoMaskFoldout(foldouts, mat, me, Tips.shadowLabel, "Shadow Mask");
 								MGUI.MaskProperty(mat, me, shadowMask, _ShadowMask, _ShadowMaskScroll);
@@ -956,13 +964,13 @@ internal class USEditor : ShaderGUI {
 					else if (_MaskingMode.floatValue == 2){
 						MGUI.PropertyGroup(() => {
 							me.TexturePropertySingleLine(new GUIContent("Mask 1"), _PackedMask0);
-							GUILayout.Label("Red:	Reflections\nGreen:	Specular\nBlue:	Matcap\nAlpha:	Refraction");
+							GUILayout.Label("Red:	Reflections\nGreen:	Specular\nBlue:	Primary Matcap\nAlpha:	Secondary Matcap");
 							MGUI.Space8();
 							me.TexturePropertySingleLine(new GUIContent("Mask 2"), _PackedMask1);
 							GUILayout.Label("Red:	Shadows\nGreen:	Diffuse Shading\nBlue:	Subsurface\nAlpha:	Detail Maps");
 							MGUI.Space8();
 							me.TexturePropertySingleLine(new GUIContent("Mask 3"), _PackedMask2);
-							GUILayout.Label("Red:	Basic Rim\nGreen:	Environment Rim\nBlue:	Matcap Blend\nAlpha:	Specular Blend");
+							GUILayout.Label("Red:	Basic Rim\nGreen:	Environment Rim\nBlue:	Refraction\nAlpha:	Specular Blend");
 							MGUI.Space8();
 							me.TexturePropertySingleLine(new GUIContent("Mask 4"), _PackedMask3);
 							GUILayout.Label("Red:	Emission\nGreen:	Emission Pulse\nBlue:	Filtering\nAlpha:	Outline Thickness");
@@ -1278,10 +1286,23 @@ internal class USEditor : ShaderGUI {
 									MGUI.TexPropLabel("Blending", blendingLabelPos);
 									MGUI.TextureSO(me, _Matcap);
 								};
+								me.TexturePropertySingleLine(Tips.matcapNormal, _MatcapNormal0, _MatcapNormal0Str);
+								if (_MatcapNormal0.textureValue){
+									MGUI.TextureSOScroll(me, _MatcapNormal0, _MatcapNormal0Scroll);
+								};
+								MGUI.ToggleGroup(_MatcapNormal0.textureValue == false);
+								me.ShaderProperty(_MatcapNormal0Mix, Tips.matcapNormalMix);
+								MGUI.ToggleGroupEnd();
+								MGUI.SpaceN2();
+							});
+							MGUI.PropertyGroupLayer(() => {
+								MGUI.SpaceN2();
 								me.ShaderProperty(_MatcapStr, "Strength");
 								MGUI.ToggleSlider(me, "Manual Roughness", _MatcapUseRough, _MatcapRough);
+
 								me.ShaderProperty(_UnlitMatcap, "Unlit");
 								me.ShaderProperty(_MatcapCenter, "No Depth in VR");
+								MGUI.SpaceN2();
 							});
 						}
 
@@ -1293,11 +1314,23 @@ internal class USEditor : ShaderGUI {
 									MGUI.TexPropLabel("Blending", blendingLabelPos);
 									MGUI.TextureSO(me, _Matcap1);
 								}
+								me.TexturePropertySingleLine(Tips.matcapNormal, _MatcapNormal1, _MatcapNormal1Str);
+								if (_MatcapNormal1.textureValue){
+									MGUI.TextureSOScroll(me, _MatcapNormal1, _MatcapNormal1Scroll);
+								};
+								MGUI.ToggleGroup(_MatcapNormal1.textureValue == false);
+								me.ShaderProperty(_MatcapNormal1Mix, Tips.matcapNormalMix);
+								MGUI.ToggleGroupEnd();
+								MGUI.SpaceN2();
+							});
+							MGUI.PropertyGroupLayer(() => {
+								MGUI.SpaceN2();
 								me.ShaderProperty(_MatcapStr1, "Strength");
 								MGUI.ToggleSlider(me, "Manual Roughness", _MatcapUseRough1, _MatcapRough1);
 								me.ShaderProperty(_UnlitMatcap1, "Unlit");
 								me.ShaderProperty(_MatcapCenter1, "No Depth in VR");
 								MGUI.ToggleGroupEnd();
+								MGUI.SpaceN2();
 							});
 						}
 					});
@@ -2174,6 +2207,8 @@ internal class USEditor : ShaderGUI {
 		int subsurfToggle = mat.GetInt("_Subsurface");
 		int blurToggle = mat.GetInt("_RefractionBlur");
 		bool reflFallback = mat.GetTexture("_ReflCube");
+		bool matcapNormal0 = mat.GetTexture("_MatcapNormal0");
+		bool matcapNormal1 = mat.GetTexture("_MatcapNormal1");
 		bool isUberX = MGUI.IsXVersion(mat);
 		bool isOutline = MGUI.IsOutline(mat);
 		bool usingNormal = mat.GetTexture("_BumpMap");
@@ -2257,6 +2292,17 @@ internal class USEditor : ShaderGUI {
 			mat.SetInt("_UsingDetailOcclusion", 1);
 		else
 			mat.SetInt("_UsingDetailOcclusion", 0);
+
+		// Matcap normal maps
+		if (matcapNormal0)
+			mat.SetInt("_MatcapNormal0Toggle", 1);
+		else
+			mat.SetInt("_MatcapNormal0Toggle", 0);
+
+		if (matcapNormal1)
+			mat.SetInt("_MatcapNormal1Toggle", 1);
+		else
+			mat.SetInt("_MatcapNormal1Toggle", 0);
 
 		bool prevAO = mat.GetInt("_AOFiltering") == 1 && mat.GetInt("_PreviewAO") == 1;
 		bool prevRough = mat.GetInt("_RoughnessFiltering") == 1 && mat.GetInt("_PreviewRough") == 1;
@@ -2838,6 +2884,14 @@ internal class USEditor : ShaderGUI {
 		_MatcapRough1.floatValue = 0.5f;
 		_MatcapBlending1.floatValue = 0f;
 		_UnlitMatcap1.floatValue = 0f;
+		_MatcapNormal0.textureValue = null;
+		_MatcapNormal1.textureValue = null;
+		_MatcapNormal0Str.floatValue = 1f;
+		_MatcapNormal1Str.floatValue = 1f;
+		_MatcapNormal0Scroll.vectorValue = Vector4.zero;
+		_MatcapNormal1Scroll.vectorValue = Vector4.zero;
+		_MatcapNormal0Mix.floatValue = 0f;
+		_MatcapNormal1Mix.floatValue = 0f;
 	}
 
 	void DoShadowReset(){

@@ -201,6 +201,10 @@ float Safe_DotClamped(float3 a, float3 b){
 	return max(0.00001, dot(a,b));
 }
 
+float2 ApplyScaleOffset(float2 uv, float4 scaleOffset){
+	return uv.xy * scaleOffset.xy + scaleOffset.zw;
+}
+
 #if defined(HAS_DEPTH_TEXTURE)
 
 // Clean world normals by Neitri - https://github.com/netri/Neitri-Unity-Shaders/blob/master/Wireframe%20Overlay.shader

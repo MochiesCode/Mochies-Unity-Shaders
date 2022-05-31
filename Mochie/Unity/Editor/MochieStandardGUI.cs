@@ -19,7 +19,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		"Render Settings"
 	}, 1);
 
-	string versionLabel = "v1.13";
+	string versionLabel = "v1.14";
 	// β
 
 	MaterialProperty blendMode = null;
@@ -735,6 +735,7 @@ internal class MochieStandardGUI : ShaderGUI {
 	void DoFilteringArea(){
 		MGUI.PropertyGroup( () => {
 			me.ShaderProperty(filtering, "Enable");
+			MGUI.ToggleGroup(filtering.floatValue == 0);
 			MGUI.BoldLabel("Base Color");
 			MGUI.PropertyGroupLayer(()=>{
 				MGUI.SpaceN1();
@@ -776,6 +777,7 @@ internal class MochieStandardGUI : ShaderGUI {
 				me.ShaderProperty(contrastPost, "Contrast");
 				MGUI.SpaceN2();
 			});
+			MGUI.ToggleGroupEnd();
 		});
 	}
 

@@ -96,7 +96,7 @@ Shader "Mochie/Uber/Uber (Outline)" {
 		_SubsurfaceMask("tex", 2D) = "white" {}
 		_InterpMask("tex", 2D) = "white" {}
 		_DistortUVMask("tex", 2D) = "white" {}
-		_MatcapBlendMask("tex", 2D) = "gray" {}
+		_MatcapBlendMask("tex", 2D) = "white" {}
 		_EmissMask("tex", 2D) = "white" {}
 		_FilterMask("tex", 2D) = "white" {}
 		_RefractionMask("tex", 2D) = "white" {}
@@ -245,6 +245,16 @@ Shader "Mochie/Uber/Uber (Outline)" {
 		_MatcapRough1("ra", Range(0,2)) = 0.5
 		[ToggleUI]_MatcapCenter("tog", Int) = 0
 		[ToggleUI]_MatcapCenter1("tog", Int) = 0
+		_MatcapNormal0("tex", 2D) = "bump" {}
+		_MatcapNormal0Str("fl", Float) = 1
+		_MatcapNormal0Scroll("vec", Vector) = (0,0,0,0)
+		[ToggleUI]_MatcapNormal0Toggle("tog", Int) = 0
+		_MatcapNormal1("tex", 2D) = "bump" {}
+		_MatcapNormal1Str("fl", Float) = 1
+		_MatcapNormal1Scroll("vec", Vector) = (0,0,0,0)
+		[ToggleUI]_MatcapNormal1Toggle("tog", Int) = 0
+		[ToggleUI]_MatcapNormal0Mix("tog", Int) = 0
+		[ToggleUI]_MatcapNormal1Mix("tog", Int) = 0
 
 		// SHADOWS
 		[Enum(Off,0, Manual Blend,1, Ramp,2)]_ShadowMode("en3", Int) = 0
@@ -647,7 +657,7 @@ Shader "Mochie/Uber/Uber (Outline)" {
         [Enum(UnityEngine.Rendering.StencilOp)]_StencilZFail("enx", Float) = 0
         [Enum(UnityEngine.Rendering.CompareFunction)]_StencilCompare("enx", Float) = 8
 
-		[Enum(Unlit,0, Toon,1, Particle,2, Matcap,3, Sprite,4, DoubleSided,5, Hidden,6)]_VRCFallback("en06", Int) = 1
+		[Enum(Unlit,0, Toon,1, Particle,2, Matcap,3, Standard,4, DoubleSided,5, Hidden,6)]_VRCFallback("en06", Int) = 1
 
     }
 

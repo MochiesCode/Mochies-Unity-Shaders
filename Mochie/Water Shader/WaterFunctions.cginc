@@ -85,6 +85,7 @@ float GetDepth(v2f i, float2 screenUV){
 			screenUV.y = 1 - screenUV.y;
 		}
 	#endif
+	screenUV.y = _ProjectionParams.x * .5 + .5 - screenUV.y * _ProjectionParams.x;
 	float backgroundDepth = LinearEyeDepth(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, screenUV));
 	float surfaceDepth = UNITY_Z_0_FAR_FROM_CLIPSPACE(i.uvGrab.z);
 	float depthDifference = backgroundDepth - surfaceDepth;

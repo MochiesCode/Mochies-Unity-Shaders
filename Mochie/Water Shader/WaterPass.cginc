@@ -299,7 +299,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 					float3 lightDir = _Specular == 1 ? UnityWorldSpaceLightDir(i.worldPos) : _LightDir;
 					lightDir = normalize(lightDir);
 				#else
-					float3 lightDir = UnityWorldSpaceLightDir(i.worldPos);
+					float3 lightDir = normalize(UnityWorldSpaceLightDir(i.worldPos));
 				#endif
 				float3 halfVector = normalize(lightDir + viewDir);
 				float NdotL = dot(normalDir, lightDir);
@@ -310,6 +310,9 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 				float3 specLightCol = _Specular == 1 ? _LightColor0 : 1;
 				specCol = specLightCol * fresnelTerm * specularTerm;
 				specCol = lerp(smootherstep(0, 0.9, specCol), specCol, roughInterp) * _SpecStrength * _SpecTint;
+				#if defined(UNITY_PASS_FORWARDADD)
+					specCol *= atten;
+				#endif
 			}
 		#endif
 
