@@ -910,6 +910,7 @@ internal class MochieStandardGUI : ShaderGUI {
 				me.ShaderProperty(opaqueLights, Tips.opaqueLightsText);
 				MGUI.SpaceN2();
 			});
+			MGUI.DisplayInfo("Note that the AreaLit package files MUST be inside a folder named AreaLit (case sensitive) directly in the Assets folder (Assets/AreaLit)");
 			MGUI.ToggleGroupEnd();
 		});
 	}
