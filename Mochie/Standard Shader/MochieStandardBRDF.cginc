@@ -112,15 +112,16 @@ half4 BRDF1_Mochie_PBS (
                 , reflCol
             #endif
         );
-        diffCol += diffColor * diffLight;
+        diffCol += (diffColor * diffLight) * _LTCGIStrength;
     #endif
 
 	#if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
 		if (_ReflShadows == 1){
-			float lightmap = Desaturate(DecodeLightmap(UNITY_SAMPLE_TEX2D(unity_Lightmap, lightmapUV)));
+			float3 lightmap = Desaturate(DecodeLightmap(UNITY_SAMPLE_TEX2D(unity_Lightmap, lightmapUV)));
 			lightmap = GetContrast(lightmap, _ContrastReflShad);
 			lightmap = lerp(lightmap, GetHDR(lightmap), _HDRReflShad);
 			lightmap *= _BrightnessReflShad;
+			lightmap *= _TintReflShad;
 			reflCol *= saturate(lerp(1, lightmap, _ReflShadowStrength));
 		}
 	#else

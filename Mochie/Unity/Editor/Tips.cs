@@ -69,6 +69,14 @@ namespace Mochie {
 		public static GUIContent gsaa = new GUIContent("Specular Antialiasing", "Increases the roughness on rounded corners of normals to hide sparkly artifacts from specular lighting");
 		public static GUIContent bicubicLightmap = new GUIContent("Bicubic Lightmap Sampling", "Samples lightmaps using bicubic filtering to hide aliasing on shadows. Provides a smooth gradient on otherwise low resolution shadows.");
 		public static GUIContent bakeryMode = new GUIContent("Bakery Mode", "Support for the third party lightmapping software Bakery. See Bakery documentation for further details.");
+		public static GUIContent lightMeshText = new GUIContent("Mesh", "Light mesh data");
+		public static GUIContent lightTex0Text = new GUIContent("Texture 0", "Light texture 0");
+		public static GUIContent lightTex1Text = new GUIContent("Texture 1", "Light texture 1");
+		public static GUIContent lightTex2Text = new GUIContent("Texture 2", "Light texture 2, intended for indirect light");
+		public static GUIContent lightTex3Text = new GUIContent("Texture 3+","Light texture 3 and above, intended for static lights");
+		public static GUIContent opaqueLightsText = new GUIContent("Opaque Lights");
+		public static GUIContent occlusionALText = new GUIContent("Occlusion", "ShadowMask (RGBA) and Occlusion (G)");
+		public static GUIContent occlusionUVSetText = new GUIContent("UV Set");
 
 		// Uber
 		public static GUIContent renderModeLabel = new GUIContent("Shading", "Enables or disables shading. If you aren't using any shading features, disabling this can provide a huge performance boost");
@@ -160,6 +168,8 @@ namespace Mochie {
 		public static GUIContent colorPreservation = new GUIContent("Tint Clamp", "Clamps the maximum brightness of the material to the base color plus reflections, specular, and subsurface scattering.");
 		public static GUIContent matcapNormal = new GUIContent("Normal", "By default the matcap will use the normal maps in the textures tab, but this can be used to overwrite them (or mix using the option below).");
 		public static GUIContent matcapNormalMix = new GUIContent("Mix Normals", "Mixes the normal maps from the textures tab into the normal map slot in this tab.");
+		public static GUIContent clipEdge = new GUIContent("Clip Edge", "Clips a small border around the edge of the flipbook to remove lines from the edge fo the frame. Most obvious when the flipbook is scrolling.");
+		public static GUIContent aces = new GUIContent("ACES", "Cheap approximated ACES tonemapping.");
 
 		// Water
 		public static GUIContent stochasticLabel = new GUIContent("Stochastic Sampling", "Uses uvs to generate pseudo-random positions for sampling to alleviate tiling artifacts. 3 samples per texture.");

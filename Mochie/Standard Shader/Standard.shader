@@ -91,6 +91,7 @@ Shader "Mochie/Standard" {
 		_Contrast("Contrast", Float) = 1
 		_Saturation("Saturation", Float) = 1
 		_Brightness("Brightness", Float) = 1
+		_ACES("ACES", Float) = 0
 
 		_HueDet("Hue", Range(0,1)) = 0
 		_ContrastDet("Contrast", Float) = 1
@@ -131,9 +132,8 @@ Shader "Mochie/Standard" {
 		_RimWidth("Rim Width", Range (0,1)) = 0.5
 		_RimEdge("Rim Edge", Range(0,0.5)) = 0
 
-		_Cull("", Int) = 2
 		_MetaCull("", Int) = 0
-		[Enum(UnityEngine.Rendering.CullMode)]_CullingMode("", Int) = 2
+		[Enum(UnityEngine.Rendering.CullMode)]_Cull("", Int) = 2
 		[ToggleOff]_SpecularHighlights("Specular Highlights", Float) = 1.0
 		[ToggleOff]_GlossyReflections("Glossy Reflections", Float) = 1.0
 		[ToggleUI]_SSR("Screenspace Reflections", Int) = 0
@@ -149,6 +149,7 @@ Shader "Mochie/Standard" {
 		[Toggle(LTCGI_SPECULAR_OFF)]_LTCGI_SPECULAR_OFF("LTCGI Disable Specular", Int) = 0
 		_LTCGI_mat("LTC Mat", 2D) = "black" {}
         _LTCGI_amp("LTC Amp", 2D) = "black" {}
+		_LTCGIStrength("LTCGI Strength", Float) = 1
 		_FresnelStrength("Fresnel Strength", Float) = 1
 		_SSRStrength("SSR Strength", Float) = 1
 		_ReflectionStrength("Relfection Strength", Float) = 1
@@ -161,13 +162,29 @@ Shader "Mochie/Standard" {
 		_ContrastReflShad("Contrast", Float) = 1
 		_BrightnessReflShad("Brightness", Float) = 1
 		_HDRReflShad("HDR", Float) = 0
+		_TintReflShad("Tint", Color) = (1,1,1,1)
+
+		[ToggleUI]_RainToggle("Enable", Int) = 0
+		_RippleScale("Ripple Scale", float) = 40
+		_RippleSpeed("Ripple Speed", float) = 10
+		_RippleStr("Ripple Strength", float) = 1
 
 		[Toggle(BAKERY_LMSPEC)] _BAKERY_LMSPEC ("Enable Lightmap Specular", Float) = 0
 		[Toggle(BAKERY_SHNONLINEAR)] _BAKERY_SHNONLINEAR ("Non-Linear SH", Float) = 0
 		[Enum(None, 0, SH, 1, RNM, 2)] _BakeryMode ("Bakery Mode", Int) = 0
-            _RNM0("RNM0", 2D) = "black" {}
-            _RNM1("RNM1", 2D) = "black" {}
-            _RNM2("RNM2", 2D) = "black" {}
+		_RNM0("RNM0", 2D) = "black" {}
+		_RNM1("RNM1", 2D) = "black" {}
+		_RNM2("RNM2", 2D) = "black" {}
+
+		[ToggleUI]_AreaLitToggle("Enable", Int) = 0
+		[NoScaleOffset]_LightMesh("Light Mesh", 2D) = "black" {}
+		[NoScaleOffset]_LightTex0("Light Texture 0", 2D) = "white" {}
+		[NoScaleOffset]_LightTex1("Light Texture 1", 2D) = "black" {}
+		[NoScaleOffset]_LightTex2("Light Texture 2", 2D) = "black" {}
+		[NoScaleOffset]_LightTex3("Light Texture 3", 2DArray) = "black" {}
+		[ToggleOff]_OpaqueLights("Opaque Lights", Float) = 1.0
+
+		[Enum(UV0,0,UV1,1, UV2,2, UV3,3, UV4,4)]_OcclusionUVSet("UV Set for occlusion map", Float) = 0
 
         [HideInInspector]_SrcBlend("__src", Float) = 1.0
         [HideInInspector]_DstBlend("__dst", Float) = 0.0
@@ -238,6 +255,9 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _ BAKERY_SH BAKERY_RNM
 			#pragma shader_feature_local BAKERY_LMSPEC
 			#pragma shader_feature_local BAKERY_SHNONLINEAR
+			#pragma shader_feature_local _RAIN_ON
+			#pragma shader_feature_local _OPAQUELIGHTS_OFF
+			#pragma shader_feature_local _AREALIT_ON
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma multi_compile_fwdbase
             #pragma multi_compile_fog
@@ -274,6 +294,7 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
 			#pragma shader_feature_local _ALPHAMASK_ON
 			#pragma shader_feature_local _FILTERING_ON
+			#pragma shader_feature_local _RAIN_ON
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma multi_compile_fwdadd_fullshadows
             #pragma multi_compile_fog
@@ -327,9 +348,11 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _SUBSURFACE_ON
 			#pragma shader_feature_local _ALPHAMASK_ON
 			#pragma shader_feature_local _FILTERING_ON
+			#pragma shader_feature_local _OPAQUELIGHTS_OFF
+			#pragma shader_feature_local _AREALIT_ON
 			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
             #pragma shader_feature_local EDITOR_VISUALIZATION
-            #include "UnityStandardMeta.cginc"
+            #include "MochieStandardMeta.cginc"
             ENDCG
         }
     }

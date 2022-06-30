@@ -156,7 +156,7 @@ internal class USEditor : ShaderGUI {
 
 	static readonly string unityFolderPath = "Assets/Mochie/Unity";
 	string header = "Header_Pro";
-	string versionLabel = "v1.24";
+	string versionLabel = "v1.25";
 	// β
 	
 	MaterialProperty _RenderMode = null; 
@@ -523,6 +523,10 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _SpritesheetMode1 = null;
 	MaterialProperty _Flipbook0 = null;
 	MaterialProperty _Flipbook1 = null;
+	MaterialProperty _Flipbook0Scroll = null;
+	MaterialProperty _Flipbook1Scroll = null;
+	MaterialProperty _Flipbook0ClipEdge = null;
+	MaterialProperty _Flipbook1ClipEdge = null;
 	MaterialProperty _EmissIntensity = null;
 	MaterialProperty _MatcapCenter = null;
 	MaterialProperty _MatcapCenter1 = null;
@@ -669,6 +673,7 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _MatcapNormal1Str = null;
 	MaterialProperty _MatcapNormal1Scroll = null;
 	MaterialProperty _MatcapNormal1Mix = null;
+	MaterialProperty _ACES = null;
 
 	MaterialProperty _VRCFallback = null;
 	MaterialProperty _NaNLmao = null;
@@ -1236,12 +1241,14 @@ internal class USEditor : ShaderGUI {
 								MGUI.ToggleSlider(me, "Manual Roughness", _SpecUseRough, _SpecRough);
 								MGUI.ToggleSlider(me, Tips.specBiasOverride, _SpecBiasOverrideToggle, _SpecBiasOverride);
 								MGUI.ToggleIntSlider(me, "Stepping", _SharpSpecular, _SharpSpecStr);
+								MGUI.SpaceN1();
 								me.ShaderProperty(_RealtimeSpec, Tips.realtimeSpec);
 							}
 							else if (_Specular.floatValue == 2){
 								me.ShaderProperty(_AnisoStr, "Strength");
 								me.ShaderProperty(_RealtimeSpec, Tips.realtimeSpec);
 								MGUI.ToggleIntSlider(me, "Stepping", _SharpSpecular, _AnisoSteps);
+								MGUI.SpaceN1();
 							}
 							else {
 								me.ShaderProperty(_SpecStr, "GGX Strength");
@@ -1259,14 +1266,22 @@ internal class USEditor : ShaderGUI {
 								me.ShaderProperty(_ManualSpecBright, Tips.manualSpecBright);
 							}
 							if (_Specular.floatValue == 2 || _Specular.floatValue == 3){
-								me.ShaderProperty(_AnisoAngleY, "Layer 1 Thickness");
-								me.ShaderProperty(_AnisoLayerY, "Layer 2 Thickness");
-								me.ShaderProperty(_AnisoLayerStr, "Layer Blend");
-								me.ShaderProperty(_AnisoLerp, "Lerp Blend");
-								me.ShaderProperty(_RippleStrength, "Hair Strength");
-								me.ShaderProperty(_RippleFrequency, "Hair Density");
-								me.ShaderProperty(_RippleAmplitude, "Hair Intensity");
-								me.ShaderProperty(_RippleContinuity, "Hair Continuity");
+								MGUI.PropertyGroupLayer(() => {
+									MGUI.SpaceN2();
+									me.ShaderProperty(_AnisoAngleY, "Layer 1 Thickness");
+									me.ShaderProperty(_AnisoLayerY, "Layer 2 Thickness");
+									me.ShaderProperty(_AnisoLayerStr, "Layer Blend");
+									me.ShaderProperty(_AnisoLerp, "Lerp Blend");
+									MGUI.SpaceN2();
+								});
+								MGUI.PropertyGroupLayer(() => {
+									MGUI.SpaceN2();
+									me.ShaderProperty(_RippleStrength, "Hair Strength");
+									me.ShaderProperty(_RippleFrequency, "Hair Density");
+									me.ShaderProperty(_RippleAmplitude, "Hair Intensity");
+									me.ShaderProperty(_RippleContinuity, "Hair Continuity");
+									MGUI.SpaceN2();
+								});
 							}
 						});
 					}
@@ -1536,6 +1551,7 @@ internal class USEditor : ShaderGUI {
 				me.ShaderProperty(_Brightness, "Brightness");
 				me.ShaderProperty(_Contrast, "Contrast");
 				me.ShaderProperty(_HDR, "HDR");
+				me.ShaderProperty(_ACES, Tips.aces);
 			});
 			if (_TeamFiltering.floatValue == 1){
 				MGUI.PropertyGroup(() => {
@@ -1573,8 +1589,12 @@ internal class USEditor : ShaderGUI {
 						MGUI.Vector2Field(_RowsColumns, "Columns / Rows");
 						MGUI.Vector2Field(_FrameClipOfs, "Frame Size");
 					}
+					else {
+						me.ShaderProperty(_Flipbook0ClipEdge, Tips.clipEdge);
+					}
 					MGUI.Vector2Field(_SpritesheetPos, "Position");
 					MGUI.Vector2Field(_SpritesheetScale, "Scale");
+					MGUI.Vector2Field(_Flipbook0Scroll, "Scrolling");
 					me.ShaderProperty(_SpritesheetRot, "Rotation");
 					MGUI.ToggleGroup(_ManualScrub.floatValue == 1);
 					me.ShaderProperty(_FPS, "Speed");
@@ -1610,8 +1630,12 @@ internal class USEditor : ShaderGUI {
 						MGUI.Vector2Field(_RowsColumns1, "Columns / Rows");
 						MGUI.Vector2Field(_FrameClipOfs1, "Frame Size");
 					}
+					else {
+						me.ShaderProperty(_Flipbook1ClipEdge, Tips.clipEdge);
+					}
 					MGUI.Vector2Field(_SpritesheetPos1, "Position");
 					MGUI.Vector2Field(_SpritesheetScale1, "Scale");
+					MGUI.Vector2Field(_Flipbook1Scroll, "Scrolling");
 					me.ShaderProperty(_SpritesheetRot1, "Rotation");
 					MGUI.ToggleGroup(_ManualScrub1.floatValue == 1);
 					me.ShaderProperty(_FPS1, "Speed");
@@ -3105,6 +3129,7 @@ internal class USEditor : ShaderGUI {
 		_PostFiltering.floatValue = 0f;
 		_Value.floatValue = 0f;
 		_Invert.floatValue = 0f;
+		_ACES.floatValue = 0f;
 	}
 
 	void DoSpriteReset(){
@@ -3124,13 +3149,14 @@ internal class USEditor : ShaderGUI {
 		_SpritesheetBlending.floatValue = 2f;
 		_SpritesheetCol.colorValue = Color.white;
 		_RowsColumns.vectorValue = new Vector4(8,8,0,0);
-		_FrameClipOfs.vectorValue = new Vector4(0,0,0,0);
-		_SpritesheetPos.vectorValue = new Vector4(0,0,0,0);
+		_FrameClipOfs.vectorValue = Vector4.zero;
+		_SpritesheetPos.vectorValue = Vector4.zero;
 		_SpritesheetScale.vectorValue = new Vector4(1,1,0,0);
 		_SpritesheetRot.floatValue = 0f;
 		_FPS.floatValue = 30f;
 		_ManualScrub.floatValue = 0f;
 		_ScrubPos.floatValue = 1f;
+		_Flipbook0ClipEdge.floatValue = 0f;
 	}
 
 	void DoSheet2Reset(){
@@ -3140,13 +3166,15 @@ internal class USEditor : ShaderGUI {
 		_SpritesheetBlending1.floatValue = 2f;
 		_SpritesheetCol1.colorValue = Color.white;
 		_RowsColumns1.vectorValue = new Vector4(8,8,0,0);
-		_FrameClipOfs1.vectorValue = new Vector4(0,0,0,0);
-		_SpritesheetPos1.vectorValue = new Vector4(0,0,0,0);
+		_FrameClipOfs1.vectorValue = Vector4.zero;
+		_SpritesheetPos1.vectorValue = Vector4.zero;
 		_SpritesheetScale1.vectorValue = new Vector4(1,1,0,0);
+		_Flipbook1Scroll.vectorValue = Vector4.zero;
 		_SpritesheetRot1.floatValue = 0f;
 		_FPS1.floatValue = 30f;
 		_ManualScrub1.floatValue = 0f;
 		_ScrubPos1.floatValue = 1f;
+		_Flipbook1ClipEdge.floatValue = 0f;
 	}
 
 	void DoUVDReset(){
@@ -3242,7 +3270,7 @@ internal class USEditor : ShaderGUI {
 	void DoScreenReset(){
 		_Range.floatValue = 10f;
 		_Position.vectorValue = new Vector4(0,0,0.25f,0);
-		_Rotation.vectorValue = new Vector4(0,0,0,0);
+		_Rotation.vectorValue = Vector4.zero;
 	}
 
 	void DoCloneReset(){

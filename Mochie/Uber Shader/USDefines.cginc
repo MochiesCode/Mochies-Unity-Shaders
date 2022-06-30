@@ -288,6 +288,10 @@ float2 _FrameClipOfs1;
 float2 _SpritesheetScale1;
 float2 _SpritesheetPos1;
 float2 _RowsColumns;
+float2 _Flipbook0Scroll;
+float2 _Flipbook1Scroll;
+int _Flipbook0ClipEdge;
+int _Flipbook1ClipEdge;
 
 float _Opacity, _Cutoff;
 float _RefractionDissolveMaskStr;
@@ -330,6 +334,7 @@ float _AudioLinkOutlineMultiplier;
 float _AudioLinkRemapOutlineMax, _AudioLinkRemapOutlineMin;
 float _MatcapNormal0Str;
 float _MatcapNormal1Str;
+float _ACES;
 
 float3 _VertexRotation;
 float3 _VertexPosition;

@@ -15,6 +15,7 @@ float GetAudioLinkBand(audioLinkData al, int band, float remapMin, float remapMa
 void ApplyGeneralFilters(inout float3 albedo){
     albedo = GetSaturation(albedo, _Saturation);
     albedo = lerp(albedo, GetHDR(albedo), _HDR);
+	albedo = lerp(albedo, ACES(albedo), _ACES);
     albedo = GetContrast(albedo, _Contrast);
     albedo *= _Brightness;
 }
@@ -78,11 +79,10 @@ bool FrameClip(float2 uv, float2 rowsColumns, float2 fco){
 	return !(xClip || yClip);
 }
 
-float3 GetSpritesheetUV(float2 uv, float2 rowsColumns, float scrubPos, float fps, int manualScrub){
+float3 GetSpritesheetUV(float2 uv, float2 rowsColumns, float2 scroll, float scrubPos, float fps, int manualScrub){
 	float2 size = float2(1/rowsColumns.x, 1/rowsColumns.y);
 	uint totalFrames = rowsColumns.x * rowsColumns.y;
 	uint index = 0;
-
 	index = lerp(_Time.y*fps, scrubPos, manualScrub);
 
 	uint indexX = index % rowsColumns.x;
@@ -94,7 +94,7 @@ float3 GetSpritesheetUV(float2 uv, float2 rowsColumns, float scrubPos, float fps
 	return float3(uv,0);
 }
 
-float3 GetFlipbookUV(Texture2DArray flipbook, SamplerState ss, float2 uv, float scrubPos, float fps, int manualScrub){
+float3 GetFlipbookUV(Texture2DArray flipbook, SamplerState ss, float2 uv, float2 scroll, float scrubPos, float fps, int manualScrub){
 	float width, height, elements;
 	flipbook.GetDimensions(width, height, elements);
 	uint arrayIndex = frac(_Time.y*fps*(1/elements))*elements;
@@ -104,23 +104,27 @@ float3 GetFlipbookUV(Texture2DArray flipbook, SamplerState ss, float2 uv, float 
 
 float4 GetSpritesheetColor(g2f i, 
 		Texture2D tex, Texture2DArray flipbook, SamplerState ss, float4 spriteColor,
-		float2 pos, float2 scale, float2 rowsColumns, float2 fco, 
-		float rot, float scrubPos, float fps, float brightness, int manualScrub, int mode
+		float2 pos, float2 scale, float2 rowsColumns, float2 fco, float2 scroll,
+		float rot, float scrubPos, float fps, float brightness, int manualScrub, int mode, int clipEdge
 	) {
-	float2 scaledUV = ScaleUV(i.rawUV, pos, scale, rot);
-	float3 uv = lerp(
-		GetFlipbookUV(flipbook, ss, scaledUV, scrubPos, fps, manualScrub), 
-		GetSpritesheetUV(scaledUV, rowsColumns, scrubPos, fps, manualScrub), 
-		mode
-	);
+
+	float2 scrolledUV = frac(i.rawUV.xy + (_Time.y * scroll));
+	float2 scaledUV = ScaleUV(scrolledUV, pos, scale, rot);
+	float3 uv = 0;
 	float4 col = 0;
+
 	UNITY_BRANCH
-	if (mode == 1){
+	if (mode == 0){
+		uv = GetFlipbookUV(flipbook, ss, scaledUV, scroll, scrubPos, fps, manualScrub);
+	}
+	else uv = GetSpritesheetUV(scaledUV, rowsColumns, scroll, scrubPos, fps, manualScrub);
+		
+	UNITY_BRANCH
+	if (mode == 1)
 		col = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, sampler_MainTex, uv.xy) * spriteColor * brightness * FrameClip(scaledUV, rowsColumns, fco);
-	}
-	else {
-		col = MOCHIE_SAMPLE_TEX2DARRAY_SAMPLER(flipbook, ss, uv) * spriteColor * brightness;
-	}
+	else
+		col = MOCHIE_SAMPLE_TEX2DARRAY_SAMPLER(flipbook, ss, uv) * spriteColor * brightness * lerp(1, FrameClip(scrolledUV, 1, 0.99), clipEdge);
+
 	return col;
 }
 
@@ -139,8 +143,8 @@ void ApplySpritesheet0(g2f i, inout float4 col){
 	float4 spriteCol = GetSpritesheetColor(i, 
 		_Spritesheet, _Flipbook0, sampler_Flipbook0,
 		_SpritesheetCol, _SpritesheetPos, _SpritesheetScale,
-		_RowsColumns, _FrameClipOfs, _SpritesheetRot, _ScrubPos, _FPS,
-		_SpritesheetBrightness, _ManualScrub, _SpritesheetMode0
+		_RowsColumns, _FrameClipOfs, _Flipbook0Scroll, _SpritesheetRot, _ScrubPos, _FPS,
+		_SpritesheetBrightness, _ManualScrub, _SpritesheetMode0, _Flipbook0ClipEdge
 	);
 	ApplySpritesheetBlending(i, col, spriteCol, _SpritesheetBlending);
 }
@@ -149,8 +153,8 @@ void ApplySpritesheet1(g2f i, inout float4 col){
 	float4 spriteCol = GetSpritesheetColor(i, 
 		_Spritesheet1, _Flipbook1, sampler_Flipbook1, 
 		_SpritesheetCol1, _SpritesheetPos1, _SpritesheetScale1,
-		_RowsColumns1, _FrameClipOfs1, _SpritesheetRot1, _ScrubPos1, _FPS1,
-		_SpritesheetBrightness1, _ManualScrub1, _SpritesheetMode1
+		_RowsColumns1, _FrameClipOfs1, _Flipbook1Scroll, _SpritesheetRot1, _ScrubPos1, _FPS1,
+		_SpritesheetBrightness1, _ManualScrub1, _SpritesheetMode1, _Flipbook1ClipEdge
 	);
 	ApplySpritesheetBlending(i, col, spriteCol, _SpritesheetBlending1);
 }

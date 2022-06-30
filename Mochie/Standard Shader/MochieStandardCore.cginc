@@ -193,31 +193,36 @@ half3 WorldNormal(half4 tan2world[3])
 static float3 TangentNormal = float3(0,0,1);
 float3 PerPixelWorldNormal(float4 i_tex, float4 tangentToWorld[3], SampleData sd)
 {
-#ifdef _NORMALMAP
-    half3 tangent = tangentToWorld[0].xyz;
-    half3 binormal = tangentToWorld[1].xyz;
-    half3 normal = tangentToWorld[2].xyz;
-    #if UNITY_TANGENT_ORTHONORMALIZE
-        normal = NormalizePerPixelNormal(normal);
+    #ifdef _NORMALMAP
+        half3 tangent = tangentToWorld[0].xyz;
+        half3 binormal = tangentToWorld[1].xyz;
+        half3 normal = tangentToWorld[2].xyz;
+        #if UNITY_TANGENT_ORTHONORMALIZE
+            normal = NormalizePerPixelNormal(normal);
 
-        // ortho-normalize Tangent
-        tangent = normalize (tangent - normal * dot(tangent, normal));
+            // ortho-normalize Tangent
+            tangent = normalize (tangent - normal * dot(tangent, normal));
 
-        // recalculate Binormal
-        half3 newB = cross(normal, tangent);
-        binormal = newB * sign (dot (newB, binormal));
+            // recalculate Binormal
+            half3 newB = cross(normal, tangent);
+            binormal = newB * sign (dot (newB, binormal));
+        #endif
+        
+        half3 normalTangent = NormalInTangentSpace(i_tex, sd);
+        TangentNormal = normalTangent;
+        #if DECAL_ENABLED
+            float3 normalWorld = normalize(normalTangent);
+        #else	
+            float3 normalWorld = NormalizePerPixelNormal(tangent * normalTangent.x + binormal * normalTangent.y + normal * normalTangent.z);
+        #endif
+    #else
+        float3 normalWorld = normalize(tangentToWorld[2].xyz);
+        #if RAIN_ENABLED
+            float3 rippleNormal = GetRipplesNormal(i_tex.xy);
+            normalWorld = BlendNormals(normalWorld, rippleNormal);
+        #endif
     #endif
-	
-    half3 normalTangent = NormalInTangentSpace(i_tex, sd);
-    TangentNormal = normalTangent;
-	#if DECAL_ENABLED
-    	float3 normalWorld = normalize(normalTangent);
-	#else	
-		float3 normalWorld = NormalizePerPixelNormal(tangent * normalTangent.x + binormal * normalTangent.y + normal * normalTangent.z);
-	#endif
-#else
-    float3 normalWorld = normalize(tangentToWorld[2].xyz);
-#endif
+
     return normalWorld;
 }
 
@@ -262,10 +267,6 @@ struct FragmentCommonData
 		half3 tangentSpaceNormal;
 	#endif
 };
-
-#ifndef UNITY_SETUP_BRDF_INPUT
-    #define UNITY_SETUP_BRDF_INPUT SpecularSetup
-#endif
 
 inline FragmentCommonData RoughnessSetup(float4 i_tex, SampleData sd)
 {
@@ -433,7 +434,8 @@ struct VertexOutputForwardBase
 		float3 raycast                    : TEXCOORD12;
 		float3 objPos                     : TEXCOORD13;
 	#endif
-    float4 tex2                       : TEXCOORD14;
+    float4 tex2                           : TEXCOORD14;
+    float4 rawUV                          : TEXCOORD15;
 	float4 color                          : COLOR;
     UNITY_VERTEX_INPUT_INSTANCE_ID
     UNITY_VERTEX_OUTPUT_STEREO
@@ -556,7 +558,7 @@ float shEvaluateDiffuseL1Geomerics(float L0, float3 L1, float3 n)
     return R0 * (a + (1.0f - a) * (p + 1.0f) * pow(q, p));
 }
 
-half4 fragForwardBaseInternal (VertexOutputForwardBase i)
+half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
 {
     UNITY_APPLY_DITHER_CROSSFADE(i.pos.xy);
 
@@ -572,13 +574,34 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i)
 
 	SampleData sd = SampleDataSetup(i);
     FragmentCommonData s = FragmentSetup(i.tex, i.tex2, i.eyeVec.xyz, IN_VIEWDIR4PARALLAX(i), i.tangentToWorldAndPackedData, IN_WORLDPOS(i), sd);
+    #if AREALIT_ENABLED
+        i.tangentToWorldAndPackedData[2].xyz *= frontFace ? +1 : -1;
+    #endif
     UNITY_SETUP_INSTANCE_ID(i);
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
+
+    half3 occlusion = Occlusion(i.tex, sd);
+
+    #if AREALIT_ENABLED
+        float perceptualRoughness = SmoothnessToPerceptualRoughness(s.smoothness);
+        if (_GSAA == 1){
+            perceptualRoughness = GSAARoughness(s.normalWorld, perceptualRoughness);
+        }
+        float roughness = PerceptualRoughnessToRoughness(perceptualRoughness);
+        AreaLightFragInput ai;
+        ai.pos = s.posWorld;
+        ai.normal = s.normalWorld;
+        ai.view = -s.eyeVec;
+        ai.roughness = roughness;
+        ai.occlusion = float4(occlusion, 1);
+        ai.screenPos = i.pos.xy;
+        half4 diffTerm, specTerm;
+        ShadeAreaLights(ai, diffTerm, specTerm, true, !IsSpecularOff(), IsStereo());
+    #endif
 
     UnityLight mainLight = MainLight();
     UNITY_LIGHT_ATTENUATION(atten, i, s.posWorld);
 
-    half3 occlusion = Occlusion(i.tex, sd);
     UnityGI gi = FragmentGI (s, occlusion, i.ambientOrLightmapUV, atten, mainLight);
 
     #if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
@@ -667,6 +690,11 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i)
 			);
 
     c.rgb += Emission(i.tex.xy, i.tex1.zw, sd);
+
+    #if AREALIT_ENABLED
+        c.rgb += s.diffColor * diffTerm + s.specColor * specTerm;
+    #endif
+
     Rim(s.posWorld, s.normalWorld, c.rgb);
 
 
@@ -675,9 +703,9 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i)
     return OutputForward (c, s.alpha);
 }
 
-half4 fragForwardBase (VertexOutputForwardBase i) : SV_Target   // backward compatibility (this used to be the fragment entry function)
+half4 fragForwardBase (VertexOutputForwardBase i, bool frontFace) : SV_Target   // backward compatibility (this used to be the fragment entry function)
 {
-    return fragForwardBaseInternal(i);
+    return fragForwardBaseInternal(i, frontFace);
 }
 
 // ------------------------------------------------------------------
@@ -701,7 +729,8 @@ struct VertexOutputForwardAdd
 		float3 raycast                  : TEXCOORD12;
 		float3 objPos                   : TEXCOORD13;
 	#endif
-    float4 tex2                     : TEXCOORD14;
+    float4 tex2                         : TEXCOORD14;
+    float4 rawUV                        : TEXCOORD15;
 	float4 color                        : COLOR;
     UNITY_VERTEX_OUTPUT_STEREO
 };

@@ -279,7 +279,7 @@ half4 fragShadowCaster (UNITY_POSITION(vpos)
 		#ifdef _ALPHAMASK_ON
 			half alpha = ChannelCheck(SampleTexture(_AlphaMask, sampler_AlphaMask, i.tex2), _AlphaMaskChannel) * _AlphaMaskOpacity;
 		#else
-			half alpha = SampleTexture(_MainTex, i.tex.xy, sd);
+			half alpha = SampleTexture(_MainTex, i.tex.xy, sd).a;
 		#endif
         #if defined(_ALPHATEST_ON)
             clip (alpha - _Cutoff);

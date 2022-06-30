@@ -371,7 +371,6 @@ Shader "Mochie/Uber/Uber (Outline)" {
 		[ToggleUI]_PostFiltering("tog", Int) = 0
 		[ToggleUI]_Invert("tog", Int) = 0
 		
-
 		_RGB("vec", Vector) = (1,1,1,0)
 		[ToggleUI]_AutoShift("tog", Int) = 0
 		_AutoShiftSpeed("ra", Range(0,1)) = 0.25
@@ -388,7 +387,7 @@ Shader "Mochie/Uber/Uber (Outline)" {
 		_Brightness("fl", Float) = 1
 		_Contrast("fl", Float) = 1
 		_HDR("fl", Float) = 0
-
+		_ACES("fl", Float) = 0
 		
 		//----------------------------
 		// FLIPBOOK
@@ -411,6 +410,8 @@ Shader "Mochie/Uber/Uber (Outline)" {
 		[ToggleUI]_ManualScrub("tog", Int) = 0
 		_ScrubPos("tog", Int) = 1
 		[ToggleUI]_UseSpritesheetAlpha("tog", Int) = 0
+		_Flipbook0Scroll("vec", Vector) = (0,0,0,0)
+		[ToggleUI]_Flipbook0ClipEdge("tog", Int) = 0
 
 		// SHEET 2
 		[ToggleUI]_EnableSpritesheet1("tog", Int) = 0
@@ -429,7 +430,8 @@ Shader "Mochie/Uber/Uber (Outline)" {
 		_FPS1("ra", Range(1,120)) = 30
 		[ToggleUI]_ManualScrub1("tog", Int) = 0
 		_ScrubPos1("tog", Int) = 1
-
+		_Flipbook1Scroll("vec", Vector) = (0,0,0,0)
+		[ToggleUI]_Flipbook1ClipEdge("tog", Int) = 0
 
 		//----------------------------
 		// OUTLINE

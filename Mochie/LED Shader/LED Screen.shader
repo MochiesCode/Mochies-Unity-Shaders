@@ -31,7 +31,7 @@ Shader "Mochie/LED Screen/LED Screen" {
 		#pragma surface surf Standard fullforwardshadows
 		#pragma target 5.0
 		#pragma shader_feature_local _SPECGLOSSMAP
-		#pragma shader_feature_local _EMISSION
+		#pragma shader_feature _EMISSION
 		#pragma shader_feature_local _FLIPBOOK_MODE
 		#include "../Common/Utilities.cginc"
 		
@@ -87,5 +87,6 @@ Shader "Mochie/LED Screen/LED Screen" {
 		}
 		ENDCG
 	}
+	FallBack "Standard"
 	CustomEditor "LEDEditor"
 }

@@ -9,7 +9,7 @@ public class LEDEditor : ShaderGUI {
 	public static GUIContent RGBMatrixTex = new GUIContent("RGB Matrix Texture", "The RGB pixel layout pattern.");
 	public static GUIContent smoothTex = new GUIContent("Roughness");
 	public static GUIContent flipbookTex = new GUIContent("Flipbook");
-	string versionLabel = "v1.4";
+	string versionLabel = "v1.4.1";
 	bool isTransparent = false;
 	MaterialProperty _MainTex = null;
 	MaterialProperty _RGBSubPixelTex = null;

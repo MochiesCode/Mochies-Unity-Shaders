@@ -109,6 +109,28 @@ float3 WhitePointAdjust(float3 XYZ, float3 from, float3 to){
 	return outp;
 }
 
+// Approximated ACES
+// Based on https://64.github.io/tonemapping/#aces
+float3 ACES(float3 v){
+    v *= 0.6f;
+    float a = 2.51f;
+    float b = 0.03f;
+    float c = 2.43f;
+    float d = 0.59f;
+    float e = 0.14f;
+    return (v*(a*v+b))/(v*(c*v+d)+e);
+}
+
+float3 ACES_Clamped(float3 v){
+    v *= 0.6f;
+    float a = 2.51f;
+    float b = 0.03f;
+    float c = 2.43f;
+    float d = 0.59f;
+    float e = 0.14f;
+    return saturate((v*(a*v+b))/(v*(c*v+d)+e));
+}
+
 // ---------------------------
 // Photoshop Blending Modes
 // ---------------------------

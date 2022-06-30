@@ -18,12 +18,15 @@
 #include "../Common/Sampling.cginc"
 #include "MochieStandardSampling.cginc"
 
+#if AREALIT_ENABLED
+	#include "../../AreaLit/Shader/Lighting.hlsl"
+#endif
+
 //---------------------------------------
 // Directional lightmaps & Parallax require tangent space too
 #if (_NORMALMAP || DIRLIGHTMAP_COMBINED || _PARALLAXMAP) || defined(BAKERY_LMSPEC) && defined(BAKERY_RNM)
     #define _TANGENT_TO_WORLD 1
 #endif
-
 //---------------------------------------
 
 Texture2D		_AlphaMask;
@@ -36,6 +39,7 @@ float			_Saturation;
 float			_Hue;
 float			_Contrast;
 float			_Brightness;
+float			_ACES;
 float			_SaturationDet;
 float			_HueDet;
 float			_ContrastDet;
@@ -119,6 +123,11 @@ int 			_Subsurface;
 float			_BrightnessReflShad;
 float			_ContrastReflShad;
 float			_HDRReflShad;
+float3			_TintReflShad;
+
+float 			_RippleStr;
+float			_RippleScale;
+float			_RippleSpeed;
 
 float _ReflectionStrength, _SpecularStrength;
 float _ReflShadowStrength;
@@ -128,6 +137,8 @@ int _ReflShadows;
 int _UseSmoothness;
 int _ReflVertexColor;
 int _GSAA;
+
+float _LTCGIStrength;
 
 float3 _RimCol;
 float _RimWidth;
@@ -239,6 +250,7 @@ float2 SelectUVSet(VertexInput v, int selection){
 	float2 uvs[] = {v.uv0, v.uv1, v.uv2, v.uv3, v.uv4};
 	return uvs[selection];
 }
+
 void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1, inout float4 texcoord2)
 {
 	texcoord.xy = Rotate2D(SelectUVSet(v, _UVPri), _UV0Rotate);
@@ -267,12 +279,13 @@ void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1, ino
 	#endif
 }
 
-half3 Filtering(float3 col, float hue, float saturation, float brightness, float contrast){
+half3 Filtering(float3 col, float hue, float saturation, float brightness, float contrast, float aces){
 	#ifdef _FILTERING_ON
 		if (hue > 0 && hue < 1)
 			col = HSVShift(col, hue, 0, 0);
 		col = lerp(dot(col, float3(0.3,0.59,0.11)), col, saturation);
 		col = GetContrast(col, contrast);
+		col = lerp(col, ACES(col), aces);
 		col *= brightness;
 	#endif
 	return col;
@@ -287,7 +300,7 @@ half DetailMask(float2 uv)
 half3 Albedo(float4 texcoords, SampleData sd)
 {
 	half3 albedo = _Color.rgb * SampleTexture(_MainTex, texcoords.xy, sd).rgb;
-	albedo = Filtering(albedo, _Hue, _Saturation, _Brightness, _Contrast);
+	albedo = Filtering(albedo, _Hue, _Saturation, _Brightness, _Contrast, 0);
 	#if DETAIL_BASECOLOR
 		half mask = DetailMask(texcoords.xy);
 		sd.scaleTransform = _DetailAlbedoMap_ST;
@@ -297,7 +310,7 @@ half3 Albedo(float4 texcoords, SampleData sd)
 		#else
 			half4 detailAlbedo = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailAlbedoMap, sampler_DetailAlbedoMap, texcoords.zw);
 		#endif
-		detailAlbedo.rgb = Filtering(detailAlbedo.rgb, _HueDet, _SaturationDet, _BrightnessDet, _ContrastDet);
+		detailAlbedo.rgb = Filtering(detailAlbedo.rgb, _HueDet, _SaturationDet, _BrightnessDet, _ContrastDet, 0);
 		albedo = BlendColorsAlpha(albedo, detailAlbedo.rgb, _DetailAlbedoBlend, mask, detailAlbedo.a);
 	#endif
     return albedo;
@@ -400,7 +413,7 @@ half3 Emission(float2 uv, float2 uvMask, SampleData sd)
 		float3 emissTex = SampleTexture(_EmissionMap, uv, sd);
 		float emissMask = _EmissionMask.Sample(sampler_MainTex, uvMask).r;
 		emissTex *= _EmissionColor.rgb * _EmissionIntensity * emissMask * GetWave(_EmissPulseWave, _EmissPulseSpeed, _EmissPulseStrength);
-		emissTex = Filtering(emissTex, _HueEmiss, _SaturationEmiss, _BrightnessEmiss, _ContrastEmiss);
+		emissTex = Filtering(emissTex, _HueEmiss, _SaturationEmiss, _BrightnessEmiss, _ContrastEmiss, 0);
 		#if AUDIOLINK_ENABLED
 			audioLinkData al = (audioLinkData)0;
 			InitializeAudioLink(al, 0);
@@ -422,6 +435,57 @@ void Rim(float3 worldPos, float3 normal, inout float3 col){
 	}
 }
 
+float3 Get1RippleNormal(float2 uv, float2 center, float time, float scale){
+	float2 ray = normalize(uv - center);
+	float x = scale * length(uv - center) / (0.5*UNITY_PI);
+	float dx = 0.01;
+	float x1 = x + dx;
+	float fx = min(x, 10);
+	float falloff = 0.5 * cos(UNITY_PI * fx / 10.0) + 0.5;
+
+	x = clamp(x - time,-1.57079632679, 1.57079632679);
+	x1 = clamp(x1 - time,-1.57079632679, 1.57079632679);
+	float ripple = falloff*cos(5.0 * x) * cos(x);
+	float ripple1 = falloff*cos(5.0 * x1) * cos(x1);
+	
+	float dy = ripple1 - ripple;
+	float3 normal = float3(ray*(-dy), dx/_RippleStr);
+	//normal = 0.5 + 0.5 * normal;
+	normal = normalize(normal);
+	return normal;
+}
+
+float2 N22(float2 p){
+	float3 a = frac(p.xyx * float3(123.34, 234.34, 345.65));
+	a += dot(a, a + 34.34);
+	return frac(float2(a.x * a.y, a.y * a.z));
+}
+
+float2 N11(float2 p){
+	float3 a = frac(p.xxx * float3(123.34, 234.34, 345.65));
+	a += dot(a, a + 34.34);
+	return frac((a.x * a.y * a.z));
+}
+
+float3 GetRipplesNormal(float2 uv){
+	float2 uv_scaled = (uv * _RippleScale) / _MainTex_ST.xy;
+	float2 cell0 = floor(uv_scaled);
+	float3 normals = float3(0, 0, 0);
+	[unroll]
+	for (int y = -1; y <= 1; y++) {
+		[unroll]
+		for (int x = -1; x <= 1; x++)
+		{
+			float2 cellx = cell0 + float2(x, y);
+			float noise = N11(0.713323*cellx.x + 5.139274*cellx.y);
+			float2 center = cellx + N22(cellx);
+			normals = Get1RippleNormal(uv_scaled, center, 13 * frac(_RippleSpeed * (_Time[0] + 2*noise)) - 4.0, 10.0) + normals;
+		}
+
+	}
+	return(normalize(normals));
+}
+
 #ifdef _NORMALMAP
 half3 NormalInTangentSpace(float4 texcoords, SampleData sd)
 {
@@ -437,7 +501,10 @@ half3 NormalInTangentSpace(float4 texcoords, SampleData sd)
 		#endif
 		normalTangent = lerp(normalTangent, BlendNormals(normalTangent, detailNormalTangent), mask);
 	#endif
-
+	#if RAIN_ENABLED
+		float3 rippleNormal = GetRipplesNormal(texcoords.xy);
+		normalTangent = BlendNormals(normalTangent, rippleNormal);
+	#endif
     return normalTangent;
 }
 #endif
