@@ -144,9 +144,9 @@ Shader "Mochie/Standard" {
 		[ToggleUI]_UseSmoothness("Use Smoothness", Int) = 0
 		[ToggleUI]_UseFresnel("Use Fresnel", Int) = 1
 		[ToggleUI]_BicubicLightmap("Bicubic Lightmap", Int) = 0
-        [Toggle(LTCGI)] _LTCGI("LTCGI", Int) = 0
-        [Toggle(LTCGI_DIFFUSE_OFF)] _LTCGI_DIFFUSE_OFF("LTCGI Disable Diffuse", Int) = 0
-		[Toggle(LTCGI_SPECULAR_OFF)]_LTCGI_SPECULAR_OFF("LTCGI Disable Specular", Int) = 0
+        [ToggleUI]_LTCGI("LTCGI", Int) = 0
+    	[ToggleUI]_LTCGI_DIFFUSE_OFF("LTCGI Disable Diffuse", Int) = 0
+		[ToggleUI]_LTCGI_SPECULAR_OFF("LTCGI Disable Specular", Int) = 0
 		_LTCGI_mat("LTC Mat", 2D) = "black" {}
         _LTCGI_amp("LTC Amp", 2D) = "black" {}
 		_LTCGIStrength("LTCGI Strength", Float) = 1

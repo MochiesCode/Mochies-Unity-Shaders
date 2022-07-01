@@ -581,13 +581,13 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
 
     half3 occlusion = Occlusion(i.tex, sd);
+    float perceptualRoughness = SmoothnessToPerceptualRoughness(s.smoothness);
+    if (_GSAA == 1)
+        perceptualRoughness = GSAARoughness(s.normalWorld, perceptualRoughness);
+    float roughness = PerceptualRoughnessToRoughness(perceptualRoughness);
+    float clampedRoughness = max(roughness, 0.002);
 
     #if AREALIT_ENABLED
-        float perceptualRoughness = SmoothnessToPerceptualRoughness(s.smoothness);
-        if (_GSAA == 1){
-            perceptualRoughness = GSAARoughness(s.normalWorld, perceptualRoughness);
-        }
-        float roughness = PerceptualRoughnessToRoughness(perceptualRoughness);
         AreaLightFragInput ai;
         ai.pos = s.posWorld;
         ai.normal = s.normalWorld;
@@ -646,10 +646,6 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
 
 
     #if defined(BAKERY_LMSPEC) && defined(UNITY_PASS_FORWARDBASE) && defined(LIGHTMAP_ON)
-        half perceptualRoughness = 1 - s.smoothness;
-        half roughness = perceptualRoughness * perceptualRoughness;
-        half clampedRoughness = max(roughness, 0.002);
-
         const float3 grayscaleVec = float3(0.2125, 0.7154, 0.0721);
         #ifdef BAKERY_RNM
         {
@@ -666,7 +662,7 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
             half3 halfDir = Unity_SafeNormalize(dominantDirTN - eyeVecT);
             half NoH = saturate(dot(TangentNormal, halfDir));
             half spec = GGXTerm(NoH, clampedRoughness);
-            gi.indirect.specular += spec * specColor; 
+            gi.indirect.specular += spec * specColor * _SpecularStrength; 
         }
         #endif
 
@@ -678,7 +674,7 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
             half spec = GGXTerm(NoH, clampedRoughness);
             float3 sh = L0 + dominantDir.x * L1x + dominantDir.y * L1y + dominantDir.z * L1z;
             dominantDir = normalize(dominantDir);
-            gi.indirect.specular += max(spec * sh, 0.0);
+            gi.indirect.specular += max(spec * sh, 0.0) * _SpecularStrength;
         }
         #endif
     #endif
@@ -692,11 +688,13 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
     c.rgb += Emission(i.tex.xy, i.tex1.zw, sd);
 
     #if AREALIT_ENABLED
-        c.rgb += s.diffColor * diffTerm + s.specColor * specTerm;
+        float3 areaLitColor = s.diffColor * diffTerm + s.specColor * specTerm;
+        if (_ReflShadows == 1)
+            areaLitColor *= shadowedReflections;
+        c.rgb += areaLitColor;
     #endif
 
     Rim(s.posWorld, s.normalWorld, c.rgb);
-
 
     UNITY_EXTRACT_FOG_FROM_EYE_VEC(i);
     UNITY_APPLY_FOG(_unity_fogCoord, c.rgb);
@@ -841,8 +839,8 @@ half4 fragForwardAddInternal (VertexOutputForwardAdd i)
     UnityIndirect noIndirect = ZeroIndirect ();
 
 	half4 c = MOCHIE_BRDF (s.diffColor, s.specColor, s.oneMinusReflectivity, 
-								s.smoothness, s.normalWorld, -s.eyeVec, s.posWorld, 0, 0,
-								s.metallic, s.thickness, s.subsurfaceColor, atten, 0, i.color, light, noIndirect);
+				s.smoothness, s.normalWorld, -s.eyeVec, s.posWorld, 0, 0,
+				s.metallic, s.thickness, s.subsurfaceColor, atten, 0, i.color, light, noIndirect);
 								
     UNITY_EXTRACT_FOG_FROM_EYE_VEC(i);
     UNITY_APPLY_FOG_COLOR(_unity_fogCoord, c.rgb, half4(0,0,0,0)); // fog towards black in additive pass

@@ -159,6 +159,8 @@ float _CubeThreshold;
 int _RoughnessMult, _MetallicMult, _OcclusionMult, _HeightMult;
 int _RoughnessChannel, _MetallicChannel, _OcclusionChannel, _HeightChannel;
 
+float3 shadowedReflections;
+
 #if SSR_ENABLED
 	sampler2D _GrabTexture; 
 	sampler2D _NoiseTexSSR;

@@ -19,10 +19,11 @@ internal class MochieStandardGUI : ShaderGUI {
 		"Render Settings",
 		"Reflections & Specular Highlights",
 		"Rain",
-		"AreaLit"
+		"AreaLit",
+		"LTCGI"
 	}, 1);
 
-	string versionLabel = "v1.15";
+	string versionLabel = "v1.15.1";
 	public static string receiverText = "AreaLit Maps";
 	public static string emitterText = "AreaLit Light";
 	public static string projectorText = "AreaLit Projector";
@@ -452,9 +453,28 @@ internal class MochieStandardGUI : ShaderGUI {
 				}
 			}
 			else {
-				material.SetInt("_AreaLitToggle", 0);
 				areaLitToggle.floatValue = 0f;
+				material.SetInt("_AreaLitToggle", 0);
 				material.DisableKeyword("_AREALIT_ON");
+			}
+
+			// LTCGI
+			if (Shader.Find("LTCGI/Blur Prefilter") != null){
+				bool ltcgiFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "LTCGI");
+				if (ltcgiFoldout){
+					DoLTCGIArea();
+				}
+			}
+			else {
+				ltcgi.floatValue = 0;
+				ltcgi_diffuse_off.floatValue = 0;
+				ltcgi_spec_off.floatValue = 0;
+				material.SetInt("_LTCGI", 0);
+				material.SetInt("_LTCGI_DIFFUSE_OFF", 0);
+				material.SetInt("_LTCGI_SPECULAR_OFF", 0);
+				material.DisableKeyword("LTCGI");
+				material.DisableKeyword("LTCGI_DIFFUSE_OFF");
+				material.DisableKeyword("LTCGI_SPECULAR_OFF");
 			}
 
 			// Watermark and version display
@@ -791,17 +811,6 @@ internal class MochieStandardGUI : ShaderGUI {
 				me.ShaderProperty(_BAKERY_SHNONLINEAR, "Bakery Non-Linear SH");
 				me.ShaderProperty(_BAKERY_LMSPEC, "Bakery Lightmap Specular");
 				me.ShaderProperty(bicubicLightmap, Tips.bicubicLightmap);
-				#if LTCGI_INCLUDED
-					me.ShaderProperty(ltcgi, "LTCGI");
-					if (ltcgi.floatValue == 1){
-						me.ShaderProperty(ltcgiStrength, "LTCGI Strength");
-						me.ShaderProperty(ltcgi_spec_off, "LTCGI Disable Specular");
-						me.ShaderProperty(ltcgi_diffuse_off, "LTCGI Disable Diffuse");
-					}
-				#else
-					ltcgi.floatValue = 0;
-					mat.DisableKeyword("LTCGI");
-				#endif
 				me.EnableInstancingField();
 				MGUI.SpaceN2();
 				me.DoubleSidedGIField();
@@ -910,7 +919,22 @@ internal class MochieStandardGUI : ShaderGUI {
 				me.ShaderProperty(opaqueLights, Tips.opaqueLightsText);
 				MGUI.SpaceN2();
 			});
+			MGUI.ToggleGroupEnd();
 			MGUI.DisplayInfo("Note that the AreaLit package files MUST be inside a folder named AreaLit (case sensitive) directly in the Assets folder (Assets/AreaLit)");
+		});
+	}
+
+	void DoLTCGIArea(){
+		MGUI.PropertyGroup(()=>{
+			me.ShaderProperty(ltcgi, "Enable");
+			MGUI.ToggleGroup(ltcgi.floatValue == 0);
+			MGUI.PropertyGroupLayer(()=>{
+				MGUI.SpaceN2();
+				me.ShaderProperty(ltcgiStrength, "Strength");
+				me.ShaderProperty(ltcgi_spec_off, "Disable Specular");
+				me.ShaderProperty(ltcgi_diffuse_off, "Disable Diffuse");
+				MGUI.SpaceN2();
+			});
 			MGUI.ToggleGroupEnd();
 		});
 	}
@@ -1023,6 +1047,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		int workflow =  material.GetInt("_Workflow");
 		int samplingMode = material.GetInt("_SamplingMode");
 		int blendModeEnum = material.GetInt("_BlendMode");
+		int ltcgiToggle = material.GetInt("_LTCGI");
 		MGUI.SetKeyword(material, "_NORMALMAP", material.GetTexture("_BumpMap") || material.GetTexture("_DetailNormalMap"));
 		MGUI.SetKeyword(material, "_WORKFLOW_PACKED_ON", workflow == 1);
 		MGUI.SetKeyword(material, "_SPECGLOSSMAP", material.GetTexture("_SpecGlossMap"));
@@ -1049,6 +1074,9 @@ internal class MochieStandardGUI : ShaderGUI {
 		MGUI.SetKeyword(material, "_FILTERING_ON", material.GetInt("_Filtering") == 1);
 		MGUI.SetKeyword(material, "_RAIN_ON", material.GetInt("_RainToggle") == 1);
 		MGUI.SetKeyword(material, "_AREALIT_ON", material.GetInt("_AreaLitToggle") == 1);
+		MGUI.SetKeyword(material, "LTCGI", ltcgiToggle == 1);
+		MGUI.SetKeyword(material, "LTCGI_DIFFUSE_OFF", material.GetInt("_LTCGI_DIFFUSE_OFF") == 1 && ltcgiToggle == 1);
+		MGUI.SetKeyword(material, "LTCGI_SPECULAR_OFF", material.GetInt("_LTCGI_SPECULAR_OFF") == 1 && ltcgiToggle == 1);
 
 		if (samplingMode < 3){
 			if (!material.GetTexture("_PackedMap"))
