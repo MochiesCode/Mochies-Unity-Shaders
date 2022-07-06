@@ -7,7 +7,7 @@
 #include "../Common/Color.cginc"
 #include "../Common/Utilities.cginc"
 #include "../Common/Noise.cginc"
-#include "Autolight.cginc"
+#include "AutoLight.cginc"
 
 MOCHIE_DECLARE_TEX2D(_MainTex);
 float4 _MainTex_ST, _MainTex_TexelSize;
