@@ -12,6 +12,9 @@
 #include "MochieStandardBRDF.cginc"
 
 #include "AutoLight.cginc"
+
+static float3 TangentNormal = float3(0,0,1);
+
 //-------------------------------------------------------------------------------------
 // counterpart for NormalizePerPixelNormal
 // skips normalization per-vertex and expects normalization to happen per-pixel
@@ -56,7 +59,20 @@ half3 Mochie_GlossyEnvironment (UNITY_ARGS_TEXCUBE(tex), half4 hdr, Unity_Glossy
     return DecodeHDR(rgbm, hdr);
 }
 
-inline half3 MochieGI_IndirectSpecular(UnityGIInput data, half3 occlusion, Unity_GlossyEnvironmentData glossIn, float3 normal)
+#if MIRROR_ENABLED
+half3 Mirror_GlossyEnvironment(Unity_GlossyEnvironmentData glossIn, float4 reflUV){
+    half perceptualRoughness = glossIn.roughness /* perceptualRoughness */ ;
+    perceptualRoughness = perceptualRoughness*(1.7 - 0.7*perceptualRoughness);
+    half mip = perceptualRoughnessToMipmapLevel(perceptualRoughness);
+    float2 uv = reflUV.xy / (reflUV.w + 0.00000001);
+    uv += TangentNormal;
+    float4 uvMip = float4(uv, 0, mip * 6);
+    half3 refl = unity_StereoEyeIndex == 0 ? tex2Dlod(_ReflectionTex0, uvMip) : tex2Dlod(_ReflectionTex1, uvMip);
+    return refl;
+}
+#endif
+
+inline half3 MochieGI_IndirectSpecular(UnityGIInput data, half3 occlusion, Unity_GlossyEnvironmentData glossIn, float3 normal, float4 reflUV)
 {
     half3 specular;
 	half3 originalReflUVW = glossIn.reflUVW;
@@ -69,42 +85,46 @@ inline half3 MochieGI_IndirectSpecular(UnityGIInput data, half3 occlusion, Unity
     #ifdef _GLOSSYREFLECTIONS_OFF
         specular = unity_IndirectSpecColor.rgb;
     #else
-		#if REFLECTION_OVERRIDE
-			half3 env0 = Mochie_GlossyEnvironment(UNITY_PASS_TEXCUBE(_ReflCubeOverride), _ReflCubeOverride_HDR, glossIn, originalReflUVW);
-			specular = env0;
-		#else
-			half3 env0 = Mochie_GlossyEnvironment(UNITY_PASS_TEXCUBE(unity_SpecCube0), data.probeHDR[0], glossIn);
-			#ifdef UNITY_SPECCUBE_BLENDING
-				const float kBlendFactor = 0.99999;
-				float blendLerp = data.boxMin[0].w;
-				UNITY_BRANCH
-				if (blendLerp < kBlendFactor){
-					#ifdef UNITY_SPECCUBE_BOX_PROJECTION
-						glossIn.reflUVW = BoxProjectedCubemapDirection(originalReflUVW, data.worldPos, data.probePosition[1], data.boxMin[1], data.boxMax[1]);
-					#endif
-					half3 env1 = Mochie_GlossyEnvironment(UNITY_PASS_TEXCUBE_SAMPLER(unity_SpecCube1,unity_SpecCube0), data.probeHDR[1], glossIn);
-					specular = lerp(env1, env0, blendLerp);
-				}
-				else {
-					specular = env0;
-				}
-			#else
-				specular = env0;
-			#endif
-		#endif
-		#if REFLECTION_FALLBACK
-			half3 env2 = Mochie_GlossyEnvironment(UNITY_PASS_TEXCUBE(_ReflCube), _ReflCube_HDR, glossIn, originalReflUVW);
-			float interpolant = (specular.r + specular.g + specular.b)/3.0;
-			specular = lerp(env2, specular, smoothstep(0, _CubeThreshold * 0.01, interpolant));
-		#endif
+        #if MIRROR_ENABLED
+            specular = Mirror_GlossyEnvironment(glossIn, reflUV);
+        #else
+            #if REFLECTION_OVERRIDE
+                half3 env0 = Mochie_GlossyEnvironment(UNITY_PASS_TEXCUBE(_ReflCubeOverride), _ReflCubeOverride_HDR, glossIn, originalReflUVW);
+                specular = env0;
+            #else
+                half3 env0 = Mochie_GlossyEnvironment(UNITY_PASS_TEXCUBE(unity_SpecCube0), data.probeHDR[0], glossIn);
+                #ifdef UNITY_SPECCUBE_BLENDING
+                    const float kBlendFactor = 0.99999;
+                    float blendLerp = data.boxMin[0].w;
+                    UNITY_BRANCH
+                    if (blendLerp < kBlendFactor){
+                        #ifdef UNITY_SPECCUBE_BOX_PROJECTION
+                            glossIn.reflUVW = BoxProjectedCubemapDirection(originalReflUVW, data.worldPos, data.probePosition[1], data.boxMin[1], data.boxMax[1]);
+                        #endif
+                        half3 env1 = Mochie_GlossyEnvironment(UNITY_PASS_TEXCUBE_SAMPLER(unity_SpecCube1,unity_SpecCube0), data.probeHDR[1], glossIn);
+                        specular = lerp(env1, env0, blendLerp);
+                    }
+                    else {
+                        specular = env0;
+                    }
+                #else
+                    specular = env0;
+                #endif
+            #endif
+            #if REFLECTION_FALLBACK
+                half3 env2 = Mochie_GlossyEnvironment(UNITY_PASS_TEXCUBE(_ReflCube), _ReflCube_HDR, glossIn, originalReflUVW);
+                float interpolant = (specular.r + specular.g + specular.b)/3.0;
+                specular = lerp(env2, specular, smoothstep(0, _CubeThreshold * 0.01, interpolant));
+            #endif
+        #endif
     #endif
     return specular * occlusion;
 }
 
-inline UnityGI MochieGlobalIllumination (UnityGIInput data, half3 occlusion, half3 normalWorld, Unity_GlossyEnvironmentData glossIn)
+inline UnityGI MochieGlobalIllumination (UnityGIInput data, half3 occlusion, half3 normalWorld, Unity_GlossyEnvironmentData glossIn, float4 reflUV)
 {
     UnityGI o_gi = UnityGI_Base(data, occlusion, normalWorld);
-    o_gi.indirect.specular = MochieGI_IndirectSpecular(data, occlusion, glossIn, normalWorld);
+    o_gi.indirect.specular = MochieGI_IndirectSpecular(data, occlusion, glossIn, normalWorld, reflUV);
 	// #if SUBSURFACE_ENABLED
 	// 	float3 sh_conv = GeneralWrapSH(0.5);
 	// 	o_gi.indirect.diffuse = ShadeSH9_wrappedCorrect(normalWorld, sh_conv);
@@ -190,7 +210,6 @@ half3 WorldNormal(half4 tan2world[3])
     }
 #endif
 
-static float3 TangentNormal = float3(0,0,1);
 float3 PerPixelWorldNormal(float4 i_tex, float4 tangentToWorld[3], SampleData sd)
 {
     #ifdef _NORMALMAP
@@ -210,16 +229,13 @@ float3 PerPixelWorldNormal(float4 i_tex, float4 tangentToWorld[3], SampleData sd
         
         half3 normalTangent = NormalInTangentSpace(i_tex, sd);
         TangentNormal = normalTangent;
-        #if DECAL_ENABLED
-            float3 normalWorld = normalize(normalTangent);
-        #else	
-            float3 normalWorld = NormalizePerPixelNormal(tangent * normalTangent.x + binormal * normalTangent.y + normal * normalTangent.z);
-        #endif
+        float3 normalWorld = NormalizePerPixelNormal(tangent * normalTangent.x + binormal * normalTangent.y + normal * normalTangent.z);
     #else
         float3 normalWorld = normalize(tangentToWorld[2].xyz);
         #if RAIN_ENABLED
-            float3 rippleNormal = GetRipplesNormal(i_tex.xy);
+            float3 rippleNormal = GetRipplesNormal(i_tex.xy, _RippleScale, _RippleStr, _RippleSpeed);
             normalWorld = BlendNormals(normalWorld, rippleNormal);
+            TangentNormal = BlendNormals(TangentNormal, rippleNormal);
         #endif
     #endif
 
@@ -324,7 +340,7 @@ inline FragmentCommonData FragmentSetup (inout float4 i_tex, float4 i_tex2, floa
     return o;
 }
 
-inline UnityGI FragmentGI (FragmentCommonData s, half3 occlusion, half4 i_ambientOrLightmapUV, half atten, UnityLight light, bool reflections)
+inline UnityGI FragmentGI (FragmentCommonData s, half3 occlusion, half4 i_ambientOrLightmapUV, half atten, UnityLight light, bool reflections, float4 reflUV)
 {
     UnityGIInput d;
     d.light = light;
@@ -360,7 +376,7 @@ inline UnityGI FragmentGI (FragmentCommonData s, half3 occlusion, half4 i_ambien
             g.reflUVW = s.reflUVW;
         #endif
 
-        return MochieGlobalIllumination (d, occlusion, s.normalWorld, g);
+        return MochieGlobalIllumination (d, occlusion, s.normalWorld, g, reflUV);
     }
     else
     {
@@ -368,9 +384,9 @@ inline UnityGI FragmentGI (FragmentCommonData s, half3 occlusion, half4 i_ambien
     }
 }
 
-inline UnityGI FragmentGI (FragmentCommonData s, half3 occlusion, half4 i_ambientOrLightmapUV, half atten, UnityLight light)
+inline UnityGI FragmentGI (FragmentCommonData s, half3 occlusion, half4 i_ambientOrLightmapUV, half atten, UnityLight light, float4 reflUV)
 {
-    return FragmentGI(s, occlusion, i_ambientOrLightmapUV, atten, light, true);
+    return FragmentGI(s, occlusion, i_ambientOrLightmapUV, atten, light, true, reflUV);
 }
 
 
@@ -429,13 +445,14 @@ struct VertexOutputForwardBase
 	#if UNITY_REQUIRE_FRAG_WORLDPOS && !UNITY_PACK_WORLDPOS_WITH_TANGENT
 		float3 posWorld                   : TEXCOORD10;
 	#endif
-	#if SSR_ENABLED || DECAL_ENABLED
+	#if SSR_ENABLED
 		float4 screenPos                  : TEXCOORD11;
 		float3 raycast                    : TEXCOORD12;
 		float3 objPos                     : TEXCOORD13;
 	#endif
     float4 tex2                           : TEXCOORD14;
     float4 rawUV                          : TEXCOORD15;
+    float4 refl                           : TEXCOORD16;
 	float4 color                          : COLOR;
     UNITY_VERTEX_INPUT_INSTANCE_ID
     UNITY_VERTEX_OUTPUT_STEREO
@@ -460,10 +477,6 @@ VertexOutputForwardBase vertForwardBase (VertexInput v)
         #endif
     #endif
     o.pos = UnityObjectToClipPos(v.vertex);
-	#if DECAL_ENABLED
-		o.objPos = mul(unity_ObjectToWorld, float4(0,0,0,1));
-		o.raycast = UnityObjectToViewPos(v.vertex).xyz * float3(-1,-1,1);
-	#endif
 	o.localPos = v.vertex;
 	o.color = v.color;
     TexCoords(v, o.tex, o.tex1, o.tex2);
@@ -495,38 +508,21 @@ VertexOutputForwardBase vertForwardBase (VertexInput v)
         o.tangentToWorldAndPackedData[2].w = viewDirForParallax.z;
     #endif
 
-	#if SSR_ENABLED || DECAL_ENABLED
+	#if SSR_ENABLED
 		o.screenPos = ComputeGrabScreenPos(o.pos);
 	#endif
+ 
+    o.refl = ComputeNonStereoScreenPos(o.pos);
 
     UNITY_TRANSFER_FOG_COMBINED_WITH_EYE_VEC(o,o.pos);
     return o;
 }
 
-#if DECAL_ENABLED
-void GetDepthData(VertexOutputForwardBase i, inout SampleData sd){
-	float rawDepth = DecodeFloatRG(tex2Dproj(_CameraDepthTexture, i.screenPos));
-	float depth = Linear01Depth(rawDepth);
-	i.raycast = i.raycast * (_ProjectionParams.z / i.raycast.z);
-	float4 vpos = float4(i.raycast * depth, 1);
-	float3 wpos = mul(unity_CameraToWorld, vpos).xyz;
-	float3 wposX = ddx(wpos);
-	float3 wposY = ddy(wpos);
-	sd.depthNormal = abs(normalize(cross(wposY, wposX)));
-	sd.worldPixelPos = wpos;
-}
-#endif
-
 SampleData SampleDataSetup(VertexOutputForwardBase i){
 	SampleData sd = (SampleData)0;
 	sd.localPos = i.localPos;
 	sd.normal = i.tangentToWorldAndPackedData[2].xyz;
-	sd.rotation = _UV0Rotate;
 	sd.scaleTransform = _MainTex_ST;
-	#if DECAL_ENABLED
-		GetDepthData(i, sd);
-		sd.objPos = i.objPos;
-	#endif
 	return sd;
 }
 
@@ -558,13 +554,62 @@ float shEvaluateDiffuseL1Geomerics(float L0, float3 L1, float3 n)
     return R0 * (a + (1.0f - a) * (p + 1.0f) * pow(q, p));
 }
 
+#ifdef BAKERY_MONOSH
+void BakeryMonoSH(inout float3 diffuseColor, inout float3 specularColor, float2 lmUV, float3 normalWorld, float3 viewDir, half roughness)
+{
+    float3 L0 = diffuseColor;
+
+    float3 dominantDir = UNITY_SAMPLE_TEX2D_SAMPLER(unity_LightmapInd, unity_Lightmap, lmUV).xyz;
+
+    float3 nL1 = dominantDir * 2 - 1;
+    float3 L1x = nL1.x * L0 * 2;
+    float3 L1y = nL1.y * L0 * 2;
+    float3 L1z = nL1.z * L0 * 2;
+    float3 sh;
+#ifdef BAKERY_SHNONLINEAR
+    float lumaL0 = dot(L0, 1);
+    float lumaL1x = dot(L1x, 1);
+    float lumaL1y = dot(L1y, 1);
+    float lumaL1z = dot(L1z, 1);
+    float lumaSH = shEvaluateDiffuseL1Geomerics(lumaL0, float3(lumaL1x, lumaL1y, lumaL1z), normalWorld);
+
+    sh = L0 + normalWorld.x * L1x + normalWorld.y * L1y + normalWorld.z * L1z;
+    float regularLumaSH = dot(sh, 1);
+    //sh *= regularLumaSH < 0.001 ? 1 : (lumaSH / regularLumaSH);
+    sh *= lerp(1, lumaSH / regularLumaSH, saturate(regularLumaSH*16));
+
+    //sh.r = shEvaluateDiffuseL1Geomerics(L0.r, float3(L1x.r, L1y.r, L1z.r), normalWorld);
+    //sh.g = shEvaluateDiffuseL1Geomerics(L0.g, float3(L1x.g, L1y.g, L1z.g), normalWorld);
+    //sh.b = shEvaluateDiffuseL1Geomerics(L0.b, float3(L1x.b, L1y.b, L1z.b), normalWorld);
+
+#else
+    sh = L0 + normalWorld.x * L1x + normalWorld.y * L1y + normalWorld.z * L1z;
+#endif
+
+    diffuseColor = max(sh, 0.0);
+
+
+    #ifdef BAKERY_LMSPEC
+        dominantDir = nL1;
+        float focus = saturate(length(dominantDir));
+        half3 halfDir = Unity_SafeNormalize(normalize(dominantDir) - viewDir);
+        half nh = saturate(dot(normalWorld, halfDir));
+        half spec = GGXTerm(nh, roughness);
+
+        sh = L0 + dominantDir.x * L1x + dominantDir.y * L1y + dominantDir.z * L1z;
+
+        specularColor += max(spec * sh, 0.0) * _SpecularStrength;
+    #endif
+}
+#endif
+
 half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
 {
     UNITY_APPLY_DITHER_CROSSFADE(i.pos.xy);
 
 	float2 screenUVs = 0;
 	float4 screenPos = 0;
-	#if SSR_ENABLED || DECAL_ENABLED
+	#if SSR_ENABLED
 		screenUVs = i.screenPos.xy / (i.screenPos.w+0.0000000001);
 		#if UNITY_SINGLE_PASS_STEREO
 			screenUVs.x *= 2;
@@ -602,7 +647,7 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
     UnityLight mainLight = MainLight();
     UNITY_LIGHT_ATTENUATION(atten, i, s.posWorld);
 
-    UnityGI gi = FragmentGI (s, occlusion, i.ambientOrLightmapUV, atten, mainLight);
+    UnityGI gi = FragmentGI (s, occlusion, i.ambientOrLightmapUV, atten, mainLight, i.refl);
 
     #if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
 		#ifdef BAKERY_RNM
@@ -641,6 +686,11 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
             #else
                 gi.indirect.diffuse = L0 + s.normalWorld.x * L1x + s.normalWorld.y * L1y + s.normalWorld.z * L1z;
             #endif
+        #endif
+
+        
+        #ifdef BAKERY_MONOSH
+            BakeryMonoSH(gi.indirect.diffuse, gi.indirect.specular, i.ambientOrLightmapUV, s.normalWorld, s.eyeVec, clampedRoughness);
         #endif
     #endif
 
@@ -722,11 +772,6 @@ struct VertexOutputForwardAdd
 	#if defined(_PARALLAXMAP) || defined(BAKERY_LMSPEC) && defined(BAKERY_RNM)
 		half3 viewDirForParallax        : TEXCOORD10;
 	#endif
-	#if DECAL_ENABLED
-		float4 screenPos                : TEXCOORD11;
-		float3 raycast                  : TEXCOORD12;
-		float3 objPos                   : TEXCOORD13;
-	#endif
     float4 tex2                         : TEXCOORD14;
     float4 rawUV                        : TEXCOORD15;
 	float4 color                        : COLOR;
@@ -742,10 +787,6 @@ VertexOutputForwardAdd vertForwardAdd (VertexInput v)
 
     float4 posWorld = mul(unity_ObjectToWorld, v.vertex);
     o.pos = UnityObjectToClipPos(v.vertex);
-	#if DECAL_ENABLED
-		o.objPos = mul(unity_ObjectToWorld, float4(0,0,0,1));
-		o.raycast = UnityObjectToViewPos(v.vertex).xyz * float3(-1,-1,1);
-	#endif
 	o.localPos = v.vertex;
 
     TexCoords(v, o.tex, o.tex1, o.tex2);
@@ -780,38 +821,15 @@ VertexOutputForwardAdd vertForwardAdd (VertexInput v)
         o.viewDirForParallax = mul (rotation, ObjSpaceViewDir(v.vertex));
     #endif
 
-	#if DECAL_ENABLED
-		o.screenPos = ComputeGrabScreenPos(o.pos);
-	#endif
-
     UNITY_TRANSFER_FOG_COMBINED_WITH_EYE_VEC(o, o.pos);
     return o;
 }
-
-#if DECAL_ENABLED
-void GetDepthData(VertexOutputForwardAdd i, inout SampleData sd){
-	float rawDepth = DecodeFloatRG(tex2Dproj(_CameraDepthTexture, i.screenPos));
-	float depth = Linear01Depth(rawDepth);
-	i.raycast = i.raycast * (_ProjectionParams.z / i.raycast.z);
-	float4 vpos = float4(i.raycast * depth, 1);
-	float3 wpos = mul(unity_CameraToWorld, vpos).xyz;
-	float3 wposX = ddx(wpos);
-	float3 wposY = ddy(wpos);
-	sd.depthNormal = abs(normalize(cross(wposY, wposX)));
-	sd.worldPixelPos = wpos;
-}
-#endif
 
 SampleData SampleDataSetup(VertexOutputForwardAdd i){
 	SampleData sd = (SampleData)0;
 	sd.localPos = i.localPos;
 	sd.normal = i.tangentToWorldAndLightDir[2].xyz;
-	sd.rotation = _UV0Rotate;
 	sd.scaleTransform = _MainTex_ST;
-	#if DECAL_ENABLED
-		GetDepthData(i, sd);
-		sd.objPos = i.objPos;
-	#endif
 	return sd;
 }
 
@@ -823,13 +841,6 @@ half4 fragForwardAddInternal (VertexOutputForwardAdd i)
 
 	float2 screenUVs = 0;
 	float4 screenPos = 0;
-	#if DECAL_ENABLED
-		screenUVs = i.screenPos.xy / (i.screenPos.w+0.0000000001);
-		#if UNITY_SINGLE_PASS_STEREO
-			screenUVs.x *= 2;
-		#endif
-		screenPos = i.screenPos;
-	#endif
 
 	SampleData sd = SampleDataSetup(i);
     FragmentCommonData s = FragmentSetup(i.tex, i.tex2, i.eyeVec.xyz, IN_VIEWDIR4PARALLAX_FWDADD(i), i.tangentToWorldAndLightDir, IN_WORLDPOS_FWDADD(i), sd);

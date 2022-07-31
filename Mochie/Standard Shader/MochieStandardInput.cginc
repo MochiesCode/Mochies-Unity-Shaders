@@ -11,7 +11,7 @@
 #include "../Common/Utilities.cginc"
 #include "../Common/Color.cginc"
 
-#if SSR_ENABLED || DECAL_ENABLED
+#if SSR_ENABLED
 	UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
 #endif
 
@@ -32,6 +32,7 @@
 Texture2D		_AlphaMask;
 float			_AlphaMaskOpacity;
 half4       	_Color;
+half4			_DetailColor;
 half        	_Cutoff;
 int				_UseAlphaMask;
 int 			_AlphaMaskChannel;
@@ -161,6 +162,11 @@ int _RoughnessChannel, _MetallicChannel, _OcclusionChannel, _HeightChannel;
 
 float3 shadowedReflections;
 
+#if MIRROR_ENABLED
+	sampler2D _ReflectionTex0;
+	sampler2D _ReflectionTex1;
+#endif
+
 #if SSR_ENABLED
 	sampler2D _GrabTexture; 
 	sampler2D _NoiseTexSSR;
@@ -263,6 +269,9 @@ void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1, ino
 	texcoord.zw = TRANSFORM_TEX(texcoord.zw, _DetailAlbedoMap);
 	texcoord.zw += _Time.y * _UV1Scroll;
 
+	texcoord1 = 0;
+	texcoord2 = 0;
+
 	#ifdef _PARALLAXMAP
 		texcoord1.xy = TRANSFORM_TEX(SelectUVSet(v, _UVHeightMask), _ParallaxMask);
 		texcoord1.xy += _Time.y * _UV2Scroll;
@@ -306,13 +315,12 @@ half3 Albedo(float4 texcoords, SampleData sd)
 	#if DETAIL_BASECOLOR
 		half mask = DetailMask(texcoords.xy);
 		sd.scaleTransform = _DetailAlbedoMap_ST;
-		sd.rotation = _UV1Rotate;
 		#if DETAIL_SAMPLEMODE_ENABLED
 			half4 detailAlbedo = SampleTexture(_DetailAlbedoMap, sampler_DetailAlbedoMap, texcoords.zw, sd);
 		#else
 			half4 detailAlbedo = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailAlbedoMap, sampler_DetailAlbedoMap, texcoords.zw);
 		#endif
-		detailAlbedo.rgb = Filtering(detailAlbedo.rgb, _HueDet, _SaturationDet, _BrightnessDet, _ContrastDet, 0);
+		detailAlbedo.rgb = _DetailColor.rgb * Filtering(detailAlbedo.rgb, _HueDet, _SaturationDet, _BrightnessDet, _ContrastDet, 0);
 		albedo = BlendColorsAlpha(albedo, detailAlbedo.rgb, _DetailAlbedoBlend, mask, detailAlbedo.a);
 	#endif
     return albedo;
@@ -437,56 +445,6 @@ void Rim(float3 worldPos, float3 normal, inout float3 col){
 	}
 }
 
-float3 Get1RippleNormal(float2 uv, float2 center, float time, float scale){
-	float2 ray = normalize(uv - center);
-	float x = scale * length(uv - center) / (0.5*UNITY_PI);
-	float dx = 0.01;
-	float x1 = x + dx;
-	float fx = min(x, 10);
-	float falloff = 0.5 * cos(UNITY_PI * fx / 10.0) + 0.5;
-
-	x = clamp(x - time,-1.57079632679, 1.57079632679);
-	x1 = clamp(x1 - time,-1.57079632679, 1.57079632679);
-	float ripple = falloff*cos(5.0 * x) * cos(x);
-	float ripple1 = falloff*cos(5.0 * x1) * cos(x1);
-	
-	float dy = ripple1 - ripple;
-	float3 normal = float3(ray*(-dy), dx/_RippleStr);
-	//normal = 0.5 + 0.5 * normal;
-	normal = normalize(normal);
-	return normal;
-}
-
-float2 N22(float2 p){
-	float3 a = frac(p.xyx * float3(123.34, 234.34, 345.65));
-	a += dot(a, a + 34.34);
-	return frac(float2(a.x * a.y, a.y * a.z));
-}
-
-float2 N11(float2 p){
-	float3 a = frac(p.xxx * float3(123.34, 234.34, 345.65));
-	a += dot(a, a + 34.34);
-	return frac((a.x * a.y * a.z));
-}
-
-float3 GetRipplesNormal(float2 uv){
-	float2 uv_scaled = (uv * _RippleScale) / _MainTex_ST.xy;
-	float2 cell0 = floor(uv_scaled);
-	float3 normals = float3(0, 0, 0);
-	[unroll]
-	for (int y = -1; y <= 1; y++) {
-		[unroll]
-		for (int x = -1; x <= 1; x++)
-		{
-			float2 cellx = cell0 + float2(x, y);
-			float noise = N11(0.713323*cellx.x + 5.139274*cellx.y);
-			float2 center = cellx + N22(cellx);
-			normals = Get1RippleNormal(uv_scaled, center, 13 * frac(_RippleSpeed * (_Time[0] + 2*noise)) - 4.0, 10.0) + normals;
-		}
-
-	}
-	return(normalize(normals));
-}
 
 #ifdef _NORMALMAP
 half3 NormalInTangentSpace(float4 texcoords, SampleData sd)
@@ -494,7 +452,6 @@ half3 NormalInTangentSpace(float4 texcoords, SampleData sd)
 	half3 normalTangent = SampleTexture(_BumpMap, texcoords.xy, sd, _BumpScale);
 	#if defined(UNITY_ENABLE_DETAIL_NORMALMAP)
 		sd.scaleTransform = _DetailAlbedoMap_ST;
-		sd.rotation = _UV1Rotate;
 		half mask = DetailMask(texcoords.xy);
 		#if DETAIL_SAMPLEMODE_ENABLED
 			half3 detailNormalTangent = SampleTexture(_DetailNormalMap, sampler_DetailNormalMap, texcoords.zw, sd, _DetailNormalMapScale);
@@ -504,7 +461,7 @@ half3 NormalInTangentSpace(float4 texcoords, SampleData sd)
 		normalTangent = lerp(normalTangent, BlendNormals(normalTangent, detailNormalTangent), mask);
 	#endif
 	#if RAIN_ENABLED
-		float3 rippleNormal = GetRipplesNormal(texcoords.xy);
+		float3 rippleNormal = GetRipplesNormal(texcoords.xy, _RippleScale, _RippleStr, _RippleSpeed);
 		normalTangent = BlendNormals(normalTangent, rippleNormal);
 	#endif
     return normalTangent;

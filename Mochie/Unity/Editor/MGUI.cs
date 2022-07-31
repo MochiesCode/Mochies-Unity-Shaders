@@ -94,6 +94,34 @@ namespace Mochie {
 				}
 			}
 		}
+		
+		public static void DoFooter(string versionLabel){
+			GUILayout.Space(20);
+			float buttonSize = 35f;
+			Rect footerRect = EditorGUILayout.GetControlRect();
+			footerRect.x += (MGUI.GetInspectorWidth()/2f)-buttonSize-5f;
+			footerRect.width = buttonSize;
+			footerRect.height = buttonSize;
+			if (GUI.Button(footerRect, MGUI.patIconTex))
+				Application.OpenURL("https://www.patreon.com/mochieshaders");
+			footerRect.x += buttonSize + 5f;
+			footerRect.y += 17f;
+			GUIStyle formatting = new GUIStyle();
+			formatting.fontSize = 15;
+			formatting.fontStyle = FontStyle.Bold;
+			if (EditorGUIUtility.isProSkin){
+				Color proCol = new Color(0.8f, 0.8f, 0.8f, 1);
+				formatting.normal.textColor = proCol;
+				formatting.hover.textColor = proCol;
+			}
+			GUI.Label(footerRect, versionLabel, formatting);
+			footerRect.y += 20f;
+			footerRect.x -= 35f;
+			footerRect.width = 70f;
+			footerRect.height = 70f;
+			GUI.Label(footerRect, MGUI.mochieLogo);
+			GUILayout.Space(90);
+		}
 
 		public static void DisplayError(string message){
 			EditorGUILayout.HelpBox(message, MessageType.Error);

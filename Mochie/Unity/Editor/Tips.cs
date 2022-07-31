@@ -170,9 +170,10 @@ namespace Mochie {
 		public static GUIContent matcapNormalMix = new GUIContent("Mix Normals", "Mixes the normal maps from the textures tab into the normal map slot in this tab.");
 		public static GUIContent clipEdge = new GUIContent("Clip Edge", "Clips a small border around the edge of the flipbook to remove lines from the edge fo the frame. Most obvious when the flipbook is scrolling.");
 		public static GUIContent aces = new GUIContent("ACES", "Cheap approximated ACES tonemapping.");
+		public static GUIContent mirrorMode = new GUIContent("Mirror Mode", "Enable if using this material as a VRChat mirror.");
 
 		// Water
-		public static GUIContent stochasticLabel = new GUIContent("Stochastic Sampling", "Uses uvs to generate pseudo-random positions for sampling to alleviate tiling artifacts. 3 samples per texture.");
+		public static GUIContent stochasticLabel = new GUIContent("Stochastic", "Uses uvs to generate pseudo-random positions for sampling to alleviate tiling artifacts. 3 samples per texture.");
 		public static GUIContent parallaxOffsetLabel = new GUIContent("Parallax Offset", "Offsets the texture sample up or down in 3D space.");
 		public static GUIContent foamNormal = new GUIContent("Create Normals", "Automatically generates normals for the foam based on the grayscale value of the foam texture.");
 		public static GUIContent foamCrestStrength = new GUIContent("Crest Strength", "How visible foam is on the crests of gerstner waves.");
@@ -182,7 +183,8 @@ namespace Mochie {
 		public static GUIContent foamRoughness = new GUIContent("Roughness", "How rough the foam should be when calculating reflections and specular highlights.");
 		public static GUIContent foamNoiseTexCrestStrength = new GUIContent("Crest Noise", "How strongly the noise texture should affect crest foam.");
 		public static GUIContent foamNoiseTexStrength = new GUIContent("Edge Noise", "How strongly the noise texture should affect edge foam.");
-		public static GUIContent causticsFade = new GUIContent("Fade", "Determines how strongly caustics will fade out at greater depths.");
+		public static GUIContent causticsFade = new GUIContent("Depth Fade", "Determines how strongly caustics will fade out at greater depths.");
+		public static GUIContent causticsSurfaceFade = new GUIContent("Surface Fade", "Determines how strongly caustics will fade out close to the surface.");
 		public static GUIContent turbulence = new GUIContent("Strength", "Adds variation to the height of waves.");
 		public static GUIContent waterNormalMap = new GUIContent("Normal Map", "Determines the behavior of light on the surface. Primarily used to fake small details or smooth bevels on sharp edges. Also serves as the source for refraction and distortion effects on textures.");
 		public static GUIContent waterRoughness = new GUIContent("Roughness", roughnessText.tooltip);

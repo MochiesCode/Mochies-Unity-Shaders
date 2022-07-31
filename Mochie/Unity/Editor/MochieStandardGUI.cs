@@ -23,7 +23,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		"LTCGI"
 	}, 1);
 
-	string versionLabel = "v1.15.1";
+	string versionLabel = "v1.16";
 	public static string receiverText = "AreaLit Maps";
 	public static string emitterText = "AreaLit Light";
 	public static string projectorText = "AreaLit Projector";
@@ -33,6 +33,7 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty workflow = null;
 	MaterialProperty albedoMap = null;
 	MaterialProperty albedoColor = null;
+	MaterialProperty detailColor = null;
 	MaterialProperty alphaCutoff = null;
 	MaterialProperty metallicMap = null;
 	MaterialProperty metallic = null;
@@ -195,6 +196,9 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty lightTex2 = null;
 	MaterialProperty lightTex3 = null;
 	MaterialProperty opaqueLights = null;
+
+	MaterialProperty mirrorToggle = null;
+
 	// MaterialProperty occlusionUVSet = null;
 
 	MaterialEditor me;
@@ -349,7 +353,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		rippleScale = FindProperty("_RippleScale", props);
 		rippleSpeed = FindProperty("_RippleSpeed", props);
 		rippleStr = FindProperty("_RippleStr", props);
-
+		mirrorToggle = FindProperty("_MirrorToggle", props);
 		areaLitToggle = FindProperty("_AreaLitToggle", props);
 		lightMesh = FindProperty("_LightMesh", props);
 		lightTex0 = FindProperty("_LightTex0", props);
@@ -357,6 +361,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		lightTex2 = FindProperty("_LightTex2", props);
 		lightTex3 = FindProperty("_LightTex3", props);
 		opaqueLights = FindProperty("_OpaqueLights", props);
+		detailColor = FindProperty("_DetailColor", props);
 	}
 
 	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props){
@@ -478,7 +483,7 @@ internal class MochieStandardGUI : ShaderGUI {
 			}
 
 			// Watermark and version display
-			DoFooter();
+			MGUI.DoFooter(versionLabel);
 		}
 
 		// Ensure settings are applied correctly if anything changed
@@ -587,7 +592,8 @@ internal class MochieStandardGUI : ShaderGUI {
 	void DoDetailArea(){
 		MGUI.BoldLabel("Detail Textures");
 		MGUI.PropertyGroup(() => {
-			me.TexturePropertySingleLine(Tips.detailAlbedoText, detailAlbedoMap, detailAlbedoMap.textureValue ? detailAlbedoBlend : null);
+			bool hasDetailAlbedo = detailAlbedoMap.textureValue;
+			me.TexturePropertySingleLine(Tips.detailAlbedoText, detailAlbedoMap, hasDetailAlbedo ? detailColor : null, hasDetailAlbedo ? detailAlbedoBlend : null);
 			me.TexturePropertySingleLine(Tips.detailNormalMapText, detailNormalMap, detailNormalMap.textureValue ? detailNormalMapScale : null);
 			me.TexturePropertySingleLine(Tips.detailRoughnessMapText, detailRoughnessMap, detailRoughnessMap.textureValue ? detailRoughBlend : null);
 			MGUI.sRGBWarning(detailRoughnessMap);
@@ -657,12 +663,14 @@ internal class MochieStandardGUI : ShaderGUI {
 				MGUI.ToggleFloat(me, Tips.useFresnel, useFresnel, fresnelStrength);
 				MGUI.SpaceN2();
 			});
-			MGUI.PropertyGroupLayer(()=>{
-				MGUI.SpaceN4();
-				me.TexturePropertySingleLine(Tips.reflOverrideText, reflOverride);
-				me.TexturePropertySingleLine(Tips.reflCubeText, reflCube, reflCube.textureValue ? cubeThreshold : null);
-				MGUI.SpaceN4();
-			});
+			if (mirrorToggle.floatValue == 0){
+				MGUI.PropertyGroupLayer(()=>{
+					MGUI.SpaceN4();
+					me.TexturePropertySingleLine(Tips.reflOverrideText, reflOverride);
+					me.TexturePropertySingleLine(Tips.reflCubeText, reflCube, reflCube.textureValue ? cubeThreshold : null);
+					MGUI.SpaceN4();
+				});
+			}
 		});
 	}
 
@@ -801,6 +809,7 @@ internal class MochieStandardGUI : ShaderGUI {
 				me.ShaderProperty(queueOffset, Tips.queueOffset);
 				MGUI.SpaceN1();
 				MGUI.DummyProperty("Render Queue:", mat.renderQueue.ToString());
+				me.ShaderProperty(mirrorToggle, Tips.mirrorMode);
 				MGUI.SpaceN4();
 			});
 
@@ -939,41 +948,6 @@ internal class MochieStandardGUI : ShaderGUI {
 		});
 	}
 
-	void DoFooter(){
-		GUILayout.Space(20);
-		float buttonSize = 35f;
-		Rect footerRect = EditorGUILayout.GetControlRect();
-		footerRect.x += (MGUI.GetInspectorWidth()/2f)-buttonSize-5f;
-		footerRect.width = buttonSize;
-		footerRect.height = buttonSize;
-		if (GUI.Button(footerRect, MGUI.patIconTex))
-			Application.OpenURL("https://www.patreon.com/mochieshaders");
-		footerRect.x += buttonSize + 5f;
-		footerRect.y += 17f;
-		GUIStyle formatting = new GUIStyle();
-		formatting.fontSize = 15;
-		formatting.fontStyle = FontStyle.Bold;
-		if (EditorGUIUtility.isProSkin){
-			formatting.normal.textColor = new Color(0.8f, 0.8f, 0.8f, 1);
-			formatting.hover.textColor = new Color(0.8f, 0.8f, 0.8f, 1);
-			GUI.Label(footerRect, versionLabel, formatting);
-			footerRect.y += 20f;
-			footerRect.x -= 35f;
-			footerRect.width = 70f;
-			footerRect.height = 70f;
-			GUI.Label(footerRect, MGUI.mochieLogoPro);
-			GUILayout.Space(90);
-		}
-		else {
-			GUI.Label(footerRect, versionLabel, formatting);
-			footerRect.y += 20f;
-			footerRect.x -= 35f;
-			footerRect.width = 70f;
-			footerRect.height = 70f;
-			GUI.Label(footerRect, MGUI.mochieLogo);
-			GUILayout.Space(90);
-		}
-	}
 	public override void AssignNewShaderToMaterial(Material material, Shader oldShader, Shader newShader){
 		// _Emission property is lost after assigning Standard shader to the material
 		// thus transfer it before assigning the new shader
@@ -1071,12 +1045,14 @@ internal class MochieStandardGUI : ShaderGUI {
 		MGUI.SetKeyword(material, "_BICUBIC_SAMPLING_ON", material.GetInt("_BicubicLightmap") == 1);
 		MGUI.SetKeyword(material, "BAKERY_SH", material.GetInt("_BakeryMode") == 1);
 		MGUI.SetKeyword(material, "BAKERY_RNM", material.GetInt("_BakeryMode") == 2);
+		MGUI.SetKeyword(material, "BAKERY_MONOSH", material.GetInt("_BakeryMode") == 3);
 		MGUI.SetKeyword(material, "_FILTERING_ON", material.GetInt("_Filtering") == 1);
 		MGUI.SetKeyword(material, "_RAIN_ON", material.GetInt("_RainToggle") == 1);
 		MGUI.SetKeyword(material, "_AREALIT_ON", material.GetInt("_AreaLitToggle") == 1);
 		MGUI.SetKeyword(material, "LTCGI", ltcgiToggle == 1);
 		MGUI.SetKeyword(material, "LTCGI_DIFFUSE_OFF", material.GetInt("_LTCGI_DIFFUSE_OFF") == 1 && ltcgiToggle == 1);
 		MGUI.SetKeyword(material, "LTCGI_SPECULAR_OFF", material.GetInt("_LTCGI_SPECULAR_OFF") == 1 && ltcgiToggle == 1);
+		MGUI.SetKeyword(material, "_MIRROR_ON", material.GetInt("_MirrorToggle") == 1);
 
 		if (samplingMode < 3){
 			if (!material.GetTexture("_PackedMap"))

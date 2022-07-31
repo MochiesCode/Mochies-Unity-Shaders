@@ -7,25 +7,31 @@
 // (extracts albedo/emission for lightmapper etc.)
 
 #include "UnityCG.cginc"
-#include "UnityStandardInput.cginc"
+#include "MochieStandardInput.cginc"
 #include "UnityMetaPass.cginc"
-#include "UnityStandardCore.cginc"
+#include "MochieStandardCore.cginc"
 
 struct v2f_meta
 {
     float4 pos      : SV_POSITION;
-    float4 uv       : TEXCOORD0;
-#ifdef EDITOR_VISUALIZATION
-    float2 vizUV        : TEXCOORD1;
-    float4 lightCoord   : TEXCOORD2;
-#endif
+    float4 uv0      : TEXCOORD0;
+	float4 uv1		: TEXCOORD1;
+	float4 uv2		: TEXCOORD2;
+	#ifdef EDITOR_VISUALIZATION
+		float2 vizUV        : TEXCOORD3;
+		float4 lightCoord   : TEXCOORD4;
+	#endif
+	float4 localPos : TEXCOORD5;
+	float3 normal 	: NORMAL;
 };
 
 v2f_meta vert_meta (VertexInput v)
 {
     v2f_meta o;
     o.pos = UnityMetaVertexPosition(v.vertex, v.uv1.xy, v.uv2.xy, unity_LightmapST, unity_DynamicLightmapST);
-    o.uv = TexCoords(v);
+    TexCoords(v, o.uv0, o.uv1, o.uv2);
+	o.localPos = v.vertex;
+	o.normal = UnityObjectToWorldNormal(v.normal);
 	#ifdef EDITOR_VISUALIZATION
 		o.vizUV = 0;
 		o.lightCoord = 0;
@@ -43,19 +49,29 @@ v2f_meta vert_meta (VertexInput v)
 // Albedo for lightmapping should basically be diffuse color.
 // But rough metals (black diffuse) still scatter quite a lot of light around, so
 // we want to take some of that into account too.
-half3 UnityLightmappingAlbedo (half3 diffuse, half3 specular, half smoothness)
-{
-    half roughness = SmoothnessToRoughness(smoothness);
-    half3 res = diffuse;
-    res += specular * roughness * 0.5;
-    return res;
+// half3 UnityLightmappingAlbedo (half3 diffuse, half3 specular, half smoothness)
+// {
+//     half roughness = SmoothnessToRoughness(smoothness);
+//     half3 res = diffuse;
+//     res += specular * roughness * 0.5;
+//     return res;
+// }
+
+SampleData SampleDataSetup(v2f_meta i){
+	SampleData sd = (SampleData)0;
+	sd.localPos = i.localPos;
+	sd.normal = i.normal;
+	sd.scaleTransform = _MainTex_ST;
+	return sd;
 }
 
 float4 frag_meta (v2f_meta i) : SV_Target
 {
     // we're interested in diffuse & specular colors,
     // and surface roughness to produce final albedo.
-    FragmentCommonData s = UNITY_SETUP_BRDF_INPUT (i.uv);
+	i.normal = normalize(i.normal);
+	SampleData sd = SampleDataSetup(i);
+    FragmentCommonData s = UNITY_SETUP_BRDF_INPUT(i.uv0, sd);
 
 	#if AREALIT_ENABLED
 	    float perceptualRoughness = SmoothnessToPerceptualRoughness(s.smoothness);
@@ -73,15 +89,25 @@ float4 frag_meta (v2f_meta i) : SV_Target
     UnityMetaInput o;
     UNITY_INITIALIZE_OUTPUT(UnityMetaInput, o);
 
+	#if defined(BAKERY_META)
+	if (unity_MetaFragmentControl.w){
+		#ifdef _ALPHAMASK_ON
+			return Alpha(i.uv2.xy, sd);
+		#else
+			return Alpha(i.uv0, sd);
+		#endif
+	}
+	#endif
+
 	#ifdef EDITOR_VISUALIZATION
-		o.Albedo = data.diffColor;
+		o.Albedo = s.diffColor;
 		o.VizUV = i.vizUV;
 		o.LightCoord = i.lightCoord;
 	#else
 		o.Albedo = s.diffColor + s.specColor * (SmoothnessToRoughness(s.smoothness)/2); // UnityLightmappingAlbedo
 	#endif
     o.SpecularColor = s.specColor;
-    o.Emission = Emission(i.uv.xy);
+    o.Emission = Emission(i.uv0.xy, i.uv1.zw, sd);
 	#if AREALIT_ENABLED
 		o.Emission += (s.diffColor + s.specColor) * diffTerm;
 	#endif

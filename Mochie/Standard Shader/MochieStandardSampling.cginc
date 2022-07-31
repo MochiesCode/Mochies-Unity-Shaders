@@ -32,58 +32,11 @@ struct SampleData {
 	float3 worldPixelPos;
 	float3 normal;
 	float4 scaleTransform;
-	float rotation;
 };
 
 float _TriplanarFalloff;
 float _EdgeFadeMin;
 float _EdgeFadeMax;
-
-#if DECAL_ENABLED
-
-float2 RotateDecalUV(float2 coords, float rot){
-	rot *= (UNITY_PI/180.0);
-	float sinVal = sin(rot);
-	float cosX = cos(rot);
-	float2x2 mat = float2x2(cosX, -sinVal, sinVal, cosX);
-	mat = ((mat*0.5)+0.5)*2-1;
-	return mul(coords, mat);;
-}
-
-float4 tex2Ddecal(Texture2D tex, SampleData sd){
-	float3 normal = sd.depthNormal;
-	float3 wpos = sd.worldPixelPos;
-	float stepXY = step(normal.x, normal.y);
-	float stepYX = step(normal.y, normal.x);
-	float stepXZ = step(normal.x, normal.z);
-	float stepYZ = step(normal.y, normal.z);
-	float stepZX = step(normal.z, normal.x);
-	float stepZY = step(normal.z, normal.y);
-	float2 uv = stepYX*stepZX*((wpos.zy - sd.objPos.zy)*sd.scaleTransform.xy + float2(0.5, 0.5))+
-				stepXY*stepZY*((wpos.xz - sd.objPos.xz)*sd.scaleTransform.xy + float2(0.5, 0.5))+
-				stepXZ*stepYZ*((wpos.xy - sd.objPos.xy)*sd.scaleTransform.xy + float2(0.5, 0.5));
-	uv = RotateDecalUV(uv, sd.rotation);
-	float4 col = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, sampler_MainTex, uv); // tex.Sample(sampler_MainTex, uv);
-	col.a *= smoothstep(_EdgeFadeMax,_EdgeFadeMin, distance(wpos, sd.objPos));
-	return col;
-}
-
-float3 tex2DdecalNormal(Texture2D tex, SampleData sd, float normalScale){
-	float3 normal = sd.depthNormal;
-	float3 wpos = sd.worldPixelPos;
-	float stepXY = step(normal.x, normal.y);
-	float stepYX = step(normal.y, normal.x);
-	float stepXZ = step(normal.x, normal.z);
-	float stepYZ = step(normal.y, normal.z);
-	float stepZX = step(normal.z, normal.x);
-	float stepZY = step(normal.z, normal.y);
-	float2 uv = stepYX*stepZX*((wpos.zy - sd.objPos.zy)*sd.scaleTransform.xy + float2(0.5, 0.5))+
-				stepXY*stepZY*((wpos.xz - sd.objPos.xz)*sd.scaleTransform.xy + float2(0.5, 0.5))+
-				stepXZ*stepYZ*((wpos.xy - sd.objPos.xy)*sd.scaleTransform.xy + float2(0.5, 0.5));
-	uv = RotateDecalUV(uv, sd.rotation);
-	return UnpackScaleNormal(MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, sampler_MainTex, uv), normalScale);
-}
-#endif
 
 // Based on Xiexe's implementation
 // https://github.com/Xiexe/XSEnvironmentShaders/blob/bf992e8e292a0562ce4164964f16b3abdc97f078/XSEnvironment/LightingFunctions.cginc#L213

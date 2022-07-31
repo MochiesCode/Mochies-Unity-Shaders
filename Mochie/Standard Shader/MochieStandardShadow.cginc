@@ -76,7 +76,7 @@ float2		_UV4Scroll;
 	int _RoughnessChannel, _MetallicChannel, _OcclusionChannel, _HeightChannel;
 #endif
 
-#if SSR_ENABLED || DECAL_ENABLED
+#if SSR_ENABLED
 	sampler2D _CameraDepthTexture;
 	#define HAS_DEPTH_TEXTURE
 #endif
@@ -128,11 +128,6 @@ struct VertexOutputShadowCaster
 	float4 localPos : TEXCOORD4;
 	float3 normal : TEXCOORD5;
 	half3 viewDirForParallax : TEXCOORD6;
-	#if DECAL_ENABLED
-		float4 screenPos : TEXCOORD7;
-		float3 objPos : TEXCOORD8;
-		float3 raycast : TEXCOORD9;
-	#endif
 };
 
 float2 SelectUVSet(VertexInput v, int selection){
@@ -186,32 +181,12 @@ void vertShadowCaster (VertexInput v
 		o.tex2 = GetAlphaMaskUV(v);
 		o.localPos = v.vertex;
 		o.normal = UnityObjectToWorldNormal(v.normal);
-		#if DECAL_ENABLED
-			float4 pos = UnityObjectToClipPos(v.vertex);
-			o.screenPos = ComputeGrabScreenPos(pos);
-			o.objPos = mul(unity_ObjectToWorld, float4(0,0,0,1));
-			o.raycast = UnityObjectToViewPos(v.vertex).xyz * float3(-1,-1,1);
-		#endif
         #if defined(_PARALLAXMAP)
             TANGENT_SPACE_ROTATION;
 			o.viewDirForParallax = mul (rotation, ObjSpaceViewDir(v.vertex));
         #endif
     #endif
 }
-
-#if DECAL_ENABLED
-void GetDepthData(VertexOutputShadowCaster i, inout SampleData sd){
-	float rawDepth = DecodeFloatRG(tex2Dproj(_CameraDepthTexture, i.screenPos));
-	float depth = Linear01Depth(rawDepth);
-	i.raycast = i.raycast * (_ProjectionParams.z / i.raycast.z);
-	float4 vpos = float4(i.raycast * depth, 1);
-	float3 wpos = mul(unity_CameraToWorld, vpos).xyz;
-	float3 wposX = ddx(wpos);
-	float3 wposY = ddy(wpos);
-	sd.depthNormal = abs(normalize(cross(wposY, wposX)));
-	sd.worldPixelPos = wpos;
-}
-#endif
 
 SampleData SampleDataSetup(UNITY_POSITION(vpos)
 	#ifdef UNITY_STANDARD_USE_SHADOW_OUTPUT_STRUCT
@@ -224,22 +199,11 @@ SampleData SampleDataSetup(UNITY_POSITION(vpos)
 	#ifndef UNITY_STANDARD_USE_SHADOW_OUTPUT_STRUCT
 		VertexOutputShadowCaster i = (VertexOutputShadowCaster)0;
 		i.localPos = vpos;
-		#if DECAL_ENABLED
-			float4 pos = UnityObjectToClipPos(vpos);
-			i.screenPos = ComputeGrabScreenPos(pos);
-			i.objPos = mul(unity_ObjectToWorld, float4(0,0,0,1));
-			i.raycast = UnityObjectToViewPos(vpos).xyz * float3(-1,-1,1);
-		#endif
 	#endif
 
 	sd.localPos = i.localPos;
 	sd.normal = i.normal;
-	sd.rotation = _UV0Rotate;
 	sd.scaleTransform = _MainTex_ST;
-	#if DECAL_ENABLED
-		GetDepthData(i, sd);
-		sd.objPos = i.objPos;
-	#endif
 	return sd;
 }
 

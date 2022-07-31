@@ -88,39 +88,7 @@ public class LEDEditor : ShaderGUI {
 			MGUI.Space8();
         }
 
-		MGUI.Space20();
-		float buttonSize = 35f;
-		Rect footerRect = EditorGUILayout.GetControlRect();
-		footerRect.x += (MGUI.GetInspectorWidth()/2f)-buttonSize-5f;
-		footerRect.width = buttonSize;
-		footerRect.height = buttonSize;
-		if (GUI.Button(footerRect, MGUI.patIconTex))
-			Application.OpenURL("https://www.patreon.com/mochieshaders");
-		footerRect.x += buttonSize + 5f;
-		footerRect.y += 17f;
-		GUIStyle formatting = new GUIStyle();
-		formatting.fontSize = 15;
-		formatting.fontStyle = FontStyle.Bold;
-		if (EditorGUIUtility.isProSkin){
-			formatting.normal.textColor = new Color(0.8f, 0.8f, 0.8f, 1);
-			formatting.hover.textColor = new Color(0.8f, 0.8f, 0.8f, 1);
-			GUI.Label(footerRect, versionLabel, formatting);
-			footerRect.y += 20f;
-			footerRect.x -= 35f;
-			footerRect.width = 70f;
-			footerRect.height = 70f;
-			GUI.Label(footerRect, MGUI.mochieLogoPro);
-			GUILayout.Space(90);
-		}
-		else {
-			GUI.Label(footerRect, versionLabel, formatting);
-			footerRect.y += 20f;
-			footerRect.x -= 35f;
-			footerRect.width = 70f;
-			footerRect.height = 70f;
-			GUI.Label(footerRect, MGUI.mochieLogo);
-			GUILayout.Space(90);
-		}
+		MGUI.DoFooter(versionLabel);
     }
 	
 	public override void AssignNewShaderToMaterial(Material mat, Shader oldShader, Shader newShader) {

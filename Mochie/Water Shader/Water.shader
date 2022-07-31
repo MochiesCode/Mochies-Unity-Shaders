@@ -4,6 +4,7 @@ Shader "Mochie/Water" {
     Properties {
 		
 		_Color("Color", Color) = (1,1,1,1)
+		_AngleTint("Angle Tint", Color) = (1,1,1,1)
 		_MainTex("Base Color", 2D) = "white" {}
 		_MainTexScroll("Scrolling", Vector) = (0,0.1,0,0)
 		_BaseColorOffset("Parallax Offset", Float) = 0
@@ -85,12 +86,15 @@ Shader "Mochie/Water" {
 		_CausticsDistortion("Distortion", Float) = 0.1
 		_CausticsDistortionScale("Distortion Scale", Float) = 1
 		_CausticsDistortionSpeed("Distortion Speed", Vector) = (-0.1, -0.1,0,0)
+		_CausticsColor("Color", Color) = (1,1,1,1)
 		_CausticsOpacity("Opacity", Float) = 1
-		_CausticsPower("Power", Float) = 5
+		_CausticsPower("Power", Float) = 1
+		_CausticsThreshold("Threshold", Float) = 0
 		_CausticsScale("Scale", Float) = 15
 		_CausticsSpeed("Speed", Float) = 3
 		_CausticsFade("Depth Fade", Float) = 5
 		_CausticsRotation("Rotation", Vector) = (-20,0,20,0)
+		_CausticsSurfaceFade("Surface Fade", Float) = 100
 		
 		[Toggle(_DEPTHFOG_ON)]_FogToggle("Enable", Int) = 1
 		_FogTint("Color", Color) = (0.11,0.26,0.26,1)
@@ -126,6 +130,8 @@ Shader "Mochie/Water" {
 		_RippleSpeed("Ripple Speed", float) = 10
 		_RippleStr("Ripple Strength", float) = 1
 
+		[IntRange]_StencilRef("Stencil Reference", Range(1,255)) = 65
+
 		[HideInInspector]_NoiseTexSSR("SSR Noise Tex", 2D) = "black"
     }
 
@@ -137,6 +143,13 @@ Shader "Mochie/Water" {
 			"IgnoreProjector"="True"
 			"PreviewType"="Plane"
 			"ForceNoShadowCasting"="True"
+		}
+		Stencil {
+			Ref [_StencilRef]
+			Comp Always
+			Pass Replace
+			Fail Keep
+			ZFail Keep
 		}
 		GrabPass {"_MWGrab"}
 		ZWrite [_ZWrite]

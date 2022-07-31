@@ -163,7 +163,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	#endif
 
 	#if RAIN_ENABLED
-		float3 rainNormal = GetRipplesNormal(i.uv);
+		float3 rainNormal = GetRipplesNormal(i.uv, _RippleScale, _RippleStr, _RippleSpeed);
 		normalMap = BlendNormals(normalMap, rainNormal);
 	#endif
 
@@ -194,17 +194,10 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	float4 baseCol = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MWGrab, baseUV);
 	float4 col = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MWGrab, screenUV) * mainTex;
 	float depth = saturate(1-GetDepth(i, screenUV));
-
+	
 	if (isFrontFace && !i.isInVRMirror){
 		#if CAUSTICS_ENABLED
-			float caustDepth = 0;
-			#if FOAM_ENABLED
-				caustDepth = depth;
-			#elif FOG_ENABLED
-				caustDepth = fogDepth;
-			#else
-				caustDepth = saturate(1-GetDepth(i, screenUV));
-			#endif
+			float caustDepth = depth;
 			float caustFade = saturate(pow(caustDepth, _CausticsFade));
 			if (caustFade > 0){
 				float3 wPos = GetWorldSpacePixelPosSP(i.localPos, screenUV);
@@ -215,18 +208,15 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 				float voronoi1 = Voronoi2D(causticsUV, (_Time.y*_CausticsSpeed)+_CausticsDisp);
 				float voronoi2 = Voronoi2D(causticsUV, (_Time.y*_CausticsSpeed)+_CausticsDisp*2.0);
 				float3 voronoi = float3(voronoi0, voronoi1, voronoi2);
-				float3 caustics = smoothstep(0, 1, voronoi) * _CausticsOpacity * caustFade;
+				voronoi = pow(voronoi, _CausticsPower);
+				// topFade = 1-saturate(pow(caustDepth, _CausticsSurfaceFade) * 2);
+				float3 caustics = smootherstep(0, 1, voronoi) * _CausticsOpacity * caustFade * _CausticsColor;
 				col.rgb += caustics;
 			}
 		#endif
 
 		#if DEPTHFOG_ENABLED
-			float fogDepth = 0;
-			#if FOAM_ENABLED
-				fogDepth = depth;
-			#else
-				fogDepth = saturate(1-GetDepth(i, screenUV));
-			#endif
+			float fogDepth = depth;
 			fogDepth = saturate(pow(fogDepth, _FogPower));
 			col.rgb = lerp(col.rgb, lerp(_FogTint.rgb, col.rgb, fogDepth), _FogTint.a);
 		#endif
@@ -279,8 +269,11 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	#if PBR_ENABLED
 		i.normal = normalize(dot(i.normal, i.normal) >= 1.01 ? i.cNormal : i.normal);
 		float3 normalDir = normalize(normalMap.x * i.tangent + normalMap.y * i.binormal + normalMap.z * i.normal);
+		if (!isFrontFace)
+			normalDir = -normalDir;
 		float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPos);
 		float NdotV = abs(dot(normalDir, viewDir));
+		col *= lerp(_AngleTint, 1, NdotV);
 		#if FOAM_ENABLED
 			float foamLerp = (foam + crestFoam);
 			_Roughness = lerp(_Roughness, _FoamRoughness, foamLerp);
@@ -301,10 +294,10 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 				#else
 					float3 lightDir = normalize(UnityWorldSpaceLightDir(i.worldPos));
 				#endif
-				float3 halfVector = normalize(lightDir + viewDir);
-				float NdotL = dot(normalDir, lightDir);
-				float NdotH = Safe_DotClamped(normalDir, halfVector);
-				float LdotH = Safe_DotClamped(lightDir, halfVector);
+				float3 halfVector = Unity_SafeNormalize(lightDir + viewDir);
+				float NdotL = saturate(dot(normalDir, lightDir));
+				float NdotH = saturate(dot(normalDir, halfVector));
+				float LdotH = saturate(dot(lightDir, halfVector));
 				float3 fresnelTerm = FresnelTerm(specularTint, LdotH);
 				float specularTerm = SpecularTerm(NdotL, NdotV, NdotH, roughBRDF);
 				float3 specLightCol = _Specular == 1 ? _LightColor0 : 1;
@@ -369,7 +362,6 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		col = lerp(baseCol, col, _Opacity);
 	#endif
 	UNITY_APPLY_FOG(i.fogCoord, col);
-
 	return col;
 }
 

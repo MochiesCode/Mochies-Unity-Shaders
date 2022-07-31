@@ -105,6 +105,9 @@ float _CausticsDistortion;
 float _CausticsDistortionScale;
 float2 _CausticsDistortionSpeed;
 float3 _CausticsRotation;
+float _CausticsSurfaceFade;
+float3 _CausticsColor;
+float4 _AngleTint;
 
 const static float2 jump = float2(0.1, 0.25);
 

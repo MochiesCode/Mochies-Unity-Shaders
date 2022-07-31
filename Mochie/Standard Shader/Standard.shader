@@ -17,6 +17,7 @@ Shader "Mochie/Standard" {
 		_EdgeFadeMin("Edge Fade Min", Float) = 0.25
 		_EdgeFadeMax("Edge Fade Max", Float) = 0.5
         _Color("Color", Color) = (1,1,1,1)
+		_DetailColor("Detail Color", Color) = (1,1,1,1)
         _MainTex("Albedo", 2D) = "white" {}
 		_AlphaMask("Alpha", 2D) = "white" {}
 		[Enum(Off,0, On,1)]_UseAlphaMask("Use Alpha Mask", Int) = 0
@@ -171,7 +172,7 @@ Shader "Mochie/Standard" {
 
 		[Toggle(BAKERY_LMSPEC)] _BAKERY_LMSPEC ("Enable Lightmap Specular", Float) = 0
 		[Toggle(BAKERY_SHNONLINEAR)] _BAKERY_SHNONLINEAR ("Non-Linear SH", Float) = 0
-		[Enum(None, 0, SH, 1, RNM, 2)] _BakeryMode ("Bakery Mode", Int) = 0
+		[Enum(None, 0, SH, 1, RNM, 2, MONOSH, 3)] _BakeryMode ("Bakery Mode", Int) = 0
 		_RNM0("RNM0", 2D) = "black" {}
 		_RNM1("RNM1", 2D) = "black" {}
 		_RNM2("RNM2", 2D) = "black" {}
@@ -192,6 +193,12 @@ Shader "Mochie/Standard" {
 		[HideInInspector]_ZTest("__zt", Float) = 4.0
 		[HideInInspector]_NoiseTexSSR("SSR Noise Texture", 2D) = "black" {}
 		[HideInInspector]_NaNLmao("lol", Float) = 0
+
+		[ToggleUI]_MirrorToggle("Mirror Mode", Int) = 0
+		[HideInInspector] _ReflectionTex0("", 2D) = "white" {}
+        [HideInInspector] _ReflectionTex1("", 2D) = "white" {}
+
+		[HideInInspector] BAKERY_META_ALPHA_ENABLE ("Enable Bakery alpha meta pass", Float) = 1.0
     }
 
     CGINCLUDE
@@ -239,7 +246,7 @@ Shader "Mochie/Standard" {
             #pragma shader_feature_local _PARALLAXMAP
 			#pragma shader_feature_local _REFLECTION_FALLBACK_ON
 			#pragma shader_feature_local _SCREENSPACE_REFLECTIONS_ON
-			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON // _DECAL_ON
+			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON
 			#pragma shader_feature_local _REFLECTION_OVERRIDE_ON
 			#pragma shader_feature_local _DETAIL_ROUGH_ON
 			#pragma shader_feature_local _DETAIL_AO_ON
@@ -252,12 +259,13 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local LTCGI
 			#pragma shader_feature_local LTCGI_DIFFUSE_OFF
 			#pragma shader_feature_local LTCGI_SPECULAR_OFF
-			#pragma shader_feature_local _ BAKERY_SH BAKERY_RNM
+			#pragma shader_feature_local _ BAKERY_SH BAKERY_RNM BAKERY_MONOSH
 			#pragma shader_feature_local BAKERY_LMSPEC
 			#pragma shader_feature_local BAKERY_SHNONLINEAR
 			#pragma shader_feature_local _RAIN_ON
 			#pragma shader_feature_local _OPAQUELIGHTS_OFF
 			#pragma shader_feature_local _AREALIT_ON
+			#pragma shader_feature_local _MIRROR_ON
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma multi_compile_fwdbase
             #pragma multi_compile_fog
@@ -286,7 +294,7 @@ Shader "Mochie/Standard" {
             #pragma shader_feature_local _ _SPECULARHIGHLIGHTS_OFF
             #pragma shader_feature_local ___ _DETAIL_MULX2
             #pragma shader_feature_local _PARALLAXMAP
-			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON // _DECAL_ON
+			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON
 			#pragma shader_feature_local _REFLECTION_OVERRIDE_ON
 			#pragma shader_feature_local _DETAIL_ROUGH_ON
 			#pragma shader_feature_local _DETAIL_AO_ON
@@ -316,7 +324,7 @@ Shader "Mochie/Standard" {
             #pragma shader_feature_local _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
             #pragma shader_feature_local _METALLICGLOSSMAP
             #pragma shader_feature_local _PARALLAXMAP
-			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON // _DECAL_ON
+			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON
 			#pragma shader_feature_local _SUBSURFACE_ON
 			#pragma shader_feature_local _ALPHAMASK_ON
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
@@ -341,7 +349,7 @@ Shader "Mochie/Standard" {
             #pragma shader_feature_local _METALLICGLOSSMAP
             #pragma shader_feature_local _SPECGLOSSMAP
             #pragma shader_feature_local ___ _DETAIL_MULX2
-			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON // _DECAL_ON
+			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON
 			#pragma shader_feature_local _REFLECTION_OVERRIDE_ON
 			#pragma shader_feature_local _DETAIL_ROUGH_ON
 			#pragma shader_feature_local _DETAIL_AO_ON
@@ -351,7 +359,37 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _OPAQUELIGHTS_OFF
 			#pragma shader_feature_local _AREALIT_ON
 			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
-            #pragma shader_feature_local EDITOR_VISUALIZATION
+            #pragma shader_feature EDITOR_VISUALIZATION
+            #include "MochieStandardMeta.cginc"
+            ENDCG
+        }
+		
+        Pass {
+            Name "META_BAKERY"
+            Tags {"LightMode"="Meta"}
+            Cull [_MetaCull]
+
+            CGPROGRAM
+            #pragma vertex vert_meta
+            #pragma fragment frag_meta
+			#define MOCHIE_STANDARD
+			#define BAKERY_META
+			#pragma shader_feature_local _WORKFLOW_PACKED_ON
+            #pragma shader_feature_local _EMISSION
+            #pragma shader_feature_local _METALLICGLOSSMAP
+            #pragma shader_feature_local _SPECGLOSSMAP
+            #pragma shader_feature_local ___ _DETAIL_MULX2
+			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON
+			#pragma shader_feature_local _REFLECTION_OVERRIDE_ON
+			#pragma shader_feature_local _DETAIL_ROUGH_ON
+			#pragma shader_feature_local _DETAIL_AO_ON
+			#pragma shader_feature_local _SUBSURFACE_ON
+			#pragma shader_feature_local _ALPHAMASK_ON
+			#pragma shader_feature_local _FILTERING_ON
+			#pragma shader_feature_local _OPAQUELIGHTS_OFF
+			#pragma shader_feature_local _AREALIT_ON
+			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
+            #pragma shader_feature EDITOR_VISUALIZATION
             #include "MochieStandardMeta.cginc"
             ENDCG
         }
