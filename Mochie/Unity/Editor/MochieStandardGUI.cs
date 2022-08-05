@@ -23,7 +23,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		"LTCGI"
 	}, 1);
 
-	string versionLabel = "v1.16";
+	string versionLabel = "v1.16.1";
 	public static string receiverText = "AreaLit Maps";
 	public static string emitterText = "AreaLit Light";
 	public static string projectorText = "AreaLit Projector";
@@ -390,7 +390,7 @@ internal class MochieStandardGUI : ShaderGUI {
 			
 			// Core Shader Variant
 			MGUI.BoldLabel("Shader Variant");
-			DoVariantArea();
+			DoVariantArea(material);
 			MGUI.Space2();
 
 			// Primary properties
@@ -495,7 +495,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		MGUI.Space8();
 	}
 
-	void DoVariantArea(){
+	void DoVariantArea(Material mat){
 		MGUI.PropertyGroup(() => {
 			me.ShaderProperty(workflow, Tips.standWorkflow);
 			me.ShaderProperty(blendMode, Tips.standBlendMode);
@@ -515,6 +515,10 @@ internal class MochieStandardGUI : ShaderGUI {
 			me.ShaderProperty(useSmoothness, Tips.useSmoothness);
 			if (workflow.floatValue > 0 && samplingMode.floatValue < 3)
 				me.ShaderProperty(useHeight, Tips.useHeight);
+			MGUI.SpaceN2();
+			if (MGUI.PropertyButton("Unity Standard Packing Format")){
+				ApplyStandardPackingFormat(mat);
+			}
 		});
 	}
 
@@ -1077,5 +1081,15 @@ internal class MochieStandardGUI : ShaderGUI {
 	static void MaterialChanged(Material material){
 		SetupMaterialWithBlendMode(material);
 		SetMaterialKeywords(material);
+	}
+
+	static void ApplyStandardPackingFormat(Material mat){
+		mat.SetInt("_Workflow", 1);
+		mat.SetInt("_UseSmoothness", 1);
+		mat.SetInt("_MetallicChannel", 0);
+		mat.SetInt("_RoughnessChannel", 3);
+		mat.SetInt("_OcclusionChannel", 1);
+		mat.SetInt("_HeightChannel", 2);
+		MaterialChanged(mat);
 	}
 }

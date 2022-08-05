@@ -5,6 +5,10 @@
 
 // Functions sampling light environment data (lightmaps, light probes, reflection probes), which is then returned as the UnityGI struct.
 
+#ifdef BAKERY_MONOSH
+    #undef DIRLIGHTMAP_COMBINED
+#endif
+
 #include "UnityImageBasedLighting.cginc"
 #include "UnityStandardUtils.cginc"
 #include "UnityShadowLibrary.cginc"
@@ -201,6 +205,7 @@ inline void ResetUnityGI(out UnityGI outGI)
 
 inline UnityGI UnityGI_Base(UnityGIInput data, half occlusion, half3 normalWorld)
 {
+
     UnityGI o_gi;
     ResetUnityGI(o_gi);
 

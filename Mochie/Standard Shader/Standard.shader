@@ -41,8 +41,8 @@ Shader "Mochie/Standard" {
         _MetallicGlossMap("Metallic", 2D) = "white" {}
         _BumpScale("Scale", Float) = 1.0
         _BumpMap("Normal Map", 2D) = "bump" {}
-        _Parallax ("Height Scale", Range (0, 0.2)) = 0.02
-        _ParallaxMap ("Height Map", 2D) = "black" {}
+        _Parallax("Height Scale", Range (0, 0.2)) = 0.02
+        _ParallaxMap("Height Map", 2D) = "black" {}
 		_ParallaxMask("Height Mask", 2D) = "white" {}
 		[IntRange]_ParallaxSteps("Parallax Steps", Range(1,50)) = 25
 		_ParallaxOffset("Parallax Offset", Range(-1, 1)) = 0
@@ -138,11 +138,11 @@ Shader "Mochie/Standard" {
 		[ToggleOff]_SpecularHighlights("Specular Highlights", Float) = 1.0
 		[ToggleOff]_GlossyReflections("Glossy Reflections", Float) = 1.0
 		[ToggleUI]_SSR("Screenspace Reflections", Int) = 0
-		[ToggleUI]_UseHeight("Use Heightmap", Int) = 0
+		[Enum(Off,0, On,1)]_UseHeight("Use Heightmap", Int) = 0
 		[ToggleUI]_ReflShadows("Shadowed Reflections", Int) = 0
 		[ToggleUI]_ReflVertexColor("Vertex Color Reflections", Int) = 0
 		[ToggleUI]_GSAA("GSAA", Int) = 0
-		[ToggleUI]_UseSmoothness("Use Smoothness", Int) = 0
+		[Enum(Off,0, On,1)]_UseSmoothness("Use Smoothness", Int) = 0
 		[ToggleUI]_UseFresnel("Use Fresnel", Int) = 1
 		[ToggleUI]_BicubicLightmap("Bicubic Lightmap", Int) = 0
         [ToggleUI]_LTCGI("LTCGI", Int) = 0

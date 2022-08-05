@@ -185,6 +185,10 @@ namespace Mochie {
 			return GUI.Button(buttonRect, tex);
 		}
 
+		public static bool PropertyButton(String label){
+			return SimpleButton(label, GetPropertyWidth(), EditorGUIUtility.labelWidth);
+		}
+		
 		public static bool ResetButton(){
 			return SimpleButton("Reset", GetPropertyWidth(), EditorGUIUtility.labelWidth);
 		}
