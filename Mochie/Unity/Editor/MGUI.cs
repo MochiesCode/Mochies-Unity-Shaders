@@ -51,10 +51,18 @@ namespace Mochie {
 			return mat.shader.name.Contains(" X") || mat.shader.name.Contains(" X ");
 		}
 
+		public static bool IsTessellated(Material mat){
+			return mat.shader.name.Contains("(Tessellated)");
+		}
+
 		public static bool IsOutline(Material mat){
 			return mat.shader.name.Contains("(Outline)");
 		}
 
+		public static bool IsLiteVersion(Material mat){
+			return mat.shader.name.Contains("(Lite)");
+		}
+		
 		public static void FillArray<T>(T[] array, T value){
 			for (int i = 0; i < array.Length; i++)
 				array[i] = value;

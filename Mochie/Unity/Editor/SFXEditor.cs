@@ -42,7 +42,7 @@ public class SFXEditor : ShaderGUI {
 
     // Texture file names
 	string header = "SFXHeader_Pro";
-	string versionLabel = "v1.13";
+	string versionLabel = "v1.13.1";
 	
     // Commonly used strings
     string modeLabel = "Mode";

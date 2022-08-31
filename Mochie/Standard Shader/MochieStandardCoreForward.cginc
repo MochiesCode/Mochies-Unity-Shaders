@@ -11,8 +11,8 @@ half4 fragBase (VertexOutputForwardBase i, bool frontFace : SV_IsFrontFace) : SV
 	finalCol.rgb = Filtering(finalCol.rgb, _HuePost, _SaturationPost, _BrightnessPost, _ContrastPost, _ACES);
 	return finalCol;
 }
-half4 fragAdd (VertexOutputForwardAdd i) : SV_Target { 
-	float4 finalCol = fragForwardAddInternal(i); 
+half4 fragAdd (VertexOutputForwardAdd i, bool frontFace : SV_IsFrontFace) : SV_Target { 
+	float4 finalCol = fragForwardAddInternal(i, frontFace); 
 	finalCol.rgb = Filtering(finalCol.rgb, _HuePost, _SaturationPost, _BrightnessPost, _ContrastPost, _ACES);
 	return finalCol;
 }

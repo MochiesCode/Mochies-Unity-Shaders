@@ -210,7 +210,7 @@ half3 WorldNormal(half4 tan2world[3])
     }
 #endif
 
-float3 PerPixelWorldNormal(float4 i_tex, float4 tangentToWorld[3], SampleData sd)
+float3 PerPixelWorldNormal(float4 i_tex, float4 raincoords, float4 tangentToWorld[3], SampleData sd)
 {
     #ifdef _NORMALMAP
         half3 tangent = tangentToWorld[0].xyz;
@@ -227,13 +227,14 @@ float3 PerPixelWorldNormal(float4 i_tex, float4 tangentToWorld[3], SampleData sd
             binormal = newB * sign (dot (newB, binormal));
         #endif
         
-        half3 normalTangent = NormalInTangentSpace(i_tex, sd);
+        half3 normalTangent = NormalInTangentSpace(i_tex, raincoords, sd);
         TangentNormal = normalTangent;
         float3 normalWorld = NormalizePerPixelNormal(tangent * normalTangent.x + binormal * normalTangent.y + normal * normalTangent.z);
     #else
         float3 normalWorld = normalize(tangentToWorld[2].xyz);
         #if RAIN_ENABLED
-            float3 rippleNormal = GetRipplesNormal(i_tex.xy, _RippleScale, _RippleStr, _RippleSpeed);
+            float mask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_RainMask, sampler_MainTex, raincoords.zw);
+            float3 rippleNormal = GetRipplesNormal(raincoords.xy, _RippleScale, _RippleStr*mask, _RippleSpeed);
             normalWorld = BlendNormals(normalWorld, rippleNormal);
             TangentNormal = BlendNormals(TangentNormal, rippleNormal);
         #endif
@@ -311,10 +312,10 @@ float3 CalculateTangentViewDir(inout float3 tangentViewDir){
 }
 
 // parallax transformed texcoord is used to sample occlusion
-inline FragmentCommonData FragmentSetup (inout float4 i_tex, float4 i_tex2, float3 i_eyeVec, half3 i_viewDirForParallax, float4 tangentToWorld[3], float3 i_posWorld, SampleData sd)
+inline FragmentCommonData FragmentSetup (inout float4 i_tex, float4 i_tex2, float4 i_tex3, float3 i_eyeVec, half3 i_viewDirForParallax, float4 tangentToWorld[3], float3 i_posWorld, bool isFrontFace, SampleData sd)
 {
 	
-    i_tex = Parallax(i_tex, CalculateTangentViewDir(i_viewDirForParallax), uvOffset);
+    i_tex = Parallax(i_tex, CalculateTangentViewDir(i_viewDirForParallax), uvOffset, isFrontFace);
 
     #ifdef _ALPHAMASK_ON
         half alpha = Alpha(i_tex2, sd);
@@ -326,7 +327,7 @@ inline FragmentCommonData FragmentSetup (inout float4 i_tex, float4 i_tex2, floa
     #endif
 
     FragmentCommonData o = UNITY_SETUP_BRDF_INPUT (i_tex, sd);
-    o.normalWorld = PerPixelWorldNormal(i_tex, tangentToWorld, sd);
+    o.normalWorld = PerPixelWorldNormal(i_tex, i_tex3, tangentToWorld, sd);
     o.eyeVec = NormalizePerPixelNormal(i_eyeVec);
     o.posWorld = i_posWorld;
 
@@ -453,6 +454,7 @@ struct VertexOutputForwardBase
     float4 tex2                           : TEXCOORD14;
     float4 rawUV                          : TEXCOORD15;
     float4 refl                           : TEXCOORD16;
+    float4 tex3                           : TEXCOORD17;
 	float4 color                          : COLOR;
     UNITY_VERTEX_INPUT_INSTANCE_ID
     UNITY_VERTEX_OUTPUT_STEREO
@@ -479,7 +481,7 @@ VertexOutputForwardBase vertForwardBase (VertexInput v)
     o.pos = UnityObjectToClipPos(v.vertex);
 	o.localPos = v.vertex;
 	o.color = v.color;
-    TexCoords(v, o.tex, o.tex1, o.tex2);
+    TexCoords(v, o.tex, o.tex1, o.tex2, o.tex3);
     o.eyeVec.xyz = NormalizePerVertexNormal(posWorld.xyz - _WorldSpaceCameraPos);
     float3 normalWorld = UnityObjectToWorldNormal(v.normal);
     #ifdef _TANGENT_TO_WORLD
@@ -618,7 +620,7 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
 	#endif
 
 	SampleData sd = SampleDataSetup(i);
-    FragmentCommonData s = FragmentSetup(i.tex, i.tex2, i.eyeVec.xyz, IN_VIEWDIR4PARALLAX(i), i.tangentToWorldAndPackedData, IN_WORLDPOS(i), sd);
+    FragmentCommonData s = FragmentSetup(i.tex, i.tex2, i.tex3, i.eyeVec.xyz, IN_VIEWDIR4PARALLAX(i), i.tangentToWorldAndPackedData, IN_WORLDPOS(i), frontFace, sd);
     #if AREALIT_ENABLED
         i.tangentToWorldAndPackedData[2].xyz *= frontFace ? +1 : -1;
     #endif
@@ -637,7 +639,7 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
         ai.pos = s.posWorld;
         ai.normal = s.normalWorld;
         ai.view = -s.eyeVec;
-        ai.roughness = roughness;
+        ai.roughness = roughness * _AreaLitRoughnessMult;
         ai.occlusion = float4(occlusion, 1);
         ai.screenPos = i.pos.xy;
         half4 diffTerm, specTerm;
@@ -741,7 +743,7 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
         float3 areaLitColor = s.diffColor * diffTerm + s.specColor * specTerm;
         if (_ReflShadows == 1)
             areaLitColor *= shadowedReflections;
-        c.rgb += areaLitColor;
+        c.rgb += areaLitColor * _AreaLitStrength;
     #endif
 
     Rim(s.posWorld, s.normalWorld, c.rgb);
@@ -774,6 +776,7 @@ struct VertexOutputForwardAdd
 	#endif
     float4 tex2                         : TEXCOORD14;
     float4 rawUV                        : TEXCOORD15;
+    float4 tex3                         : TEXCOORD16;
 	float4 color                        : COLOR;
     UNITY_VERTEX_OUTPUT_STEREO
 };
@@ -789,7 +792,7 @@ VertexOutputForwardAdd vertForwardAdd (VertexInput v)
     o.pos = UnityObjectToClipPos(v.vertex);
 	o.localPos = v.vertex;
 
-    TexCoords(v, o.tex, o.tex1, o.tex2);
+    TexCoords(v, o.tex, o.tex1, o.tex2, o.tex3);
     o.eyeVec.xyz = NormalizePerVertexNormal(posWorld.xyz - _WorldSpaceCameraPos);
     o.posWorld = posWorld.xyz;
     float3 normalWorld = UnityObjectToWorldNormal(v.normal);
@@ -833,7 +836,7 @@ SampleData SampleDataSetup(VertexOutputForwardAdd i){
 	return sd;
 }
 
-half4 fragForwardAddInternal (VertexOutputForwardAdd i)
+half4 fragForwardAddInternal (VertexOutputForwardAdd i, bool frontFace)
 {
     UNITY_APPLY_DITHER_CROSSFADE(i.pos.xy);
 
@@ -843,7 +846,7 @@ half4 fragForwardAddInternal (VertexOutputForwardAdd i)
 	float4 screenPos = 0;
 
 	SampleData sd = SampleDataSetup(i);
-    FragmentCommonData s = FragmentSetup(i.tex, i.tex2, i.eyeVec.xyz, IN_VIEWDIR4PARALLAX_FWDADD(i), i.tangentToWorldAndLightDir, IN_WORLDPOS_FWDADD(i), sd);
+    FragmentCommonData s = FragmentSetup(i.tex, i.tex2, i.tex3, i.eyeVec.xyz, IN_VIEWDIR4PARALLAX_FWDADD(i), i.tangentToWorldAndLightDir, IN_WORLDPOS_FWDADD(i), frontFace, sd);
 
     UNITY_LIGHT_ATTENUATION(atten, i, s.posWorld)
     UnityLight light = AdditiveLight (IN_LIGHTDIR_FWDADD(i), atten);
@@ -858,9 +861,9 @@ half4 fragForwardAddInternal (VertexOutputForwardAdd i)
     return OutputForward (c, s.alpha);
 }
 
-half4 fragForwardAdd (VertexOutputForwardAdd i) : SV_Target     // backward compatibility (this used to be the fragment entry function)
+half4 fragForwardAdd (VertexOutputForwardAdd i, bool frontFace) : SV_Target     // backward compatibility (this used to be the fragment entry function)
 {
-    return fragForwardAddInternal(i);
+    return fragForwardAddInternal(i, frontFace);
 }
 
 //

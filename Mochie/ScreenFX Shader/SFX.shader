@@ -1,6 +1,6 @@
 ﻿// BY MOCHIE
 
-Shader "Mochie/Screen FX/Screen FX" {
+Shader "Mochie/Screen FX" {
     Properties {
 
 		//Global Settings

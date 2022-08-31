@@ -7,7 +7,7 @@
 // Does not support deferred rendering
 // Does not meet the same instruction count restrictions as normal standard, intended for modern PC use only
 
-Shader "Mochie/Standard" {
+Shader "Mochie/Standard (Lite)" {
     Properties {
 
 		[Enum(Opaque,0, Cutout,1, Fade,2, Transparent,3)]_BlendMode("Blending Mode", Int) = 0
@@ -238,11 +238,6 @@ Shader "Mochie/Standard" {
 		Cull [_Cull]
 		ZTest [_ZTest]
 
-		GrabPass {
-			Tags {"LightMode"="Always"}
-			"_GrabTexture"
-		}
-
         Pass {
             Name "FORWARD"
             Tags {"LightMode" = "ForwardBase"}
@@ -254,7 +249,6 @@ Shader "Mochie/Standard" {
 			#pragma vertex vertBase
             #pragma fragment fragBase
 			#define MOCHIE_STANDARD
-			#define FULL_VERSION
 			#pragma shader_feature_local _WORKFLOW_PACKED_ON
 			#pragma shader_feature_local _DETAIL_WORKFLOW_PACKED_ON
             #pragma shader_feature_local _NORMALMAP
@@ -266,19 +260,13 @@ Shader "Mochie/Standard" {
             #pragma shader_feature_local _ _SPECULARHIGHLIGHTS_OFF
             #pragma shader_feature_local _ _GLOSSYREFLECTIONS_OFF
             #pragma shader_feature_local _PARALLAXMAP
-			#pragma shader_feature_local _REFLECTION_FALLBACK_ON
-			#pragma shader_feature_local _SCREENSPACE_REFLECTIONS_ON
 			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON
 			#pragma shader_feature_local _ _DETAIL_STOCHASTIC_ON _DETAIL_TSS_ON _DETAIL_TRIPLANAR_ON
-			#pragma shader_feature_local _REFLECTION_OVERRIDE_ON
 			#pragma shader_feature_local _DETAIL_ROUGH_ON
 			#pragma shader_feature_local _DETAIL_AO_ON
 			#pragma shader_feature_local _DETAIL_METALLIC_ON
-			#pragma shader_feature_local _SUBSURFACE_ON
-			#pragma shader_feature_local _AUDIOLINK_ON
 			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
 			#pragma shader_feature_local _ALPHAMASK_ON
-			#pragma shader_feature_local _FILTERING_ON
 			#pragma shader_feature_local _BICUBIC_SAMPLING_ON
 			#pragma shader_feature_local LTCGI
 			#pragma shader_feature_local LTCGI_DIFFUSE_OFF
@@ -286,10 +274,8 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _ BAKERY_SH BAKERY_RNM BAKERY_MONOSH
 			#pragma shader_feature_local BAKERY_LMSPEC
 			#pragma shader_feature_local BAKERY_SHNONLINEAR
-			#pragma shader_feature_local _RAIN_ON
 			#pragma shader_feature_local _OPAQUELIGHTS_OFF
 			#pragma shader_feature_local _AREALIT_ON
-			#pragma shader_feature_local _MIRROR_ON
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma multi_compile_fwdbase
             #pragma multi_compile_fog
@@ -310,7 +296,6 @@ Shader "Mochie/Standard" {
 			#pragma vertex vertAdd
             #pragma fragment fragAdd
 			#define MOCHIE_STANDARD
-			#define FULL_VERSION
 			#pragma shader_feature_local _WORKFLOW_PACKED_ON
 			#pragma shader_feature_local _DETAIL_WORKFLOW_PACKED_ON
             #pragma shader_feature_local _NORMALMAP
@@ -322,15 +307,11 @@ Shader "Mochie/Standard" {
             #pragma shader_feature_local _PARALLAXMAP
 			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON
 			#pragma shader_feature_local _ _DETAIL_STOCHASTIC_ON _DETAIL_TSS_ON _DETAIL_TRIPLANAR_ON
-			#pragma shader_feature_local _REFLECTION_OVERRIDE_ON
 			#pragma shader_feature_local _DETAIL_ROUGH_ON
 			#pragma shader_feature_local _DETAIL_AO_ON
 			#pragma shader_feature_local _DETAIL_METALLIC_ON
-			#pragma shader_feature_local _SUBSURFACE_ON
 			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
 			#pragma shader_feature_local _ALPHAMASK_ON
-			#pragma shader_feature_local _FILTERING_ON
-			#pragma shader_feature_local _RAIN_ON
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma multi_compile_fwdadd_fullshadows
             #pragma multi_compile_fog
@@ -349,7 +330,6 @@ Shader "Mochie/Standard" {
 			#pragma vertex vertShadowCaster
             #pragma fragment fragShadowCaster
 			#define MOCHIE_STANDARD
-			#define FULL_VERSION
 			#pragma shader_feature_local _WORKFLOW_PACKED_ON
 			#pragma shader_feature_local _DETAIL_WORKFLOW_PACKED_ON
             #pragma shader_feature_local _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
@@ -358,7 +338,6 @@ Shader "Mochie/Standard" {
             #pragma shader_feature_local _PARALLAXMAP
 			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON
 			#pragma shader_feature_local _ _DETAIL_STOCHASTIC_ON _DETAIL_TSS_ON _DETAIL_TRIPLANAR_ON
-			#pragma shader_feature_local _SUBSURFACE_ON
 			#pragma shader_feature_local _ALPHAMASK_ON
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma multi_compile_shadowcaster
@@ -377,7 +356,6 @@ Shader "Mochie/Standard" {
             #pragma vertex vert_meta
             #pragma fragment frag_meta
 			#define MOCHIE_STANDARD
-			#define FULL_VERSION
 			#pragma shader_feature_local _WORKFLOW_PACKED_ON
 			#pragma shader_feature_local _DETAIL_WORKFLOW_PACKED_ON
             #pragma shader_feature_local _EMISSION
@@ -386,13 +364,10 @@ Shader "Mochie/Standard" {
             #pragma shader_feature_local ___ _DETAIL_MULX2
 			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON
 			#pragma shader_feature_local _ _DETAIL_STOCHASTIC_ON _DETAIL_TSS_ON _DETAIL_TRIPLANAR_ON
-			#pragma shader_feature_local _REFLECTION_OVERRIDE_ON
 			#pragma shader_feature_local _DETAIL_ROUGH_ON
 			#pragma shader_feature_local _DETAIL_AO_ON
 			#pragma shader_feature_local _DETAIL_METALLIC_ON
-			#pragma shader_feature_local _SUBSURFACE_ON
 			#pragma shader_feature_local _ALPHAMASK_ON
-			#pragma shader_feature_local _FILTERING_ON
 			#pragma shader_feature_local _OPAQUELIGHTS_OFF
 			#pragma shader_feature_local _AREALIT_ON
 			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
@@ -410,7 +385,6 @@ Shader "Mochie/Standard" {
             #pragma vertex vert_meta
             #pragma fragment frag_meta
 			#define MOCHIE_STANDARD
-			#define FULL_VERSION
 			#define BAKERY_META
 			#pragma shader_feature_local _WORKFLOW_PACKED_ON
 			#pragma shader_feature_local _DETAIL_WORKFLOW_PACKED_ON
@@ -420,13 +394,10 @@ Shader "Mochie/Standard" {
             #pragma shader_feature_local ___ _DETAIL_MULX2
 			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON
 			#pragma shader_feature_local _ _DETAIL_STOCHASTIC_ON _DETAIL_TSS_ON _DETAIL_TRIPLANAR_ON
-			#pragma shader_feature_local _REFLECTION_OVERRIDE_ON
 			#pragma shader_feature_local _DETAIL_ROUGH_ON
 			#pragma shader_feature_local _DETAIL_AO_ON
 			#pragma shader_feature_local _DETAIL_METALLIC_ON
-			#pragma shader_feature_local _SUBSURFACE_ON
 			#pragma shader_feature_local _ALPHAMASK_ON
-			#pragma shader_feature_local _FILTERING_ON
 			#pragma shader_feature_local _OPAQUELIGHTS_OFF
 			#pragma shader_feature_local _AREALIT_ON
 			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON

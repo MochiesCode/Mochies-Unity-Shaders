@@ -1,0 +1,209 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Screen FX Mat
+  m_Shader: {fileID: 4800000, guid: 0d1d977ca72938b4bb8f3ed06b9a8645, type: 3}
+  m_ShaderKeywords: _BLUR_PIXEL_ON _COLOR_ON
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses:
+  - ALWAYS
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _NormalMap:
+        m_Texture: {fileID: 2800000, guid: 89819f8cb0b9e5d418f6e90ca96ac9c3, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ScreenTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ShakeNoiseTex:
+        m_Texture: {fileID: 2800000, guid: b8d1261e60bcece48b7708cac8798bfc, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _TPNoiseTex:
+        m_Texture: {fileID: 2800000, guid: dfbb7eeed695dc14d82b08d887041406, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _TPTexture:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Floats:
+    - _Amplitude: 0
+    - _AuraFade: 0.5
+    - _AuraSampleCount: 43
+    - _AuraStr: 0.25
+    - _AutoShift: 0
+    - _AutoShiftSpeed: 0.25
+    - _BlendMode: 0
+    - _BlurMaxRange: 15
+    - _BlurMinRange: 8
+    - _BlurModel: 1
+    - _BlurOpacity: 1
+    - _BlurRadius: 1
+    - _BlurSamples: 10
+    - _BlurStr: 0
+    - _BlurUseGlobal: 1
+    - _BlurY: 0
+    - _Brightness: 1
+    - _ColorMaxRange: 15
+    - _ColorMinRange: 8
+    - _ColorUseGlobal: 1
+    - _Contrast: 1
+    - _CrushBlur: 0
+    - _DBOpacity: 1
+    - _DeepFry: 0
+    - _DepthBufferToggle: 0
+    - _DisplayGlobalGizmo: 0
+    - _DistortionFade: 1
+    - _DistortionMaxRange: 15
+    - _DistortionMinRange: 8
+    - _DistortionModel: 0
+    - _DistortionP2O: 1
+    - _DistortionRadius: 2
+    - _DistortionSpeed: 0
+    - _DistortionStr: 0.5
+    - _DistortionUseGlobal: 1
+    - _DoF: 0
+    - _DoFFade: 1
+    - _DoFP2O: 1
+    - _DoFRadius: 2
+    - _DstBlend: 0
+    - _FilterModel: 1
+    - _FilterStrength: 1
+    - _Flavor: 0
+    - _Fog: 0
+    - _FogFade: 1
+    - _FogMaxRange: 20
+    - _FogMinRange: 15
+    - _FogP2O: 0
+    - _FogRadius: 2
+    - _FogSafeMaxRange: 6
+    - _FogSafeOpacity: 1
+    - _FogSafeRadius: 4
+    - _FogSafeZone: 0
+    - _FogUseGlobal: 0
+    - _HDR: 0
+    - _Heat: 0
+    - _Hue: 0
+    - _Invert: 0
+    - _InvertB: 0
+    - _InvertG: 0
+    - _InvertR: 0
+    - _InvertX: 0
+    - _InvertY: 0
+    - _Letterbox: 0
+    - _LetterboxStr: 0
+    - _ManualScrub: 0
+    - _MaxRange: 15
+    - _MinRange: 8
+    - _NMFOpacity: 1
+    - _NMFToggle: 0
+    - _Noise: 0
+    - _NoiseMaxRange: 15
+    - _NoiseMinRange: 8
+    - _NoiseMode: 0
+    - _NoiseStrength: 1
+    - _NoiseUseGlobal: 0
+    - _NormalMapFilter: 0.75
+    - _OLMaxRange: 15
+    - _OLMinRange: 8
+    - _OLUseGlobal: 1
+    - _Opacity: 1
+    - _OutlineThiccN: 0.5
+    - _OutlineThiccS: 0.49
+    - _OutlineThresh: 1000
+    - _OutlineType: 0
+    - _PixelBlurSamples: 43
+    - _PixelationStr: 0
+    - _Pulse: 0
+    - _PulseColor: 0
+    - _PulseSpeed: 1
+    - _RGBSplit: 0
+    - _RippleGridStr: 0
+    - _Rounding: 1
+    - _RoundingOpacity: 1
+    - _RoundingToggle: 0
+    - _SST: 0
+    - _SSTAnimatedDist: 0
+    - _SSTAnimationSpeed: 60
+    - _SSTBlend: 0
+    - _SSTColumnsX: 2
+    - _SSTFrameSizeXN: 0
+    - _SSTFrameSizeXP: 1
+    - _SSTFrameSizeYN: 0
+    - _SSTFrameSizeYP: 1
+    - _SSTHeight: 1
+    - _SSTLR: 0
+    - _SSTMaxRange: 15
+    - _SSTMinRange: 8
+    - _SSTRowsY: 2
+    - _SSTScale: 1
+    - _SSTUD: 0
+    - _SSTUseGlobal: 1
+    - _SSTWidth: 1
+    - _Saturation: 1
+    - _SaturationB: 1
+    - _SaturationG: 1
+    - _SaturationR: 1
+    - _ScanLine: 0
+    - _ScanLineSpeed: 1
+    - _ScanLineThick: 1
+    - _ScrubPos: 0
+    - _ShakeMaxRange: 15
+    - _ShakeMinRange: 8
+    - _ShakeModel: 0
+    - _ShakeSpeedX: 0.5234375
+    - _ShakeSpeedXY: 5
+    - _ShakeSpeedY: 0.78125
+    - _ShakeUseGlobal: 1
+    - _Shift: 0
+    - _ShiftX: 0
+    - _ShiftY: 0
+    - _Sizzle: 0
+    - _SrcBlend: 1
+    - _TPFade: 0.5
+    - _TPMaxRange: 15
+    - _TPMinRange: 8
+    - _TPNoise: 0
+    - _TPP2O: 1
+    - _TPRadius: 2
+    - _TPScanFade: 0.1
+    - _TPThickness: 0.4
+    - _TPUseGlobal: 1
+    - _Triplanar: 0
+    - _UseZoomFalloff: 0
+    - _Value: 0
+    - _WaveForm: 0
+    - _Zoom: 0
+    - _ZoomMaxRange: 4.5
+    - _ZoomMinRange: 3
+    - _ZoomStr: 0
+    - _ZoomStrB: 0
+    - _ZoomStrG: 0
+    - _ZoomStrR: 0
+    - _ZoomUseGlobal: 0
+    m_Colors:
+    - _BackgroundCol: {r: 1, g: 1, b: 1, a: 0}
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _DBColor: {r: 1, g: 1, b: 1, a: 1}
+    - _FogColor: {r: 0.75, g: 0.75, b: 0.75, a: 1}
+    - _NoiseRGB: {r: 0, g: 0, b: 0, a: 0}
+    - _OutlineCol: {r: 0, g: 0, b: 0, a: 1}
+    - _RGB: {r: 1, g: 1, b: 1, a: 0}
+    - _SSTColor: {r: 1, g: 1, b: 1, a: 1}
+    - _TPColor: {r: 1, g: 1, b: 1, a: 1}
+    - _TPNoiseScroll: {r: 0, g: 0, b: 0, a: 0}
+    - _TPScroll: {r: 0, g: 0, b: 0, a: 0}

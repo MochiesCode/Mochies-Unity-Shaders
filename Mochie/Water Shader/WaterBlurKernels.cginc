@@ -2,7 +2,7 @@
 #define BLURKERNELS_INCLUDED
 
 #ifdef HIGH_QUALITY_BLUR
-	static const float2 blurKernel[136] = {
+static const float2 blurKernel[136] = {
 	float2(0,0),
 	float2(0.18181819,0),
 	float2(0.13928081,0.116870485),

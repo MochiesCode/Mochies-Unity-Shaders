@@ -4,14 +4,14 @@
 // ---------------------------
 // Triplanar/Depth
 // ---------------------------
+
 float2 AlignWithGrabTexel(float2 uv){
 	return (floor(uv * _CameraDepthTexture_TexelSize.zw) + 0.5) * abs(_CameraDepthTexture_TexelSize.xy);
 }
 
 void GetDepth(v2f i, out float3 wPos, out float3 wNorm, out float depth){
 	float2 uv = i.uv.xy;
-	uv.y = _ProjectionParams.x * 0.5 + 0.5 - uv.y * _ProjectionParams.x;
-    depth = Linear01Depth(DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uv)));
+    depth = Linear01Depth(DecodeFloatRG(SampleDepthTex(uv)));
 	float3 raycast = i.raycast * (_ProjectionParams.z / i.raycast.z);
     float4 vPos = float4(raycast * depth, 1);
     wPos = mul(unity_CameraToWorld, vPos).xyz;
@@ -146,11 +146,6 @@ float4 DoZoomTransparency(v2f i, float4 col){
         default: break;
     }
     return col;
-}
-
-float SampleDepthTex(float2 uv){
-	// uv.y = _ProjectionParams.x * 0.5 + 0.5 - uv.y * _ProjectionParams.x;
-    return MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uv);
 }
 
 float GrayscaleSample(float2 uv){

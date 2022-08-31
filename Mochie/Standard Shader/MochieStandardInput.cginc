@@ -64,7 +64,11 @@ int				_DetailMaskChannel;
 int				_DetailAlbedoBlend;
 half        	_DetailNormalMapScale;
 int				_DetailRoughBlend;
+int				_DetailMetallicBlend;
 int				_DetailAOBlend;
+float			_DetailMetallicStrength;
+float			_DetailOcclusionStrength;
+float			_DetailRoughnessStrength;
 
 Texture2D   	_SpecGlossMap;
 Texture2D   	_MetallicGlossMap;
@@ -77,11 +81,11 @@ half        	_OcclusionStrength;
 
 Texture2D   	_ParallaxMap;
 Texture2D		_ParallaxMask;
-
 float4			_ParallaxMask_ST;
 half        	_Parallax;
 int				_ParallaxSteps;
 float			_ParallaxOffset;
+
 float4			_AlphaMask_ST;
 float2 			uvOffset;
 float2			lightmapOffset;
@@ -126,9 +130,14 @@ float			_ContrastReflShad;
 float			_HDRReflShad;
 float3			_TintReflShad;
 
+Texture2D		_RainMask;
+float4			_RainMask_ST;
 float 			_RippleStr;
 float			_RippleScale;
 float			_RippleSpeed;
+float			_UV5Rotate;
+float2			_UV5Scroll;
+int				_UVRainMask;
 
 float _ReflectionStrength, _SpecularStrength;
 float _ReflShadowStrength;
@@ -136,10 +145,13 @@ float _GSAAStrength;
 float _ReflVertexColorStrength;
 int _ReflShadows;
 int _UseSmoothness;
+int _DetailUseSmoothness;
 int _ReflVertexColor;
 int _GSAA;
 
 float _LTCGIStrength;
+float _AreaLitStrength;
+float _AreaLitRoughnessMult;
 
 float3 _RimCol;
 float _RimWidth;
@@ -153,12 +165,15 @@ SamplerState sampler_RNM0, sampler_RNM1, sampler_RNM2;
 float4 _RNM0_TexelSize;
 
 Texture2D _PackedMap;
+Texture2D _DetailPackedMap;
 UNITY_DECLARE_TEXCUBE(_ReflCube);
 UNITY_DECLARE_TEXCUBE(_ReflCubeOverride);
 float4 _ReflCube_HDR, _ReflCubeOverride_HDR;
 float _CubeThreshold;
 int _RoughnessMult, _MetallicMult, _OcclusionMult, _HeightMult;
 int _RoughnessChannel, _MetallicChannel, _OcclusionChannel, _HeightChannel;
+int _DetailRoughnessMult, _DetailMetallicMult, _DetailOcclusionMult;
+int _DetailRoughnessChannel, _DetailMetallicChannel, _DetailOcclusionChannel;
 
 float3 shadowedReflections;
 
@@ -259,7 +274,7 @@ float2 SelectUVSet(VertexInput v, int selection){
 	return uvs[selection];
 }
 
-void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1, inout float4 texcoord2)
+void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1, inout float4 texcoord2, inout float4 texcoord3)
 {
 	texcoord.xy = Rotate2D(SelectUVSet(v, _UVPri), _UV0Rotate);
 	texcoord.xy = TRANSFORM_TEX(texcoord.xy, _MainTex);
@@ -271,6 +286,7 @@ void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1, ino
 
 	texcoord1 = 0;
 	texcoord2 = 0;
+	texcoord3 = 0;
 
 	#ifdef _PARALLAXMAP
 		texcoord1.xy = TRANSFORM_TEX(SelectUVSet(v, _UVHeightMask), _ParallaxMask);
@@ -287,6 +303,13 @@ void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1, ino
 		texcoord2.xy = Rotate2D(SelectUVSet(v, _UVAlphaMask), _UV4Rotate);
 		texcoord2.xy = TRANSFORM_TEX(texcoord2.xy, _AlphaMask);
 		texcoord2.xy += _Time.y * _UV4Scroll;
+	#endif
+
+	#ifdef _RAIN_ON
+		texcoord3.xy = v.uv0;
+		texcoord3.zw = Rotate2D(SelectUVSet(v, _UVRainMask), _UV5Rotate);
+		texcoord3.zw = TRANSFORM_TEX(texcoord3.zw, _RainMask);
+		texcoord3.zw += _Time.y * _UV5Scroll;
 	#endif
 }
 
@@ -315,11 +338,7 @@ half3 Albedo(float4 texcoords, SampleData sd)
 	#if DETAIL_BASECOLOR
 		half mask = DetailMask(texcoords.xy);
 		sd.scaleTransform = _DetailAlbedoMap_ST;
-		#if DETAIL_SAMPLEMODE_ENABLED
-			half4 detailAlbedo = SampleTexture(_DetailAlbedoMap, sampler_DetailAlbedoMap, texcoords.zw, sd);
-		#else
-			half4 detailAlbedo = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailAlbedoMap, sampler_DetailAlbedoMap, texcoords.zw);
-		#endif
+		half4 detailAlbedo = SampleDetailTexture(_DetailAlbedoMap, sampler_DetailAlbedoMap, texcoords.zw, sd);
 		detailAlbedo.rgb = _DetailColor.rgb * Filtering(detailAlbedo.rgb, _HueDet, _SaturationDet, _BrightnessDet, _ContrastDet, 0);
 		albedo = BlendColorsAlpha(albedo, detailAlbedo.rgb, _DetailAlbedoBlend, mask, detailAlbedo.a);
 	#endif
@@ -328,6 +347,7 @@ half3 Albedo(float4 texcoords, SampleData sd)
 
 half Alpha(float2 uv, SampleData sd)
 {
+	uv += uvOffset;
 	#ifdef _ALPHAMASK_ON
 		return ChannelCheck(SampleTexture(_AlphaMask, uv), _AlphaMaskChannel) * _AlphaMaskOpacity;
 	#else
@@ -341,87 +361,95 @@ half Occlusion(float4 uv, SampleData sd)
 	#if WORKFLOW_PACKED
 		half4 map = SampleTexture(_PackedMap, uv.xy, sd);
 		half occ = ChannelCheck(map, _OcclusionChannel);
-		#if DETAIL_AO
-			#if DETAIL_SAMPLEMODE_ENABLED
-				half4 occDetail = SampleTexture(_DetailAOMap, sampler_DetailAOMap, uv.zw, sd);
-			#else
-				half4 occDetail = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailAOMap, sampler_DetailAOMap, uv.zw);
-			#endif
-			occ = BlendScalarsAlpha(occ, occDetail, _DetailAOBlend, DetailMask(uv.xy), occDetail.a);
-		#endif
-		return LerpOneTo(occ, lerp(1, _OcclusionStrength, _OcclusionMult));
+		occ = LerpOneTo(occ, lerp(1, _OcclusionStrength, _OcclusionMult));
 	#else
 		half occ = SampleTexture(_OcclusionMap, uv.xy, sd).g;
-		#if DETAIL_AO
-			#if DETAIL_SAMPLEMODE_ENABLED
-				half4 occDetail = SampleTexture(_DetailAOMap, sampler_DetailAOMap, uv.zw, sd);
-			#else
-				half4 occDetail = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailAOMap, sampler_DetailAOMap, uv.zw);
-			#endif
-			occ = BlendScalarsAlpha(occ, occDetail.g, _DetailAOBlend, DetailMask(uv.xy), occDetail.a);
-		#endif
-		return LerpOneTo (occ, _OcclusionStrength);
+		occ = LerpOneTo(occ, _OcclusionStrength);
 	#endif
+
+	#if DETAIL_WORKFLOW_PACKED
+		half4 detMap = SampleDetailTexture(_DetailPackedMap, uv.zw, sd);
+		half detOcc = ChannelCheck(detMap, _DetailOcclusionChannel);
+		half blendedOcc = BlendScalars(occ, detOcc, _DetailAOBlend, DetailMask(uv.xy));
+		occ = lerp(occ, blendedOcc, lerp(1, _DetailOcclusionStrength, _DetailOcclusionMult));	
+	#elif DETAIL_AO
+		half4 detOcc = SampleDetailTexture(_DetailAOMap, sampler_DetailAOMap, uv.zw, sd);
+		half blendedOcc = BlendScalarsAlpha(occ, detOcc.g, _DetailAOBlend, DetailMask(uv.xy), detOcc.a);
+		occ = lerp(occ, blendedOcc, _DetailOcclusionStrength);
+	#endif
+
+	return occ;
 }
 
 half2 MetallicRough(float4 uv, SampleData sd)
 {
-	half2 mg;
+	half2 metGloss;
+	float metal = _Metallic;
+	float gloss = _Glossiness; // Gloss = 1
+	
 	#if WORKFLOW_PACKED
 		half4 packedMap = SampleTexture(_PackedMap, uv.xy, sd);
-		float rough = ChannelCheck(packedMap, _RoughnessChannel);
-		float metal = ChannelCheck(packedMap, _MetallicChannel);
+		gloss = ChannelCheck(packedMap, _RoughnessChannel);
+		metal = ChannelCheck(packedMap, _MetallicChannel);
+		// gloss = lerp(1-gloss, gloss, _UseSmoothness);
+		gloss *= lerp(1, _Glossiness, _RoughnessMult);
+		metal *= lerp(1, _Metallic, _MetallicMult);
+	#else
+		#ifdef _METALLICGLOSSMAP
+			metal = SampleTexture(_MetallicGlossMap, uv.xy, sd) * _Metallic;
+		#endif
+		#ifdef _SPECGLOSSMAP
+			gloss = SampleTexture(_SpecGlossMap, uv.xy, sd) * _Glossiness;
+		#endif
+		// gloss = lerp(1-gloss, gloss, _UseSmoothness);
+	#endif
+
+	#if DETAIL_WORKFLOW_PACKED
+		float detMask = DetailMask(uv.xy);
+		float4 detPackedMap = SampleDetailTexture(_DetailPackedMap, uv.zw, sd);
+		float detRough = ChannelCheck(detPackedMap, _DetailRoughnessChannel);
+		float detMetal = ChannelCheck(detPackedMap, _DetailMetallicChannel);
+		// detRough = lerp(1-detRough, detRough, _DetailUseSmoothness);
+		float blendedRough = BlendScalars(gloss, detRough, _DetailRoughBlend, detMask);
+		float blendedMetal = BlendScalars(metal, detMetal, _DetailMetallicBlend, detMask);
+		gloss = lerp(gloss, blendedRough, lerp(1, _DetailRoughnessStrength, _DetailRoughnessMult));
+		metal = lerp(metal, blendedMetal, lerp(1, _DetailMetallicStrength, _DetailMetallicMult));
+	#else
+		#if DETAIL_ROUGH
+			float4 detRough = SampleDetailTexture(_DetailRoughnessMap, sampler_DetailRoughnessMap, uv.zw, sd);
+			// detRough.r = lerp(1-detRough.r, detRough.r, _DetailUseSmoothness);
+			float blendedRough = BlendScalarsAlpha(gloss, detRough, _DetailRoughBlend, DetailMask(uv.xy), detRough.a);
+			gloss = lerp(gloss, blendedRough, _DetailRoughnessStrength);
+		#endif
+		#if DETAIL_METALLIC
+			float4 detMetal = SampleDetailTexture(_DetailMetallicMap, sampler_DetailMetallicMap, uv.zw, sd);
+			float blendedMetal = BlendScalarsAlpha(metal, detMetal, _DetailMetallicBlend, DetailMask(uv.xy), detMetal.a);
+			metal = lerp(metal, blendedMetal, _DetailMetallicStrength);
+		#endif
+	#endif
+
+	#if WORKFLOW_PACKED
 		#if TRIPLANAR_ENABLED
 			metal = smoothstep(0,0.1, metal);
 		#endif
-		#if DETAIL_ROUGH
-			#if DETAIL_SAMPLEMODE_ENABLED	
-				float4 detailRough = SampleTexture(_DetailRoughnessMap, sampler_DetailRoughnessMap, uv.zw, sd);
-			#else
-				float4 detailRough = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailRoughnessMap, sampler_DetailRoughnessMap, uv.zw);
-			#endif
-			rough = BlendScalarsAlpha(rough, detailRough.r, _DetailRoughBlend, DetailMask(uv.xy), detailRough.a);
-		#endif
-		rough *= lerp(1, _Glossiness, _RoughnessMult);
-		metal *= lerp(1, _Metallic, _MetallicMult);
-		mg.r = metal;
-		mg.g = lerp(1-rough, rough, _UseSmoothness);
-		return mg;
 	#else
 		#ifdef _METALLICGLOSSMAP
-			mg.r = SampleTexture(_MetallicGlossMap, uv.xy, sd).r * _Metallic;
 			#if TRIPLANAR_ENABLED
-				mg.r = smoothstep(0,0.1,mg.r);
+				metal = smoothstep(0,0.1,metal);
 			#endif
-		#else
-			mg.r = _Metallic;
 		#endif
-
-		#ifdef _SPECGLOSSMAP
-			mg.g = SampleTexture(_SpecGlossMap, uv.xy, sd).r * _Glossiness;
-		#else
-			mg.g = _Glossiness;
-		#endif
-
-		#if DETAIL_ROUGH
-			#if DETAIL_SAMPLEMODE_ENABLED
-				float4 detailRough = SampleTexture(_DetailRoughnessMap, sampler_DetailRoughnessMap, uv.zw, sd);
-			#else
-				float4 detailRough = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailRoughnessMap, sampler_DetailRoughnessMap, uv.zw);
-			#endif
-			mg.g = BlendScalarsAlpha(mg.g, detailRough, _DetailRoughBlend, DetailMask(uv.xy), detailRough.a);
-		#endif
-
-		mg.g = lerp(1-mg.g, mg.g, _UseSmoothness);
-		return mg;
 	#endif
+
+	metGloss.r = metal;
+	metGloss.g = lerp(1-gloss, gloss, _UseSmoothness);
+	return metGloss;
 }
 
 half3 Emission(float2 uv, float2 uvMask, SampleData sd)
 {
 	#ifdef _EMISSION
 		float3 emissTex = SampleTexture(_EmissionMap, uv, sd);
-		float emissMask = _EmissionMask.Sample(sampler_MainTex, uvMask).r;
+		float emissMask = _EmissionMask.Sample(sampler_MainTex, uvMask+uvOffset).r;
 		emissTex *= _EmissionColor.rgb * _EmissionIntensity * emissMask * GetWave(_EmissPulseWave, _EmissPulseSpeed, _EmissPulseStrength);
 		emissTex = Filtering(emissTex, _HueEmiss, _SaturationEmiss, _BrightnessEmiss, _ContrastEmiss, 0);
 		#if AUDIOLINK_ENABLED
@@ -436,18 +464,20 @@ half3 Emission(float2 uv, float2 uvMask, SampleData sd)
 }
 
 void Rim(float3 worldPos, float3 normal, inout float3 col){
-	if (_RimToggle == 1){
-		float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - worldPos);
-		float vdn = abs(dot(viewDir, normal));
-		float rim = pow((1-vdn), (1-_RimWidth) * 10);
-		rim = smoothstep(_RimEdge, 1-_RimEdge, rim);
-		col = BlendColors(col, _RimCol, _RimBlending, rim*_RimStr);
-	}
+	#ifdef FULL_VERSION
+		if (_RimToggle == 1){
+			float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - worldPos);
+			float vdn = abs(dot(viewDir, normal));
+			float rim = pow((1-vdn), (1-_RimWidth) * 10);
+			rim = smoothstep(_RimEdge, 1-_RimEdge, rim);
+			col = BlendColors(col, _RimCol, _RimBlending, rim*_RimStr);
+		}
+	#endif
 }
 
 
 #ifdef _NORMALMAP
-half3 NormalInTangentSpace(float4 texcoords, SampleData sd)
+half3 NormalInTangentSpace(float4 texcoords, float4 raincoords, SampleData sd)
 {
 	half3 normalTangent = SampleTexture(_BumpMap, texcoords.xy, sd, _BumpScale);
 	#if defined(UNITY_ENABLE_DETAIL_NORMALMAP)
@@ -461,7 +491,8 @@ half3 NormalInTangentSpace(float4 texcoords, SampleData sd)
 		normalTangent = lerp(normalTangent, BlendNormals(normalTangent, detailNormalTangent), mask);
 	#endif
 	#if RAIN_ENABLED
-		float3 rippleNormal = GetRipplesNormal(texcoords.xy, _RippleScale, _RippleStr, _RippleSpeed);
+		float mask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_RainMask, sampler_MainTex, raincoords.zw);
+		float3 rippleNormal = GetRipplesNormal(raincoords.xy, _RippleScale, _RippleStr*mask, _RippleSpeed);
 		normalTangent = BlendNormals(normalTangent, rippleNormal);
 	#endif
     return normalTangent;
@@ -474,13 +505,16 @@ half3 NormalInTangentSpace(float4 texcoords, SampleData sd)
 
 #include "MochieStandardParallax.cginc"
 
-float4 Parallax (float4 texcoords, half3 viewDir, out float2 offset)
+float4 Parallax (float4 texcoords, half3 viewDir, out float2 offset, bool isFrontFace)
 {
 	offset = 0;
 
 	#ifndef _PARALLAXMAP
 		return texcoords;
 	#endif
+
+	if (!isFrontFace)
+		return texcoords;
 
 	#if WORKFLOW_PACKED
 		half4 packedMap = SampleTexture(_PackedMap, texcoords.xy);

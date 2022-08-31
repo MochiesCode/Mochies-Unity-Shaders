@@ -9,6 +9,18 @@ void MirrorCheck(){
     if (IsInMirror()) discard;
 }
 
+bool IsLeftEye(){
+    return UNITY_MATRIX_P._13 < 0;
+}
+
+bool IsRightEye(){
+    return UNITY_MATRIX_P._13 > 0;
+}
+
+bool IsNotVR(){
+    return UNITY_MATRIX_P._13 == 0;
+}
+
 float Average(float3 col){
     return (col.r + col.g + col.b)/3.0;
 }

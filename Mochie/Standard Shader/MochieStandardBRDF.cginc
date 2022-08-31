@@ -98,7 +98,7 @@ half4 BRDF1_Mochie_PBS (
 					ssColor
 				);
 	#endif
-	
+
 	#ifdef LTCGI
         half3 diffLight = 0;
         LTCGI_Contribution(
@@ -129,7 +129,10 @@ half4 BRDF1_Mochie_PBS (
 		shadowedReflections = lerp(1, lerp(1, atten, 0.9), _ReflShadows*_ReflShadowStrength);
 		reflCol *= shadowedReflections;
 	#endif
-	reflCol *= lerp(1, vertexColor, _ReflVertexColor*_ReflVertexColorStrength);
+
+	#ifdef FULL_VERSION
+		reflCol *= lerp(1, vertexColor, _ReflVertexColor*_ReflVertexColorStrength);
+	#endif
 
     return half4(diffCol + specCol + reflCol + subsurfaceCol, 1);
 }

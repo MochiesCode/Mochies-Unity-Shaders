@@ -70,11 +70,13 @@ float2		_UV0Scroll;
 float2		_UV1Scroll;
 float2		_UV4Scroll;
 
-#if WORKFLOW_PACKED
-	Texture2D _PackedMap;
-	int _RoughnessMult, _MetallicMult, _OcclusionMult, _HeightMult;
-	int _RoughnessChannel, _MetallicChannel, _OcclusionChannel, _HeightChannel;
-#endif
+Texture2D _PackedMap;
+int _RoughnessMult, _MetallicMult, _OcclusionMult, _HeightMult;
+int _RoughnessChannel, _MetallicChannel, _OcclusionChannel, _HeightChannel;
+
+Texture2D _DetailPackedMap;
+int _DetailRoughnessMult, _DetailMetallicMult, _DetailOcclusionMult;
+int _DetailRoughnessChannel, _DetailMetallicChannel, _DetailOcclusionChannel;
 
 #if SSR_ENABLED
 	sampler2D _CameraDepthTexture;
@@ -90,7 +92,7 @@ float2		_UV4Scroll;
 half ShadowGetOneMinusReflectivity(half2 uv, SampleData sd)
 {
     half metallicity = _Metallic;
-	#if WORKFLOW_MODULAR
+	#if WORKFLOW_PACKED
 		half4 packedMap = SampleTexture(_PackedMap, uv, sd);
 		metallicity = ChannelCheck(packedMap, _MetallicChannel);
 	#else
@@ -216,7 +218,7 @@ half4 fragShadowCaster (UNITY_POSITION(vpos)
     #if defined(UNITY_STANDARD_USE_SHADOW_UVS)
         #if defined(_PARALLAXMAP) && (SHADER_TARGET >= 30)
             half3 viewDirForParallax = normalize(i.viewDirForParallax);
-			#if WORKFLOW_MODULAR
+			#if WORKFLOW_PACKED
 				half4 packedMap = SampleTexture(_PackedMap, i.tex.xy);
 				half h = ChannelCheck(packedMap, _HeightChannel) + _ParallaxOffset;
 				h = clamp(h, 0, 0.999);
@@ -233,6 +235,7 @@ half4 fragShadowCaster (UNITY_POSITION(vpos)
 			#endif
            
             i.tex.xy += offset;
+			i.tex2.xy += offset;
         #endif
 
 		SampleData sd = SampleDataSetup(vpos

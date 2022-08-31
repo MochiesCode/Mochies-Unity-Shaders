@@ -1,6 +1,6 @@
 // By Mochie#8794
 
-Shader "Mochie/Uber/Uber (Outline)" {
+Shader "Mochie/Uber (Outline)" {
     Properties {
 		//----------------------------
 		// BASE

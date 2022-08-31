@@ -73,7 +73,7 @@ void StandardBlurWithDepth(float2 texelSize, float4 uv0, uint sampleCount, float
 			for (uint si16 = 0; si16 < sampleCount; ++si16){
 				uvb.xy = uv.xy + (kDiskKernel16[si16] * mainStr);
 				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
-				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
+				depth += DecodeFloatRG(SampleDepthTex(uvb.xy));
 			}
 			break;
 		case 22: 
@@ -81,7 +81,7 @@ void StandardBlurWithDepth(float2 texelSize, float4 uv0, uint sampleCount, float
 			for (uint si22 = 0; si22 < sampleCount; ++si22){
 				uvb.xy = uv.xy + (kDiskKernel22[si22] * mainStr);
 				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
-				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
+				depth += DecodeFloatRG(SampleDepthTex(uvb.xy));
 			}
 			break;
 		case 43:
@@ -89,7 +89,7 @@ void StandardBlurWithDepth(float2 texelSize, float4 uv0, uint sampleCount, float
 			for (uint si43 = 0; si43 < sampleCount; ++si43){
 				uvb.xy = uv.xy + (kDiskKernel43[si43] * mainStr);
 				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
-				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
+				depth += DecodeFloatRG(SampleDepthTex(uvb.xy));
 			}
 			break;
 		case 71:
@@ -97,7 +97,7 @@ void StandardBlurWithDepth(float2 texelSize, float4 uv0, uint sampleCount, float
 			for (uint si71 = 0; si71 < sampleCount; ++si71){
 				uvb.xy = uv.xy + (kDiskKernel71[si71] * mainStr);
 				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
-				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
+				depth += DecodeFloatRG(SampleDepthTex(uvb.xy));
 			}
 			break;
 		case 136:
@@ -105,7 +105,7 @@ void StandardBlurWithDepth(float2 texelSize, float4 uv0, uint sampleCount, float
 			for (uint si136 = 0; si136 < sampleCount; ++si136){
 				uvb.xy = uv.xy + (kDiskKernel136[si136] * str136);
 				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
-				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
+				depth += DecodeFloatRG(SampleDepthTex(uvb.xy));
 			}
 			break;
 		default: break;
@@ -186,7 +186,7 @@ void ApplyStandardBlurYWithDepth(float2 texelSize, float4 uv0, uint sampleCount,
 			for (uint si16 = 0; si16 < sampleCount; ++si16){
 				uvb.y = uv.y + (kDiskKernel16[si16].y * mainStr);
 				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
-				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
+				depth += DecodeFloatRG(SampleDepthTex(uvb.xy));
 			}
 			break;
 		case 22: 
@@ -194,7 +194,7 @@ void ApplyStandardBlurYWithDepth(float2 texelSize, float4 uv0, uint sampleCount,
 			for (uint si22 = 0; si22 < sampleCount; ++si22){
 				uvb.y = uv.y + (kDiskKernel22[si22].y * mainStr);
 				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
-				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
+				depth += DecodeFloatRG(SampleDepthTex(uvb.xy));
 			}
 			break;
 		case 43:
@@ -202,7 +202,7 @@ void ApplyStandardBlurYWithDepth(float2 texelSize, float4 uv0, uint sampleCount,
 			for (uint si43 = 0; si43 < sampleCount; ++si43){
 				uvb.y = uv.y + (kDiskKernel43[si43].y * mainStr);
 				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
-				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
+				depth += DecodeFloatRG(SampleDepthTex(uvb.xy));
 			}
 			break;
 		case 71:
@@ -210,7 +210,7 @@ void ApplyStandardBlurYWithDepth(float2 texelSize, float4 uv0, uint sampleCount,
 			for (uint si71 = 0; si71 < sampleCount; ++si71){
 				uvb.y = uv.y + (kDiskKernel71[si71].y * mainStr);
 				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
-				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
+				depth += DecodeFloatRG(SampleDepthTex(uvb.xy));
 			}
 			break;
 		case 136:
@@ -218,7 +218,7 @@ void ApplyStandardBlurYWithDepth(float2 texelSize, float4 uv0, uint sampleCount,
 			for (uint si136 = 0; si136 < sampleCount; ++si136){
 				uvb.y = uv.y + (kDiskKernel136[si136].y * str136);
 				blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, uvb);
-				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
+				depth += DecodeFloatRG(SampleDepthTex(uvb.xy));
 			}
 			break;
 		default: break;
@@ -239,35 +239,35 @@ void ApplyStandardBlurDepth(float4 uv0, uint sampleCount, float str, inout float
 			[fastopt]
 			for (uint si16 = 0; si16 < sampleCount; ++si16){
 				uvb.xy = uv.xy + (kDiskKernel16[si16] * str);
-				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
+				depth += DecodeFloatRG(SampleDepthTex(uvb.xy));
 			}
 			break;
 		case 22: 
 			[fastopt]
 			for (uint si22 = 0; si22 < sampleCount; ++si22){
 				uvb.xy = uv.xy + (kDiskKernel22[si22] * str);
-				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
+				depth += DecodeFloatRG(SampleDepthTex(uvb.xy));
 			}
 			break;
 		case 43:
 			[fastopt]
 			for (uint si43 = 0; si43 < sampleCount; ++si43){
 				uvb.xy = uv.xy + (kDiskKernel43[si43] * str);
-				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
+				depth += DecodeFloatRG(SampleDepthTex(uvb.xy));
 			}
 			break;
 		case 71:
 			[fastopt]
 			for (uint si71 = 0; si71 < sampleCount; ++si71){
 				uvb.xy = uv.xy + (kDiskKernel71[si71] * str);
-				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
+				depth += DecodeFloatRG(SampleDepthTex(uvb.xy));
 			}
 			break;
 		case 136:
 			[fastopt]
 			for (uint si136 = 0; si136 < sampleCount; ++si136){
 				uvb.xy = uv.xy + (kDiskKernel136[si136] * str136);
-				depth += DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uvb.xy));
+				depth += DecodeFloatRG(SampleDepthTex(uvb.xy));
 			}
 			break;
 		default: break;

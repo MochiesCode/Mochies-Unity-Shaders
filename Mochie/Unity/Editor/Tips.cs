@@ -21,7 +21,7 @@ namespace Mochie {
 		public static GUIContent heightMapText = new GUIContent("Height Map", "Uses parallax occlusion mapping to generate fake 3d bumps on a surface.");
 		public static GUIContent heightMapPackedText = new GUIContent("Height Strength", heightMapText.tooltip);
 		public static GUIContent occlusionText = new GUIContent("Ambient Occlusion", "Adds extra shading to simulate contact shadows in crevices or corners where less light reaches (think how the DVD logo almost never perfectly bounces into the corner of the screen). Darker values will add darker shading.");
-		public static GUIContent occlusionPackedText = new GUIContent("AO Strength", occlusionText.tooltip);
+		public static GUIContent occlusionPackedText = new GUIContent("Occlusion Strength", occlusionText.tooltip);
 		public static GUIContent emissionText = new GUIContent("Color", "Adds extra color value after all lighting calculations to simulate an emissive effect.");
 		public static GUIContent detailMaskText = new GUIContent("Detail Mask", "Mask for secondary maps.");
 		public static GUIContent detailAlbedoText = new GUIContent("Detail Base Color", "Secondary unshaded base color (RGB)");

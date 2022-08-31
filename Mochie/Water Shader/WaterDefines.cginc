@@ -22,7 +22,9 @@ float4 _CameraDepthTexture_TexelSize;
 #define SPECULAR_ENABLED 				defined(_SPECULAR_ON)
 #define PBR_ENABLED 					defined(_REFLECTIONS_ON) || defined(_SPECULAR_ON)
 #define FLOW_ENABLED 					defined(_FLOW_ON)
-#define VERTEX_OFFSET_ENABLED 			defined(_VERTEX_OFFSET_ON)
+#define NOISE_TEXTURE_ENABLED			defined(_NOISE_TEXTURE_ON)
+#define GERSTNER_ENABLED 				defined(_GERSTNER_WAVES_ON)
+#define VORONOI_ENABLED					defined(_VORONOI_ON)
 #define DEPTHFOG_ENABLED 				defined(_DEPTHFOG_ON) && !defined(UNITY_PASS_FORWARDADD)
 #define FOAM_ENABLED 					defined(_FOAM_ON)
 #define CAUSTICS_ENABLED 				defined(_CAUSTICS_ON) && !defined(UNITY_PASS_FORWARDADD)
@@ -32,9 +34,9 @@ float4 _CameraDepthTexture_TexelSize;
 #define STOCHASTIC1_ENABLED 			defined(_NORMALMAP_1_STOCHASTIC_ON)
 #define FOAM_STOCHASTIC_ENABLED 		defined(_FOAM_STOCHASTIC_ON)
 #define BASECOLOR_STOCHASTIC_ENABLED 	defined(_BASECOLOR_STOCHASTIC_ON)
-#define GERSTNER_ENABLED 				defined(_GERSTNER_WAVES_ON)
 #define RAIN_ENABLED 					defined(_RAIN_ON)
 #define FOAM_NORMALS_ENABLED			defined(_FOAM_NORMALS_ON)
+#define DEPTH_EFFECTS_ENABLED			defined(_DEPTH_EFFECTS_ON)
 
 MOCHIE_DECLARE_TEX2D_SCREENSPACE(_MWGrab);
 sampler2D _MainTex;
@@ -43,6 +45,7 @@ sampler2D _FlowMap;
 sampler2D _NoiseTex;
 sampler2D _FoamTex;
 sampler2D _FoamNoiseTex;
+sampler2D _CausticsTex;
 samplerCUBE _ReflCube;
 
 float4 _FogTint, _Color, _FoamColor, _ReflTint, _SpecTint;
@@ -54,6 +57,13 @@ float3 _ReflCubeRotation;
 float2 _NormalMapScale0, _NormalMapScale1;
 float2 _NormalMapScroll0, _NormalMapScroll1;
 float2 _FlowMapScale;
+
+float2 _VoronoiScale;
+float2 _VoronoiScroll;
+float _VoronoiSpeed;
+float _VoronoiWaveHeight;
+float3 _VoronoiOffset;
+
 float2 _NoiseTexScale;
 float2 _NoiseTexScroll;
 float2 _FoamTexScale;
@@ -108,8 +118,26 @@ float3 _CausticsRotation;
 float _CausticsSurfaceFade;
 float3 _CausticsColor;
 float4 _AngleTint;
+float _TessMin;
+float _TessMax;
+float _TessDistMin;
+float _TessDistMax;
+float _TessellationOffsetMask;
+int _BackfaceReflections;
 
 const static float2 jump = float2(0.1, 0.25);
+
+#ifdef TESSELLATION_VARIANT
+struct TessellationControlPoint {
+	float4 vertex : INTERNALTESSPOS;
+	float4 uv : TEXCOORD0;
+	float4 uv1 : TEXCOORD1;
+	float3 normal : NORMAL;
+	float4 tangent : TANGENT;
+	UNITY_VERTEX_INPUT_INSTANCE_ID
+	UNITY_VERTEX_OUTPUT_STEREO
+};
+#endif
 
 struct appdata {
 	float4 vertex : POSITION;
@@ -118,7 +146,6 @@ struct appdata {
 	float3 normal : NORMAL;
 	float4 tangent : TANGENT;
 	UNITY_VERTEX_INPUT_INSTANCE_ID
-
 };
 
 struct v2f {
@@ -133,10 +160,11 @@ struct v2f {
 	float4 localPos : TEXCOORD9;
 	float3 wave : TEXCOORD10;
 	float3 tangentViewDir : TEXCOORD11;
-	bool isInVRMirror : TEXCOORD12;
-	#if SPECULAR_ENABLED && defined(UNITY_PASS_FORWARDADD)
-		UNITY_SHADOW_COORDS(13)
+	#ifdef TESSELLATION_VARIANT
+		float offsetMask : TEXCOORD13;
 	#endif
+	bool isInVRMirror : TEXCOORD12;
+	// UNITY_SHADOW_COORDS(13)
 	UNITY_FOG_COORDS(14)
 	UNITY_VERTEX_INPUT_INSTANCE_ID 
 	UNITY_VERTEX_OUTPUT_STEREO

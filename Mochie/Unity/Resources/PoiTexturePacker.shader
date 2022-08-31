@@ -1,6 +1,6 @@
 // Made with Amplify Shader Editor
 // Available at the Unity Asset Store - http://u3d.as/y3X 
-Shader "Hidden/Poi/TexturePacker"
+Shader "Hidden/Mochie/TexturePacker"
 {
 	Properties
 	{

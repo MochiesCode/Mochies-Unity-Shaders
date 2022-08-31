@@ -1,6 +1,6 @@
 ﻿// Original by Xiexe - https://github.com/Xiexe/RGBSubPixelDisplay-Shader
 
-Shader "Mochie/LED Screen/LED Screen" {
+Shader "Mochie/LED Screen" {
 	Properties {
 		[ToggleUI]_FlipbookMode("Flipbook Mode", Int) = 0
 		_FPS("FPS", Float) = 24

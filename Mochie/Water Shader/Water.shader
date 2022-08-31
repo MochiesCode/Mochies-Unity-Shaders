@@ -16,6 +16,7 @@ Shader "Mochie/Water" {
 		_Opacity("Opacity", Range(0,1)) = 1
 		[Enum(UnityEngine.Rendering.CullMode)]_CullMode("Cull", Int) = 2
 		[Enum(Off,0, On,1)]_ZWrite("ZWrite", Int) = 0
+		[Enum(Off,0, On,1)]_DepthEffects("Depth Effects", Int) = 1
 		
 		[NoScaleOffset]_NormalMap0 ("", 2D) = "bump" {}
 		_NormalStr0("Strength", Float) = 0.1
@@ -37,6 +38,7 @@ Shader "Mochie/Water" {
 		[Enum(Off,0, Environment,1, Manual,2)]_Reflections("Probe Reflections", Int) = 1
 		_ReflStrength("Reflection Strength", Float) = 1
 		_ReflTint("Reflection Tint", Color) = (1,1,1,1)
+		[ToggleUI]_BackfaceReflections("Backface Reflections", Int) = 1
 		[ToggleUI]_SSR("Screenspace Reflections", Int) = 0
 		_SSRStrength("SSR Strength", Float) = 1
 		_EdgeFadeSSR("Edge Fade", Float) = 0.1
@@ -53,16 +55,21 @@ Shader "Mochie/Water" {
 		_FlowStrength("Strength", Float) = 0.1
 		_FlowMapScale("Scale", Vector) = (2,2,0,0)
 
-		[Enum(Off,0, Noise Texture,1, Gerstner Waves,2)]_VertOffsetMode("Mode", Int) = 0
+		[Enum(Off,0, Noise Texture,1, Gerstner Waves,2, Voronoi,3)]_VertOffsetMode("Mode", Int) = 0
 		[NoScaleOffset]_NoiseTex("Noise Texture", 2D) = "black" {}
-		_NoiseTexScale("Scale", Vector) = (1,1,0,0)
-		_NoiseTexScroll("Scrolling", Vector) = (0.3,0.06,0,0)
+		_NoiseTexScale("Scale", Vector) = (3,3,0,0)
+		_NoiseTexScroll("Scrolling", Vector) = (0,0.1,0,0)
 		_NoiseTexBlur("Blur", Range(0,1)) = 0.8
-		_WaveHeight("Strength", Float) = 0.1
+		_WaveHeight("Strength", Float) = 1
 		_Offset("Offset", Vector) = (0,1,0,0)
-		_WaveSpeedGlobal("Wave Global Speed", Float) = 1
+		_VoronoiScale("Scale", Vector) = (2,2,0,0)
+		_VoronoiScroll("Scrolling", Vector) = (0,-0.25,0,0)
+		_VoronoiWaveHeight("Strength", Float) = 1
+		_VoronoiOffset("Offset", Vector) = (0,1,0,0)
+		_VoronoiSpeed("Speed", Float) = 1.5
+		_WaveSpeedGlobal("Wave Global Speed", Float) = 2
 		_WaveScaleGlobal("Wave Global Scale", Float) = 1
-		_WaveStrengthGlobal("Wave Global Strength", Float) = 1
+		_WaveStrengthGlobal("Wave Global Strength", Float) = 0.5
 		_WaveSpeed0("Wave 1 Speed", Float) = 1
 		_WaveSpeed1("Wave 2 Speed", Float) = 1.1
 		_WaveSpeed2("Wave 3 Speed", Float) = 1.2
@@ -73,8 +80,8 @@ Shader "Mochie/Water" {
 		_WaveStrength1("Wave 2 Strength", Float) = 0.1
 		_WaveStrength2("Wave 3 Strength", Float) = 0.1
 		_WaveDirection0("Wave 1 Direction", Range(0,360)) = 0
-		_WaveDirection1("Wave 2 Direction", Range(0,360)) = 0
-		_WaveDirection2("Wave 3 Direction", Range(0,360)) = 0
+		_WaveDirection1("Wave 2 Direction", Range(0,360)) = 335
+		_WaveDirection2("Wave 3 Direction", Range(0,360)) = 13
 		_Turbulence("Turbulence", Float) = 1
 		_TurbulenceScale("Turbulence Scale", Float) = 3
 		_TurbulenceSpeed("Turbulence Speed", Float) = 0.3
@@ -82,15 +89,16 @@ Shader "Mochie/Water" {
 		_VertRemapMax("Remap Max", Float) = 1
 		
 		[Toggle(_CAUSTICS_ON)]_CausticsToggle("Enable", Int) = 1
+		_CausticsTex("Texture", 2D) = "black" {}
 		_CausticsDisp("Dispersion", Float) = 0.25
 		_CausticsDistortion("Distortion", Float) = 0.1
-		_CausticsDistortionScale("Distortion Scale", Float) = 1
-		_CausticsDistortionSpeed("Distortion Speed", Vector) = (-0.1, -0.1,0,0)
+		_CausticsDistortionScale("Distortion Scale", Float) = 0.2
+		_CausticsDistortionSpeed("Distortion Speed", Vector) = (0.1,0.1,0,0)
 		_CausticsColor("Color", Color) = (1,1,1,1)
 		_CausticsOpacity("Opacity", Float) = 1
 		_CausticsPower("Power", Float) = 1
 		_CausticsThreshold("Threshold", Float) = 0
-		_CausticsScale("Scale", Float) = 15
+		_CausticsScale("Scale", Float) = 7.5
 		_CausticsSpeed("Speed", Float) = 3
 		_CausticsFade("Depth Fade", Float) = 5
 		_CausticsRotation("Rotation", Vector) = (-20,0,20,0)
@@ -115,7 +123,7 @@ Shader "Mochie/Water" {
 		_FoamOpacity("Opacity", Float) = 3
 		_FoamOffset("Parallax Offset", Float) = 0
 		_FoamCrestThreshold("Crest Threshold", Float) = 0.5
-		_FoamCrestStrength("Crest Strength", Float) = 20
+		_FoamCrestStrength("Crest Strength", Float) = 1
 		[Toggle(_FOAM_STOCHASTIC_ON)]_FoamStochasticToggle("Stochastic Sampling", Int) = 0
 		_FoamDistortionStrength("Distortion Strength", Float) = 0.1
 		[ToggleUI]_FoamNormalToggle("Foam Normals", Int) = 1
@@ -129,6 +137,13 @@ Shader "Mochie/Water" {
 		_RippleScale("Ripple Scale", float) = 40
 		_RippleSpeed("Ripple Speed", float) = 10
 		_RippleStr("Ripple Strength", float) = 1
+
+		// Unused in this variant
+		[ToggleUI]_TessellationOffsetMask("Vertex Offset Mask", Int) = 1
+		_TessMin("Min Tessellation Factor", Float) = 1
+		_TessMax("Max Tessellation Factor", Float) = 9
+		_TessDistMin("Min Tessellation Distance", Float) = 25
+		_TessDistMax("Max Tessellation Distance", Float) = 50
 
 		[IntRange]_StencilRef("Stencil Reference", Range(1,255)) = 65
 
@@ -157,7 +172,7 @@ Shader "Mochie/Water" {
         Pass {
 			Tags {"LightMode"="ForwardBase"}
             CGPROGRAM
-            #pragma vertex vert
+			#pragma vertex vert
             #pragma fragment frag
             #pragma multi_compile_fwdbase
 			#pragma multi_compile_fog
@@ -168,7 +183,7 @@ Shader "Mochie/Water" {
 			#pragma shader_feature_local _SCREENSPACE_REFLECTIONS_ON
 			#pragma shader_feature_local _NORMALMAP_1_ON
 			#pragma shader_feature_local _FLOW_ON
-			#pragma shader_feature_local _VERTEX_OFFSET_ON
+			#pragma shader_feature_local _ _NOISE_TEXTURE_ON _GERSTNER_WAVES_ON _VORONOI_ON
 			#pragma shader_feature_local _DEPTHFOG_ON
 			#pragma shader_feature_local _FOAM_ON
 			#pragma shader_feature_local _CAUSTICS_ON
@@ -177,14 +192,15 @@ Shader "Mochie/Water" {
 			#pragma shader_feature_local _NORMALMAP_1_STOCHASTIC_ON
 			#pragma shader_feature_local _FOAM_STOCHASTIC_ON
 			#pragma shader_feature_local _BASECOLOR_STOCHASTIC_ON
-			#pragma shader_feature_local _GERSTNER_WAVES_ON
 			#pragma shader_feature_local _RAIN_ON
 			#pragma shader_feature_local _FOAM_NORMALS_ON
+			#pragma shader_feature_local _DEPTH_EFFECTS_ON
 			#pragma multi_compile_instancing
             #pragma target 5.0
 
 			#include "WaterDefines.cginc"
-			#include "WaterPass.cginc"
+			#include "WaterVert.cginc"
+			#include "WaterFrag.cginc"
 
             ENDCG
         }
@@ -193,7 +209,7 @@ Shader "Mochie/Water" {
 			Tags {"LightMode"="ForwardAdd"}
 			Blend SrcAlpha One
             CGPROGRAM
-            #pragma vertex vert
+			#pragma vertex vert
             #pragma fragment frag
             #pragma multi_compile_fwdadd fullshadows
 			#pragma multi_compile_fog
@@ -201,7 +217,7 @@ Shader "Mochie/Water" {
 			#pragma shader_feature_local _SPECULAR_MANUAL_ON
 			#pragma shader_feature_local _NORMALMAP_1_ON
 			#pragma shader_feature_local _FLOW_ON
-			#pragma shader_feature_local _VERTEX_OFFSET_ON
+			#pragma shader_feature_local _ _NOISE_TEXTURE_ON _GERSTNER_WAVES_ON _VORONOI_ON
 			#pragma shader_feature_local _DEPTHFOG_ON
 			#pragma shader_feature_local _FOAM_ON
 			#pragma shader_feature_local _CAUSTICS_ON
@@ -210,17 +226,19 @@ Shader "Mochie/Water" {
 			#pragma shader_feature_local _NORMALMAP_1_STOCHASTIC_ON
 			#pragma shader_feature_local _FOAM_STOCHASTIC_ON
 			#pragma shader_feature_local _BASECOLOR_STOCHASTIC_ON
-			#pragma shader_feature_local _GERSTNER_WAVES_ON
 			#pragma shader_feature_local _RAIN_ON
 			#pragma shader_feature_local _FOAM_NORMALS_ON
+			#pragma shader_feature_local _DEPTH_EFFECTS_ON
 			#pragma multi_compile_instancing
             #pragma target 5.0
 
 			#include "WaterDefines.cginc"
-			#include "WaterPass.cginc"
+			#include "WaterVert.cginc"
+			#include "WaterFrag.cginc"
 
             ENDCG
         }
+		
     }
 	CustomEditor "WaterEditor"
 }

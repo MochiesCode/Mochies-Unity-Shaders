@@ -8,6 +8,12 @@
 // Global
 MOCHIE_DECLARE_TEX2D_SCREENSPACE(_MSFXGrab); float4 _MSFXGrab_TexelSize, _MSFXGrab_ST;
 MOCHIE_DECLARE_TEX2D_SCREENSPACE(_CameraDepthTexture); float4 _CameraDepthTexture_TexelSize;
+
+float SampleDepthTex(float2 uv){
+	uv.y = _ProjectionParams.x * 0.5 + 0.5 - uv.y * _ProjectionParams.x;
+    return MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uv);
+}
+
 int _BlendMode;
 float _MinRange, _MaxRange;
 float _Opacity;
