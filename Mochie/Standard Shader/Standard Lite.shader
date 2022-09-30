@@ -102,7 +102,8 @@ Shader "Mochie/Standard (Lite)" {
 		[Enum(UV0,0,UV1,1, UV2,2, UV3,3, UV4,4)]_UVAlphaMask("UV Set for alpha mask", Float) = 0
 		[Enum(Red,0, Green,1, Blue,2, Alpha,3)]_AlphaMaskChannel("Alpha Mask Channel", Int) = 3
 		[Enum(UV0,0,UV1,1, UV2,2, UV3,3, UV4,4)]_UVRainMask("UV Set for rain mask", Float) = 0
-
+		[Enum(UV0,0,UV1,1, UV2,2, UV3,3, UV4,4)]_UVRimMask("UV Set for rim mask", Float) = 0
+		
 		[ToggleUI]_Filtering("Filtering", Int) = 0
 		_Hue("Hue", Range(0,1)) = 0
 		_Contrast("Contrast", Float) = 1
@@ -148,6 +149,9 @@ Shader "Mochie/Standard (Lite)" {
 		_RimStr("Rim Strength", Float) = 1
 		_RimWidth("Rim Width", Range (0,1)) = 0.5
 		_RimEdge("Rim Edge", Range(0,0.5)) = 0
+		_RimMask("Rim Mask", 2D) = "white" {}
+		_UVRimMaskScroll("Scrolling", Vector) = (0,0,0,0)
+		_UVRimMaskRotate("Rotation", Float) = 0
 
 		_MetaCull("", Int) = 0
 		[Enum(UnityEngine.Rendering.CullMode)]_Cull("", Int) = 2
@@ -161,7 +165,7 @@ Shader "Mochie/Standard (Lite)" {
 		[Enum(Off,0, On,1)]_UseSmoothness("Use Smoothness", Int) = 0
 		[Enum(Off,0, On,1)]_DetailUseSmoothness("Detail Use Smoothness", Int) = 0
 		[ToggleUI]_UseFresnel("Use Fresnel", Int) = 1
-		[ToggleUI]_BicubicLightmap("Bicubic Lightmap", Int) = 0
+		[ToggleUI]_BicubicLightmap("Bicubic Lightmap", Int) = 1
         [ToggleUI]_LTCGI("LTCGI", Int) = 0
     	[ToggleUI]_LTCGI_DIFFUSE_OFF("LTCGI Disable Diffuse", Int) = 0
 		[ToggleUI]_LTCGI_SPECULAR_OFF("LTCGI Disable Specular", Int) = 0

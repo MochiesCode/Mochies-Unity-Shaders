@@ -54,13 +54,64 @@ float _DoFP2O, _DoFRadius, _DoFFade;
 float _PixelationStr, _RippleGridStr;
 float _BlurRadius;
 
+// Audio Link
+MOCHIE_DECLARE_TEX2D(_AudioTexture);
+float _AudioLinkStrength;
+float _AudioLinkMin, _AudioLinkMax;
+
+int _AudioLinkFilteringBand;
+float _AudioLinkFilteringStrength;
+float _AudioLinkFilteringMin, _AudioLinkFilteringMax;
+
+int _AudioLinkShakeBand;
+float _AudioLinkShakeStrength;
+float _AudioLinkShakeMin, _AudioLinkShakeMax;
+
+int _AudioLinkDistortionBand;
+float _AudioLinkDistortionStrength;
+float _AudioLinkDistortionMin, _AudioLinkDistortionMax;
+
+int _AudioLinkBlurBand;
+float _AudioLinkBlurStrength;
+float _AudioLinkBlurMin, _AudioLinkBlurMax;
+
+int _AudioLinkNoiseBand;
+float _AudioLinkNoiseStrength;
+float _AudioLinkNoiseMin, _AudioLinkNoiseMax;
+
 // outputs
 float3 wPos;
 float3 wNorm;
 float depth;
 
 #if X_FEATURES
-// Fog
+	// Audio Link
+	int _AudioLinkZoomBand;
+	float _AudioLinkZoomStrength;
+	float _AudioLinkZoomMin, _AudioLinkZoomMax;
+
+	int _AudioLinkFogBand;
+	float _AudioLinkFogOpacity, _AudioLinkFogRadius;
+	float _AudioLinkFogMin, _AudioLinkFogMax;
+
+	int _AudioLinkTriplanarBand;
+	float _AudioLinkTriplanarOpacity;
+	float _AudioLinkTriplanarRadius;
+	float _AudioLinkTriplanarMin, _AudioLinkTriplanarMax;
+
+	int _AudioLinkOutlineBand;
+	float _AudioLinkOutlineStrength;
+	float _AudioLinkOutlineMin, _AudioLinkOutlineMax;
+
+	int _AudioLinkMiscBand;
+	float _AudioLinkMiscStrength;
+	float _AudioLinkMiscMin, _AudioLinkMiscMax;
+
+	int _AudioLinkSSTBand;
+	float _AudioLinkSSTStrength;
+	float _AudioLinkSSTMin, _AudioLinkSSTMax;
+
+	// Fog
 	int _Fog, _FogSafeZone, _FogUseGlobal;
 	float4 _FogColor;
 	float _FogMinRange, _FogMaxRange;
@@ -71,6 +122,7 @@ float depth;
 	// Screenspace Texture
 	int _SST, _SSTBlend, _SSTUseGlobal, _ManualScrub, _ScrubPos;
 	sampler2D _ScreenTex;
+	float4 _ScreenTex_ST;
 	float4 _SSTColor;
 	float _SSTMinRange, _SSTMaxRange;
 	float _SSTWidth, _SSTHeight, _SSTScale;
@@ -96,7 +148,7 @@ float depth;
 	float _ZoomStr, _ZoomStrR, _ZoomStrG, _ZoomStrB;
 
 	// Extras
-	int _OLUseGlobal, _OutlineType, _Shift, _InvertX, _InvertY, _Sobel, _DepthBufferToggle;
+	int _OLUseGlobal, _OutlineType, _Shift, _InvertX, _InvertY, _Sobel, _DepthBufferToggle, _SobelClearInner;
 	int _AuraSampleCount;
 	float _OLMinRange, _OLMaxRange, _AuraFade, _AuraStr;
 	float4 _OutlineCol, _BackgroundCol;
@@ -106,6 +158,14 @@ float depth;
 	int _Pulse, _WaveForm, _PulseColor;
 	float _PulseSpeed, _NormalMapFilter, _NMFToggle, _NMFOpacity, _DBOpacity;
 #endif
+
+struct audioLinkData {
+	bool textureExists;
+	float bass;
+	float lowMid;
+	float upperMid;
+	float treble;
+};
 
 struct appdata {
     float4 vertex : POSITION;

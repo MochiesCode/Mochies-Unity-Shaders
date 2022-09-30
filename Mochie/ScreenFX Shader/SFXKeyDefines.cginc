@@ -47,4 +47,6 @@
 
 #define NOISE_ENABLED defined(_NOISE_ON)
 
+#define AUDIOLINK_ENABLED defined(_AUDIOLINK_ON)
+
 #endif

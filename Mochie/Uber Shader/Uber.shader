@@ -29,7 +29,9 @@ Shader "Mochie/Uber" {
 		_AlphaMask("tex", 2D) = "white" {}
 		[Enum(Red,0, Green,1, Blue,2, Alpha,3)]_AlphaMaskChannel("en03", Int) = 0
 		_MainTexScroll("vec", Vector) = (0,0,0,0)
-
+		_MainTexRot("fl", Float) = 0
+		_DetailRot("fl", Float) = 0
+		
 		_CubeBlendMask("tex", 2D) = "white" {} // MainTex (Cubemap)
 		_CubeBlend("ra", Range(0,1)) = 0
 		_MainTexCube0("tex", CUBE) = "white" {}

@@ -613,7 +613,7 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
 	float4 screenPos = 0;
 	#if SSR_ENABLED
 		screenUVs = i.screenPos.xy / (i.screenPos.w+0.0000000001);
-		#if UNITY_SINGLE_PASS_STEREO
+		#if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
 			screenUVs.x *= 2;
 		#endif
 		screenPos = i.screenPos;
@@ -746,7 +746,7 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
         c.rgb += areaLitColor * _AreaLitStrength;
     #endif
 
-    Rim(s.posWorld, s.normalWorld, c.rgb);
+    Rim(s.posWorld, s.normalWorld, c.rgb, i.tex2.zw);
 
     UNITY_EXTRACT_FOG_FROM_EYE_VEC(i);
     UNITY_APPLY_FOG(_unity_fogCoord, c.rgb);

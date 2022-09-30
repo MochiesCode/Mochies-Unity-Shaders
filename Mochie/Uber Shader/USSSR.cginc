@@ -25,7 +25,7 @@ float3 GetBlurredGP(const float2 texelSize, const float2 uvs, const float dim){
 
 float4 ReflectRay(float3 reflectedRay, float3 rayDir, float _LRad, float _SRad, float _Step, float noise, const int maxIterations){
 	
-	#if UNITY_SINGLE_PASS_STEREO
+	#if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
 		half x_min = 0.5*unity_StereoEyeIndex;
 		half x_max = 0.5 + 0.5*unity_StereoEyeIndex;
 	#else
@@ -114,7 +114,7 @@ float4 GetSSRColor(const float4 wPos, const float3 viewDir, float3 rayDir, const
 		float4 uvs = UNITY_PROJ_COORD(ComputeGrabScreenPos(mul(UNITY_MATRIX_P, finalPos)));
 		uvs.xy = uvs.xy / uvs.w;
 
-		#if UNITY_SINGLE_PASS_STEREO
+		#if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
 			float xfade = 1;
 		#else
 			float xfade = smoothstep(0, _EdgeFade, uvs.x)*smoothstep(1, 1-_EdgeFade, uvs.x); //Fade x uvs out towards the edges

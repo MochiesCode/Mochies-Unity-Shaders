@@ -2,6 +2,44 @@
 #define SFX_FUNCS_INCLUDED
 
 // ---------------------------
+// Audio Link
+// ---------------------------
+
+float GetAudioLinkBand(audioLinkData ald, float strength, int band, float remapMin, float remapMax){
+	float4 bands = float4(ald.bass, ald.lowMid, ald.upperMid, ald.treble);
+	float remapped = Remap(bands[band], _AudioLinkMin, _AudioLinkMax, remapMin, remapMax);
+	return lerp(1, remapped, strength*_AudioLinkStrength);
+}
+
+void GrabExists(inout audioLinkData ald, inout float versionBand, inout float versionTime){
+	float width = 0;
+	float height = 0;
+	_AudioTexture.GetDimensions(width, height);
+	if (width > 64){
+		versionBand = 0.0625;
+		versionTime = 0.25;
+	}
+	ald.textureExists = width > 16;
+}
+
+float SampleAudioTexture(float time, float band){
+	return MOCHIE_SAMPLE_TEX2D_LOD(_AudioTexture, float2(time,band),0);
+}
+
+void InitializeAudioLink(inout audioLinkData ald, float time){
+	float versionBand = 1;
+	float versionTime = 1;
+	GrabExists(ald, versionBand, versionTime);
+	if (ald.textureExists){
+		time *= versionTime;
+		ald.bass = SampleAudioTexture(time, 0.125 * versionBand);
+		ald.lowMid = SampleAudioTexture(time, 0.375 * versionBand);
+		ald.upperMid = SampleAudioTexture(time, 0.625 * versionBand);
+		ald.treble = SampleAudioTexture(time, 0.875 * versionBand);
+	}
+}
+
+// ---------------------------
 // Triplanar/Depth
 // ---------------------------
 
@@ -25,15 +63,20 @@ float GetRadius(v2f i, float3 pos, float range, float falloff){
     return dist;
 }
 
-float GetTriplanarRadius(v2f i, float3 pos, float range, float falloff){
+float GetTriplanarRadius(v2f i, float3 pos, float range, float falloff, float audioLinkMultiplier){
 	GetDepth(i, wPos, wNorm, depth);
 	float dist = distance(wPos, pos);
+	#if AUDIOLINK_ENABLED
+		range *= audioLinkMultiplier;
+	#endif
 	#if TRIPLANAR_ENABLED
-		if (_Triplanar == 1)
+		if (_Triplanar == 1){
 			dist = smoothstep(range, range - falloff, dist);
-		else if (_Triplanar == 2)
+		}
+		else if (_Triplanar == 2){
 			_TPScanFade = lerp(_TPThickness-0.001, -3, _TPScanFade);
 			dist = smoothstep(range+_TPThickness, range+_TPScanFade, dist) * smoothstep(range-_TPThickness, range-_TPScanFade, dist);
+		}
 	#endif
 	return dist;
 }
@@ -108,21 +151,29 @@ void ApplyGeneralFilters(inout float3 col){
     col *= _Brightness;
 }
 
-void ApplyNoise(v2f i, inout float3 col){
+void ApplyNoise(v2f i, inout float3 col, audioLinkData ald){
 	float3 noiseCol = col;
 	noiseCol += GetScanNoise(i.uv, _ScanLine, _ScanLineThick, _ScanLineSpeed);
 	noiseCol += GetNoiseRGB(i.uv, _NoiseRGB);
 	noiseCol += GetNoiseSFX(i.uv, _Noise);
-	col = lerp(col, noiseCol, _NoiseStrength * i.noiseF * i.pulseSpeed);
+	float interpolator = _NoiseStrength * i.noiseF * i.pulseSpeed;
+	#if AUDIOLINK_ENABLED
+		interpolator *= GetAudioLinkBand(ald, _AudioLinkNoiseStrength, _AudioLinkNoiseBand, _AudioLinkNoiseMin, _AudioLinkNoiseMax);
+	#endif
+	col = lerp(col, noiseCol, interpolator);
 }
 
-void ApplyColor(v2f i, inout float3 col){
+void ApplyColor(v2f i, inout float3 col, audioLinkData ald){
 	float3 rgb = GetInversion(col) * _Color;
 	_Hue += lerp(0, frac(_Time.y*_AutoShiftSpeed), _AutoShift);
 	float3 hsv = HSVShift(rgb, _Hue, 0, 0);
-	hsv *= _RGB;
-	ApplyGeneralFilters(hsv);
-	col = lerp(col, hsv, _FilterStrength * i.colorF * i.pulseSpeed);
+	float3 filteredCol = hsv*_RGB;
+	ApplyGeneralFilters(filteredCol);
+	float interpolator = _FilterStrength * i.colorF * i.pulseSpeed;
+	#if AUDIOLINK_ENABLED
+		interpolator *= GetAudioLinkBand(ald, _AudioLinkFilteringStrength, _AudioLinkFilteringBand, _AudioLinkFilteringMin, _AudioLinkFilteringMax);
+	#endif
+	col = lerp(col, filteredCol, interpolator);
 }
 
 void ApplyTransparency(v2f i, inout float4 col){
@@ -171,19 +222,25 @@ float2 GetShakeTime(){
     return shakeTime;
 }
 
-void ApplyNoiseShake(inout v2f i){
+void ApplyNoiseShake(inout v2f i, audioLinkData ald){
 	_Amplitude *= 0.1;
+	#if AUDIOLINK_ENABLED
+		_Amplitude *= GetAudioLinkBand(ald, _AudioLinkShakeStrength, _AudioLinkShakeBand, _AudioLinkShakeMin, _AudioLinkShakeMax);
+	#endif
 	float2 offset = GetShakeTime();
 	offset = tex2Dlod(_ShakeNoiseTex, float4(offset.xy,0,0)).rg-0.27;
 	i.uv.xy += (offset * i.pulseSpeed * i.shakeF * _Amplitude);
 }
 
-void ApplyShake(inout v2f i){
+void ApplyShake(inout v2f i, audioLinkData ald){
 	if (_ShakeModel != 3){
 		float2 uv0 = i.uv.xy;
 		float2 shakeTime = GetShakeTime();
 		_Amplitude *= 50;
 		_Amplitude *= i.shakeF;
+		#if AUDIOLINK_ENABLED
+			_Amplitude *= GetAudioLinkBand(ald, _AudioLinkShakeStrength, _AudioLinkShakeBand, _AudioLinkShakeMin, _AudioLinkShakeMax);
+		#endif
 		uv0.x += shakeTime.x * (_MSFXGrab_TexelSize.x * _Amplitude);
 		uv0.y += shakeTime.y * (_MSFXGrab_TexelSize.y * _Amplitude);
 		i.uv.xy = uv0;
@@ -206,22 +263,28 @@ float3 GetDistortionOffset(float3 uv0, float value){
     return offset;
 }
 
-void ApplyMapDistortion(inout v2f i){
+void ApplyMapDistortion(inout v2f i, audioLinkData ald){
     float3 uv0 = i.uv.xyz;
 	float2 uv1 = i.uvd;
 	uv1.x *= 1.4;
 	_DistortionStr *= 128;
 	_DistortionStr *= i.distortionF;
+	#if AUDIOLINK_ENABLED
+		_DistortionStr *= GetAudioLinkBand(ald, _AudioLinkDistortionStrength, _AudioLinkDistortionBand, _AudioLinkDistortionMin, _AudioLinkDistortionMax);
+	#endif
 	float2 distMap = UnpackNormal(tex2D(_NormalMap, uv1)).rg;
 	float2 offset = distMap * _DistortionStr * _MSFXGrab_TexelSize.xy;
 	uv0.xy = (offset * UNITY_Z_0_FAR_FROM_CLIPSPACE(uv0.z)) + uv0.xy;
 	i.uv.xy = uv0.xy;
 }
 
-void ApplyWGDistortion(inout v2f i){
+void ApplyWGDistortion(inout v2f i, audioLinkData ald){
     float4 uv0 = i.uv;
 	_DistortionStr *= 128;
 	_DistortionStr *= i.distortionF;
+	#if AUDIOLINK_ENABLED
+		_DistortionStr *= GetAudioLinkBand(ald, _AudioLinkDistortionStrength, _AudioLinkDistortionBand, _AudioLinkDistortionMin, _AudioLinkDistortionMax);
+	#endif
 	float3 distortPos = lerp(i.cameraPos, i.objPos, _DistortionP2O);
 	float radius = GetRadius(i, distortPos, _DistortionRadius, _DistortionFade);
 	float2 distMap = GetTriplanar(i, _NormalMap, _NormalMap, _NormalMap_ST.xy, 0, 0).rg;	
@@ -251,7 +314,12 @@ float GetDoF(v2f i){
 	return saturate(GetRadius(i, focusPos, _DoFRadius, _DoFFade));
 }
 
-void ApplyRipplePixelate(inout v2f i){
+void ApplyRipplePixelate(inout v2f i, audioLinkData ald){
+	#if AUDIOLINK_ENABLED
+		float audioLinkMultiplier = GetAudioLinkBand(ald, _AudioLinkBlurStrength, _AudioLinkBlurBand, _AudioLinkBlurMin, _AudioLinkBlurMax);
+		_RippleGridStr *= audioLinkMultiplier;
+		_PixelationStr *= audioLinkMultiplier;
+	#endif
 	if (_RippleGridStr > 0){
 		_RippleGridStr *= i.blurF;
 		i.uv.xy += sin(i.pos) * _RippleGridStr/1000;
@@ -264,8 +332,12 @@ void ApplyRipplePixelate(inout v2f i){
 	}
 }
 
-void ApplyPixelBlur(v2f i, inout float3 blurCol){
+void ApplyPixelBlur(v2f i, inout float3 blurCol, audioLinkData ald){
 	_BlurStr *= 16;
+	#if AUDIOLINK_ENABLED
+		float audioLinkMultiplier = GetAudioLinkBand(ald, _AudioLinkBlurStrength, _AudioLinkBlurBand, _AudioLinkBlurMin, _AudioLinkBlurMax);
+		_BlurStr *= audioLinkMultiplier;
+	#endif
 	#if BLUR_Y_ENABLED
 		#if CHROM_ABB_ENABLED
 			ApplyChromaticAbberationY(_MSFXGrab_TexelSize.xy, i.uv, _PixelBlurSamples, _BlurStr, blurCol);
@@ -282,10 +354,14 @@ void ApplyPixelBlur(v2f i, inout float3 blurCol){
 	ApplyCrush(blurCol, _CrushBlur);
 }
 
-void ApplyDitherBlur(inout v2f i){
+void ApplyDitherBlur(inout v2f i, audioLinkData ald){
     #if BLUR_DITHER_ENABLED && !CHROM_ABB_ENABLED
         _BlurStr *= 0.01;
-        float2 noise = GetNoiseRGB(i.uv, _BlurStr).rg;
+		#if AUDIOLINK_ENABLED
+			float audioLinkMultiplier = GetAudioLinkBand(ald, _AudioLinkBlurStrength, _AudioLinkBlurBand, _AudioLinkBlurMin, _AudioLinkBlurMax);	
+			_BlurStr *= audioLinkMultiplier;
+		#endif
+		float2 noise = GetNoiseRGB(i.uv, _BlurStr).rg;
 		i.uv.y += noise.g;
 		#if !BLUR_Y_ENABLED
 			i.uv.x += noise.r;
@@ -293,8 +369,12 @@ void ApplyDitherBlur(inout v2f i){
     #endif
 }
 
-void ApplyRGBDitherBlur(v2f i, inout float3 col){
+void ApplyRGBDitherBlur(v2f i, inout float3 col, audioLinkData ald){
 	_BlurStr *= 0.01;
+	#if AUDIOLINK_ENABLED
+		float audioLinkMultiplier = GetAudioLinkBand(ald, _AudioLinkBlurStrength, _AudioLinkBlurBand, _AudioLinkBlurMin, _AudioLinkBlurMax);	
+		_BlurStr *= audioLinkMultiplier;
+	#endif
 	float3 noise = GetNoiseRGB(i.uv, _BlurStr);
 	i.uv.xy /= i.uv.w;
 	#if BLUR_Y_ENABLED
@@ -312,13 +392,17 @@ void ApplyRGBDitherBlur(v2f i, inout float3 col){
 	col = float3(red, green, blue);
 }
 
-void ApplyBlur(v2f i, inout float3 col, float3 blurCol){
+void ApplyBlur(v2f i, inout float3 col, float3 blurCol, audioLinkData ald){
 	_BlurStr *= i.blurF;
 	#if BLUR_PIXEL_ENABLED
-		ApplyPixelBlur(i, blurCol);
+		ApplyPixelBlur(i, blurCol, ald);
 	#elif BLUR_DITHER_ENABLED && CHROM_ABB_ENABLED
-		ApplyRGBDitherBlur(i, blurCol);
+		ApplyRGBDitherBlur(i, blurCol, ald);
 	#elif BLUR_RADIAL_ENABLED
+		#if AUDIOLINK_ENABLED
+			float audioLinkMultiplier = GetAudioLinkBand(ald, _AudioLinkBlurStrength, _AudioLinkBlurBand, _AudioLinkBlurMin, _AudioLinkBlurMax);	
+			_BlurStr *= audioLinkMultiplier;
+		#endif
 		ApplyRadialBlur(i, i.uv, _BlurSamples, _BlurRadius, _BlurStr, blurCol);
 	#endif
 	col = lerp(col, blurCol, _BlurOpacity);

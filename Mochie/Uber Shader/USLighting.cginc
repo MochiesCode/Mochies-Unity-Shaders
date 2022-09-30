@@ -232,7 +232,7 @@ lighting GetLighting(g2f i, masks m, float3 atten, bool frontFace){
 	#endif
 
 	l.screenUVs = i.grabPos.xy / (i.grabPos.w+0.0000000001);
-	#if UNITY_SINGLE_PASS_STEREO
+	#if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
 		l.screenUVs.y *= 0.5555555;
 	#else
 		l.screenUVs.x *= 0.5625;

@@ -51,9 +51,13 @@ Shader "Mochie/Water" {
 
 		[Toggle(_FLOW_ON)]_FlowToggle("Enable", Int) = 1
 		[NoScaleOffset]_FlowMap("Flow Map", 2D) = "black" {}
+		[Enum(UV0,0, UV1,1, UV2,2, UV3,3)]_FlowMapUV("Flow Map UV Set", Int) = 0
 		_FlowSpeed("Speed", Float) = 0.25
 		_FlowStrength("Strength", Float) = 0.1
 		_FlowMapScale("Scale", Vector) = (2,2,0,0)
+		_BlendNoise("Blend Noise", 2D) = "white" {}
+		_BlendNoiseScale("Blend Noise Scale", Vector) = (2,2,0,0)
+		[Enum(Flowmap Alpha,0, Separate Texture,1)]_BlendNoiseSource("Blend Noise Source", Int) = 0
 
 		[Enum(Off,0, Noise Texture,1, Gerstner Waves,2, Voronoi,3)]_VertOffsetMode("Mode", Int) = 0
 		[NoScaleOffset]_NoiseTex("Noise Texture", 2D) = "black" {}

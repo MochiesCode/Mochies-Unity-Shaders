@@ -189,7 +189,8 @@ namespace Mochie {
 		public static GUIContent waterNormalMap = new GUIContent("Normal Map", "Determines the behavior of light on the surface. Primarily used to fake small details or smooth bevels on sharp edges. Also serves as the source for refraction and distortion effects on textures.");
 		public static GUIContent waterRoughness = new GUIContent("Roughness", roughnessText.tooltip);
 		public static GUIContent waterMetallic = new GUIContent("Metallic", "How metallic a surface should look. Higher values will decrease visibility of base color in favor of reflective color to simulate the behavior of metal surfaces in real life. Lower values will look more akin to normnal water.");
-
+		public static GUIContent blendNoise = new GUIContent("Blend Noise", "Each normal map (and some other textures) are sampled twice with different uvs. This texture will determine the pattern for blending between the two samples.");
+		
 		// Particles
 		public static GUIContent softening = new GUIContent("Softening", "Fades out the edges of particles where they interesect with opaque geometry to hide harsh cutoffs.");
 		public static GUIContent falloffMode = new GUIContent("Mode", "Per Particle:\nFalloff will be based on the distance from the center of the particle.\n\nPer Vertex:\nFalloff will be based on the distance from the vertex of a particle. Mostly useful for larger mesh particles.");

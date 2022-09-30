@@ -9,7 +9,7 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: Screen FX Mat
   m_Shader: {fileID: 4800000, guid: 0d1d977ca72938b4bb8f3ed06b9a8645, type: 3}
-  m_ShaderKeywords: _BLUR_PIXEL_ON _COLOR_ON
+  m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -42,6 +42,56 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Floats:
     - _Amplitude: 0
+    - _AudioLinkBlurBand: 0
+    - _AudioLinkBlurMax: 1
+    - _AudioLinkBlurMin: 0
+    - _AudioLinkBlurStrength: 0
+    - _AudioLinkDistortionBand: 0
+    - _AudioLinkDistortionMax: 1
+    - _AudioLinkDistortionMin: 0
+    - _AudioLinkDistortionStrength: 0
+    - _AudioLinkFilteringBand: 0
+    - _AudioLinkFilteringMax: 1
+    - _AudioLinkFilteringMin: 0
+    - _AudioLinkFilteringStrength: 0
+    - _AudioLinkFogBand: 0
+    - _AudioLinkFogMax: 1
+    - _AudioLinkFogMin: 0
+    - _AudioLinkFogOpacity: 0
+    - _AudioLinkFogRadius: 0
+    - _AudioLinkMax: 1
+    - _AudioLinkMin: 0
+    - _AudioLinkMiscBand: 0
+    - _AudioLinkMiscMax: 1
+    - _AudioLinkMiscMin: 0
+    - _AudioLinkMiscStrength: 0
+    - _AudioLinkNoiseBand: 0
+    - _AudioLinkNoiseMax: 1
+    - _AudioLinkNoiseMin: 0
+    - _AudioLinkNoiseStrength: 0
+    - _AudioLinkOutlineBand: 0
+    - _AudioLinkOutlineMax: 1
+    - _AudioLinkOutlineMin: 0
+    - _AudioLinkOutlineStrength: 0
+    - _AudioLinkSSTBand: 0
+    - _AudioLinkSSTMax: 1
+    - _AudioLinkSSTMin: 0
+    - _AudioLinkSSTStrength: 0
+    - _AudioLinkShakeBand: 0
+    - _AudioLinkShakeMax: 1
+    - _AudioLinkShakeMin: 0
+    - _AudioLinkShakeStrength: 0
+    - _AudioLinkStrength: 1
+    - _AudioLinkToggle: 0
+    - _AudioLinkTriplanarBand: 0
+    - _AudioLinkTriplanarMax: 1
+    - _AudioLinkTriplanarMin: 0
+    - _AudioLinkTriplanarOpacity: 0
+    - _AudioLinkTriplanarRadius: 0
+    - _AudioLinkZoomBand: 0
+    - _AudioLinkZoomMax: 1
+    - _AudioLinkZoomMin: 0
+    - _AudioLinkZoomStrength: 0
     - _AuraFade: 0.5
     - _AuraSampleCount: 43
     - _AuraStr: 0.25
@@ -50,7 +100,7 @@ Material:
     - _BlendMode: 0
     - _BlurMaxRange: 15
     - _BlurMinRange: 8
-    - _BlurModel: 1
+    - _BlurModel: 0
     - _BlurOpacity: 1
     - _BlurRadius: 1
     - _BlurSamples: 10
@@ -81,7 +131,7 @@ Material:
     - _DoFP2O: 1
     - _DoFRadius: 2
     - _DstBlend: 0
-    - _FilterModel: 1
+    - _FilterModel: 0
     - _FilterStrength: 1
     - _Flavor: 0
     - _Fog: 0
@@ -150,7 +200,7 @@ Material:
     - _SSTMaxRange: 15
     - _SSTMinRange: 8
     - _SSTRowsY: 2
-    - _SSTScale: 1
+    - _SSTScale: 2
     - _SSTUD: 0
     - _SSTUseGlobal: 1
     - _SSTWidth: 1
@@ -173,6 +223,7 @@ Material:
     - _ShiftX: 0
     - _ShiftY: 0
     - _Sizzle: 0
+    - _SobelClearInner: 1
     - _SrcBlend: 1
     - _TPFade: 0.5
     - _TPMaxRange: 15

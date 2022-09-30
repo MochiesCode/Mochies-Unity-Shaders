@@ -20,6 +20,10 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
+    - _BlendNoise:
+        m_Texture: {fileID: 2800000, guid: 352f401c145570f488487622cd5fdaa6, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _CausticsTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -65,6 +69,7 @@ Material:
     - _BaseColorDistortionStrength: 0.1
     - _BaseColorOffset: 0
     - _BaseColorStochasticToggle: 0
+    - _BlendNoiseSource: 0
     - _CausticsDisp: 0.25
     - _CausticsDistortion: 0.1
     - _CausticsDistortionScale: 0.2
@@ -76,13 +81,14 @@ Material:
     - _CausticsSurfaceFade: 100
     - _CausticsThreshold: 0
     - _CausticsToggle: 1
-    - _CullMode: 0
+    - _CullMode: 2
     - _DepthEffects: 1
     - _DistortionStrength: 0.1
     - _EdgeFadeOffset: 0.5
     - _EdgeFadePower: 200
     - _EdgeFadeSSR: 0.1
     - _EdgeFadeToggle: 1
+    - _FlowMapUV: 0
     - _FlowSpeed: 0.25
     - _FlowStrength: 0.1
     - _FlowToggle: 1
@@ -125,8 +131,8 @@ Material:
     - _SpecStrength: 1
     - _Specular: 1
     - _StencilRef: 65
-    - _TessDistMax: 25
-    - _TessDistMin: 10
+    - _TessDistMax: 50
+    - _TessDistMin: 25
     - _TessMax: 9
     - _TessMin: 1
     - _TessellationOffsetMask: 1
@@ -157,6 +163,7 @@ Material:
     - _ZWrite: 0
     m_Colors:
     - _AngleTint: {r: 1, g: 1, b: 1, a: 1}
+    - _BlendNoiseScale: {r: 2, g: 2, b: 0, a: 0}
     - _CausticsColor: {r: 1, g: 1, b: 1, a: 1}
     - _CausticsDistortionSpeed: {r: 0.1, g: 0.1, b: 0, a: 0}
     - _CausticsRotation: {r: -20, g: 0, b: 20, a: 0}

@@ -156,7 +156,7 @@ internal class USEditor : ShaderGUI {
 
 	static readonly string unityFolderPath = "Assets/Mochie/Unity";
 	string header = "Header_Pro";
-	string versionLabel = "v1.25";
+	string versionLabel = "v1.26";
 	// β
 	
 	MaterialProperty _RenderMode = null; 
@@ -674,6 +674,8 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _MatcapNormal1Scroll = null;
 	MaterialProperty _MatcapNormal1Mix = null;
 	MaterialProperty _ACES = null;
+	MaterialProperty _MainTexRot = null;
+	MaterialProperty _DetailRot = null;
 
 	MaterialProperty _VRCFallback = null;
 	MaterialProperty _NaNLmao = null;
@@ -784,6 +786,7 @@ internal class USEditor : ShaderGUI {
 					if (_MirrorBehavior.floatValue == 2)
 						me.TexturePropertySingleLine(Tips.mirrorTexLabel, _MirrorTex);
 					MGUI.TextureSOScroll(me, _MainTex, _MainTexScroll);
+					me.ShaderProperty(_MainTexRot, "Rotation");
 					break;
 				
 				// Cubemap Only
@@ -803,6 +806,7 @@ internal class USEditor : ShaderGUI {
 					if (_MirrorBehavior.floatValue == 2)
 						me.TexturePropertySingleLine(Tips.mirrorTexLabel, _MirrorTex);
 					MGUI.TextureSOScroll(me, _MainTex, _MainTexScroll);
+					me.ShaderProperty(_MainTexRot, "Rotation");
 
 					me.TexturePropertySingleLine(new GUIContent("Blend"), _CubeBlendMask, _CubeBlendMask.textureValue ? null : _CubeBlend);
 
@@ -896,6 +900,7 @@ internal class USEditor : ShaderGUI {
 					me.TexturePropertySingleLine(Tips.occlusionTexLabel, _DetailOcclusionMap, usingDetOcc ? _DetailOcclusionStrength : null, usingDetOcc ? _DetailOcclusionBlending : null);
 					if (usingDetAlbedo || usingDetNormal || usingDetRough || usingDetOcc) {
 						MGUI.TextureSOScroll(me, _DetailAlbedoMap, _DetailScroll);
+						me.ShaderProperty(_DetailRot, "Rotation");
 					}
 				});
 				MGUI.Space2();
@@ -2147,6 +2152,10 @@ internal class USEditor : ShaderGUI {
 		};
 		Foldouts.Foldout("RENDER SETTINGS", foldouts, renderTabButtons, mat, me, renderTabAction);
 
+		if (isUberX){
+			MGUI.Space10();
+			MGUI.DisplayWarning("Please note that the X version of this shader is, by default, more expensive than the non X version. If you are not using anything from the Special Features tab it is HIGHLY recommended to use the normal Uber shader instead, as there is no visual difference between the two.");
+		}
 		MGUI.DoFooter(versionLabel);
     }
 

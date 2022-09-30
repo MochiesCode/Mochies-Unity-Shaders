@@ -26,7 +26,7 @@ v2g vert (appdata v) {
 	o.isReflection = IsInMirror();
 	o.objPos = mul(unity_ObjectToWorld, float4(0,0,0,1)).xyz;
 	o.cameraPos = _WorldSpaceCameraPos;
-	#if UNITY_SINGLE_PASS_STEREO
+	#if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
 		o.cameraPos = (unity_StereoWorldSpaceCameraPos[0] + unity_StereoWorldSpaceCameraPos[1])*0.5;
 	#endif
 
@@ -84,6 +84,9 @@ v2g vert (appdata v) {
 	o.uv2.zw = TRANSFORM_TEX(v.uv, _RimTex) + (_Time.y * _RimScroll);
 	o.uv3.xy = TRANSFORM_TEX(v.uv, _DistortUVMap) + (_Time.y * _DistortUVScroll);
 	o.color = v.color;
+
+	o.uv.xy = Rotate2D(o.uv.xy, _MainTexRot);
+	o.uv2.xy = Rotate2D(o.uv2.xy, _DetailRot);
 
 	UNITY_TRANSFER_SHADOW(o, v.uv1);
 	UNITY_TRANSFER_FOG(o, o.pos);
@@ -234,7 +237,9 @@ float4 frag (g2f i, bool frontFace : SV_IsFrontFace) : SV_Target {
 		ApplyHeightPreview(diffuse.rgb);
 	#endif
 	
-	return diffuse + (mainTexSampler*0.000001);
+	float4 finalCol = diffuse + (mainTexSampler*0.000001);
+	finalCol.a = saturate(finalCol.a);
+	return finalCol;
 }
 #endif
 
@@ -276,7 +281,7 @@ v2g vert (appdata v) {
 		v.vertex.xyz += _OutlineThicc*v.normal*0.01*_OutlineMult*o.thicknessMask*lerp(1,v.color.rgb,_UseVertexColor);
 		o.objPos = mul(unity_ObjectToWorld, float4(0,0,0,1)).xyz;
 		o.cameraPos = _WorldSpaceCameraPos;
-		#if UNITY_SINGLE_PASS_STEREO
+		#if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
 			o.cameraPos = (unity_StereoWorldSpaceCameraPos[0] + unity_StereoWorldSpaceCameraPos[1])*0.5;
 		#endif
 
@@ -334,6 +339,9 @@ v2g vert (appdata v) {
 		o.uv2.zw = TRANSFORM_TEX(v.uv, _OutlineTex) + (_Time.y * _OutlineScroll);
 		o.uv3.xy = TRANSFORM_TEX(v.uv, _DistortUVMap) + (_Time.y * _DistortUVScroll);
 		o.color = v.color;
+
+		o.uv.xy = Rotate2D(o.uv.xy, _MainTexRot);
+		o.uv2.xy = Rotate2D(o.uv2.xy, _DetailRot);
 
 		UNITY_TRANSFER_SHADOW(o, v.uv1);
 		UNITY_TRANSFER_FOG(o, o.pos);
@@ -477,7 +485,9 @@ float4 frag(g2f i) : SV_Target {
 	#endif
 
 	UNITY_APPLY_FOG(i.fogCoord, col);
-    return col + (mainTexSampler*0.000001);
+	float4 finalCol = col + (mainTexSampler*0.000001);
+	finalCol.a = saturate(finalCol.a);
+    return finalCol;
 }
 #endif
 
@@ -524,7 +534,7 @@ v2g vert (appdata v) {
 	#endif
 	o.objPos = mul(unity_ObjectToWorld, float4(0,0,0,1)).xyz;
 	o.cameraPos = _WorldSpaceCameraPos;
-	#if UNITY_SINGLE_PASS_STEREO
+	#if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
 		o.cameraPos = (unity_StereoWorldSpaceCameraPos[0] + unity_StereoWorldSpaceCameraPos[1])*0.5;
 	#endif
 
@@ -568,6 +578,7 @@ v2g vert (appdata v) {
 
 	o.localPos = localPos;
 	o.uv.xy = TRANSFORM_TEX(v.uv, _MainTex) + (_Time.y * _MainTexScroll);
+	o.uv.xy = Rotate2D(o.uv.xy, _MainTexRot);
 	o.color = v.color;
 
 	TRANSFER_SHADOW_CASTER(o)

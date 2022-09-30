@@ -153,12 +153,17 @@ float _LTCGIStrength;
 float _AreaLitStrength;
 float _AreaLitRoughnessMult;
 
+sampler2D _RimMask;
+float4 _RimMask_ST;
 float3 _RimCol;
+float2 _UVRimMaskScroll;
+float _UVRimMaskRotate;
 float _RimWidth;
 float _RimEdge;
 float _RimStr;
 int _RimBlending;
 int _RimToggle;
+int _UVRimMask;
 
 Texture2D _RNM0, _RNM1, _RNM2;
 SamplerState sampler_RNM0, sampler_RNM1, sampler_RNM2;
@@ -303,6 +308,14 @@ void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1, ino
 		texcoord2.xy = Rotate2D(SelectUVSet(v, _UVAlphaMask), _UV4Rotate);
 		texcoord2.xy = TRANSFORM_TEX(texcoord2.xy, _AlphaMask);
 		texcoord2.xy += _Time.y * _UV4Scroll;
+	#endif
+
+	#ifdef FULL_VERSION
+		if (_RimToggle == 1){
+			texcoord2.zw = Rotate2D(SelectUVSet(v, _UVRimMask), _UVRimMaskRotate);
+			texcoord2.zw = TRANSFORM_TEX(texcoord2.zw, _RimMask);
+			texcoord2.zw += _Time.y * _UVRimMaskScroll;
+		}
 	#endif
 
 	#ifdef _RAIN_ON
@@ -463,14 +476,15 @@ half3 Emission(float2 uv, float2 uvMask, SampleData sd)
 	#endif
 }
 
-void Rim(float3 worldPos, float3 normal, inout float3 col){
+void Rim(float3 worldPos, float3 normal, inout float3 col, float2 uv){
 	#ifdef FULL_VERSION
 		if (_RimToggle == 1){
+			float rimMask = tex2D(_RimMask, uv);
 			float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - worldPos);
 			float vdn = abs(dot(viewDir, normal));
 			float rim = pow((1-vdn), (1-_RimWidth) * 10);
 			rim = smoothstep(_RimEdge, 1-_RimEdge, rim);
-			col = BlendColors(col, _RimCol, _RimBlending, rim*_RimStr);
+			col = BlendColors(col, _RimCol, _RimBlending, rim*_RimStr*rimMask);
 		}
 	#endif
 }
@@ -491,8 +505,8 @@ half3 NormalInTangentSpace(float4 texcoords, float4 raincoords, SampleData sd)
 		normalTangent = lerp(normalTangent, BlendNormals(normalTangent, detailNormalTangent), mask);
 	#endif
 	#if RAIN_ENABLED
-		float mask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_RainMask, sampler_MainTex, raincoords.zw);
-		float3 rippleNormal = GetRipplesNormal(raincoords.xy, _RippleScale, _RippleStr*mask, _RippleSpeed);
+		float rainMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_RainMask, sampler_MainTex, raincoords.zw);
+		float3 rippleNormal = GetRipplesNormal(raincoords.xy, _RippleScale, _RippleStr*rainMask, _RippleSpeed);
 		normalTangent = BlendNormals(normalTangent, rippleNormal);
 	#endif
     return normalTangent;

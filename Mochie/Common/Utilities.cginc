@@ -284,7 +284,7 @@ void GetWorldNormals(float4 localPos, out float3 worldNormal, out float3 worldPo
 
 float4 GetScreenspaceVertexPos(float4 vertex){
 
-	#if UNITY_SINGLE_PASS_STEREO           
+	#if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)           
 		float ipd = length(mul(unity_WorldToObject, 
 							float4(unity_StereoWorldSpaceCameraPos[0].xyz - unity_StereoWorldSpaceCameraPos[1].xyz, 0)));
 		float4 absPos = vertex + float4(ipd*(0.5-unity_StereoEyeIndex), 0, 0, 0);
@@ -303,14 +303,14 @@ float3 GetObjPos(){
 
 float3 GetCameraPos(){
     float3 cameraPos = _WorldSpaceCameraPos;
-    #if UNITY_SINGLE_PASS_STEREO
+    #if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
         cameraPos = (unity_StereoWorldSpaceCameraPos[0] + unity_StereoWorldSpaceCameraPos[1]) * 0.5;
     #endif
     return cameraPos;
 }
 
 float3 GetForwardVector(){
-	#if UNITY_SINGLE_PASS_STEREO
+	#if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
 		float3 p1 = mul(unity_StereoCameraToWorld[0], float4(0, 0, 1, 1));
 		float3 p2 = mul(unity_StereoCameraToWorld[0], float4(0, 0, 0, 1));
 	#else

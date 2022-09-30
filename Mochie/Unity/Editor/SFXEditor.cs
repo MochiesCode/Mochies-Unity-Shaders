@@ -20,15 +20,24 @@ public class SFXEditor : ShaderGUI {
     Toggles toggles = new Toggles(new string[] {
 			"GENERAL",
 			"FILTERING",
+			"Filtering 1",
 			"SHAKE",
+			"Shake 1",
 			"DISTORTION",
+			"Distortion 1",
 			"BLUR",
+			"Blur 1",
 			"ZOOM",
+			"Zoom 1",
 			"IMAGE OVERLAY",
 			"FOG",
+			"Fog 1",
 			"TRIPLANAR",
+			"Triplanar 1",
 			"OUTLINE",
+			"Outline 1",
 			"MISC",
+			"Misc 1",
 			"Letterbox",
 			"Deep Fry",
 			"Pulse",
@@ -37,12 +46,15 @@ public class SFXEditor : ShaderGUI {
 			"Normal Map",
 			"Depth Buffer",
 			"Safe Zone",
-			"NOISE"
+			"NOISE",
+			"Noise 1",
+			"AUDIO LINK",
+			"Image Overlay 1"
 	}, 0);
 
     // Texture file names
 	string header = "SFXHeader_Pro";
-	string versionLabel = "v1.13.1";
+	string versionLabel = "v1.14";
 	
     // Commonly used strings
     string modeLabel = "Mode";
@@ -204,6 +216,58 @@ public class SFXEditor : ShaderGUI {
     MaterialProperty _TPNoise = null;
     MaterialProperty _TPScanFade = null;
 
+	// Audio Link
+	MaterialProperty _AudioLinkToggle = null;
+	MaterialProperty _AudioLinkStrength = null;
+	MaterialProperty _AudioLinkMin = null;
+	MaterialProperty _AudioLinkMax = null;
+	MaterialProperty _AudioLinkFilteringStrength = null;
+	MaterialProperty _AudioLinkFilteringBand = null;
+	MaterialProperty _AudioLinkFilteringMin = null;
+	MaterialProperty _AudioLinkFilteringMax = null;
+	MaterialProperty _AudioLinkShakeStrength = null;
+	MaterialProperty _AudioLinkShakeBand = null;
+	MaterialProperty _AudioLinkShakeMin = null;
+	MaterialProperty _AudioLinkShakeMax = null;
+	MaterialProperty _AudioLinkDistortionStrength = null;
+	MaterialProperty _AudioLinkDistortionBand = null;
+	MaterialProperty _AudioLinkDistortionMin = null;
+	MaterialProperty _AudioLinkDistortionMax = null;
+	MaterialProperty _AudioLinkBlurStrength = null;
+	MaterialProperty _AudioLinkBlurBand = null;
+	MaterialProperty _AudioLinkBlurMin = null;
+	MaterialProperty _AudioLinkBlurMax = null;
+	MaterialProperty _AudioLinkNoiseStrength = null;
+	MaterialProperty _AudioLinkNoiseBand = null;
+	MaterialProperty _AudioLinkNoiseMin = null;
+	MaterialProperty _AudioLinkNoiseMax = null;
+	MaterialProperty _AudioLinkZoomStrength = null;
+	MaterialProperty _AudioLinkZoomBand = null;
+	MaterialProperty _AudioLinkZoomMin = null;
+	MaterialProperty _AudioLinkZoomMax = null;
+	MaterialProperty _AudioLinkSSTStrength = null;
+	MaterialProperty _AudioLinkSSTBand = null;
+	MaterialProperty _AudioLinkSSTMin = null;
+	MaterialProperty _AudioLinkSSTMax = null;
+	MaterialProperty _AudioLinkFogOpacity = null;
+	MaterialProperty _AudioLinkFogRadius = null;
+	MaterialProperty _AudioLinkFogBand = null;
+	MaterialProperty _AudioLinkFogMin = null;
+	MaterialProperty _AudioLinkFogMax = null;
+	MaterialProperty _AudioLinkTriplanarOpacity = null;
+	MaterialProperty _AudioLinkTriplanarBand = null;
+	MaterialProperty _AudioLinkTriplanarMin = null;
+	MaterialProperty _AudioLinkTriplanarMax = null;
+	MaterialProperty _AudioLinkTriplanarRadius = null;
+	MaterialProperty _AudioLinkOutlineStrength = null;
+	MaterialProperty _AudioLinkOutlineBand = null;
+	MaterialProperty _AudioLinkOutlineMin = null;
+	MaterialProperty _AudioLinkOutlineMax = null;
+	MaterialProperty _AudioLinkMiscStrength = null;
+	MaterialProperty _AudioLinkMiscBand = null;
+	MaterialProperty _AudioLinkMiscMin = null;
+	MaterialProperty _AudioLinkMiscMax = null;
+
     // Extras
     MaterialProperty _Pulse = null;
     MaterialProperty _PulseColor = null;
@@ -225,6 +289,7 @@ public class SFXEditor : ShaderGUI {
 	MaterialProperty _OLUseGlobal = null;
 	MaterialProperty _OLMinRange = null;
 	MaterialProperty _OLMaxRange = null;
+	MaterialProperty _SobelClearInner = null;
 	MaterialProperty _RoundingToggle = null;
 	MaterialProperty _Rounding = null;
 	MaterialProperty _RoundingOpacity = null;
@@ -785,6 +850,7 @@ public class SFXEditor : ShaderGUI {
 							if (_OutlineType.floatValue == 1){
 								me.ShaderProperty(_OutlineThiccS, "Thickness");
 								me.ShaderProperty(_OutlineThresh, strengthLabel);
+								me.ShaderProperty(_SobelClearInner, "Remove Inner Shading");
 							}
 							else if (_OutlineType.floatValue == 2){
 								me.ShaderProperty(_AuraStr, "Thickness");
@@ -869,6 +935,143 @@ public class SFXEditor : ShaderGUI {
 				};
 				Foldouts.Foldout("MISC", foldouts, miscTabButtons, mat, me, miscTabAction);
 			}
+
+			// Audio Link
+			Dictionary<Action, GUIContent> audioLinkTabButtons = new Dictionary<Action, GUIContent>();
+			audioLinkTabButtons.Add(()=>{ResetAudioLink();}, MGUI.resetLabel);
+			Action audioLinkTabAction = ()=>{
+				MGUI.ToggleSlider(me, Tips.audioLinkEmission, _AudioLinkToggle, _AudioLinkStrength);
+				MGUI.ToggleGroup(_AudioLinkToggle.floatValue == 0);
+				MGUI.SliderMinMax(_AudioLinkMin, _AudioLinkMax, 0f, 2f, "Remap", 1);
+				MGUI.Space6();
+
+				Dictionary<Action, GUIContent> alFilteringTabButtons = new Dictionary<Action, GUIContent>();
+				alFilteringTabButtons.Add(()=>{ResetALFiltering();}, MGUI.resetLabel);
+				Action alFilteringTabAction = ()=>{
+					MGUI.PropertyGroup(() => {
+						me.ShaderProperty(_AudioLinkFilteringBand, "Band");
+						me.ShaderProperty(_AudioLinkFilteringStrength, "Strength");
+						MGUI.SliderMinMax(_AudioLinkFilteringMin, _AudioLinkFilteringMax, 0f, 2f, "Remap", 1);
+					});
+				};
+				Foldouts.SubFoldout("Filtering 1", foldouts, alFilteringTabButtons, mat, me, alFilteringTabAction);
+
+				Dictionary<Action, GUIContent> alShakeTabButtons = new Dictionary<Action, GUIContent>();
+				alShakeTabButtons.Add(()=>{ResetALShake();}, MGUI.resetLabel);
+				Action alShakeTabAction = ()=>{
+					MGUI.PropertyGroup(() => {
+						me.ShaderProperty(_AudioLinkShakeBand, "Band");
+						me.ShaderProperty(_AudioLinkShakeStrength, "Strength");
+						MGUI.SliderMinMax(_AudioLinkShakeMin, _AudioLinkShakeMax, 0f, 2f, "Remap", 1);
+					});
+				};
+				Foldouts.SubFoldout("Shake 1", foldouts, alShakeTabButtons, mat, me, alShakeTabAction);
+
+				Dictionary<Action, GUIContent> alDistortionTabButtons = new Dictionary<Action, GUIContent>();
+				alDistortionTabButtons.Add(()=>{ResetALDistortion();}, MGUI.resetLabel);
+				Action alDistortionTabAction = ()=>{
+					MGUI.PropertyGroup(() => {
+						me.ShaderProperty(_AudioLinkDistortionBand, "Band");
+						me.ShaderProperty(_AudioLinkDistortionStrength, "Strength");
+						MGUI.SliderMinMax(_AudioLinkDistortionMin, _AudioLinkDistortionMax, 0f, 2f, "Remap", 1);
+					});
+				};
+				Foldouts.SubFoldout("Distortion 1", foldouts, alDistortionTabButtons, mat, me, alDistortionTabAction);
+
+				Dictionary<Action, GUIContent> alBlurTabButtons = new Dictionary<Action, GUIContent>();
+				alBlurTabButtons.Add(()=>{ResetALBlur();}, MGUI.resetLabel);
+				Action alBlurTabAction = ()=>{
+					MGUI.PropertyGroup(() => {
+						me.ShaderProperty(_AudioLinkBlurBand, "Band");
+						me.ShaderProperty(_AudioLinkBlurStrength, "Strength");
+						MGUI.SliderMinMax(_AudioLinkBlurMin, _AudioLinkBlurMax, 0f, 2f, "Remap", 1);
+					});
+				};
+				Foldouts.SubFoldout("Blur 1", foldouts, alBlurTabButtons, mat, me, alBlurTabAction);
+
+				Dictionary<Action, GUIContent> alNoiseTabButtons = new Dictionary<Action, GUIContent>();
+				alNoiseTabButtons.Add(()=>{ResetALNoise();}, MGUI.resetLabel);
+				Action alNoiseTabAction = ()=>{
+					MGUI.PropertyGroup(() => {
+						me.ShaderProperty(_AudioLinkNoiseBand, "Band");
+						me.ShaderProperty(_AudioLinkNoiseStrength, "Strength");
+						MGUI.SliderMinMax(_AudioLinkNoiseMin, _AudioLinkNoiseMax, 0f, 2f, "Remap", 1);
+					});
+				};
+				Foldouts.SubFoldout("Noise 1", foldouts, alNoiseTabButtons, mat, me, alNoiseTabAction);
+
+				if (isSFXX){
+					Dictionary<Action, GUIContent> alZoomTabButtons = new Dictionary<Action, GUIContent>();
+					alZoomTabButtons.Add(()=>{ResetALZoom();}, MGUI.resetLabel);
+					Action alZoomTabAction = ()=>{
+						MGUI.PropertyGroup(() => {
+							me.ShaderProperty(_AudioLinkZoomBand, "Band");
+							me.ShaderProperty(_AudioLinkZoomStrength, "Strength");
+							MGUI.SliderMinMax(_AudioLinkZoomMin, _AudioLinkZoomMax, 0f, 2f, "Remap", 1);
+						});
+					};
+					Foldouts.SubFoldout("Zoom 1", foldouts, alZoomTabButtons, mat, me, alZoomTabAction);
+
+					Dictionary<Action, GUIContent> alSSTTabButtons = new Dictionary<Action, GUIContent>();
+					alSSTTabButtons.Add(()=>{ResetALSST();}, MGUI.resetLabel);
+					Action alSSTTabAction = ()=>{
+						MGUI.PropertyGroup(() => {
+							me.ShaderProperty(_AudioLinkSSTBand, "Band");
+							me.ShaderProperty(_AudioLinkSSTStrength, "Strength");
+							MGUI.SliderMinMax(_AudioLinkSSTMin, _AudioLinkSSTMax, 0f, 2f, "Remap", 1);
+						});
+					};
+					Foldouts.SubFoldout("Image Overlay 1", foldouts, alSSTTabButtons, mat, me, alSSTTabAction);
+
+					Dictionary<Action, GUIContent> alFogTabButtons = new Dictionary<Action, GUIContent>();
+					alFogTabButtons.Add(()=>{ResetALFog();}, MGUI.resetLabel);
+					Action alFogTabAction = ()=>{
+						MGUI.PropertyGroup(() => {
+							me.ShaderProperty(_AudioLinkFogBand, "Band");
+							me.ShaderProperty(_AudioLinkFogOpacity, "Opacity");
+							me.ShaderProperty(_AudioLinkFogRadius, "Radius");
+							MGUI.SliderMinMax(_AudioLinkFogMin, _AudioLinkFogMax, 0f, 2f, "Remap", 1);
+						});
+					};
+					Foldouts.SubFoldout("Fog 1", foldouts, alFogTabButtons, mat, me, alFogTabAction);
+
+					Dictionary<Action, GUIContent> alTriplanarTabButtons = new Dictionary<Action, GUIContent>();
+					alTriplanarTabButtons.Add(()=>{ResetALTriplanar();}, MGUI.resetLabel);
+					Action alTriplanarTabAction = ()=>{
+						MGUI.PropertyGroup(() => {
+							me.ShaderProperty(_AudioLinkTriplanarBand, "Band");
+							me.ShaderProperty(_AudioLinkTriplanarOpacity, "Opacity");
+							me.ShaderProperty(_AudioLinkTriplanarRadius, "Radius");
+							MGUI.SliderMinMax(_AudioLinkTriplanarMin, _AudioLinkTriplanarMax, 0f, 2f, "Remap", 1);
+						});
+					};
+					Foldouts.SubFoldout("Triplanar 1", foldouts, alTriplanarTabButtons, mat, me, alTriplanarTabAction);
+
+					Dictionary<Action, GUIContent> alOutlineTabButtons = new Dictionary<Action, GUIContent>();
+					alOutlineTabButtons.Add(()=>{ResetALOutline();}, MGUI.resetLabel);
+					Action alOutlineTabAction = ()=>{
+						MGUI.PropertyGroup(() => {
+							me.ShaderProperty(_AudioLinkOutlineBand, "Band");
+							me.ShaderProperty(_AudioLinkOutlineStrength, "Strength");
+							MGUI.SliderMinMax(_AudioLinkOutlineMin, _AudioLinkOutlineMax, 0f, 2f, "Remap", 1);
+						});
+					};
+					Foldouts.SubFoldout("Outline 1", foldouts, alOutlineTabButtons, mat, me, alOutlineTabAction);
+
+					Dictionary<Action, GUIContent> alMiscTabButtons = new Dictionary<Action, GUIContent>();
+					alMiscTabButtons.Add(()=>{ResetALMisc();}, MGUI.resetLabel);
+					Action alMiscTabAction = ()=>{
+						MGUI.PropertyGroup(() => {
+							me.ShaderProperty(_AudioLinkMiscBand, "Band");
+							me.ShaderProperty(_AudioLinkMiscStrength, "Strength");
+							MGUI.SliderMinMax(_AudioLinkMiscMin, _AudioLinkMiscMax, 0f, 2f, "Remap", 1);
+						});
+					};
+					Foldouts.SubFoldout("Misc 1", foldouts, alMiscTabButtons, mat, me, alMiscTabAction);
+				}
+				MGUI.ToggleGroupEnd();
+			};
+			Foldouts.Foldout("AUDIO LINK", foldouts, audioLinkTabButtons, mat, me, audioLinkTabAction);
 		}
 		MGUI.DoFooter(versionLabel);
     }
@@ -895,6 +1098,7 @@ public class SFXEditor : ShaderGUI {
 		int outlineMode = mat.GetInt("_OutlineType");
 		int noiseMode = mat.GetInt("_NoiseMode");
 		int letterboxMode = mat.GetInt("_Letterbox");
+		int audioLink = mat.GetInt("_AudioLinkToggle");
 
 		bool isXVersion = MGUI.IsXVersion(mat);
 		bool filteringEnabled = filterMode > 0;
@@ -917,6 +1121,7 @@ public class SFXEditor : ShaderGUI {
 		bool tpEnabled = tpMode > 0 && isXVersion;
 		bool outlineEnabled = outlineMode > 0 && isXVersion;
 		bool letterboxEnabled = letterboxMode > 0 && isXVersion;
+		bool audioLinkEnabled = audioLink == 1;
 		
 		SetKeyword(mat, "_COLOR_ON", filteringEnabled);
 		SetKeyword(mat, "_SHAKE_ON", shakeEnabled);
@@ -936,6 +1141,7 @@ public class SFXEditor : ShaderGUI {
 		SetKeyword(mat, "_TRIPLANAR_ON", tpEnabled);
 		SetKeyword(mat, "_OUTLINE_ON", outlineEnabled);
 		SetKeyword(mat, "_NOISE_ON", noiseEnabled);
+		SetKeyword(mat, "_AUDIOLINK_ON", audioLinkEnabled);
 
 		mat.SetShaderPassEnabled("Always", zoomEnabled || zoomRGBEnabled || sstEnabled || sstDistEnabled ||  letterboxEnabled);
 	}
@@ -1095,7 +1301,7 @@ public class SFXEditor : ShaderGUI {
 		_SSTMaxRange.floatValue = 15f;
 		_ScreenTex.textureValue = null;
 		_SSTColor.colorValue = Color.white;
-		_SSTScale.floatValue = 1f;
+		_SSTScale.floatValue = 2f;
 		_SSTWidth.floatValue = 1f;
 		_SSTHeight.floatValue = 1f;
 		_SSTLR.floatValue = 0f;
@@ -1135,8 +1341,106 @@ public class SFXEditor : ShaderGUI {
 		_OLUseGlobal.floatValue = 1f;
 		_OLMinRange.floatValue = 8f;
 		_OLMaxRange.floatValue = 15f;
+		_SobelClearInner.floatValue = 1f;
 	}
 
+	void ResetAudioLink(){
+		_AudioLinkToggle.floatValue = 0f;
+		_AudioLinkStrength.floatValue = 0f;
+		_AudioLinkMin.floatValue = 0f;
+		_AudioLinkMax.floatValue = 1f;
+		ResetALFiltering();
+		ResetALShake();
+		ResetALDistortion();
+		ResetALBlur();
+		ResetALNoise();
+		ResetALZoom();
+		ResetALSST();
+		ResetALFog();
+		ResetALTriplanar();
+		ResetALOutline();
+		ResetALMisc();
+	}
+
+	void ResetALFiltering(){
+		_AudioLinkFilteringStrength.floatValue = 0f;
+		_AudioLinkFilteringBand.floatValue = 0f;
+		_AudioLinkFilteringMin.floatValue = 0f;
+		_AudioLinkFilteringMax.floatValue = 1f;
+	}
+
+	void ResetALShake(){
+		_AudioLinkShakeStrength.floatValue = 0f;
+		_AudioLinkShakeBand.floatValue = 0f;
+		_AudioLinkShakeMin.floatValue = 0f;
+		_AudioLinkShakeMax.floatValue = 1f;
+	}
+
+	void ResetALDistortion(){
+		_AudioLinkDistortionStrength.floatValue = 0f;
+		_AudioLinkDistortionBand.floatValue = 0f;
+		_AudioLinkDistortionMin.floatValue = 0f;
+		_AudioLinkDistortionMax.floatValue = 1f;
+	}
+
+	void ResetALBlur(){
+		_AudioLinkBlurStrength.floatValue = 0f;
+		_AudioLinkBlurBand.floatValue = 0f;
+		_AudioLinkBlurMin.floatValue = 0f;
+		_AudioLinkBlurMax.floatValue = 1f;
+	}
+
+	void ResetALNoise(){
+		_AudioLinkNoiseStrength.floatValue = 0f;
+		_AudioLinkNoiseBand.floatValue = 0f;
+		_AudioLinkNoiseMin.floatValue = 0f;
+		_AudioLinkNoiseMax.floatValue = 1f;
+	}
+
+	void ResetALZoom(){
+		_AudioLinkZoomStrength.floatValue = 0f;
+		_AudioLinkZoomBand.floatValue = 0f;
+		_AudioLinkZoomMin.floatValue = 0f;
+		_AudioLinkZoomMax.floatValue = 1f;
+	}
+
+	void ResetALSST(){
+		_AudioLinkSSTStrength.floatValue = 0f;
+		_AudioLinkSSTBand.floatValue = 0f;
+		_AudioLinkSSTMin.floatValue = 0f;
+		_AudioLinkSSTMax.floatValue = 1f;
+	}
+
+	void ResetALFog(){
+		_AudioLinkFogOpacity.floatValue = 0f;
+		_AudioLinkFogRadius.floatValue = 0f;
+		_AudioLinkFogBand.floatValue = 0f;
+		_AudioLinkFogMin.floatValue = 0f;
+		_AudioLinkFogMax.floatValue = 1f;
+	}
+
+	void ResetALTriplanar(){
+		_AudioLinkTriplanarOpacity.floatValue = 0f;
+		_AudioLinkTriplanarBand.floatValue = 0f;
+		_AudioLinkTriplanarMin.floatValue = 0f;
+		_AudioLinkTriplanarMax.floatValue = 1f;
+		_AudioLinkTriplanarRadius.floatValue = 0f;
+	}
+
+	void ResetALOutline(){
+		_AudioLinkOutlineStrength.floatValue = 0f;
+		_AudioLinkOutlineBand.floatValue = 0f;
+		_AudioLinkOutlineMin.floatValue = 0f;
+		_AudioLinkOutlineMax.floatValue = 1f;
+	}
+
+	void ResetALMisc(){
+		_AudioLinkMiscStrength.floatValue = 0f;
+		_AudioLinkMiscBand.floatValue = 0f;
+		_AudioLinkMiscMin.floatValue = 0f;
+		_AudioLinkMiscMax.floatValue = 1f;
+	}
+	
 	void ResetExtras(){
 		_Letterbox.floatValue = 0f;
 		_UseZoomFalloff.floatValue = 0f;

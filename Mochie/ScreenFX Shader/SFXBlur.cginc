@@ -6,7 +6,7 @@
 void ApplyStandardBlur(float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol){
 	float2 uv = uv0.xy;
 	float2 uvb = uv;
-	#if UNITY_SINGLE_PASS_STEREO
+	#if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
 		float2 mainStr = float2(0.225, 0.375) * str * 0.0015;
 		float2 str136 = float2(0.225, 0.375) * _BlurStr * 0.002;
 	#else
@@ -58,7 +58,7 @@ void ApplyStandardBlur(float2 texelSize, float4 uv0, uint sampleCount, float str
 void StandardBlurWithDepth(float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol, inout float depth){
 	float2 uv = uv0.xy;
 	float2 uvb = uv;
-	#if UNITY_SINGLE_PASS_STEREO
+	#if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
 		float2 mainStr = float2(0.225, 0.375) * str * 0.0015;
 		float2 str136 = float2(0.225, 0.375) * _BlurStr * 0.002;
 	#else
@@ -117,7 +117,7 @@ void StandardBlurWithDepth(float2 texelSize, float4 uv0, uint sampleCount, float
 void ApplyStandardBlurY(float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol){
 	float2 uv = uv0.xy;
 	float2 uvb = uv;
-	#if UNITY_SINGLE_PASS_STEREO
+	#if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
 		float2 mainStr = float2(0.225, 0.375) * str * 0.00275;
 		float2 str136 = float2(0.225, 0.375) * _BlurStr * 0.00325;
 	#else
@@ -170,7 +170,7 @@ void ApplyStandardBlurY(float2 texelSize, float4 uv0, uint sampleCount, float st
 void ApplyStandardBlurYWithDepth(float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol, inout float depth){
 	float2 uv = uv0.xy;
 	float2 uvb = uv;
-	#if UNITY_SINGLE_PASS_STEREO
+	#if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
 		float2 mainStr = float2(0.225, 0.375) * str * 0.00275;
 		float2 str136 = float2(0.225, 0.375) * _BlurStr * 0.00325;
 	#else
@@ -278,7 +278,7 @@ void ApplyStandardBlurDepth(float4 uv0, uint sampleCount, float str, inout float
 void ApplyChromaticAbberation(float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol){
 	float2 uv = uv0.xy;
 	float2 uvb = uv;
-	#if UNITY_SINGLE_PASS_STEREO
+	#if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
 		float2 mainStr = float2(0.225, 0.375) * str * 0.0015;
 		float2 str136 = float2(0.225, 0.375) * _BlurStr * 0.002;
 	#else
@@ -362,7 +362,7 @@ void ApplyChromaticAbberation(float2 texelSize, float4 uv0, uint sampleCount, fl
 void ApplyChromaticAbberationY(float2 texelSize, float4 uv0, uint sampleCount, float str, inout float3 blurCol){
 	float2 uv = uv0.xy;
 	float2 uvb = uv;
-	#if UNITY_SINGLE_PASS_STEREO
+	#if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
 		float2 mainStr = float2(0.225, 0.375) * str * 0.00275;
 		float2 str136 = float2(0.225, 0.375) * _BlurStr * 0.00325;
 	#else
@@ -446,7 +446,7 @@ void ApplyRadialBlur(v2f i, float4 uv0, uint sampleCount, float radius, float st
     float3 col = 0;
     float2 uv = i.uv.xy;
     float2 offset = 0.5;
-    #if UNITY_SINGLE_PASS_STEREO
+    #if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
         if (unity_StereoEyeIndex == 0)
             offset.x = 0.25;
         if (unity_StereoEyeIndex == 1)

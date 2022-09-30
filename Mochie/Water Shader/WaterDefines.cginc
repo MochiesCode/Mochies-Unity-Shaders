@@ -46,6 +46,7 @@ sampler2D _NoiseTex;
 sampler2D _FoamTex;
 sampler2D _FoamNoiseTex;
 sampler2D _CausticsTex;
+sampler2D _BlendNoise;
 samplerCUBE _ReflCube;
 
 float4 _FogTint, _Color, _FoamColor, _ReflTint, _SpecTint;
@@ -123,6 +124,9 @@ float _TessMax;
 float _TessDistMin;
 float _TessDistMax;
 float _TessellationOffsetMask;
+float2 _BlendNoiseScale;
+int _BlendNoiseSource;
+int _FlowMapUV;
 int _BackfaceReflections;
 
 const static float2 jump = float2(0.1, 0.25);
@@ -132,6 +136,8 @@ struct TessellationControlPoint {
 	float4 vertex : INTERNALTESSPOS;
 	float4 uv : TEXCOORD0;
 	float4 uv1 : TEXCOORD1;
+	float4 uv2 : TEXCOORD2;
+	float4 uv3 : TEXCOORD3;
 	float3 normal : NORMAL;
 	float4 tangent : TANGENT;
 	UNITY_VERTEX_INPUT_INSTANCE_ID
@@ -143,6 +149,8 @@ struct appdata {
 	float4 vertex : POSITION;
 	float4 uv : TEXCOORD0;
 	float4 uv1 : TEXCOORD1;
+	float4 uv2 : TEXCOORD2;
+	float4 uv3 : TEXCOORD3;
 	float3 normal : NORMAL;
 	float4 tangent : TANGENT;
 	UNITY_VERTEX_INPUT_INSTANCE_ID
@@ -160,12 +168,12 @@ struct v2f {
 	float4 localPos : TEXCOORD9;
 	float3 wave : TEXCOORD10;
 	float3 tangentViewDir : TEXCOORD11;
-	#ifdef TESSELLATION_VARIANT
-		float offsetMask : TEXCOORD13;
-	#endif
 	bool isInVRMirror : TEXCOORD12;
-	// UNITY_SHADOW_COORDS(13)
-	UNITY_FOG_COORDS(14)
+	float2 uvFlow : TEXCOORD13;
+	#ifdef TESSELLATION_VARIANT
+		float offsetMask : TEXCOORD14;
+	#endif
+	UNITY_FOG_COORDS(15)
 	UNITY_VERTEX_INPUT_INSTANCE_ID 
 	UNITY_VERTEX_OUTPUT_STEREO
 };

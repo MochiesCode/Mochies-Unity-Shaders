@@ -12,7 +12,6 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		atten = FadeShadows(i.worldPos, atten);
 	#endif
 
-
 	CalculateTangentViewDir(i);
 
 	float3 normalMap;
@@ -37,10 +36,15 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	#endif
 
 	#if FLOW_ENABLED
-		float2 uvFlow = ScaleUV(i.uv, _FlowMapScale, 0);
+		float2 uvFlow = ScaleUV(i.uvFlow, _FlowMapScale, 0);
 		float4 flowMap = tex2D(_FlowMap, uvFlow);
+		float blendNoise = flowMap.a;
+		if (_BlendNoiseSource == 1){
+			float2 uvBlend = ScaleUV(i.uv, _BlendNoiseScale, 0);
+			blendNoise = tex2D(_BlendNoise, uvBlend);
+		}
 		float2 flow = (flowMap.rg * 2 - 1) * _FlowStrength * 0.1;
-		float time = _Time.y * _FlowSpeed + flowMap.a;
+		float time = _Time.y * _FlowSpeed + blendNoise;
 		uv00 = FlowUV(baseUV0, flow, time, 0);
 		float3 uv01 = FlowUV(baseUV0, flow, time, 0.5);
 		uv10 = FlowUV(baseUV1, flow, time, 0);
@@ -101,7 +105,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	#endif
 
 	float2 uvOffset = normalMap.xy * _DistortionStrength;
-	#if UNITY_SINGLE_PASS_STEREO
+	#if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
 		uvOffset.x *= 0.5;
 		uvOffset.xy *= 0.5;
 	#endif

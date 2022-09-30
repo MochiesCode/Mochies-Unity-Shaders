@@ -123,11 +123,11 @@ Shader "Mochie/Screen FX" {
 		_SSTMaxRange("", Float) = 15
 		_ScreenTex("", 2D) = "white" {}
 		_SSTColor("", Color) = (1,1,1,1)
-		_SSTScale("", Float) = 1
-		_SSTWidth("", Range(0.001,2)) = 1
-		_SSTHeight("", Range(0.001,2)) = 1
-		_SSTLR("", Range(-1,1)) = 0
-		_SSTUD("", Range(-1,1)) = 0
+		_SSTScale("", Float) = 2
+		_SSTWidth("", Float) = 1
+		_SSTHeight("", Float) = 1
+		_SSTLR("", Float) = 0
+		_SSTUD("", Float) = 0
 		_SSTAnimatedDist("", Float) = 0
 		_SSTColumnsX("", Int) = 2
 		_SSTRowsY("", Int) = 2
@@ -169,6 +169,59 @@ Shader "Mochie/Screen FX" {
 		_OutlineThiccN("", Float) = 0.5
 		_AuraFade("", Range(0,1)) = 0.5
 		_AuraStr("", Range(0,1)) = 0.25
+		[ToggleUI]_SobelClearInner("", Int) = 1
+		
+		// Audio Link
+		[ToggleUI]_AudioLinkToggle("", Int) = 0
+		_AudioLinkStrength("", Range(0,1)) = 1
+		_AudioLinkMin("", Float) = 0
+		_AudioLinkMax("", Float) = 1
+		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Treble,3)]_AudioLinkFilteringBand("", Int) = 0
+		_AudioLinkFilteringStrength("", Range(0,1)) = 0
+		_AudioLinkFilteringMin("", Float) = 0
+		_AudioLinkFilteringMax("", Float) = 1
+		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Treble,3)]_AudioLinkShakeBand("", Int) = 0
+		_AudioLinkShakeStrength("", Range(0,1)) = 0
+		_AudioLinkShakeMin("", Float) = 0
+		_AudioLinkShakeMax("", Float) = 1
+		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Treble,3)]_AudioLinkDistortionBand("", Int) = 0
+		_AudioLinkDistortionStrength("", Range(0,1)) = 0
+		_AudioLinkDistortionMin("", Float) = 0
+		_AudioLinkDistortionMax("", Float) = 1
+		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Treble,3)]_AudioLinkBlurBand("", Int) = 0
+		_AudioLinkBlurStrength("", Range(0,1)) = 0
+		_AudioLinkBlurMin("", Float) = 0
+		_AudioLinkBlurMax("", Float) = 1
+		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Treble,3)]_AudioLinkNoiseBand("", Int) = 0
+		_AudioLinkNoiseStrength("", Range(0,1)) = 0
+		_AudioLinkNoiseMin("", Float) = 0
+		_AudioLinkNoiseMax("", Float) = 1
+		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Treble,3)]_AudioLinkZoomBand("", Int) = 0
+		_AudioLinkZoomStrength("", Range(0,1)) = 0
+		_AudioLinkZoomMin("", Float) = 0
+		_AudioLinkZoomMax("", Float) = 1
+		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Treble,3)]_AudioLinkSSTBand("", Int) = 0
+		_AudioLinkSSTStrength("", Range(0,1)) = 0
+		_AudioLinkSSTMin("", Float) = 0
+		_AudioLinkSSTMax("", Float) = 1
+		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Treble,3)]_AudioLinkFogBand("", Int) = 0
+		_AudioLinkFogOpacity("", Range(0,1)) = 0
+		_AudioLinkFogRadius("", Range(0,1)) = 0
+		_AudioLinkFogMin("", Float) = 0
+		_AudioLinkFogMax("", Float) = 1
+		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Treble,3)]_AudioLinkTriplanarBand("", Int) = 0
+		_AudioLinkTriplanarOpacity("", Range(0,1)) = 0
+		_AudioLinkTriplanarRadius("", Range(0,1)) = 0
+		_AudioLinkTriplanarMin("", Float) = 0
+		_AudioLinkTriplanarMax("", Float) = 1
+		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Treble,3)]_AudioLinkOutlineBand("", Int) = 0
+		_AudioLinkOutlineStrength("", Range(0,1)) = 0
+		_AudioLinkOutlineMin("", Float) = 0
+		_AudioLinkOutlineMax("", Float) = 1
+		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Treble,3)]_AudioLinkMiscBand("", Int) = 0
+		_AudioLinkMiscStrength("", Range(0,1)) = 0
+		_AudioLinkMiscMin("", Float) = 0
+		_AudioLinkMiscMax("", Float) = 1
 
 		// Extras
 		[ToggleUI]_Letterbox("", Int) = 0
@@ -229,6 +282,7 @@ Shader "Mochie/Screen FX" {
 			#pragma shader_feature_local _CHROMATIC_ABBERATION_ON
 			#pragma shader_feature_local _DOF_ON
 			#pragma shader_feature_local _NOISE_ON
+			#pragma shader_feature_local _AUDIOLINK_ON
 			#define MAIN
 			#include "SFXDefines.cginc"
             ENDCG

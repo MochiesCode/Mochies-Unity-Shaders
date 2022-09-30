@@ -23,7 +23,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		"LTCGI"
 	}, 1);
 
-	string versionLabel = "v1.17";
+	string versionLabel = "v1.18";
 	public static string receiverText = "AreaLit Maps";
 	public static string emitterText = "AreaLit Light";
 	public static string projectorText = "AreaLit Projector";
@@ -193,6 +193,10 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty rimCol = null;
 	MaterialProperty rimWidth = null;
 	MaterialProperty rimEdge = null;
+	MaterialProperty rimMask = null;
+	MaterialProperty uvRimMask = null;
+	MaterialProperty uvRimMaskScroll = null;
+	MaterialProperty uvRimMaskRot = null;
 
 	MaterialProperty filtering = null;
 	MaterialProperty bicubicLightmap = null;
@@ -398,6 +402,10 @@ internal class MochieStandardGUI : ShaderGUI {
 		detailOcclusionStrength = FindProperty("_DetailOcclusionStrength", props);
 		areaLitStrength = FindProperty("_AreaLitStrength", props);
 		areaLitRoughnessMult = FindProperty("_AreaLitRoughnessMult", props);
+		rimMask = FindProperty("_RimMask", props);
+		uvRimMask = FindProperty("_UVRimMask", props);
+		uvRimMaskScroll = FindProperty("_UVRimMaskScroll", props);
+		uvRimMaskRot = FindProperty("_UVRimMaskRotate", props);
 	}
 
 	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props){
@@ -783,6 +791,7 @@ internal class MochieStandardGUI : ShaderGUI {
 			MGUI.ToggleGroup(rimTog.floatValue == 0);
 			MGUI.PropertyGroupLayer(() => {
 				MGUI.SpaceN2();
+				me.TexturePropertySingleLine(Tips.maskLabel, rimMask);
 				me.ShaderProperty(rimBlend, Tips.rimBlend);
 				me.ShaderProperty(rimCol, Tips.rimCol);
 				me.ShaderProperty(rimStr, Tips.rimStr);
@@ -838,6 +847,8 @@ internal class MochieStandardGUI : ShaderGUI {
 		bool needsEmissMaskUV = emissionEnabled && emissionMask.textureValue;
 		bool needsAlphaMaskUV = blendMode.floatValue > 0 && useAlphaMask.floatValue > 0;
 		bool needsRainMaskUV = rainToggle.floatValue == 1 && rainMask.textureValue;
+		bool needsRimMaskUV = rimTog.floatValue == 1 && rimMask.textureValue;
+
 		MGUI.PropertyGroup( () => {
 			MGUI.BoldLabel("Primary");
 			EditorGUI.BeginChangeCheck();
@@ -909,6 +920,17 @@ internal class MochieStandardGUI : ShaderGUI {
 					me.ShaderProperty(uvRainMask, Tips.uvSetLabel.text);
 					MGUI.TextureSOScroll(me, rainMask, uv5Scroll);
 					me.ShaderProperty(uv5Rot, "Rotation");
+					MGUI.SpaceN2();
+				});
+			}
+			if (needsRimMaskUV){
+				MGUI.Space4();
+				MGUI.BoldLabel("Rim Mask");
+				MGUI.PropertyGroupLayer(()=>{
+					MGUI.SpaceN2();
+					me.ShaderProperty(uvRimMask, Tips.uvSetLabel.text);
+					MGUI.TextureSOScroll(me, rimMask, uvRimMaskScroll);
+					me.ShaderProperty(uvRimMaskRot, "Rotation");
 					MGUI.SpaceN2();
 				});
 			}

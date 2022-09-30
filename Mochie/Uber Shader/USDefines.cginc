@@ -432,6 +432,8 @@ float _AudioLinkRemapUVDistortionMax;
 float _AudioLinkRemapRimPulseMin;
 float _AudioLinkRemapRimPulseMax;
 
+float _MainTexRot, _DetailRot;
+
 // Outputs
 float4 packedTex;
 float4 spec;

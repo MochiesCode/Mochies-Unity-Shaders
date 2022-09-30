@@ -44,7 +44,7 @@ public class WaterEditor : ShaderGUI {
 	}, 0);
 
     string header = "WaterHeader_Pro";
-	string versionLabel = "v1.7";
+	string versionLabel = "v1.8";
 
 	MaterialProperty _Color = null;
 	MaterialProperty _AngleTint = null;
@@ -172,6 +172,10 @@ public class WaterEditor : ShaderGUI {
 	MaterialProperty _TessDistMin = null;
 	MaterialProperty _TessDistMax = null;
 	MaterialProperty _TessellationOffsetMask = null;
+	MaterialProperty _BlendNoise = null;
+	MaterialProperty _BlendNoiseScale = null;
+	MaterialProperty _BlendNoiseSource = null;
+	MaterialProperty _FlowMapUV = null;
 	MaterialProperty _BackfaceReflections = null;
 
 	MaterialProperty _StencilRef = null;
@@ -319,10 +323,16 @@ public class WaterEditor : ShaderGUI {
 				MGUI.Space4();
 				MGUI.PropertyGroup( () => {
 					MGUI.ToggleGroup(_FlowToggle.floatValue == 0);
-					me.TexturePropertySingleLine(flowLabel, _FlowMap);
-					MGUI.Vector2Field(_FlowMapScale, "Scale");
+					me.TexturePropertySingleLine(flowLabel, _FlowMap, _FlowMapUV);
+					MGUI.TexPropLabel("UV Set", 95);
+					if (_BlendNoiseSource.floatValue == 1)
+						me.TexturePropertySingleLine(Tips.blendNoise, _BlendNoise);
+					MGUI.Vector2Field(_FlowMapScale, "Flow Map Scale");
+					if (_BlendNoiseSource.floatValue == 1)
+						MGUI.Vector2Field(_BlendNoiseScale, "Blend Noise Scale");
 					me.ShaderProperty(_FlowSpeed, "Speed");
 					me.ShaderProperty(_FlowStrength, "Strength");
+					me.ShaderProperty(_BlendNoiseSource, "Blend Noise Source");
 					MGUI.ToggleGroupEnd();
 				});
 			};
@@ -587,6 +597,8 @@ public class WaterEditor : ShaderGUI {
 		_FlowSpeed.floatValue = 0.25f;
 		_FlowStrength.floatValue = 0.1f;
 		_FlowMapScale.vectorValue = new Vector4(2f,2f,0,0);
+		_BlendNoiseScale.vectorValue = new Vector4(2f,2f,0,0);
+		_BlendNoiseSource.floatValue = 0f;
 	}
 
 	void ResetVertOffset(){

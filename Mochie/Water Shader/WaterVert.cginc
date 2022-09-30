@@ -97,6 +97,8 @@ v2f vert (
 	o.worldPos = mul(unity_ObjectToWorld, v.vertex);
 	o.uvGrab = ComputeGrabScreenPos(o.pos);
 	o.localPos = v.vertex;
+	float2 uvs[] = {v.uv, v.uv1, v.uv2, v.uv3};
+	o.uvFlow = uvs[_FlowMapUV].xy;
 	o.uv = v.uv;
 
 	o.isInVRMirror = false;

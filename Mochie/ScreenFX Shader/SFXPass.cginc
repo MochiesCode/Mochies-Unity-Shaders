@@ -38,8 +38,12 @@ v2f vert (appdata v){
 
     o.uv = ComputeGrabScreenPos(o.pos);
     o.uvd = TRANSFORM_TEX(v.uv, _NormalMap) + _Time.y * _DistortionSpeed;
+	audioLinkData ald = (audioLinkData)0;
+	#if AUDIOLINK_ENABLED
+		InitializeAudioLink(ald, 0);
+	#endif
 	#if SHAKE_ENABLED
-    	ApplyNoiseShake(o);
+    	ApplyNoiseShake(o, ald);
 	#endif
     return o;
 }
@@ -53,19 +57,24 @@ float4 frag (v2f i) : SV_Target {
 	float2 uv = i.uv.xy / i.uv.w;
 	i.uv.xy = uv;
 
+	audioLinkData ald = (audioLinkData)0;
+	#if AUDIOLINK_ENABLED
+		InitializeAudioLink(ald, 0);
+	#endif
+
 	#if X_FEATURES
     	ApplyPulse(i.pulseSpeed);
-		ApplyUVManip(i);
+		ApplyUVManip(i, ald);
 	#endif
 
 	#if SHAKE_ENABLED
-    	ApplyShake(i);
+    	ApplyShake(i, ald);
 	#endif
 
 	#if DISTORTION_ENABLED
-		ApplyMapDistortion(i);
+		ApplyMapDistortion(i, ald);
 	#elif DISTORTION_WORLD_ENABLED
-		ApplyWGDistortion(i); 
+		ApplyWGDistortion(i, ald); 
 	#endif
     
 	#if BLUR_ENABLED
@@ -75,30 +84,34 @@ float4 frag (v2f i) : SV_Target {
 			_RippleGridStr = lerp(_RippleGridStr, 0, dof);
 			_PixelationStr = lerp(_PixelationStr, 0, dof);
 		#endif
-		ApplyRipplePixelate(i);
+		ApplyRipplePixelate(i, ald);
 		float4 col = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, i.uv.xy);
-		ApplyDitherBlur(i);
+		ApplyDitherBlur(i, ald);
 		float4 blurCol = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, i.uv.xy);
-		ApplyBlur(i, col.rgb, blurCol.rgb);
+		ApplyBlur(i, col.rgb, blurCol.rgb, ald);
 	#else
 		float4 col = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MSFXGrab, i.uv.xy);
 	#endif
 
 	#if X_FEATURES
-		ApplyDepthBuffer(i, col.rgb);
-		ApplyNormalMap(i, col.rgb);
-		#if OUTLINE_ENABLED
-			ApplyOutline(i, col.rgb);
+		float miscAudioLinkStrength = 1;
+		#if AUDIOLINK_ENABLED
+			miscAudioLinkStrength = GetAudioLinkBand(ald, _AudioLinkMiscStrength, _AudioLinkMiscBand, _AudioLinkMiscMin, _AudioLinkMiscMax);
 		#endif
-		ApplyRounding(i, col.rgb);
+		ApplyDepthBuffer(i, col.rgb, miscAudioLinkStrength);
+		ApplyNormalMap(i, col.rgb, miscAudioLinkStrength);
+		#if OUTLINE_ENABLED
+			ApplyOutline(i, col.rgb, ald);
+		#endif
+		ApplyRounding(i, col.rgb, miscAudioLinkStrength);
 	#endif
 
 	#if COLOR_ENABLED
-    	ApplyColor(i, col.rgb);
+    	ApplyColor(i, col.rgb, ald);
 	#endif
 
 	#if NOISE_ENABLED
-		ApplyNoise(i, col.rgb);
+		ApplyNoise(i, col.rgb, ald);
 	#endif
 
     ApplyTransparency(i, col);

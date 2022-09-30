@@ -203,7 +203,7 @@ float3 BlurSample(float2 uv, float2 strength){
 	float3 blurCol = 0;
 	float2 uvb = uv;
 	strength *= 0.015;
-	#if UNITY_SINGLE_PASS_STEREO
+	#if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
 		strength.y *= 0.5555555;
 	#else
 		strength.x *= 0.5625;
@@ -737,7 +737,7 @@ float ShadowPremultiplyAlpha(g2f i, float alpha){
 
 void NearClip(g2f i){
     if (_NearClipToggle == 1 && !i.isReflection){
-        #if UNITY_SINGLE_PASS_STEREO
+        #if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
             float camDist = distance(i.worldPos, (unity_StereoWorldSpaceCameraPos[0].xyz + unity_StereoWorldSpaceCameraPos[1].xyz)*0.5);
         #else
             float camDist = distance(i.worldPos, _WorldSpaceCameraPos.xyz);
