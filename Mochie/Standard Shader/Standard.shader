@@ -69,6 +69,7 @@ Shader "Mochie/Standard" {
 		_EmissPulseStrength("Pulse Strength", Float) = 1
 		[Enum(Off,0, Bass,1, Low Mids,2, Upper Mids,3, Highs,4)]_AudioLinkEmission("Emission Band", Int) = 0
 		_AudioLinkEmissionStrength("Emission Strength", Float) = 1
+		[ToggleUI]_AudioLinkEmissionMeta("Audio Link Meta Emission", Int) = 0
 
 		_UV0Rotate("UV0 Rotation", Float) = 0
 		_UV0Scroll("UV0 Scrolling", Vector) = (0,0,0,0)
@@ -400,6 +401,8 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _OPAQUELIGHTS_OFF
 			#pragma shader_feature_local _AREALIT_ON
 			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
+			#pragma shader_feature_local _AUDIOLINK_ON
+			#pragma shader_feature_local _AUDIOLINK_META_ON
             #pragma shader_feature EDITOR_VISUALIZATION
             #include "MochieStandardMeta.cginc"
             ENDCG
@@ -434,6 +437,8 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _OPAQUELIGHTS_OFF
 			#pragma shader_feature_local _AREALIT_ON
 			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
+			#pragma shader_feature_local _AUDIOLINK_ON
+			#pragma shader_feature_local _AUDIOLINK_META_ON
             #pragma shader_feature EDITOR_VISUALIZATION
             #include "MochieStandardMeta.cginc"
             ENDCG

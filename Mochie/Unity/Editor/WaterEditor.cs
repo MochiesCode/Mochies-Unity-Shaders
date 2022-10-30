@@ -14,6 +14,7 @@ public class WaterEditor : ShaderGUI {
 	GUIContent noiseLabel = new GUIContent("Noise Texture");
 	GUIContent foamLabel = new GUIContent("Foam Texture");
 	GUIContent cubeLabel = new GUIContent("Cubemap");
+	GUIContent emissLabel = new GUIContent("Emission Map");
 
 	Dictionary<Action, GUIContent> baseTabButtons = new Dictionary<Action, GUIContent>();
 	Dictionary<Action, GUIContent> norm0TabButtons = new Dictionary<Action, GUIContent>();
@@ -27,6 +28,7 @@ public class WaterEditor : ShaderGUI {
 	Dictionary<Action, GUIContent> reflSpecTabButtons = new Dictionary<Action, GUIContent>();
 	Dictionary<Action, GUIContent> rainTabButtons = new Dictionary<Action, GUIContent>();
 	Dictionary<Action, GUIContent> tessTabButtons = new Dictionary<Action, GUIContent>();
+	Dictionary<Action, GUIContent> emissTabButtons = new Dictionary<Action, GUIContent>();
 
     static Dictionary<Material, Toggles> foldouts = new Dictionary<Material, Toggles>();
     Toggles toggles = new Toggles(new string[] {
@@ -40,11 +42,12 @@ public class WaterEditor : ShaderGUI {
 			"FOAM",
 			"EDGE FADE",
 			"RAIN",
-			"TESSELLATION"
+			"TESSELLATION",
+			"EMISSION"
 	}, 0);
 
     string header = "WaterHeader_Pro";
-	string versionLabel = "v1.8";
+	string versionLabel = "v1.9";
 
 	MaterialProperty _Color = null;
 	MaterialProperty _AngleTint = null;
@@ -177,6 +180,13 @@ public class WaterEditor : ShaderGUI {
 	MaterialProperty _BlendNoiseSource = null;
 	MaterialProperty _FlowMapUV = null;
 	MaterialProperty _BackfaceReflections = null;
+	MaterialProperty _RoughnessMap = null;
+	MaterialProperty _MetallicMap = null;
+	MaterialProperty _EmissionToggle = null;
+	MaterialProperty _EmissionMap = null;
+	MaterialProperty _EmissionMapStochasticToggle = null;
+	MaterialProperty _EmissionColor = null;
+	MaterialProperty _EmissionMapScroll = null;
 
 	MaterialProperty _StencilRef = null;
 
@@ -279,8 +289,10 @@ public class WaterEditor : ShaderGUI {
 			reflSpecTabButtons.Add(()=>{ResetReflSpec();}, MGUI.resetLabel);
 			Action reflSpecTabAction = ()=>{
 				MGUI.Space4();
-				me.ShaderProperty(_Roughness, Tips.waterRoughness);
-				me.ShaderProperty(_Metallic, Tips.waterMetallic);
+				me.TexturePropertySingleLine(Tips.waterRoughness, _RoughnessMap, _Roughness);
+				MGUI.TextureSO(me, _RoughnessMap, _RoughnessMap.textureValue);
+				me.TexturePropertySingleLine(Tips.waterMetallic, _MetallicMap, _Metallic);
+				MGUI.TextureSO(me, _MetallicMap, _MetallicMap.textureValue);
 				MGUI.Space8();
 				me.ShaderProperty(_Reflections, "Reflections");
 				MGUI.PropertyGroup( () => {
@@ -315,6 +327,22 @@ public class WaterEditor : ShaderGUI {
 
 			};
 			Foldouts.Foldout("REFLECTIONS & SPECULAR", foldouts, reflSpecTabButtons, mat, me, reflSpecTabAction);
+
+			// Emission
+			emissTabButtons.Add(()=>{ResetEmission();}, MGUI.resetLabel);
+			Action emissTabAction = ()=>{
+				me.ShaderProperty(_EmissionToggle, "Enable");
+				MGUI.Space4();
+				MGUI.PropertyGroup( () => {
+					MGUI.ToggleGroup(_EmissionToggle.floatValue == 0);
+					me.TexturePropertySingleLine(emissLabel, _EmissionMap, _EmissionMapStochasticToggle);
+					MGUI.TexPropLabel(Tips.stochasticLabel, 117);
+					me.ShaderProperty(_EmissionColor, "Tint");
+					MGUI.TextureSOScroll(me, _EmissionMap, _EmissionMapScroll);
+					MGUI.ToggleGroupEnd();
+				});
+			};
+			Foldouts.Foldout("EMISSION", foldouts, emissTabButtons, mat, me, emissTabAction);
 
 			// Flow Mapping
 			flowTabButtons.Add(()=>{ResetFlowMapping();}, MGUI.resetLabel);
@@ -700,6 +728,19 @@ public class WaterEditor : ShaderGUI {
 		_EdgeFadeOffset.floatValue = 0.5f;
 	}
 
+	void ResetTess(){
+		_TessMin.floatValue = 1f;
+		_TessMax.floatValue = 9f;
+		_TessDistMin.floatValue = 25f;
+		_TessDistMax.floatValue = 50f;
+	}
+
+	void ResetEmission(){
+		_EmissionMapStochasticToggle.floatValue = 0f;
+		_EmissionColor.colorValue = Color.white;
+		_EmissionMapScroll.vectorValue = Vector4.zero;
+	}
+
 	void ClearDictionaries(){
 		baseTabButtons.Clear();
 		norm0TabButtons.Clear();
@@ -713,12 +754,6 @@ public class WaterEditor : ShaderGUI {
 		reflSpecTabButtons.Clear();
 		rainTabButtons.Clear();
 		tessTabButtons.Clear();
-	}
-
-	void ResetTess(){
-		_TessMin.floatValue = 1f;
-		_TessMax.floatValue = 9f;
-		_TessDistMin.floatValue = 25f;
-		_TessDistMax.floatValue = 50f;
+		emissTabButtons.Clear();
 	}
 }

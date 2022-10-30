@@ -226,15 +226,21 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPos);
 		float NdotV = abs(dot(normalDir, viewDir));
 		col *= lerp(_AngleTint, 1, NdotV);
+
+		float roughnessMap = tex2D(_RoughnessMap, TRANSFORM_TEX(i.uv, _RoughnessMap));
+		float rough = roughnessMap * _Roughness;
 		#if FOAM_ENABLED
 			float foamLerp = (foam + crestFoam);
-			_Roughness = lerp(_Roughness, _FoamRoughness, foamLerp);
+			rough = lerp(rough, _FoamRoughness, foamLerp);
 		#endif
-		float roughSq = _Roughness * _Roughness;
+		float roughSq = rough * rough;
 		float roughBRDF = max(roughSq, 0.003);
-			
-		float omr = unity_ColorSpaceDielectricSpec.a - _Metallic * unity_ColorSpaceDielectricSpec.a;
-		float3 specularTint = lerp(unity_ColorSpaceDielectricSpec.rgb, 1, _Metallic);
+
+		float metallicMap = tex2D(_MetallicMap, TRANSFORM_TEX(i.uv, _MetallicMap));
+		float metallic = metallicMap * _Metallic;
+		float omr = unity_ColorSpaceDielectricSpec.a - metallic * unity_ColorSpaceDielectricSpec.a;
+		float3 specularTint = lerp(unity_ColorSpaceDielectricSpec.rgb, 1, metallic);
+
 		float3 specCol = 0;
 		float3 reflCol = 0;
 		#if SPECULAR_ENABLED
@@ -265,16 +271,16 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 			if ((_BackfaceReflections == 0 && isFrontFace) || (_BackfaceReflections == 1)){			
 				float3 reflDir = reflect(-viewDir, normalDir);
 				float surfaceReduction = 1.0 / (roughBRDF*roughBRDF + 1.0);
-				float grazingTerm = saturate((1-_Roughness) + (1-omr));
+				float grazingTerm = saturate((1-rough) + (1-omr));
 				float fresnel = FresnelLerp(specularTint, grazingTerm, NdotV);
 				#if REFLECTIONS_MANUAL_ENABLED
-					reflCol = GetManualReflections(reflDir, _Roughness);
+					reflCol = GetManualReflections(reflDir, rough);
 				#else
-					reflCol = GetWorldReflections(reflDir, i.worldPos, _Roughness);
+					reflCol = GetWorldReflections(reflDir, i.worldPos, rough);
 				#endif
 				#if DEPTH_EFFECTS_ENABLED
 					#if SSR_ENABLED
-						half4 ssrCol = GetSSR(i.worldPos, viewDir, reflDir, normalDir, 1-_Roughness, col.rgb, _Metallic, screenUV, i.uvGrab);
+						half4 ssrCol = GetSSR(i.worldPos, viewDir, reflDir, normalDir, 1-rough, col.rgb, _Metallic, screenUV, i.uvGrab);
 						ssrCol.rgb *= _SSRStrength * lerp(10, 7, linearstep(0,1,_Metallic));
 						#if FOAM_ENABLED
 							foamLerp = 1-foamLerp;
@@ -321,6 +327,17 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		#endif
 		col = lerp(baseCol, col, _Opacity);
 	#endif
+
+	#if EMISSION_ENABLED
+		float2 emissUV = TRANSFORM_TEX(i.uv, _EmissionMap) + (_Time.y * _EmissionMapScroll);
+		#if EMISS_STOCHASTIC_ENABLED
+			float3 emissCol = tex2Dstoch(_EmissionMap, emissUV);
+		#else
+			float3 emissCol = tex2D(_EmissionMap, emissUV);
+		#endif
+		col.rgb += (emissCol * _EmissionColor);
+	#endif
+
 	UNITY_APPLY_FOG(i.fogCoord, col);
 	return col;
 }

@@ -12,11 +12,19 @@ Shader "Mochie/Water" {
 		_BaseColorDistortionStrength("Distortion Strength", Float) = 0.1
 		_DistortionStrength("Distortion Strength", Float) = 0.1
 		_Roughness("Roughness", Range(0,1)) = 0
+		_RoughnessMap("Roughness Map", 2D) = "white" {}
 		_Metallic("Metallic", Range(0,1)) = 0
+		_MetallicMap("Metallic Map", 2D) = "white" {}
 		_Opacity("Opacity", Range(0,1)) = 1
 		[Enum(UnityEngine.Rendering.CullMode)]_CullMode("Cull", Int) = 2
 		[Enum(Off,0, On,1)]_ZWrite("ZWrite", Int) = 0
 		[Enum(Off,0, On,1)]_DepthEffects("Depth Effects", Int) = 1
+		
+		[Toggle(_EMISSION_ON)]_EmissionToggle("Emission Toggle", Int) = 0
+		[Toggle(_EMISSIONMAP_STOCHASTIC_ON)]_EmissionMapStochasticToggle("Stochastic Sampling", Int) = 0
+		_EmissionMap("Emission Map", 2D) = "white" {}
+		[HDR]_EmissionColor("Emission Color", Color) = (1,1,1,1)
+		_EmissionMapScroll("Emission Map Scroll", Vector) = (0,0,0,0)
 		
 		[NoScaleOffset]_NormalMap0 ("", 2D) = "bump" {}
 		_NormalStr0("Strength", Float) = 0.1
@@ -199,6 +207,7 @@ Shader "Mochie/Water" {
 			#pragma shader_feature_local _RAIN_ON
 			#pragma shader_feature_local _FOAM_NORMALS_ON
 			#pragma shader_feature_local _DEPTH_EFFECTS_ON
+			#pragma shader_feature_local _EMISSION_ON
 			#pragma multi_compile_instancing
             #pragma target 5.0
 
@@ -233,6 +242,7 @@ Shader "Mochie/Water" {
 			#pragma shader_feature_local _RAIN_ON
 			#pragma shader_feature_local _FOAM_NORMALS_ON
 			#pragma shader_feature_local _DEPTH_EFFECTS_ON
+			#pragma shader_feature_local _EMISSION_ON
 			#pragma multi_compile_instancing
             #pragma target 5.0
 

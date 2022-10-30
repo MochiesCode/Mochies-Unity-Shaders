@@ -69,6 +69,7 @@ Shader "Mochie/Standard (Lite)" {
 		_EmissPulseStrength("Pulse Strength", Float) = 1
 		[Enum(Off,0, Bass,1, Low Mids,2, Upper Mids,3, Highs,4)]_AudioLinkEmission("Emission Band", Int) = 0
 		_AudioLinkEmissionStrength("Emission Strength", Float) = 1
+		[ToggleUI]_AudioLinkEmissionMeta("Audio Link Meta Emission", Int) = 0
 
 		_UV0Rotate("UV0 Rotation", Float) = 0
 		_UV0Scroll("UV0 Scrolling", Vector) = (0,0,0,0)
@@ -279,6 +280,7 @@ Shader "Mochie/Standard (Lite)" {
 			#pragma shader_feature_local BAKERY_LMSPEC
 			#pragma shader_feature_local BAKERY_SHNONLINEAR
 			#pragma shader_feature_local _OPAQUELIGHTS_OFF
+			#pragma shader_feature_local _AUDIOLINK_ON
 			#pragma shader_feature_local _AREALIT_ON
 			#pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma multi_compile_fwdbase
@@ -360,6 +362,7 @@ Shader "Mochie/Standard (Lite)" {
             #pragma vertex vert_meta
             #pragma fragment frag_meta
 			#define MOCHIE_STANDARD
+			#define THIS_IS_A_META_PASS
 			#pragma shader_feature_local _WORKFLOW_PACKED_ON
 			#pragma shader_feature_local _DETAIL_WORKFLOW_PACKED_ON
             #pragma shader_feature_local _EMISSION
@@ -375,6 +378,8 @@ Shader "Mochie/Standard (Lite)" {
 			#pragma shader_feature_local _OPAQUELIGHTS_OFF
 			#pragma shader_feature_local _AREALIT_ON
 			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
+			#pragma shader_feature_local _AUDIOLINK_ON
+			#pragma shader_feature_local _AUDIOLINK_META_ON
             #pragma shader_feature EDITOR_VISUALIZATION
             #include "MochieStandardMeta.cginc"
             ENDCG
@@ -390,6 +395,7 @@ Shader "Mochie/Standard (Lite)" {
             #pragma fragment frag_meta
 			#define MOCHIE_STANDARD
 			#define BAKERY_META
+			#define THIS_IS_A_META_PASS
 			#pragma shader_feature_local _WORKFLOW_PACKED_ON
 			#pragma shader_feature_local _DETAIL_WORKFLOW_PACKED_ON
             #pragma shader_feature_local _EMISSION
@@ -405,6 +411,8 @@ Shader "Mochie/Standard (Lite)" {
 			#pragma shader_feature_local _OPAQUELIGHTS_OFF
 			#pragma shader_feature_local _AREALIT_ON
 			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
+			#pragma shader_feature_local _AUDIOLINK_ON
+			#pragma shader_feature_local _AUDIOLINK_META_ON
             #pragma shader_feature EDITOR_VISUALIZATION
             #include "MochieStandardMeta.cginc"
             ENDCG

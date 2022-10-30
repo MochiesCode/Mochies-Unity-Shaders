@@ -102,10 +102,10 @@ v2f vert (
 	o.uv = v.uv;
 
 	o.isInVRMirror = false;
-	if (!IsNotVR()){
+	// if (!IsNotVR()){
 		if (IsInMirror())
 			o.isInVRMirror = true;
-	}
+	// }
 	v.tangent.xyz = normalize(v.tangent.xyz);
 	v.normal = normalize(v.normal);
 	float3x3 objectToTangent = float3x3(v.tangent.xyz, (cross(v.normal, v.tangent.xyz) * v.tangent.w), v.normal);

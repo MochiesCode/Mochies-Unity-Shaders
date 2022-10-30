@@ -731,7 +731,6 @@ Shader "Mochie/Uber (Outline)" {
 			#pragma multi_compile _ VERTEXLIGHT_ON
 			#pragma multi_compile_fog
 			#pragma multi_compile_fwdbase
-			#pragma multi_compile_instancing
 			// #pragma skip_variants FOG_LINEAR FOG_EXP FOG_EXP2
 			#pragma skip_variants DIRLIGHTMAP_COMBINED DIRLIGHTMAP_SEPARATE 
 			#pragma skip_variants DYNAMICLIGHTMAP_ON LIGHTMAP_ON LIGHTMAP_SHADOW_MIXING
@@ -788,7 +787,6 @@ Shader "Mochie/Uber (Outline)" {
 
 			#pragma multi_compile_fog
 			#pragma multi_compile_fwdadd_fullshadows
-			#pragma multi_compile_instancing
 			// #pragma skip_variants FOG_LINEAR FOG_EXP FOG_EXP2
 			#pragma skip_variants DIRLIGHTMAP_COMBINED DIRLIGHTMAP_SEPARATE 
 			#pragma skip_variants DYNAMICLIGHTMAP_ON LIGHTMAP_ON LIGHTMAP_SHADOW_MIXING 
@@ -838,7 +836,6 @@ Shader "Mochie/Uber (Outline)" {
 			#pragma multi_compile _ VERTEXLIGHT_ON
 			#pragma multi_compile_fog
 			#pragma multi_compile_fwdbase
-			#pragma multi_compile_instancing
 			// #pragma skip_variants FOG_LINEAR FOG_EXP FOG_EXP2
 			#pragma skip_variants DIRLIGHTMAP_COMBINED DIRLIGHTMAP_SEPARATE 
 			#pragma skip_variants DYNAMICLIGHTMAP_ON LIGHTMAP_ON LIGHTMAP_SHADOW_MIXING 
@@ -882,7 +879,6 @@ Shader "Mochie/Uber (Outline)" {
 			#pragma shader_feature_local _AUDIOLINK_ON
 
 			#pragma multi_compile_shadowcaster
-			#pragma multi_compile_instancing
 			// #pragma skip_variants FOG_LINEAR FOG_EXP FOG_EXP2
 			#pragma skip_variants DIRLIGHTMAP_COMBINED DIRLIGHTMAP_SEPARATE 
 			#pragma skip_variants DYNAMICLIGHTMAP_ON LIGHTMAP_ON LIGHTMAP_SHADOW_MIXING 

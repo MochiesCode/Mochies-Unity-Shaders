@@ -465,10 +465,18 @@ half3 Emission(float2 uv, float2 uvMask, SampleData sd)
 		float emissMask = _EmissionMask.Sample(sampler_MainTex, uvMask+uvOffset).r;
 		emissTex *= _EmissionColor.rgb * _EmissionIntensity * emissMask * GetWave(_EmissPulseWave, _EmissPulseSpeed, _EmissPulseStrength);
 		emissTex = Filtering(emissTex, _HueEmiss, _SaturationEmiss, _BrightnessEmiss, _ContrastEmiss, 0);
-		#if AUDIOLINK_ENABLED
-			audioLinkData al = (audioLinkData)0;
-			InitializeAudioLink(al, 0);
-			emissTex *= lerp(1, GetAudioLinkBand(al, _AudioLinkEmission), _AudioLinkEmissionStrength * al.textureExists);
+		#ifdef THIS_IS_A_META_PASS
+			#if defined(_AUDIOLINK_ON) && defined(_AUDIOLINK_META_ON)
+				audioLinkData al = (audioLinkData)0;
+				InitializeAudioLink(al, 0);
+				emissTex *= lerp(1, GetAudioLinkBand(al, _AudioLinkEmission), _AudioLinkEmissionStrength * al.textureExists);
+			#endif
+		#else
+			#if AUDIOLINK_ENABLED
+				audioLinkData al = (audioLinkData)0;
+				InitializeAudioLink(al, 0);
+				emissTex *= lerp(1, GetAudioLinkBand(al, _AudioLinkEmission), _AudioLinkEmissionStrength * al.textureExists);
+			#endif
 		#endif
 		return emissTex;
 	#else

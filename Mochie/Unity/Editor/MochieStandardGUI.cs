@@ -23,7 +23,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		"LTCGI"
 	}, 1);
 
-	string versionLabel = "v1.18";
+	string versionLabel = "v1.19";
 	public static string receiverText = "AreaLit Maps";
 	public static string emitterText = "AreaLit Light";
 	public static string projectorText = "AreaLit Projector";
@@ -80,6 +80,7 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty brightnessEmiss = null;
 	MaterialProperty contrastEmiss = null;
 	MaterialProperty reflShadows = null;
+	MaterialProperty audioLinkEmissionMeta = null;
 
 	MaterialProperty huePost = null;
 	MaterialProperty saturationPost = null;
@@ -406,6 +407,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		uvRimMask = FindProperty("_UVRimMask", props);
 		uvRimMaskScroll = FindProperty("_UVRimMaskScroll", props);
 		uvRimMaskRot = FindProperty("_UVRimMaskRotate", props);
+		audioLinkEmissionMeta = FindProperty("_AudioLinkEmissionMeta", props);
 	}
 
 	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props){
@@ -728,6 +730,9 @@ internal class MochieStandardGUI : ShaderGUI {
 				if (emissPulseWave.floatValue > 0){
 					me.ShaderProperty(emissPulseStrength, Tips.emissPulseStrength);
 					me.ShaderProperty(emissPulseSpeed, Tips.emissPulseSpeed);
+				}
+				if (audioLinkEmission.floatValue > 0){
+					me.ShaderProperty(audioLinkEmissionMeta, Tips.audioLinkEmissionMeta);
 				}
 				MGUI.Space2();
 				me.TexturePropertySingleLine(Tips.emissionText, emissionMap, emissionColorForRendering, emissIntensity);
@@ -1195,6 +1200,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		MGUI.SetKeyword(material, "_DETAIL_METALLIC_ON", material.GetTexture("_DetailMetallicMap"));
 		MGUI.SetKeyword(material, "_SUBSURFACE_ON", material.GetInt("_Subsurface") == 1 && !isLite);
 		MGUI.SetKeyword(material, "_AUDIOLINK_ON", material.GetInt("_AudioLinkEmission") > 0);
+		MGUI.SetKeyword(material, "_AUDIOLINK_META_ON", material.GetInt("_AudioLinkEmission") > 0 && material.GetInt("_AudioLinkEmissionMeta") > 0);
 		MGUI.SetKeyword(material, "_ALPHAMASK_ON", blendModeEnum > 0 && material.GetInt("_UseAlphaMask") == 1);
 		MGUI.SetKeyword(material, "_BICUBIC_SAMPLING_ON", material.GetInt("_BicubicLightmap") == 1);
 		MGUI.SetKeyword(material, "BAKERY_SH", material.GetInt("_BakeryMode") == 1);

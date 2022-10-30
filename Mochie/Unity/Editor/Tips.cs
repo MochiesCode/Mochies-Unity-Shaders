@@ -45,6 +45,7 @@ namespace Mochie {
 		public static GUIContent useHeight = new GUIContent("Packed Height", "Toggles use of heightmapping when in packed mode. Do not enable this unless you have a heightmap in your packed texture (and want to use it).");
 		public static GUIContent emissPulseWave = new GUIContent("Pulse", "Pulses the strength of the emission using the selected waveform.");
 		public static GUIContent audioLinkEmission = new GUIContent("Audio Link", "Audio link integration. For more info check out https://github.com/llealloo/vrc-udon-audio-link.");
+		public static GUIContent audioLinkEmissionMeta = new GUIContent("Audio Link Meta Pass", "Apply Audio Link to the meta pass. Enable if you're using realtime GI, otherwise keep disabled.");
 		public static GUIContent audioLinkEmissionStrength = new GUIContent("Audio Link Strength", "Strength of the audio link effect.");
 		public static GUIContent emissPulseStrength = new GUIContent("Pulse Strength", "Strength of the pulsing effect");
 		public static GUIContent emissPulseSpeed = new GUIContent("Pulse Speed", "Speed of the pulsing effect");

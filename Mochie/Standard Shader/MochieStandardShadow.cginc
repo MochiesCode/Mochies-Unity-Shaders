@@ -11,6 +11,7 @@
 #include "../Common/Sampling.cginc"
 #include "MochieStandardSampling.cginc"
 
+
 #if (defined(_ALPHABLEND_ON) || defined(_ALPHAPREMULTIPLY_ON)) && defined(UNITY_USE_DITHER_MASK_FOR_ALPHABLENDED_SHADOWS)
     #define UNITY_STANDARD_USE_DITHER_MASK 1
 #endif
@@ -215,6 +216,7 @@ half4 fragShadowCaster (UNITY_POSITION(vpos)
 #endif
 ) : SV_Target
 {
+	float4 mainTexSamplerBullshit = UNITY_SAMPLE_TEX2D(_MainTex, 0);
     #if defined(UNITY_STANDARD_USE_SHADOW_UVS)
         #if defined(_PARALLAXMAP) && (SHADER_TARGET >= 30)
             half3 viewDirForParallax = normalize(i.viewDirForParallax);
@@ -280,7 +282,7 @@ half4 fragShadowCaster (UNITY_POSITION(vpos)
         #endif
     #endif
 
-    SHADOW_CASTER_FRAGMENT(i)
+    return (mainTexSamplerBullshit * 0.0000001);
 }
 
 #endif // UNITY_STANDARD_SHADOW_INCLUDED

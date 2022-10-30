@@ -37,6 +37,8 @@ float4 _CameraDepthTexture_TexelSize;
 #define RAIN_ENABLED 					defined(_RAIN_ON)
 #define FOAM_NORMALS_ENABLED			defined(_FOAM_NORMALS_ON)
 #define DEPTH_EFFECTS_ENABLED			defined(_DEPTH_EFFECTS_ON)
+#define EMISSION_ENABLED				defined(_EMISSION_ON)
+#define EMISS_STOCHASTIC_ENABLED		defined(_EMISSIONMAP_STOCHASTIC_ON)
 
 MOCHIE_DECLARE_TEX2D_SCREENSPACE(_MWGrab);
 sampler2D _MainTex;
@@ -47,6 +49,9 @@ sampler2D _FoamTex;
 sampler2D _FoamNoiseTex;
 sampler2D _CausticsTex;
 sampler2D _BlendNoise;
+sampler2D _RoughnessMap;
+sampler2D _MetallicMap;
+sampler2D _EmissionMap;
 samplerCUBE _ReflCube;
 
 float4 _FogTint, _Color, _FoamColor, _ReflTint, _SpecTint;
@@ -58,6 +63,13 @@ float3 _ReflCubeRotation;
 float2 _NormalMapScale0, _NormalMapScale1;
 float2 _NormalMapScroll0, _NormalMapScroll1;
 float2 _FlowMapScale;
+
+float4 _RoughnessMap_ST;
+float4 _MetallicMap_ST;
+
+float4 _EmissionMap_ST;
+float3 _EmissionColor;
+float2 _EmissionMapScroll;
 
 float2 _VoronoiScale;
 float2 _VoronoiScroll;
