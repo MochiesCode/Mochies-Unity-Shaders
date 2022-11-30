@@ -1,6 +1,8 @@
 #ifndef WATER_DEFINES_INCLUDED
 #define WATER_DEFINES_INCLUDED
 
+float _VRChatMirrorMode;
+
 #include "../Common/Sampling.cginc"
 
 MOCHIE_DECLARE_TEX2D_SCREENSPACE(_CameraDepthTexture);
@@ -39,6 +41,7 @@ float4 _CameraDepthTexture_TexelSize;
 #define DEPTH_EFFECTS_ENABLED			defined(_DEPTH_EFFECTS_ON)
 #define EMISSION_ENABLED				defined(_EMISSION_ON)
 #define EMISS_STOCHASTIC_ENABLED		defined(_EMISSIONMAP_STOCHASTIC_ON)
+#define AREALIT_ENABLED					defined(_AREALIT_ON)
 
 MOCHIE_DECLARE_TEX2D_SCREENSPACE(_MWGrab);
 sampler2D _MainTex;
@@ -52,7 +55,12 @@ sampler2D _BlendNoise;
 sampler2D _RoughnessMap;
 sampler2D _MetallicMap;
 sampler2D _EmissionMap;
+sampler2D _AreaLitMask;
 samplerCUBE _ReflCube;
+
+float _AreaLitStrength;
+float _AreaLitRoughnessMult;
+float4 _AreaLitMask_ST;
 
 float4 _FogTint, _Color, _FoamColor, _ReflTint, _SpecTint;
 float4 _ReflCube_HDR;
@@ -76,6 +84,8 @@ float2 _VoronoiScroll;
 float _VoronoiSpeed;
 float _VoronoiWaveHeight;
 float3 _VoronoiOffset;
+
+float4 _BackfaceTint;
 
 float2 _NoiseTexScale;
 float2 _NoiseTexScroll;
@@ -192,5 +202,9 @@ struct v2f {
 
 #include "WaterSSR.cginc"
 #include "WaterFunctions.cginc"
+
+#if AREALIT_ENABLED
+	#include "../../AreaLit/Shader/Lighting.hlsl"
+#endif
 
 #endif // WATER_DEFINES_INCLUDED

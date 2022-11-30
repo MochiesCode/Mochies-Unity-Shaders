@@ -25,6 +25,7 @@ Shader "Mochie/Uber" {
 		_MainTex("tex", 2D) = "white" {} // MainTex
 		_MirrorTex("tex", 2D) = "white" {}
 		_Color("col", Color) = (1,1,1,1)
+		_VertexColor("ra", Range(0,1)) = 0
 		[ToggleUI]_ColorPreservation("tog", Int) = 1
 		_AlphaMask("tex", 2D) = "white" {}
 		[Enum(Red,0, Green,1, Blue,2, Alpha,3)]_AlphaMaskChannel("en03", Int) = 0
@@ -204,6 +205,8 @@ Shader "Mochie/Uber" {
 		_SRad("fl", Float) = 0.02
 		_EdgeFade("ra", Range(0,1)) = 0.1
 		[HideInInspector]_NoiseTexSSR("SSRNoise", 2D) = "black" {}
+		[ToggleUI]_FresnelToggle("tog", Int) = 1
+		_FresnelStrength("fl", Float) = 1
 
 		// SPECULAR
 		[Enum(Off,0, GGX,1, Anisotropic,2, Combined,3)]_Specular("en4", Int) = 0

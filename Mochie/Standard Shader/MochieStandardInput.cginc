@@ -1,11 +1,9 @@
 #ifndef MOCHIE_STANDARD_INPUT_INCLUDED
-// Upgrade NOTE: excluded shader from DX11, OpenGL ES 2.0 because it uses unsized arrays
-#pragma exclude_renderers d3d11 gles
 #define MOCHIE_STANDARD_INPUT_INCLUDED
 
 #include "UnityCG.cginc"
 #include "UnityStandardConfig.cginc"
-#include "MochieStandardPBSLighting.cginc" // TBD: remove
+#include "MochieStandardPBSLighting.cginc"
 #include "UnityStandardUtils.cginc"
 #include "MochieStandardKeyDefines.cginc"
 #include "../Common/Utilities.cginc"
@@ -20,6 +18,10 @@
 
 #if AREALIT_ENABLED
 	#include "../../AreaLit/Shader/Lighting.hlsl"
+#endif
+
+#ifdef LTCGI
+	#include "Assets/_pi_/_LTCGI/Shaders/LTCGI.cginc"
 #endif
 
 //---------------------------------------
@@ -152,6 +154,8 @@ int _GSAA;
 float _LTCGIStrength;
 float _AreaLitStrength;
 float _AreaLitRoughnessMult;
+sampler2D _AreaLitMask;
+float4 _AreaLitMask_ST;
 
 sampler2D _RimMask;
 float4 _RimMask_ST;
@@ -197,7 +201,9 @@ float3 shadowedReflections;
 #endif
 
 #if AUDIOLINK_ENABLED
-	Texture2D		_AudioTexture;
+	#ifndef LTCGI
+		Texture2D	_AudioTexture;
+	#endif
 	SamplerState	sampler_AudioTexture;
 	int				_AudioLinkEmission;
 	float			_AudioLinkEmissionStrength;

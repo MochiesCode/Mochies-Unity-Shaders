@@ -409,6 +409,11 @@ float _ScatterDist;
 float _ScatterAmbient;
 float _ScatterWrap;
 
+int _FresnelToggle;
+float _FresnelStrength;
+
+float _VertexColor;
+
 int _AudioLinkUVDistortionBand;
 float _AudioLinkUVDistortionMultiplier;
 float _AudioLinkRemapMin;

@@ -481,6 +481,8 @@ VertexOutputForwardBase vertForwardBase (VertexInput v)
     o.pos = UnityObjectToClipPos(v.vertex);
 	o.localPos = v.vertex;
 	o.color = v.color;
+    o.rawUV.xy = v.uv0;
+    o.rawUV.zw = v.uv1;
     TexCoords(v, o.tex, o.tex1, o.tex2, o.tex3);
     o.eyeVec.xyz = NormalizePerVertexNormal(posWorld.xyz - _WorldSpaceCameraPos);
     float3 normalWorld = UnityObjectToWorldNormal(v.normal);
@@ -743,7 +745,7 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
         float3 areaLitColor = s.diffColor * diffTerm + s.specColor * specTerm;
         if (_ReflShadows == 1)
             areaLitColor *= shadowedReflections;
-        c.rgb += areaLitColor * _AreaLitStrength;
+        c.rgb += areaLitColor * _AreaLitStrength * tex2D(_AreaLitMask, TRANSFORM_TEX(i.rawUV, _AreaLitMask)).r;
     #endif
 
     Rim(s.posWorld, s.normalWorld, c.rgb, i.tex2.zw);
@@ -792,6 +794,8 @@ VertexOutputForwardAdd vertForwardAdd (VertexInput v)
     o.pos = UnityObjectToClipPos(v.vertex);
 	o.localPos = v.vertex;
 
+    o.rawUV.xy = v.uv0;
+    o.rawUV.zw = v.uv1;
     TexCoords(v, o.tex, o.tex1, o.tex2, o.tex3);
     o.eyeVec.xyz = NormalizePerVertexNormal(posWorld.xyz - _WorldSpaceCameraPos);
     o.posWorld = posWorld.xyz;

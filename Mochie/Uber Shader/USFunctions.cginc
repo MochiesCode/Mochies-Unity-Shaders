@@ -341,6 +341,8 @@ float4 GetAlbedo(g2f i, lighting l, masks m, audioLinkData al){
 		#endif
 	#endif
 
+	albedo *= lerp(1, i.color, _VertexColor);
+	
     return albedo;
 }
 

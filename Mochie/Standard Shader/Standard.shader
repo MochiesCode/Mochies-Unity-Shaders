@@ -201,6 +201,7 @@ Shader "Mochie/Standard" {
 		_RNM2("RNM2", 2D) = "black" {}
 
 		[ToggleUI]_AreaLitToggle("Enable", Int) = 0
+		_AreaLitMask("Mask", 2D) = "white" {}
 		_AreaLitStrength("Strength", Float) = 1
 		_AreaLitRoughnessMult("Roughness Multiplier", Float) = 1
 		[NoScaleOffset]_LightMesh("Light Mesh", 2D) = "black" {}

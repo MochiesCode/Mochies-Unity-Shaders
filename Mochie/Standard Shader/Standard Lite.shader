@@ -202,6 +202,7 @@ Shader "Mochie/Standard (Lite)" {
 
 		[ToggleUI]_AreaLitToggle("Enable", Int) = 0
 		_AreaLitStrength("Strength", Float) = 1
+		_AreaLitMask("Mask", 2D) = "white" {}
 		_AreaLitRoughnessMult("Roughness Multiplier", Float) = 1
 		[NoScaleOffset]_LightMesh("Light Mesh", 2D) = "black" {}
 		[NoScaleOffset]_LightTex0("Light Texture 0", 2D) = "white" {}

@@ -10,7 +10,8 @@ Material:
   m_Name: Water Mat
   m_Shader: {fileID: 4800000, guid: 7e018b47cc1d059439656129107b3445, type: 3}
   m_ShaderKeywords: _CAUSTICS_ON _DEPTHFOG_ON _DEPTH_EFFECTS_ON _EDGEFADE_ON _FLOW_ON
-    _FOAM_NORMALS_ON _FOAM_ON _NORMALMAP_1_ON _REFLECTIONS_ON _SPECULAR_ON
+    _FOAM_NORMALS_ON _FOAM_ON _NORMALMAP_1_ON _REFLECTIONS_ON _SCREENSPACE_REFLECTIONS_ON
+    _SPECULAR_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -20,6 +21,10 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
+    - _AreaLitMask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _BlendNoise:
         m_Texture: {fileID: 2800000, guid: 352f401c145570f488487622cd5fdaa6, type: 3}
         m_Scale: {x: 1, y: 1}
@@ -42,6 +47,26 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _FoamTex:
         m_Texture: {fileID: 2800000, guid: 6c6c8f6678ed78e4eb543b06dcbc5b8a, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _LightMesh:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _LightTex0:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _LightTex1:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _LightTex2:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _LightTex3:
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
@@ -77,6 +102,9 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
+    - _AreaLitRoughnessMult: 1
+    - _AreaLitStrength: 1
+    - _AreaLitToggle: 0
     - _BackfaceReflections: 1
     - _BaseColorDistortionStrength: 0.1
     - _BaseColorOffset: 0
@@ -131,6 +159,7 @@ Material:
     - _NormalStr0: 0.1
     - _NormalStr1: 0.2
     - _Opacity: 1
+    - _OpaqueLights: 1
     - _RainToggle: 0
     - _ReflStrength: 1
     - _Reflections: 1
@@ -177,6 +206,7 @@ Material:
     - _ZWrite: 0
     m_Colors:
     - _AngleTint: {r: 1, g: 1, b: 1, a: 1}
+    - _BackfaceTint: {r: 1, g: 1, b: 1, a: 1}
     - _BlendNoiseScale: {r: 2, g: 2, b: 0, a: 0}
     - _CausticsColor: {r: 1, g: 1, b: 1, a: 1}
     - _CausticsDistortionSpeed: {r: 0.1, g: 0.1, b: 0, a: 0}

@@ -30,7 +30,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	float3 uv10 = float3(baseUV1, 1);
 	#if FOAM_ENABLED
 		float2 uvFoam = ScaleUV(i.uv, _FoamTexScale, _FoamTexScroll * 0.1);
-		ParallaxOffset(i, uvFoam, _FoamOffset);
+		ParallaxOffset(i, uvFoam, _FoamOffset, isFrontFace);
 		float3 uvF0 = float3(uvFoam, 1);
 		float3 uvF1 = uvF0;
 	#endif
@@ -60,10 +60,10 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 			#define tex2D tex2Dstoch
 			_NormalStr0 *= 1.5;
 		#endif
-		ParallaxOffset(i, uv00.xy, _NormalMapOffset0);
+		ParallaxOffset(i, uv00.xy, _NormalMapOffset0, isFrontFace);
 		float3 normalMap0 = UnpackScaleNormal(tex2D(_NormalMap0, uv00.xy), _NormalStr0) * uv00.z;
 		#if FLOW_ENABLED
-			ParallaxOffset(i, uv01.xy, _NormalMapOffset0);
+			ParallaxOffset(i, uv01.xy, _NormalMapOffset0, isFrontFace);
 			float3 normalMap1 = UnpackScaleNormal(tex2D(_NormalMap0, uv01.xy), _NormalStr0) * uv01.z;
 		#endif
 		#undef tex2D
@@ -72,10 +72,10 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 			#define tex2D tex2Dstoch
 			_NormalStr1 *= 1.5;
 		#endif
-		ParallaxOffset(i, uv10.xy, _NormalMapOffset1);
+		ParallaxOffset(i, uv10.xy, _NormalMapOffset1, isFrontFace);
 		float3 detailNormal0 = UnpackScaleNormal(tex2D(_NormalMap1, uv10.xy), _NormalStr1) * uv10.z;
 		#if FLOW_ENABLED
-			ParallaxOffset(i, uv11.xy, _NormalMapOffset1);
+			ParallaxOffset(i, uv11.xy, _NormalMapOffset1, isFrontFace);
 			float3 detailNormal1 = UnpackScaleNormal(tex2D(_NormalMap1, uv11.xy), _NormalStr1) * uv11.z;
 			normalMap0 = normalize(normalMap0 + normalMap1);
 			detailNormal0 = normalize(detailNormal0 + detailNormal1);
@@ -87,10 +87,10 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 			#define tex2D tex2Dstoch
 			_NormalStr0 *= 1.5;
 		#endif
-		ParallaxOffset(i, uv00.xy, _NormalMapOffset0);
+		ParallaxOffset(i, uv00.xy, _NormalMapOffset0, isFrontFace);
 		float3 normalMap0 = UnpackScaleNormal(tex2D(_NormalMap0, uv00.xy), _NormalStr0) * uv00.z;
 		#if FLOW_ENABLED
-			ParallaxOffset(i, uv01.xy, _NormalMapOffset0);
+			ParallaxOffset(i, uv01.xy, _NormalMapOffset0, isFrontFace);
 			float3 normalMap1 = UnpackScaleNormal(tex2D(_NormalMap0, uv01.xy), _NormalStr0) * uv01.z;
 			normalMap = normalize(normalMap0 + normalMap1);
 		#else
@@ -126,11 +126,15 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	float2 baseUV = i.uvGrab.xy/proj;
 	float2 mainTexUV = TRANSFORM_TEX(i.uv, _MainTex) + _Time.y * 0.1 * _MainTexScroll;
 	mainTexUV += normalMap.xy * _BaseColorDistortionStrength;
-	ParallaxOffset(i, mainTexUV, _BaseColorOffset);
+	ParallaxOffset(i, mainTexUV, _BaseColorOffset, isFrontFace);
+	float4 surfaceTint = _Color;
+	if (!isFrontFace)
+		surfaceTint = _BackfaceTint;
+
 	#if BASECOLOR_STOCHASTIC_ENABLED
-		float4 mainTex = tex2Dstoch(_MainTex, mainTexUV) * _Color;
+		float4 mainTex = tex2Dstoch(_MainTex, mainTexUV) * surfaceTint;
 	#else
-		float4 mainTex = tex2D(_MainTex, mainTexUV) * _Color;
+		float4 mainTex = tex2D(_MainTex, mainTexUV) * surfaceTint;
 	#endif
 	float4 baseCol = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MWGrab, baseUV);
 	float4 col = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MWGrab, screenUV) * mainTex;
@@ -225,7 +229,8 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 			normalDir = -normalDir;
 		float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPos);
 		float NdotV = abs(dot(normalDir, viewDir));
-		col *= lerp(_AngleTint, 1, NdotV);
+		if (!isFrontFace)
+			col *= lerp(_AngleTint, 1, NdotV);
 
 		float roughnessMap = tex2D(_RoughnessMap, TRANSFORM_TEX(i.uv, _RoughnessMap));
 		float rough = roughnessMap * _Roughness;
@@ -298,6 +303,21 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		#endif
 		col.rgb += specCol;
 		col.rgb += reflCol;
+
+		#if AREALIT_ENABLED && (REFLECTIONS_ENABLED || REFLECTIONS_MANUAL_ENABLED) 
+			AreaLightFragInput ai;
+			ai.pos = i.worldPos;
+			ai.normal = normalDir;
+			ai.view = -viewDir;
+			ai.roughness = roughBRDF * _AreaLitRoughnessMult;
+			ai.occlusion = 1; // float4(occlusion, 1);
+			ai.screenPos = i.pos.xy;
+			half4 diffTerm, specTerm;
+			ShadeAreaLights(ai, diffTerm, specTerm, true, !IsSpecularOff(), IsStereo());
+
+			float3 areaLitColor = col.rgb * diffTerm + specularTint * specTerm;
+			col.rgb += areaLitColor * _AreaLitStrength * tex2D(_AreaLitMask, TRANSFORM_TEX(i.uv, _AreaLitMask)).r;
+		#endif
 	#endif
 	
 	#if DEPTH_EFFECTS_ENABLED

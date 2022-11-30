@@ -7,10 +7,6 @@
 #include "MochieStandardSSR.cginc"
 #include "MochieStandardSSS.cginc"
 
-#ifdef LTCGI
-	#include "Assets/_pi_/_LTCGI/Shaders/LTCGI.cginc"
-#endif
-
 float3 get_camera_pos() {
 	float3 worldCam;
 	worldCam.x = unity_CameraToWorld[0][3];

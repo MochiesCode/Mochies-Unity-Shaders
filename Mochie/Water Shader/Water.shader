@@ -5,6 +5,7 @@ Shader "Mochie/Water" {
 		
 		_Color("Color", Color) = (1,1,1,1)
 		_AngleTint("Angle Tint", Color) = (1,1,1,1)
+		_BackfaceTint("Backface Tint", Color) = (1,1,1,1)
 		_MainTex("Base Color", 2D) = "white" {}
 		_MainTexScroll("Scrolling", Vector) = (0,0.1,0,0)
 		_BaseColorOffset("Parallax Offset", Float) = 0
@@ -149,6 +150,17 @@ Shader "Mochie/Water" {
 		_RippleScale("Ripple Scale", float) = 40
 		_RippleSpeed("Ripple Speed", float) = 10
 		_RippleStr("Ripple Strength", float) = 1
+		
+		[ToggleUI]_AreaLitToggle("Enable", Int) = 0
+		_AreaLitMask("Mask", 2D) = "white" {}
+		_AreaLitStrength("Strength", Float) = 1
+		_AreaLitRoughnessMult("Roughness Multiplier", Float) = 1
+		[NoScaleOffset]_LightMesh("Light Mesh", 2D) = "black" {}
+		[NoScaleOffset]_LightTex0("Light Texture 0", 2D) = "white" {}
+		[NoScaleOffset]_LightTex1("Light Texture 1", 2D) = "black" {}
+		[NoScaleOffset]_LightTex2("Light Texture 2", 2D) = "black" {}
+		[NoScaleOffset]_LightTex3("Light Texture 3", 2DArray) = "black" {}
+		[ToggleOff]_OpaqueLights("Opaque Lights", Float) = 1.0
 
 		// Unused in this variant
 		[ToggleUI]_TessellationOffsetMask("Vertex Offset Mask", Int) = 1
@@ -208,6 +220,8 @@ Shader "Mochie/Water" {
 			#pragma shader_feature_local _FOAM_NORMALS_ON
 			#pragma shader_feature_local _DEPTH_EFFECTS_ON
 			#pragma shader_feature_local _EMISSION_ON
+			#pragma shader_feature_local _OPAQUELIGHTS_OFF
+			#pragma shader_feature_local _AREALIT_ON
 			#pragma multi_compile_instancing
             #pragma target 5.0
 

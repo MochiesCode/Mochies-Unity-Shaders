@@ -29,6 +29,7 @@ public class WaterEditor : ShaderGUI {
 	Dictionary<Action, GUIContent> rainTabButtons = new Dictionary<Action, GUIContent>();
 	Dictionary<Action, GUIContent> tessTabButtons = new Dictionary<Action, GUIContent>();
 	Dictionary<Action, GUIContent> emissTabButtons = new Dictionary<Action, GUIContent>();
+	Dictionary<Action, GUIContent> areaLitTabButtons = new Dictionary<Action, GUIContent>();
 
     static Dictionary<Material, Toggles> foldouts = new Dictionary<Material, Toggles>();
     Toggles toggles = new Toggles(new string[] {
@@ -43,14 +44,16 @@ public class WaterEditor : ShaderGUI {
 			"EDGE FADE",
 			"RAIN",
 			"TESSELLATION",
-			"EMISSION"
+			"EMISSION",
+			"AREALIT"
 	}, 0);
 
     string header = "WaterHeader_Pro";
-	string versionLabel = "v1.9";
+	string versionLabel = "v1.10";
 
 	MaterialProperty _Color = null;
 	MaterialProperty _AngleTint = null;
+	MaterialProperty _BackfaceTint = null;
 	MaterialProperty _MainTex = null;
 	MaterialProperty _MainTexScroll = null;
 	MaterialProperty _DistortionStrength = null;
@@ -188,12 +191,28 @@ public class WaterEditor : ShaderGUI {
 	MaterialProperty _EmissionColor = null;
 	MaterialProperty _EmissionMapScroll = null;
 
+	MaterialProperty _AreaLitToggle = null;
+	MaterialProperty _AreaLitMask = null;
+	MaterialProperty _AreaLitStrength = null;
+	MaterialProperty _AreaLitRoughnessMult = null;
+	MaterialProperty _LightMesh = null;
+	MaterialProperty _LightTex0 = null;
+	MaterialProperty _LightTex1 = null;
+	MaterialProperty _LightTex2 = null;
+	MaterialProperty _LightTex3 = null;
+	MaterialProperty _OpaqueLights = null;
+
 	MaterialProperty _StencilRef = null;
 
     BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 	bool m_FirstTimeApply = true;
 
-    public override void OnGUI(MaterialEditor me, MaterialProperty[] props) {
+	MaterialEditor me;
+
+    public override void OnGUI(MaterialEditor matEditor, MaterialProperty[] props) {
+
+		me = matEditor;
+
         if (!me.isVisible)
             return;
 
@@ -239,9 +258,11 @@ public class WaterEditor : ShaderGUI {
 					MGUI.Space2();
 				});
 				MGUI.PropertyGroup( () => {
-					me.TexturePropertySingleLine(texLabel, _MainTex, _Color, _BaseColorStochasticToggle);
+					me.TexturePropertySingleLine(texLabel, _MainTex, _BaseColorStochasticToggle);
 					MGUI.TexPropLabel(Tips.stochasticLabel, 117);
+					me.ShaderProperty(_Color, "Surface Tint");
 					me.ShaderProperty(_AngleTint, "Glancing Tint");
+					me.ShaderProperty(_BackfaceTint, "Backface Tint");
 					if (_MainTex.textureValue){
 						MGUI.TextureSOScroll(me, _MainTex, _MainTexScroll);
 						me.ShaderProperty(_BaseColorOffset, Tips.parallaxOffsetLabel);
@@ -557,6 +578,49 @@ public class WaterEditor : ShaderGUI {
 				Foldouts.Foldout("TESSELLATION", foldouts, tessTabButtons, mat, me, tessTabAction);
 			}
 
+			// AreaLit
+			if (Shader.Find("AreaLit/Standard") != null){
+				areaLitTabButtons.Add(()=>{ResetAreaLit();}, MGUI.resetLabel);
+				Action areaLitTabAction = ()=>{
+					me.ShaderProperty(_AreaLitToggle, "Enable");
+					MGUI.Space4();
+					bool reflDisabled = _AreaLitToggle.floatValue == 1 && _Reflections.floatValue == 0;
+					bool cantInteract = _AreaLitToggle.floatValue == 0 || reflDisabled;
+					if (reflDisabled){
+						MGUI.DisplayError("Reflections are disabled, please enable them to use AreaLit.");
+					}
+					MGUI.ToggleGroup(cantInteract);
+					MGUI.PropertyGroup( () => {
+						me.TexturePropertySingleLine(Tips.maskText, _AreaLitMask);
+						MGUI.TextureSO(me, _AreaLitMask, _AreaLitMask.textureValue);
+						me.ShaderProperty(_AreaLitStrength, "Strength");
+						me.ShaderProperty(_AreaLitRoughnessMult, "Roughness Multiplier");
+						me.ShaderProperty(_OpaqueLights, Tips.opaqueLightsText);
+					});
+					MGUI.PropertyGroup( () => {
+						var lightMeshText = !_LightMesh.textureValue ? Tips.lightMeshText : new GUIContent(
+							Tips.lightMeshText.text + $" (max: {_LightMesh.textureValue.height})", Tips.lightMeshText.tooltip
+						);
+						me.TexturePropertySingleLine(lightMeshText, _LightMesh);
+						me.TexturePropertySingleLine(Tips.lightTex0Text, _LightTex0);
+						CheckTrilinear(_LightTex0.textureValue);
+						me.TexturePropertySingleLine(Tips.lightTex1Text, _LightTex1);
+						CheckTrilinear(_LightTex1.textureValue);
+						me.TexturePropertySingleLine(Tips.lightTex2Text, _LightTex2);
+						CheckTrilinear(_LightTex2.textureValue);
+						me.TexturePropertySingleLine(Tips.lightTex3Text, _LightTex3);
+						CheckTrilinear(_LightTex3.textureValue);
+					});
+					MGUI.ToggleGroupEnd();
+					MGUI.DisplayInfo("Note that the AreaLit package files MUST be inside a folder named AreaLit (case sensitive) directly in the Assets folder (Assets/AreaLit)");
+				};
+				Foldouts.Foldout("AREALIT", foldouts, areaLitTabButtons, mat, me, areaLitTabAction);
+			}
+			else {
+				_AreaLitToggle.floatValue = 0f;
+				mat.SetInt("_AreaLitToggle", 0);
+				mat.DisableKeyword("_AREALIT_ON");
+			}
         }
 		ApplyMaterialSettings(mat);
 
@@ -587,8 +651,30 @@ public class WaterEditor : ShaderGUI {
 		MGUI.SetKeyword(mat, "_VORONOI_ON", vertMode == 3);
 		MGUI.SetKeyword(mat, "_FOAM_NORMALS_ON", foamNormals);
 		MGUI.SetKeyword(mat, "_DEPTH_EFFECTS_ON", depthFXToggle == 1);
+		MGUI.SetKeyword(mat, "_AREALIT_ON", mat.GetInt("_AreaLitToggle") == 1);
 	}
-	
+
+	void CheckTrilinear(Texture tex) {
+		if(!tex)
+			return;
+		if(tex.mipmapCount <= 1) {
+			me.HelpBoxWithButton(
+				EditorGUIUtility.TrTextContent("Mip maps are required, please enable them in the texture import settings."),
+				EditorGUIUtility.TrTextContent("OK"));
+			return;
+		}
+		if(tex.filterMode != FilterMode.Trilinear) {
+			if(me.HelpBoxWithButton(
+				EditorGUIUtility.TrTextContent("Trilinear filtering is required, and aniso is recommended."),
+				EditorGUIUtility.TrTextContent("Fix Now"))) {
+				tex.filterMode = FilterMode.Trilinear;
+				tex.anisoLevel = 1;
+				EditorUtility.SetDirty(tex);
+			}
+			return;
+		}
+	}
+
 	void ResetSurface(){
 		_Color.colorValue = Color.white;
 		_MainTex.textureValue = null;
@@ -710,6 +796,7 @@ public class WaterEditor : ShaderGUI {
 		_SpecStrength.floatValue = 1f;
 		_SSR.floatValue = 0f;
 		_SSRStrength.floatValue = 1f;
+		_EdgeFadeSSR.floatValue = 0.1f;
 		_ReflTint.colorValue = Color.white;
 		_SpecTint.colorValue = Color.white;
 		_ReflCube.textureValue = null;
@@ -740,6 +827,9 @@ public class WaterEditor : ShaderGUI {
 		_EmissionColor.colorValue = Color.white;
 		_EmissionMapScroll.vectorValue = Vector4.zero;
 	}
+	void ResetAreaLit(){
+
+	}
 
 	void ClearDictionaries(){
 		baseTabButtons.Clear();
@@ -755,5 +845,6 @@ public class WaterEditor : ShaderGUI {
 		rainTabButtons.Clear();
 		tessTabButtons.Clear();
 		emissTabButtons.Clear();
+		areaLitTabButtons.Clear();
 	}
 }

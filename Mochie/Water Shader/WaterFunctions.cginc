@@ -6,8 +6,9 @@ float2 ScaleUV(float2 uv, float2 scale, float2 scroll){
 	return (uv + scroll * _Time.y * 0.1) * scale;
 }
 
-void ParallaxOffset(v2f i, inout float2 uv, float offset){
-	uv -= (i.tangentViewDir.xy * offset);
+void ParallaxOffset(v2f i, inout float2 uv, float offset, bool isFrontFace){
+	if (isFrontFace)
+		uv -= (i.tangentViewDir.xy * offset);
 }
 
 void CalculateTangentViewDir(inout v2f i){

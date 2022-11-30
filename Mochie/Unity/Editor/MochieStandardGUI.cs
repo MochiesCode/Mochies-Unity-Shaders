@@ -23,7 +23,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		"LTCGI"
 	}, 1);
 
-	string versionLabel = "v1.19";
+	string versionLabel = "v1.20";
 	public static string receiverText = "AreaLit Maps";
 	public static string emitterText = "AreaLit Light";
 	public static string projectorText = "AreaLit Projector";
@@ -213,6 +213,7 @@ internal class MochieStandardGUI : ShaderGUI {
 	// MaterialProperty _RNM2 = null;
 
 	MaterialProperty areaLitToggle = null;
+	MaterialProperty areaLitMask = null;
 	MaterialProperty areaLitStrength = null;
 	MaterialProperty areaLitRoughnessMult = null;
 	MaterialProperty lightMesh = null;
@@ -408,6 +409,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		uvRimMaskScroll = FindProperty("_UVRimMaskScroll", props);
 		uvRimMaskRot = FindProperty("_UVRimMaskRotate", props);
 		audioLinkEmissionMeta = FindProperty("_AudioLinkEmissionMeta", props);
+		areaLitMask = FindProperty("_AreaLitMask", props);
 	}
 
 	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props){
@@ -1056,6 +1058,8 @@ internal class MochieStandardGUI : ShaderGUI {
 			MGUI.ToggleGroup(areaLitToggle.floatValue == 0);
 			MGUI.PropertyGroupLayer(()=>{
 				MGUI.SpaceN2();
+				me.TexturePropertySingleLine(Tips.maskLabel, areaLitMask);
+				MGUI.TextureSO(me, areaLitMask, areaLitMask.textureValue);
 				me.ShaderProperty(areaLitStrength, "Strength");
 				me.ShaderProperty(areaLitRoughnessMult, "Roughness Multiplier");
 				me.ShaderProperty(opaqueLights, Tips.opaqueLightsText);

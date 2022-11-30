@@ -156,7 +156,7 @@ internal class USEditor : ShaderGUI {
 
 	static readonly string unityFolderPath = "Assets/Mochie/Unity";
 	string header = "Header_Pro";
-	string versionLabel = "v1.26";
+	string versionLabel = "v1.27";
 	// β
 	
 	MaterialProperty _RenderMode = null; 
@@ -676,6 +676,9 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _ACES = null;
 	MaterialProperty _MainTexRot = null;
 	MaterialProperty _DetailRot = null;
+	MaterialProperty _VertexColor = null;
+	MaterialProperty _FresnelToggle = null;
+	MaterialProperty _FresnelStrength = null;
 
 	MaterialProperty _VRCFallback = null;
 	MaterialProperty _NaNLmao = null;
@@ -822,6 +825,7 @@ internal class USEditor : ShaderGUI {
 				MGUI.TexPropLabel("Channel", 109);
 				MGUI.TextureSO(me, _AlphaMask);
 			}
+			me.ShaderProperty(_VertexColor, "Vertex Color");
 		};
 		Foldouts.Foldout("BASE", foldouts, baseTabButtons, mat, me, baseTabAction);
 
@@ -1206,6 +1210,7 @@ internal class USEditor : ShaderGUI {
 							me.TexturePropertySingleLine(reflCubeLabel, _ReflCube);
 							me.ShaderProperty(_ReflCol, "Tint");
 							me.ShaderProperty(_ReflectionStr, "Strength");
+							MGUI.ToggleFloat(me, "Fresnel", _FresnelToggle, _FresnelStrength);
 							MGUI.ToggleSlider(me, "Manual Roughness", _ReflUseRough, _ReflRough);
 							MGUI.ToggleIntSlider(me, "Stepping", _ReflStepping, _ReflSteps);
 							me.ShaderProperty(_LightingBasedIOR, Tips.lightingBasedIOR);
@@ -2848,6 +2853,8 @@ internal class USEditor : ShaderGUI {
 		_LightingBasedIOR.floatValue = 0f;
 		_ReflStepping.floatValue = 0f;
 		_ReflSteps.floatValue = 1f;
+		_FresnelToggle.floatValue = 1f;
+		_FresnelStrength.floatValue = 1f;
 	}
 	
 	void DoSpecReset(){

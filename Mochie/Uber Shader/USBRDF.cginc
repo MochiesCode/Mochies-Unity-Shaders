@@ -411,7 +411,7 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
 		if (m.reflectionMask > 0){										
 			float surfaceReduction = (1.0 / (brdfRoughness*brdfRoughness + 1.0)) * saturate(lerp(1, (l.NdotL + 0.3), _LightingBasedIOR));
 			float grazingTerm = saturate(smoothness + (1-omr));
-			reflections = surfaceReduction * reflCol * FresnelLerp(specCol, grazingTerm, l.NdotV);
+			reflections = surfaceReduction * reflCol * FresnelLerp(specCol, grazingTerm, lerp(1, l.NdotV, _FresnelStrength*_FresnelToggle));
 			#if SSR_ENABLED
 				float4 SSRColor = GetSSRColor(i.worldPos, l.viewDir, l.reflectionDir, normalize(i.normal), smoothness, albedo, metallic, m.reflectionMask, l.screenUVs, i.grabPos);
 				reflections = lerp(reflections, SSRColor.rgb, SSRColor.a);
