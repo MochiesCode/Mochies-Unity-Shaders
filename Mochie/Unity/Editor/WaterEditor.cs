@@ -519,32 +519,36 @@ public class WaterEditor : ShaderGUI {
 			Foldouts.Foldout("FOAM", foldouts, foamTabButtons, mat, me, foamTabAction);
 
 			// Depth Fog
-			fogTabButtons.Add(()=>{ResetFog();}, MGUI.resetLabel);
-			Action fogTabAction = ()=>{
-				me.ShaderProperty(_FogToggle, "Enable");
-				MGUI.Space4();
-				MGUI.PropertyGroup( () => {
-					MGUI.ToggleGroup(_FogToggle.floatValue == 0);
-					me.ShaderProperty(_FogTint, "Color");
-					me.ShaderProperty(_FogPower, "Power");
-					MGUI.ToggleGroupEnd();
-				});
-			};
-			Foldouts.Foldout("DEPTH FOG", foldouts, fogTabButtons, mat, me, fogTabAction);
+			if (_DepthEffects.floatValue == 1){
+				fogTabButtons.Add(()=>{ResetFog();}, MGUI.resetLabel);
+				Action fogTabAction = ()=>{
+					me.ShaderProperty(_FogToggle, "Enable");
+					MGUI.Space4();
+					MGUI.PropertyGroup( () => {
+						MGUI.ToggleGroup(_FogToggle.floatValue == 0);
+						me.ShaderProperty(_FogTint, "Color");
+						me.ShaderProperty(_FogPower, "Power");
+						MGUI.ToggleGroupEnd();
+					});
+				};
+				Foldouts.Foldout("DEPTH FOG", foldouts, fogTabButtons, mat, me, fogTabAction);
+			}
 
 			// Edge Fade
-			edgeFadeTabButtons.Add(()=>{ResetEdgeFade();}, MGUI.resetLabel);
-			Action edgeFadeTabAction = ()=>{
-				me.ShaderProperty(_EdgeFadeToggle, "Enable");
-				MGUI.Space4();
-				MGUI.PropertyGroup( () => {
-					MGUI.ToggleGroup(_EdgeFadeToggle.floatValue == 0);
-					me.ShaderProperty(_EdgeFadePower, "Power");
-					me.ShaderProperty(_EdgeFadeOffset, "Offset");
-					MGUI.ToggleGroupEnd();
-				});
-			};
-			Foldouts.Foldout("EDGE FADE", foldouts, edgeFadeTabButtons, mat, me, edgeFadeTabAction);
+			if (_DepthEffects.floatValue == 1){
+				edgeFadeTabButtons.Add(()=>{ResetEdgeFade();}, MGUI.resetLabel);
+				Action edgeFadeTabAction = ()=>{
+					me.ShaderProperty(_EdgeFadeToggle, "Enable");
+					MGUI.Space4();
+					MGUI.PropertyGroup( () => {
+						MGUI.ToggleGroup(_EdgeFadeToggle.floatValue == 0);
+						me.ShaderProperty(_EdgeFadePower, "Power");
+						me.ShaderProperty(_EdgeFadeOffset, "Offset");
+						MGUI.ToggleGroupEnd();
+					});
+				};
+				Foldouts.Foldout("EDGE FADE", foldouts, edgeFadeTabButtons, mat, me, edgeFadeTabAction);
+			}
 
 			// Rain
 			rainTabButtons.Add(()=>{ResetRain();}, MGUI.resetLabel);
@@ -561,7 +565,7 @@ public class WaterEditor : ShaderGUI {
 			};
 			Foldouts.Foldout("RAIN", foldouts, rainTabButtons, mat, me, rainTabAction);
 
-			// Rain
+			// Tessellation
 			if (MGUI.IsTessellated(mat)){
 				tessTabButtons.Add(()=>{ResetTess();}, MGUI.resetLabel);
 				Action tessTabAction = ()=>{

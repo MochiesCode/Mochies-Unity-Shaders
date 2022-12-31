@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 1109e9bdc6f65cb44abfa6b4981829dc
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures:
+  - _MainTex: {instanceID: 0}
+  - _RoughnessMap: {instanceID: 0}
+  - _MetallicMap: {instanceID: 0}
+  - _OcclusionMap: {instanceID: 0}
+  - _RainSheet: {fileID: 2800000, guid: df89a63673a32f4438fba4fb13f0f640, type: 3}
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
