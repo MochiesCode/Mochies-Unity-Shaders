@@ -6,6 +6,10 @@
     return cameraPos;
 }
 
+float3 ShadeSH9(float3 normal){
+	return max(0, ShadeSH9(float4(normal,1)));
+}
+
 float4x4 inverse(float4x4 input){
 	#define minor(a,b,c) determinant(float3x3(input.a, input.b, input.c))
 	float4x4 cofactors = float4x4(

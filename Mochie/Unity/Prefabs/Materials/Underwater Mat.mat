@@ -37,7 +37,7 @@ Material:
     - _DoFToggle: 1
     - _Fade: 1.25
     - _FogFade: 3
-    - _FogOpacity: 0.8
+    - _FogOpacity: 1
     - _FogRadius: 1.7
     - _FogToggle: 1
     - _HQBlur: 0

@@ -193,6 +193,11 @@ float4 frag (g2f i, bool frontFace : SV_IsFrontFace) : SV_Target {
 		#endif
 	#endif
 
+	#if REFRACTION_ENABLED
+		if (_UnlitRefraction == 1)
+			ApplyRefraction(i, l, m, diffuse.rgb);
+	#endif
+
 	#if EMISSION_ENABLED
     	ApplyLREmission(l, diffuse.rgb, emiss);
 	#endif
@@ -219,11 +224,6 @@ float4 frag (g2f i, bool frontFace : SV_IsFrontFace) : SV_Target {
 		diffuse.rgb += bcRimColor;
 	#endif
 	
-	#if REFRACTION_ENABLED
-		if (_UnlitRefraction == 1)
-			ApplyRefraction(i, l, m, diffuse.rgb);
-	#endif
-
 	#if POST_FILTERING_ENABLED
 		ApplyFiltering(i, m, diffuse.rgb);
 	#endif

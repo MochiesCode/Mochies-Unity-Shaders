@@ -159,96 +159,6 @@ void ApplySpritesheet1(g2f i, inout float4 col){
 	ApplySpritesheetBlending(i, col, spriteCol, _SpritesheetBlending1);
 }
 
-float GetDetailRough(g2f i, float roughIn){
-	float detailRough = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailRoughnessMap, sampler_MainTex, i.uv2.xy);
-	return BlendScalars(roughIn, detailRough, _DetailRoughBlending);
-}
-
-float GetRoughness(g2f i, masks m){
-	float rough = 0;
-	float dummy;
-	#if DEFAULT_WORKFLOW
-		rough = lerp(_Glossiness, MOCHIE_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, sampler_MainTex, i.uv.xy), _UseSpecMap);
-		rough = lerp(rough, GetDetailRough(i, rough), _DetailRoughStrength * m.detailMask * _UsingDetailRough);
-		rough = lerp(rough, Remap(rough, 0, 1, _RoughRemapMin, _RoughRemapMax), _RoughnessFiltering);
-		ApplyPBRFiltering(rough, _RoughContrast, _RoughIntensity, _RoughLightness, _RoughnessFiltering, dummy);
-	#elif SPECULAR_WORKFLOW
-		float smooth = 0;
-		float4 specMap = MOCHIE_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, sampler_MainTex, i.uv.xy);
-		if (_PBRWorkflow == 1){
-			if (_UseSmoothMap == 1){
-				smooth = MOCHIE_SAMPLE_TEX2D_SAMPLER(_SmoothnessMap, sampler_MainTex, i.uv.xy).r * _GlossMapScale;
-				smooth = lerp(smooth, Remap(smooth, 0, 1, _SmoothRemapMin, _SmoothRemapMax), _SmoothnessFiltering);
-				ApplyPBRFiltering(smooth, _SmoothContrast, _SmoothIntensity, _SmoothLightness, _SmoothnessFiltering, dummy);
-			}
-			else smooth = _GlossMapScale;
-		}
-		else {
-			smooth = specMap.a * _GlossMapScale;
-			smooth = lerp(smooth, Remap(smooth, 0, 1, _SmoothRemapMin, _SmoothRemapMax), _SmoothnessFiltering);
-			ApplyPBRFiltering(smooth, _SmoothContrast, _SmoothIntensity, _SmoothLightness, _SmoothnessFiltering, dummy);
-		}
-		rough = 1-smooth;
-	#elif PACKED_WORKFLOW
-		rough = ChannelCheck(packedTex, _RoughnessChannel);
-		rough = lerp(rough, GetDetailRough(i, rough), _DetailRoughStrength * m.detailMask * _UsingDetailRough);
-		rough = lerp(rough, Remap(rough, 0, 1, _RoughRemapMin, _RoughRemapMax), _RoughnessFiltering);
-		ApplyPBRFiltering(rough, _RoughContrast, _RoughIntensity, _RoughLightness, _RoughnessFiltering, dummy);
-	#endif
-
-	return rough;
-}
-
-float3 BlurSample(float2 uv, float2 strength){
-	float3 blurCol = 0;
-	float2 uvb = uv;
-	strength *= 0.015;
-	#if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
-		strength.y *= 0.5555555;
-	#else
-		strength.x *= 0.5625;
-	#endif
-	[unroll(16)]
-	for (int j = 0; j < 16; j++){
-		uvb = uv + (kernel[j] * strength);
-		blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MUSGrab, uvb);
-	}
-	return blurCol / 16;
-}
-
-void ApplyRefraction(g2f i, lighting l, masks m, inout float3 albedo){
-	float2 screenUV = GetGrabPos(i.grabPos);
-	float2 IOR = (_RefractionIOR-1) * mul(UNITY_MATRIX_V, float4(l.normal, 0));
-	float2 offset = ((1/(i.grabPos.z + 1) * IOR)) * (1-dot(l.normal, l.viewDir));
-	offset = float2(offset.x, -(offset.y * _ProjectionParams.x));
-
-	float2 refractUV = screenUV + offset;
-	#if REFRACTION_CA_ENABLED
-		float2 uvG = screenUV + (offset * (1 + _RefractionCAStr));
-		float2 uvB = screenUV + (offset * (1 - _RefractionCAStr));
-		float chromR = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MUSGrab, refractUV).r;
-		float chromG = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MUSGrab, uvG).g;
-		float chromB = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MUSGrab, uvB).b;
-		float3 refractionCol = float3(chromR, chromG, chromB);
-	#else
-		float3 refractionCol = 0;
-		UNITY_BRANCH
-		if (_RefractionBlur == 1){
-			float blurStrength = _RefractionBlurStrength;
-			if (_RefractionBlurRough == 1){
-				blurStrength *= GetRoughness(i, m);
-			}
-			refractionCol = BlurSample(refractUV, blurStrength);
-		}
-		else {
-			refractionCol = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MUSGrab, refractUV);
-		}
-	#endif
-	float alpha = step(m.refractDissolveMask, _RefractionDissolveMaskStr);
-	refractionCol = lerp(albedo, refractionCol * _RefractionTint, alpha * m.refractMask);
-	albedo = lerp(refractionCol, albedo, _RefractionOpac);
-}
-
 void ApplyBCDissolve(g2f i, audioLinkData al, inout float4 albedo, out float3 bcRimColor){
 	bcRimColor = 0;
 	#if BCDISSOLVE_ENABLED
@@ -276,10 +186,6 @@ float3 GetDetailAlbedo(g2f i, float3 albedo){
 
 float4 GetAlbedo(g2f i, lighting l, masks m, audioLinkData al){
 	float4 mainTex = UNITY_SAMPLE_TEX2D(_MainTex, i.uv.xy);
-	#if REFRACTION_ENABLED
-		if (_UnlitRefraction == 0)
-			ApplyRefraction(i, l, m, mainTex.rgb);
-	#endif
 	
 	float4 albedo = 1;
 	cubeMask = 1;

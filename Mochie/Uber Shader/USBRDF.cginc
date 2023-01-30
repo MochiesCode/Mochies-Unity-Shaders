@@ -1,6 +1,98 @@
 #ifndef USBRDF_INCLUDED
 #define USBRDF_INCLUDED
 
+float GetDetailRough(g2f i, float roughIn){
+	float detailRough = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailRoughnessMap, sampler_MainTex, i.uv2.xy);
+	return BlendScalars(roughIn, detailRough, _DetailRoughBlending);
+}
+
+float3 BlurSample(float2 uv, float2 strength){
+	float3 blurCol = 0;
+	float2 uvb = uv;
+	strength *= 0.015;
+	#if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
+		strength.y *= 0.5555555;
+	#else
+		strength.x *= 0.5625;
+	#endif
+	[unroll(16)]
+	for (int j = 0; j < 16; j++){
+		uvb = uv + (kernel[j] * strength);
+		blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MUSGrab, uvb);
+	}
+	return blurCol / 16;
+}
+
+float GetRoughness(g2f i, masks m){
+	float rough = 0;
+	float dummy;
+	#if DEFAULT_WORKFLOW
+		rough = lerp(_Glossiness, MOCHIE_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, sampler_MainTex, i.uv.xy), _UseSpecMap);
+		rough = lerp(rough, GetDetailRough(i, rough), _DetailRoughStrength * m.detailMask * _UsingDetailRough);
+		rough = lerp(rough, Remap(rough, 0, 1, _RoughRemapMin, _RoughRemapMax), _RoughnessFiltering);
+		ApplyPBRFiltering(rough, _RoughContrast, _RoughIntensity, _RoughLightness, _RoughnessFiltering, dummy);
+	#elif SPECULAR_WORKFLOW
+		float smooth = 0;
+		float4 specMap = MOCHIE_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, sampler_MainTex, i.uv.xy);
+		if (_PBRWorkflow == 1){
+			if (_UseSmoothMap == 1){
+				smooth = MOCHIE_SAMPLE_TEX2D_SAMPLER(_SmoothnessMap, sampler_MainTex, i.uv.xy).r * _GlossMapScale;
+				smooth = lerp(smooth, Remap(smooth, 0, 1, _SmoothRemapMin, _SmoothRemapMax), _SmoothnessFiltering);
+				ApplyPBRFiltering(smooth, _SmoothContrast, _SmoothIntensity, _SmoothLightness, _SmoothnessFiltering, dummy);
+			}
+			else smooth = _GlossMapScale;
+		}
+		else {
+			smooth = specMap.a * _GlossMapScale;
+			smooth = lerp(smooth, Remap(smooth, 0, 1, _SmoothRemapMin, _SmoothRemapMax), _SmoothnessFiltering);
+			ApplyPBRFiltering(smooth, _SmoothContrast, _SmoothIntensity, _SmoothLightness, _SmoothnessFiltering, dummy);
+		}
+		rough = 1-smooth;
+	#elif PACKED_WORKFLOW
+		rough = ChannelCheck(packedTex, _RoughnessChannel);
+		rough = lerp(rough, GetDetailRough(i, rough), _DetailRoughStrength * m.detailMask * _UsingDetailRough);
+		rough = lerp(rough, Remap(rough, 0, 1, _RoughRemapMin, _RoughRemapMax), _RoughnessFiltering);
+		ApplyPBRFiltering(rough, _RoughContrast, _RoughIntensity, _RoughLightness, _RoughnessFiltering, dummy);
+	#endif
+
+	return rough;
+}
+
+void ApplyRefraction(g2f i, lighting l, masks m, inout float3 albedo){
+	#if !ADDITIVE_PASS
+		float2 screenUV = GetGrabPos(i.grabPos);
+		float2 IOR = (_RefractionIOR-1) * mul(UNITY_MATRIX_V, float4(l.normal, 0));
+		float2 offset = ((1/(i.grabPos.z + 1) * IOR)) * (1-dot(l.normal, l.viewDir));
+		offset = float2(offset.x, -(offset.y * _ProjectionParams.x));
+
+		float2 refractUV = screenUV + offset;
+		#if REFRACTION_CA_ENABLED
+			float2 uvG = screenUV + (offset * (1 + _RefractionCAStr));
+			float2 uvB = screenUV + (offset * (1 - _RefractionCAStr));
+			float chromR = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MUSGrab, refractUV).r;
+			float chromG = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MUSGrab, uvG).g;
+			float chromB = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MUSGrab, uvB).b;
+			float3 refractionCol = float3(chromR, chromG, chromB);
+		#else
+			float3 refractionCol = 0;
+			UNITY_BRANCH
+			if (_RefractionBlur == 1){
+				float blurStrength = _RefractionBlurStrength;
+				if (_RefractionBlurRough == 1){
+					blurStrength *= GetRoughness(i, m);
+				}
+				refractionCol = BlurSample(refractUV, blurStrength);
+			}
+			else {
+				refractionCol = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MUSGrab, refractUV);
+			}
+		#endif
+		float alpha = step(m.refractDissolveMask, _RefractionDissolveMaskStr);
+		refractionCol = lerp(albedo, refractionCol * _RefractionTint, alpha * m.refractMask);
+		albedo = lerp(refractionCol, albedo, _RefractionOpac);
+	#endif
+}
+
 #if SHADING_ENABLED
 
 float GetFresnel(float VdotL, float width, float edge){
@@ -431,15 +523,20 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
 		ApplyMatcap(i, l, m, environment, GetRoughness(smoothness));
 	#endif
 
-	#if REFRACTION_ENABLED
-		float3 col = diffuse.rgb * lerp(lighting, 1, step(m.refractDissolveMask, _RefractionDissolveMaskStr) * (1-_RefractionOpac) * m.refractMask);
-	#else
+	// #if REFRACTION_ENABLED
+	// 	float3 col = diffuse.rgb * lerp(lighting, 1, step(m.refractDissolveMask, _RefractionDissolveMaskStr) * (1-_RefractionOpac) * m.refractMask);
+	// #else
 		float3 col = diffuse.rgb * lighting;
-	#endif
+	// #endif
 
 	// Prevents being washed out by intense lighting
 	float3 maxCol = (diffuse.rgb + environment) * diffuseTerm;
 	col = lerp(col, clamp(col, 0, maxCol), _ColorPreservation);
+
+	#if REFRACTION_ENABLED
+		if (_UnlitRefraction == 0)
+			ApplyRefraction(i, l, m, col);
+	#endif
 
     return col + environment;
 }

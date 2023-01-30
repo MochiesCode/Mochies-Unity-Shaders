@@ -1,11 +1,10 @@
 ﻿Shader "Mochie/Glass" {
     Properties {
-        [Header(SURFACE)]
-        [Space(10)]
+
         _GrabpassTint("Grabpass Tint", Color) = (1,1,1,1)
         _SpecularityTint("Specularity Tint", Color) = (1,1,1,1)
 		_BaseColorTint("Base Color Tint", Color) = (1,1,1,1)
-        [Space(4)]
+
         _BaseColor("Base Color", 2D) = "black" {}
 		_RoughnessMap("Roughness Map", 2D) = "white" {}
         _MetallicMap("Metallic Map", 2D) = "white" {}
@@ -19,9 +18,6 @@
 		_Blur("Blur Strength", Float) = 1
         [KeywordEnum(ULTRA, HIGH, MED, LOW)]BlurQuality("Blur Quality", Int) = 1
 
-        [Space(10)]
-		[Header(RAIN)]
-        [Space(10)]
         [Toggle(_RAIN_ON)]_RainToggle("Enable", Int) = 0
 		[HideInInspector]_RainSheet("Texture Sheet", 2D) = "black" {}
 		[HideInInspector]_Rows("Rows", Float) = 8
@@ -31,13 +27,13 @@
         _YScale("Y Scale", Float) = 1.5
 		_Strength("Normal Strength", Float) = 0.3
 
-        [Space(10)]
-		[Header(RENDER SETTINGS)]
-        [Space(10)]
         [Toggle(_REFLECTIONS_ON)]_ReflectionsToggle("Reflections", Int) = 1
         [Toggle(_SPECULAR_HIGHLIGHTS_ON)]_SpecularToggle("Specular Highlights", Int) = 1
+        [Toggle(_LIT_BASECOLOR_ON)]_LitBaseColor("Lit Base Color", Int) = 1
 		[Enum(UnityEngine.Rendering.CullMode)]_Culling("Culling", Int) = 2
-        
+        [Enum(Grabpass,0, Premultiplied,1, Off,2)]_BlendMode("Transparency", Int) = 0
+        [HideInInspector]_SrcBlend("Src Blend", Int) = 1
+        [HideInInspector]_DstBlend("Dst Blend", Int) = 0
     }
     SubShader {
         Tags { 
@@ -46,10 +42,13 @@
             "ForceNoShadowCaster"="True"
             "IgnoreProjector"="True"
         }
-        
+        GrabPass {
+            Tags {"LightMode"="Always"}
+            "_GlassGrab"
+        }
         Cull [_Culling]
+        Blend [_SrcBlend] [_DstBlend]
         ZWrite Off
-        GrabPass {"_GlassGrab"}
 
         Pass {
             Name "ForwardBase"
@@ -63,6 +62,8 @@
             #pragma shader_feature_local _ BLURQUALITY_ULTRA BLURQUALITY_HIGH BLURQUALITY_MED BLURQUALITY_LOW
             #pragma shader_feature_local _REFLECTIONS_ON
             #pragma shader_feature_local _SPECULAR_HIGHLIGHTS_ON
+            #pragma shader_feature_local _GRABPASS_ON
+            #pragma shader_feature_local _LIT_BASECOLOR_ON
             #pragma target 5.0
 
             #include "UnityCG.cginc"
@@ -204,19 +205,29 @@
                 // float dist = distance(wPos, i.cameraPos);
                 // _Blur *= 1-min(dist/10, 1);
                 float3 grabCol = 0;
-                if (_Roughness > 0 && _Blur > 0)
-                    grabCol = tex2Dblur(_GlassGrab, screenUV, (roughness * _Blur * 0.0125));
-                else
-                    grabCol = UNITY_SAMPLE_SCREENSPACE_TEXTURE(_GlassGrab, screenUV);
-                grabCol *= _GrabpassTint;
-
+                #ifdef _GRABPASS_ON
+                    if (_Roughness > 0 && _Blur > 0)
+                        grabCol = tex2Dblur(_GlassGrab, screenUV, (roughness * _Blur * 0.0125));
+                    else
+                        grabCol = UNITY_SAMPLE_SCREENSPACE_TEXTURE(_GlassGrab, screenUV);
+                    grabCol *= _GrabpassTint;
+                #endif
+                
                 float4 baseColorTex = tex2D(_BaseColor, TRANSFORM_TEX(i.uv, _BaseColor)) * _BaseColorTint;
                 float3 baseColor = baseColorTex.rgb * baseColorTex.a;
+                #ifdef _LIT_BASECOLOR_ON
+                    float3 lightCol = ShadeSH9(normalDir) + _LightColor0;
+                    baseColor *= saturate(lightCol);
+                #endif
                 float occlusion = lerp(1, tex2D(_OcclusionMap, TRANSFORM_TEX(i.uv, _OcclusionMap)), _Occlusion);
                 float3 specularity = (specCol + reflCol) * _SpecularityTint;
 
                 float3 col = (specularity + grabCol + baseColor) * occlusion;
-                float4 finalCol = float4(col, 1);
+                #ifdef _GRABPASS_ON
+                    float4 finalCol = float4(col, 1);
+                #else
+                    float4 finalCol = float4(col, 0);
+                #endif
 
                 UNITY_APPLY_FOG(i.fogCoord, finalCol);
                 return finalCol;
@@ -224,4 +235,5 @@
             ENDCG
         }
     }
+    CustomEditor "GlassEditor"
 }
