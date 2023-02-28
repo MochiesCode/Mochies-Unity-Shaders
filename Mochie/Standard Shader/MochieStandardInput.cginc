@@ -154,8 +154,9 @@ int _GSAA;
 float _LTCGIStrength;
 float _AreaLitStrength;
 float _AreaLitRoughnessMult;
-sampler2D _AreaLitMask;
-float4 _AreaLitMask_ST;
+sampler2D _AreaLitOcclusion;
+float4 _AreaLitOcclusion_ST;
+int _OcclusionUVSet;
 
 sampler2D _RimMask;
 float4 _RimMask_ST;
@@ -285,7 +286,7 @@ float2 SelectUVSet(VertexInput v, int selection){
 	return uvs[selection];
 }
 
-void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1, inout float4 texcoord2, inout float4 texcoord3)
+void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1, inout float4 texcoord2, inout float4 texcoord3, inout float4 texcoord4)
 {
 	texcoord.xy = Rotate2D(SelectUVSet(v, _UVPri), _UV0Rotate);
 	texcoord.xy = TRANSFORM_TEX(texcoord.xy, _MainTex);
@@ -298,6 +299,7 @@ void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1, ino
 	texcoord1 = 0;
 	texcoord2 = 0;
 	texcoord3 = 0;
+	texcoord4 = 0;
 
 	#ifdef _PARALLAXMAP
 		texcoord1.xy = TRANSFORM_TEX(SelectUVSet(v, _UVHeightMask), _ParallaxMask);
@@ -329,6 +331,11 @@ void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1, ino
 		texcoord3.zw = Rotate2D(SelectUVSet(v, _UVRainMask), _UV5Rotate);
 		texcoord3.zw = TRANSFORM_TEX(texcoord3.zw, _RainMask);
 		texcoord3.zw += _Time.y * _UV5Scroll;
+	#endif
+
+	#if AREALIT_ENABLED
+		texcoord4.xy = SelectUVSet(v, _OcclusionUVSet);
+		texcoord4.xy = TRANSFORM_TEX(texcoord4.xy, _AreaLitOcclusion);
 	#endif
 }
 
@@ -511,11 +518,7 @@ half3 NormalInTangentSpace(float4 texcoords, float4 raincoords, SampleData sd)
 	#if defined(UNITY_ENABLE_DETAIL_NORMALMAP)
 		sd.scaleTransform = _DetailAlbedoMap_ST;
 		half mask = DetailMask(texcoords.xy);
-		#if DETAIL_SAMPLEMODE_ENABLED
-			half3 detailNormalTangent = SampleTexture(_DetailNormalMap, sampler_DetailNormalMap, texcoords.zw, sd, _DetailNormalMapScale);
-		#else
-			half3 detailNormalTangent = UnpackScaleNormal(MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailNormalMap, sampler_DetailNormalMap, texcoords.zw), _DetailNormalMapScale);
-		#endif
+		half3 detailNormalTangent = SampleDetailTexture(_DetailNormalMap, sampler_DetailNormalMap, texcoords.zw, sd, _DetailNormalMapScale);
 		normalTangent = lerp(normalTangent, BlendNormals(normalTangent, detailNormalTangent), mask);
 	#endif
 	#if RAIN_ENABLED

@@ -211,6 +211,7 @@ Shader "Mochie/Standard" {
 		[NoScaleOffset]_LightTex3("Light Texture 3", 2DArray) = "black" {}
 		[ToggleOff]_OpaqueLights("Opaque Lights", Float) = 1.0
 
+		_AreaLitOcclusion("Occlusion", 2D) = "white" {}
 		[Enum(UV0,0,UV1,1, UV2,2, UV3,3, UV4,4)]_OcclusionUVSet("UV Set for occlusion map", Float) = 0
 
         [HideInInspector]_SrcBlend("__src", Float) = 1.0

@@ -455,6 +455,7 @@ struct VertexOutputForwardBase
     float4 rawUV                          : TEXCOORD15;
     float4 refl                           : TEXCOORD16;
     float4 tex3                           : TEXCOORD17;
+    float4 tex4                           : TEXCOORD18;
 	float4 color                          : COLOR;
     UNITY_VERTEX_INPUT_INSTANCE_ID
     UNITY_VERTEX_OUTPUT_STEREO
@@ -483,7 +484,7 @@ VertexOutputForwardBase vertForwardBase (VertexInput v)
 	o.color = v.color;
     o.rawUV.xy = v.uv0;
     o.rawUV.zw = v.uv1;
-    TexCoords(v, o.tex, o.tex1, o.tex2, o.tex3);
+    TexCoords(v, o.tex, o.tex1, o.tex2, o.tex3, o.tex4);
     o.eyeVec.xyz = NormalizePerVertexNormal(posWorld.xyz - _WorldSpaceCameraPos);
     float3 normalWorld = UnityObjectToWorldNormal(v.normal);
     #ifdef _TANGENT_TO_WORLD
@@ -637,12 +638,13 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
     float clampedRoughness = max(roughness, 0.002);
 
     #if AREALIT_ENABLED
+        float4 alOcclusion = tex2D(_AreaLitOcclusion, o.tex4);
         AreaLightFragInput ai;
         ai.pos = s.posWorld;
         ai.normal = s.normalWorld;
         ai.view = -s.eyeVec;
         ai.roughness = roughness * _AreaLitRoughnessMult;
-        ai.occlusion = float4(occlusion, 1);
+        ai.occlusion = float4(occlusion, 1) * alOcclusion;
         ai.screenPos = i.pos.xy;
         half4 diffTerm, specTerm;
         ShadeAreaLights(ai, diffTerm, specTerm, true, !IsSpecularOff(), IsStereo());
@@ -745,7 +747,7 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
         float3 areaLitColor = s.diffColor * diffTerm + s.specColor * specTerm;
         if (_ReflShadows == 1)
             areaLitColor *= shadowedReflections;
-        c.rgb += areaLitColor * _AreaLitStrength * tex2D(_AreaLitMask, TRANSFORM_TEX(i.rawUV, _AreaLitMask)).r;
+        c.rgb += areaLitColor * _AreaLitStrength;
     #endif
 
     Rim(s.posWorld, s.normalWorld, c.rgb, i.tex2.zw);
@@ -779,6 +781,7 @@ struct VertexOutputForwardAdd
     float4 tex2                         : TEXCOORD14;
     float4 rawUV                        : TEXCOORD15;
     float4 tex3                         : TEXCOORD16;
+    float4 tex4                         : TEXCOORD17;
 	float4 color                        : COLOR;
     UNITY_VERTEX_OUTPUT_STEREO
 };
@@ -796,7 +799,7 @@ VertexOutputForwardAdd vertForwardAdd (VertexInput v)
 
     o.rawUV.xy = v.uv0;
     o.rawUV.zw = v.uv1;
-    TexCoords(v, o.tex, o.tex1, o.tex2, o.tex3);
+    TexCoords(v, o.tex, o.tex1, o.tex2, o.tex3, o.tex4);
     o.eyeVec.xyz = NormalizePerVertexNormal(posWorld.xyz - _WorldSpaceCameraPos);
     o.posWorld = posWorld.xyz;
     float3 normalWorld = UnityObjectToWorldNormal(v.normal);

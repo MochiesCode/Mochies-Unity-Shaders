@@ -11,15 +11,18 @@ Shader "Mochie/Water" {
 		_BaseColorOffset("Parallax Offset", Float) = 0
 		[Toggle(_BASECOLOR_STOCHASTIC_ON)]_BaseColorStochasticToggle("Stochastic Sampling", Int) = 0
 		_BaseColorDistortionStrength("Distortion Strength", Float) = 0.1
-		_DistortionStrength("Distortion Strength", Float) = 0.1
+		_DetailBaseColor("Detail Base Color", 2D) = "white" {}
+		_DetailBaseColorTint("Detail Base Color Tint", Color) = (1,1,1,1)
+		_DetailNormal("Detail Normal", 2D) = "bump" {}
+		_DetailNormalStrength("Detail Normal Strength", Float) = 1
+		_DistortionStrength("Distortion Strength", Float) = 0.5
+		[ToggleUI]_DetailTextureMode("Detail Textures", Int) = 0
+		_DetailScroll("Detail Scroll", Vector) = (0,0,0,0)
 		_Roughness("Roughness", Range(0,1)) = 0
 		_RoughnessMap("Roughness Map", 2D) = "white" {}
 		_Metallic("Metallic", Range(0,1)) = 0
 		_MetallicMap("Metallic Map", 2D) = "white" {}
 		_Opacity("Opacity", Range(0,1)) = 1
-		[Enum(UnityEngine.Rendering.CullMode)]_CullMode("Cull", Int) = 2
-		[Enum(Off,0, On,1)]_ZWrite("ZWrite", Int) = 0
-		[Enum(Off,0, On,1)]_DepthEffects("Depth Effects", Int) = 1
 		
 		[Toggle(_EMISSION_ON)]_EmissionToggle("Emission Toggle", Int) = 0
 		[Toggle(_EMISSIONMAP_STOCHASTIC_ON)]_EmissionMapStochasticToggle("Stochastic Sampling", Int) = 0
@@ -119,16 +122,16 @@ Shader "Mochie/Water" {
 		
 		[Toggle(_DEPTHFOG_ON)]_FogToggle("Enable", Int) = 1
 		_FogTint("Color", Color) = (0.11,0.26,0.26,1)
-		_FogPower("Power", Float) = 100
+		_FogPower("Power", Float) = 12
 
 		[Toggle(_FOAM_ON)]_FoamToggle("Enable", Int) = 1
 		[NoScaleOffset]_FoamTex("Foam Texture", 2D) = "white" {}
 		_FoamNoiseTex("Noise Texture", 2D) = "white" {}
-		_FoamNoiseTexScale("Scale", Vector) = (2,2,0,0)
+		_FoamNoiseTexScale("Scale", Vector) = (3,3,0,0)
 		_FoamNoiseTexScroll("Scroll", Vector) = (0,0.1,0,0)
 		_FoamNoiseTexStrength("Strength", Float) = 0
 		_FoamNoiseTexCrestStrength("Crest Strength", Float) = 1.1
-		_FoamTexScale("Scale", Vector) = (3,3,0,0)
+		_FoamTexScale("Scale", Vector) = (5,5,0,0)
 		_FoamTexScroll("Scroll", Vector) = (0.1,-0.1,0,0)
 		_FoamRoughness("Roughness", Range(0,1)) = 0.6
 		_FoamColor("Color", Color) = (1,1,1,1)
@@ -170,7 +173,13 @@ Shader "Mochie/Water" {
 		_TessDistMax("Max Tessellation Distance", Float) = 50
 
 		[IntRange]_StencilRef("Stencil Reference", Range(1,255)) = 65
-
+		[Enum(Opaque,0, Premultiplied,1, Grabpass,2)]_TransparencyMode("Transparency Mode", Int) = 2
+		[Enum(UnityEngine.Rendering.CullMode)]_CullMode("Cull", Int) = 2
+		[Enum(Off,0, On,1)]_ZWrite("ZWrite", Int) = 0
+		[Enum(Off,0, On,1)]_DepthEffects("Depth Effects", Int) = 1
+		
+		[HideInInspector]_SrcBlend("__src", Float) = 1.0
+        [HideInInspector]_DstBlend("__dst", Float) = 0.0
 		[HideInInspector]_NoiseTexSSR("SSR Noise Tex", 2D) = "black"
     }
 
@@ -179,9 +188,9 @@ Shader "Mochie/Water" {
 			"Queue"="Transparent" 
 			"RenderType"="Transparent"
 			"DisableBatching"="True"
-			"IgnoreProjector"="True"
 			"PreviewType"="Plane"
 			"ForceNoShadowCasting"="True"
+			"IgnoreProjector"="True"
 		}
 		Stencil {
 			Ref [_StencilRef]
@@ -190,11 +199,15 @@ Shader "Mochie/Water" {
 			Fail Keep
 			ZFail Keep
 		}
-		GrabPass {"_MWGrab"}
+		GrabPass {
+			Tags {"LightMode"="Always"}
+			"_MWGrab"
+		}
 		ZWrite [_ZWrite]
 		Cull [_CullMode]
         Pass {
 			Tags {"LightMode"="ForwardBase"}
+			Blend [_SrcBlend] [_DstBlend]
             CGPROGRAM
 			#pragma vertex vert
             #pragma fragment frag
@@ -206,6 +219,8 @@ Shader "Mochie/Water" {
 			#pragma shader_feature_local _REFLECTIONS_MANUAL_ON
 			#pragma shader_feature_local _SCREENSPACE_REFLECTIONS_ON
 			#pragma shader_feature_local _NORMALMAP_1_ON
+			#pragma shader_feature_local _DETAIL_NORMAL_ON
+			#pragma shader_feature_local _DETAIL_BASECOLOR_ON
 			#pragma shader_feature_local _FLOW_ON
 			#pragma shader_feature_local _ _NOISE_TEXTURE_ON _GERSTNER_WAVES_ON _VORONOI_ON
 			#pragma shader_feature_local _DEPTHFOG_ON
@@ -222,6 +237,7 @@ Shader "Mochie/Water" {
 			#pragma shader_feature_local _EMISSION_ON
 			#pragma shader_feature_local _OPAQUELIGHTS_OFF
 			#pragma shader_feature_local _AREALIT_ON
+			#pragma shader_feature_local _ _OPAQUE_MODE_ON _PREMUL_MODE_ON
 			#pragma multi_compile_instancing
             #pragma target 5.0
 
@@ -243,6 +259,8 @@ Shader "Mochie/Water" {
 			#pragma shader_feature_local _SPECULAR_ON 
 			#pragma shader_feature_local _SPECULAR_MANUAL_ON
 			#pragma shader_feature_local _NORMALMAP_1_ON
+			#pragma shader_feature_local _DETAIL_NORMAL_ON
+			#pragma shader_feature_local _DETAIL_BASECOLOR_ON
 			#pragma shader_feature_local _FLOW_ON
 			#pragma shader_feature_local _ _NOISE_TEXTURE_ON _GERSTNER_WAVES_ON _VORONOI_ON
 			#pragma shader_feature_local _DEPTHFOG_ON
@@ -257,6 +275,7 @@ Shader "Mochie/Water" {
 			#pragma shader_feature_local _FOAM_NORMALS_ON
 			#pragma shader_feature_local _DEPTH_EFFECTS_ON
 			#pragma shader_feature_local _EMISSION_ON
+			#pragma shader_feature_local _ _OPAQUE_MODE_ON _PREMUL_MODE_ON
 			#pragma multi_compile_instancing
             #pragma target 5.0
 

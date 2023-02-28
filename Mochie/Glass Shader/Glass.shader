@@ -22,7 +22,7 @@
 		[HideInInspector]_RainSheet("Texture Sheet", 2D) = "black" {}
 		[HideInInspector]_Rows("Rows", Float) = 8
 		[HideInInspector]_Columns("Columns", Float) = 8
-		_Speed("Speed", Float) = 30
+		_Speed("Speed", Float) = 60
 		_XScale("X Scale", Float) = 1.5
         _YScale("Y Scale", Float) = 1.5
 		_Strength("Normal Strength", Float) = 0.3
@@ -206,8 +206,12 @@
                 // _Blur *= 1-min(dist/10, 1);
                 float3 grabCol = 0;
                 #ifdef _GRABPASS_ON
+                    float blurStr = _Blur * 0.0125;
+                    #if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
+                        blurStr *= 0.25;
+                    #endif
                     if (_Roughness > 0 && _Blur > 0)
-                        grabCol = tex2Dblur(_GlassGrab, screenUV, (roughness * _Blur * 0.0125));
+                        grabCol = tex2Dblur(_GlassGrab, screenUV, (roughness * blurStr));
                     else
                         grabCol = UNITY_SAMPLE_SCREENSPACE_TEXTURE(_GlassGrab, screenUV);
                     grabCol *= _GrabpassTint;

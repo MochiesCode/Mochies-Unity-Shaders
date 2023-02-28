@@ -42,6 +42,11 @@ float4 _CameraDepthTexture_TexelSize;
 #define EMISSION_ENABLED				defined(_EMISSION_ON)
 #define EMISS_STOCHASTIC_ENABLED		defined(_EMISSIONMAP_STOCHASTIC_ON)
 #define AREALIT_ENABLED					defined(_AREALIT_ON)
+#define DETAIL_NORMAL_ENABLED			defined(_DETAIL_NORMAL_ON)
+#define DETAIL_BASECOLOR_ENABLED		defined(_DETAIL_BASECOLOR_ON)
+#define TRANSPARENCY_PREMUL				defined(_PREMUL_MODE_ON)
+#define TRANSPARENCY_OPAQUE				defined(_OPAQUE_MODE_ON)
+#define TRANSPARENCY_GRABPASS			!defined(_PREMUL_MODE_ON) && !defined(_OPAQUE_MODE_ON)
 
 MOCHIE_DECLARE_TEX2D_SCREENSPACE(_MWGrab);
 sampler2D _MainTex;
@@ -56,6 +61,8 @@ sampler2D _RoughnessMap;
 sampler2D _MetallicMap;
 sampler2D _EmissionMap;
 sampler2D _AreaLitMask;
+sampler2D _DetailBaseColor;
+sampler2D _DetailNormal;
 samplerCUBE _ReflCube;
 
 float _AreaLitStrength;
@@ -74,6 +81,10 @@ float2 _FlowMapScale;
 
 float4 _RoughnessMap_ST;
 float4 _MetallicMap_ST;
+float4 _DetailBaseColor_ST;
+float4 _DetailNormal_ST;
+float4 _DetailBaseColorTint;
+float2 _DetailScroll;
 
 float4 _EmissionMap_ST;
 float3 _EmissionColor;
@@ -146,10 +157,14 @@ float _TessMax;
 float _TessDistMin;
 float _TessDistMax;
 float _TessellationOffsetMask;
+float _DetailNormalStrength;
 float2 _BlendNoiseScale;
 int _BlendNoiseSource;
 int _FlowMapUV;
 int _BackfaceReflections;
+int _DetailBaseColorBlend;
+int _DetailNormalBlend;
+int _DetailTextureMode;
 
 const static float2 jump = float2(0.1, 0.25);
 

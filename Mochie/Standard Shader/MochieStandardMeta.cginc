@@ -29,8 +29,9 @@ v2f_meta vert_meta (VertexInput v)
 {
     v2f_meta o;
     o.pos = UnityMetaVertexPosition(v.vertex, v.uv1.xy, v.uv2.xy, unity_LightmapST, unity_DynamicLightmapST);
-	float4 dummyUV = 0;
-    TexCoords(v, o.uv0, o.uv1, o.uv2, dummyUV);
+	float4 dummyUV0 = 0;
+	float4 dummyUV1 = 0;
+    TexCoords(v, o.uv0, o.uv1, o.uv2, dummyUV0, dummyUV1);
 	o.localPos = v.vertex;
 	o.normal = UnityObjectToWorldNormal(v.normal);
 	#ifdef EDITOR_VISUALIZATION

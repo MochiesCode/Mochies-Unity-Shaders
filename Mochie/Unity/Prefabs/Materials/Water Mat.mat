@@ -32,6 +32,14 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _DetailBaseColor:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailNormal:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _EmissionMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -122,7 +130,10 @@ Material:
     - _CausticsToggle: 1
     - _CullMode: 2
     - _DepthEffects: 1
-    - _DistortionStrength: 0.1
+    - _DetailNormalStrength: 1
+    - _DetailTextureMode: 0
+    - _DistortionStrength: 0.5
+    - _DstBlend: 0
     - _EdgeFadeOffset: 0.5
     - _EdgeFadePower: 200
     - _EdgeFadeSSR: 0.1
@@ -146,7 +157,7 @@ Material:
     - _FoamRoughness: 0.6
     - _FoamStochasticToggle: 0
     - _FoamToggle: 1
-    - _FogPower: 100
+    - _FogPower: 12
     - _FogToggle: 1
     - _Metallic: 0
     - _NoiseTexBlur: 0.8
@@ -172,12 +183,14 @@ Material:
     - _SSRStrength: 1
     - _SpecStrength: 1
     - _Specular: 1
+    - _SrcBlend: 1
     - _StencilRef: 65
     - _TessDistMax: 50
     - _TessDistMin: 25
     - _TessMax: 9
     - _TessMin: 1
     - _TessellationOffsetMask: 1
+    - _TransparencyMode: 2
     - _Turbulence: 1
     - _TurbulenceScale: 3
     - _TurbulenceSpeed: 0.3
@@ -211,13 +224,15 @@ Material:
     - _CausticsDistortionSpeed: {r: 0.1, g: 0.1, b: 0, a: 0}
     - _CausticsRotation: {r: -20, g: 0, b: 20, a: 0}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _DetailBaseColorTint: {r: 1, g: 1, b: 1, a: 1}
+    - _DetailScroll: {r: 0, g: 0, b: 0, a: 0}
     - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionMapScroll: {r: 0, g: 0, b: 0, a: 0}
     - _FlowMapScale: {r: 2, g: 2, b: 0, a: 0}
     - _FoamColor: {r: 1, g: 1, b: 1, a: 1}
-    - _FoamNoiseTexScale: {r: 2, g: 2, b: 0, a: 0}
+    - _FoamNoiseTexScale: {r: 3, g: 3, b: 0, a: 0}
     - _FoamNoiseTexScroll: {r: 0, g: 0.1, b: 0, a: 0}
-    - _FoamTexScale: {r: 3, g: 3, b: 0, a: 0}
+    - _FoamTexScale: {r: 5, g: 5, b: 0, a: 0}
     - _FoamTexScroll: {r: 0.1, g: -0.1, b: 0, a: 0}
     - _FogTint: {r: 0.10999996, g: 0.25999996, b: 0.25999996, a: 1}
     - _LightDir: {r: 0, g: 0.75, b: 1, a: 0}

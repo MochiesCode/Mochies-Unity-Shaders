@@ -23,7 +23,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		"LTCGI"
 	}, 1);
 
-	string versionLabel = "v1.20";
+	string versionLabel = "v1.21";
 	public static string receiverText = "AreaLit Maps";
 	public static string emitterText = "AreaLit Light";
 	public static string projectorText = "AreaLit Projector";
@@ -213,7 +213,6 @@ internal class MochieStandardGUI : ShaderGUI {
 	// MaterialProperty _RNM2 = null;
 
 	MaterialProperty areaLitToggle = null;
-	MaterialProperty areaLitMask = null;
 	MaterialProperty areaLitStrength = null;
 	MaterialProperty areaLitRoughnessMult = null;
 	MaterialProperty lightMesh = null;
@@ -225,7 +224,8 @@ internal class MochieStandardGUI : ShaderGUI {
 
 	MaterialProperty mirrorToggle = null;
 
-	// MaterialProperty occlusionUVSet = null;
+	MaterialProperty occlusionUVSet = null;
+	MaterialProperty areaLitOcclusion = null;
 
 	MaterialEditor me;
 
@@ -398,7 +398,6 @@ internal class MochieStandardGUI : ShaderGUI {
 		detailMetallicChannel = FindProperty("_DetailMetallicChannel", props);
 		detailOcclusionChannel = FindProperty("_DetailOcclusionChannel", props);
 		detailRoughnessChannel = FindProperty("_DetailRoughnessChannel", props);
-		// detailUseSmoothness = FindProperty("_DetailUseSmoothness", props);
 		detailRoughnessStrength = FindProperty("_DetailRoughnessStrength", props);
 		detailMetallicStrength = FindProperty("_DetailMetallicStrength", props);
 		detailOcclusionStrength = FindProperty("_DetailOcclusionStrength", props);
@@ -409,7 +408,8 @@ internal class MochieStandardGUI : ShaderGUI {
 		uvRimMaskScroll = FindProperty("_UVRimMaskScroll", props);
 		uvRimMaskRot = FindProperty("_UVRimMaskRotate", props);
 		audioLinkEmissionMeta = FindProperty("_AudioLinkEmissionMeta", props);
-		areaLitMask = FindProperty("_AreaLitMask", props);
+		occlusionUVSet = FindProperty("_OcclusionUVSet", props);
+		areaLitOcclusion = FindProperty("_AreaLitOcclusion", props);
 	}
 
 	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props){
@@ -1058,8 +1058,6 @@ internal class MochieStandardGUI : ShaderGUI {
 			MGUI.ToggleGroup(areaLitToggle.floatValue == 0);
 			MGUI.PropertyGroupLayer(()=>{
 				MGUI.SpaceN2();
-				me.TexturePropertySingleLine(Tips.maskLabel, areaLitMask);
-				MGUI.TextureSO(me, areaLitMask, areaLitMask.textureValue);
 				me.ShaderProperty(areaLitStrength, "Strength");
 				me.ShaderProperty(areaLitRoughnessMult, "Roughness Multiplier");
 				me.ShaderProperty(opaqueLights, Tips.opaqueLightsText);
@@ -1079,6 +1077,11 @@ internal class MochieStandardGUI : ShaderGUI {
 				CheckTrilinear(lightTex2.textureValue);
 				me.TexturePropertySingleLine(Tips.lightTex3Text, lightTex3);
 				CheckTrilinear(lightTex3.textureValue);
+				me.TexturePropertySingleLine(new GUIContent("Occlusion"), areaLitOcclusion);
+				if (areaLitOcclusion.textureValue){
+					me.ShaderProperty(occlusionUVSet, "UV Set");
+				}
+				MGUI.TextureSO(me, areaLitOcclusion, areaLitOcclusion.textureValue);
 				MGUI.SpaceN2();
 			});
 			MGUI.ToggleGroupEnd();

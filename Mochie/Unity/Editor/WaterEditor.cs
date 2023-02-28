@@ -30,6 +30,7 @@ public class WaterEditor : ShaderGUI {
 	Dictionary<Action, GUIContent> tessTabButtons = new Dictionary<Action, GUIContent>();
 	Dictionary<Action, GUIContent> emissTabButtons = new Dictionary<Action, GUIContent>();
 	Dictionary<Action, GUIContent> areaLitTabButtons = new Dictionary<Action, GUIContent>();
+	Dictionary<Action, GUIContent> renderingTabButtons = new Dictionary<Action, GUIContent>();
 
     static Dictionary<Material, Toggles> foldouts = new Dictionary<Material, Toggles>();
     Toggles toggles = new Toggles(new string[] {
@@ -45,11 +46,12 @@ public class WaterEditor : ShaderGUI {
 			"RAIN",
 			"TESSELLATION",
 			"EMISSION",
-			"AREALIT"
+			"AREALIT",
+			"RENDER SETTINGS"
 	}, 0);
 
     string header = "WaterHeader_Pro";
-	string versionLabel = "v1.10";
+	string versionLabel = "v1.11";
 
 	MaterialProperty _Color = null;
 	MaterialProperty _AngleTint = null;
@@ -190,7 +192,8 @@ public class WaterEditor : ShaderGUI {
 	MaterialProperty _EmissionMapStochasticToggle = null;
 	MaterialProperty _EmissionColor = null;
 	MaterialProperty _EmissionMapScroll = null;
-
+	MaterialProperty _DetailBaseColor = null;
+	MaterialProperty _DetailBaseColorTint = null;
 	MaterialProperty _AreaLitToggle = null;
 	MaterialProperty _AreaLitMask = null;
 	MaterialProperty _AreaLitStrength = null;
@@ -201,7 +204,11 @@ public class WaterEditor : ShaderGUI {
 	MaterialProperty _LightTex2 = null;
 	MaterialProperty _LightTex3 = null;
 	MaterialProperty _OpaqueLights = null;
-
+	MaterialProperty _TransparencyMode = null;
+	MaterialProperty _DetailNormal = null;
+	MaterialProperty _DetailNormalStrength = null;
+	MaterialProperty _DetailTextureMode = null;
+	MaterialProperty _DetailScroll = null;
 	MaterialProperty _StencilRef = null;
 
     BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
@@ -242,36 +249,39 @@ public class WaterEditor : ShaderGUI {
 			foldouts.Add(mat, toggles);
 
         EditorGUI.BeginChangeCheck(); {
+			
+			int transMode = mat.GetInt("_TransparencyMode");
 
             // Base
 			baseTabButtons.Add(()=>{Toggles.CollapseFoldouts(mat, foldouts, 1);}, MGUI.collapseLabel);
 			baseTabButtons.Add(()=>{ResetSurface();}, MGUI.resetLabel);
 			Action surfaceTabAction = ()=>{
-				MGUI.PropertyGroup( () => {
-					me.RenderQueueField();
-					me.ShaderProperty(_StencilRef, "Stencil Reference");
-					me.ShaderProperty(_CullMode, "Culling Mode");
-					me.ShaderProperty(_ZWrite, "ZWrite");
-					me.ShaderProperty(_DepthEffects, "Depth Effects");
+				MGUI.PropertyGroup(() => {
 					me.ShaderProperty(_Opacity, "Opacity");
-					me.ShaderProperty(_DistortionStrength, "Distortion Strength");
+					me.ShaderProperty(_DistortionStrength, "Refraction Strength");
 					MGUI.Space2();
 				});
-				MGUI.PropertyGroup( () => {
+				MGUI.PropertyGroup(()=>{
 					me.TexturePropertySingleLine(texLabel, _MainTex, _BaseColorStochasticToggle);
 					MGUI.TexPropLabel(Tips.stochasticLabel, 117);
-					me.ShaderProperty(_Color, "Surface Tint");
-					me.ShaderProperty(_AngleTint, "Glancing Tint");
-					me.ShaderProperty(_BackfaceTint, "Backface Tint");
 					if (_MainTex.textureValue){
 						MGUI.TextureSOScroll(me, _MainTex, _MainTexScroll);
 						me.ShaderProperty(_BaseColorOffset, Tips.parallaxOffsetLabel);
 						me.ShaderProperty(_BaseColorDistortionStrength, "Distortion Strength");
 					}
 				});
-				if (_DepthEffects.floatValue == 1){
-					MGUI.DisplayInfo("   Depth effects require a \"Depth Light\" prefab be present in the scene.\n   (Found in: Assets/Mochie/Unity/Prefabs)");
-				}
+				MGUI.PropertyGroup(()=>{
+					bool hasDetailBC = _DetailBaseColor.textureValue;
+					bool hasDetailN = _DetailNormal.textureValue;
+					me.TexturePropertySingleLine(new GUIContent("Decal Base Color"), _DetailBaseColor, hasDetailBC ? _DetailBaseColorTint : null);
+					me.TexturePropertySingleLine(new GUIContent("Decal Normal Map"), _DetailNormal, hasDetailN ? _DetailNormalStrength : null);
+					MGUI.TextureSOScroll(me, _DetailBaseColor, _DetailScroll, hasDetailBC || hasDetailN);
+				});
+				MGUI.PropertyGroup(() => {
+					me.ShaderProperty(_Color, "Surface Tint");
+					me.ShaderProperty(_AngleTint, "Glancing Tint");
+					me.ShaderProperty(_BackfaceTint, "Backface Tint");
+				});
 			};
 			Foldouts.Foldout("BASE", foldouts, baseTabButtons, mat, me, surfaceTabAction);
 
@@ -280,7 +290,7 @@ public class WaterEditor : ShaderGUI {
 			Action norm0TabAction = ()=>{
 				MGUI.Space4();
 				MGUI.BoldLabel("Primary");
-				MGUI.PropertyGroup( () => {
+				MGUI.PropertyGroup(() => {
 					me.TexturePropertySingleLine(Tips.waterNormalMap, _NormalMap0, _Normal0StochasticToggle);
 					MGUI.TexPropLabel(Tips.stochasticLabel, 117);
 					me.ShaderProperty(_NormalStr0, "Strength");
@@ -292,7 +302,7 @@ public class WaterEditor : ShaderGUI {
 				MGUI.BoldLabel("Secondary");
 				MGUI.SpaceN18();
 				me.ShaderProperty(_Normal1Toggle, " ");
-				MGUI.PropertyGroup( () => {
+				MGUI.PropertyGroup(() => {
 					MGUI.ToggleGroup(_Normal1Toggle.floatValue == 0);
 					me.TexturePropertySingleLine(Tips.waterNormalMap, _NormalMap1, _Normal1StochasticToggle);
 					MGUI.TexPropLabel(Tips.stochasticLabel, 117);
@@ -311,9 +321,10 @@ public class WaterEditor : ShaderGUI {
 			Action reflSpecTabAction = ()=>{
 				MGUI.Space4();
 				me.TexturePropertySingleLine(Tips.waterRoughness, _RoughnessMap, _Roughness);
-				MGUI.TextureSO(me, _RoughnessMap, _RoughnessMap.textureValue);
+				MGUI.TextureSO(me, _RoughnessMap, _RoughnessMap.textureValue && _DetailTextureMode.floatValue != 1);
 				me.TexturePropertySingleLine(Tips.waterMetallic, _MetallicMap, _Metallic);
-				MGUI.TextureSO(me, _MetallicMap, _MetallicMap.textureValue);
+				MGUI.TextureSO(me, _MetallicMap, _MetallicMap.textureValue && _DetailTextureMode.floatValue != 1);
+				me.ShaderProperty(_DetailTextureMode, Tips.detailMode);
 				MGUI.Space8();
 				me.ShaderProperty(_Reflections, "Reflections");
 				MGUI.PropertyGroup( () => {
@@ -456,7 +467,7 @@ public class WaterEditor : ShaderGUI {
 			Foldouts.Foldout("VERTEX OFFSET", foldouts, vertTabButtons, mat, me, vertTabAction);
 
 			// Caustics
-			if (_DepthEffects.floatValue == 1){
+			if (_DepthEffects.floatValue == 1 && transMode == 2){
 				causticsTabButtons.Add(()=>{ResetCaustics();}, MGUI.resetLabel);
 				Action causticsTabAction = ()=>{
 					me.ShaderProperty(_CausticsToggle, "Enable");
@@ -519,7 +530,7 @@ public class WaterEditor : ShaderGUI {
 			Foldouts.Foldout("FOAM", foldouts, foamTabButtons, mat, me, foamTabAction);
 
 			// Depth Fog
-			if (_DepthEffects.floatValue == 1){
+			if (_DepthEffects.floatValue == 1 && transMode == 2){
 				fogTabButtons.Add(()=>{ResetFog();}, MGUI.resetLabel);
 				Action fogTabAction = ()=>{
 					me.ShaderProperty(_FogToggle, "Enable");
@@ -535,7 +546,7 @@ public class WaterEditor : ShaderGUI {
 			}
 
 			// Edge Fade
-			if (_DepthEffects.floatValue == 1){
+			if (_DepthEffects.floatValue == 1 && transMode == 2){
 				edgeFadeTabButtons.Add(()=>{ResetEdgeFade();}, MGUI.resetLabel);
 				Action edgeFadeTabAction = ()=>{
 					me.ShaderProperty(_EdgeFadeToggle, "Enable");
@@ -625,6 +636,31 @@ public class WaterEditor : ShaderGUI {
 				mat.SetInt("_AreaLitToggle", 0);
 				mat.DisableKeyword("_AREALIT_ON");
 			}
+
+			// Render Settings
+			renderingTabButtons.Add(()=>{ResetRendering(mat);}, MGUI.resetLabel);
+			Action renderingTabAction = ()=>{
+				MGUI.Space4();
+				MGUI.PropertyGroup( () =>{
+					me.RenderQueueField();
+					me.ShaderProperty(_StencilRef, "Stencil Reference");
+					EditorGUI.BeginChangeCheck();
+					me.ShaderProperty(_TransparencyMode, "Transparency Mode");
+					if (EditorGUI.EndChangeCheck()){
+						ApplyTransparencySettings(mat);
+					}
+					me.ShaderProperty(_CullMode, "Culling Mode");
+					me.ShaderProperty(_ZWrite, "ZWrite");
+					if (transMode == 2){
+						me.ShaderProperty(_DepthEffects, "Depth Effects");
+						if (_DepthEffects.floatValue == 1){
+							MGUI.DisplayInfo("   Depth effects require a \"Depth Light\" prefab be present in the scene.\n   (Found in: Assets/Mochie/Unity/Prefabs)");
+						}
+					}
+				});
+			};
+			Foldouts.Foldout("RENDER SETTINGS", foldouts, renderingTabButtons, mat, me, renderingTabAction);
+
         }
 		ApplyMaterialSettings(mat);
 
@@ -636,8 +672,53 @@ public class WaterEditor : ShaderGUI {
 		MGUI.ClearKeywords(mat);
 	}
 
+	void ApplyTransparencySettings(Material mat){
+		int transMode = mat.GetInt("_TransparencyMode");
+		switch (transMode){
+			
+			// Opaque
+			case 0:
+				mat.SetOverrideTag("RenderType", "Opaque");
+				mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+				mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
+				mat.SetInt("_ZWrite", 1);
+				mat.SetShaderPassEnabled("Always", false);
+				mat.EnableKeyword("_OPAQUE_MODE_ON");
+				mat.DisableKeyword("_PREMUL_MODE_ON");
+				mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Geometry;
+			break;
+
+			// Premultiplied
+			case 1:
+				mat.SetOverrideTag("RenderType", "Transparent");
+				mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+				mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+				mat.SetInt("_ZWrite", 0);
+				mat.SetShaderPassEnabled("Always", false);
+				mat.DisableKeyword("_OPAQUE_MODE_ON");
+				mat.EnableKeyword("_PREMUL_MODE_ON");
+				mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+			break;
+
+			// Grabpass
+			case 2:
+				mat.SetOverrideTag("RenderType", "Transparent");
+				mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+				mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
+				mat.SetInt("_ZWrite", 0);
+				mat.SetShaderPassEnabled("Always", true);
+				mat.DisableKeyword("_OPAQUE_MODE_ON");
+				mat.DisableKeyword("_PREMUL_MODE_ON");
+				mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+			break;
+
+			default: break;
+		}
+	}
+
 	void ApplyMaterialSettings(Material mat){
 		bool ssrToggle = mat.GetInt("_SSR") == 1;
+		int transMode = mat.GetInt("_TransparencyMode");
 		int depthFXToggle = mat.GetInt("_DepthEffects");
 		int vertMode = mat.GetInt("_VertOffsetMode");
 		int reflMode = mat.GetInt("_Reflections");
@@ -654,8 +735,10 @@ public class WaterEditor : ShaderGUI {
 		MGUI.SetKeyword(mat, "_GERSTNER_WAVES_ON", vertMode == 2);
 		MGUI.SetKeyword(mat, "_VORONOI_ON", vertMode == 3);
 		MGUI.SetKeyword(mat, "_FOAM_NORMALS_ON", foamNormals);
-		MGUI.SetKeyword(mat, "_DEPTH_EFFECTS_ON", depthFXToggle == 1);
+		MGUI.SetKeyword(mat, "_DEPTH_EFFECTS_ON", depthFXToggle == 1 && transMode == 2);
 		MGUI.SetKeyword(mat, "_AREALIT_ON", mat.GetInt("_AreaLitToggle") == 1);
+		MGUI.SetKeyword(mat, "_DETAIL_BASECOLOR_ON", mat.GetTexture("_DetailBaseColor"));
+		MGUI.SetKeyword(mat, "_DETAIL_NORMAL_ON", mat.GetTexture("_DetailNormal"));
 	}
 
 	void CheckTrilinear(Texture tex) {
@@ -683,14 +766,17 @@ public class WaterEditor : ShaderGUI {
 		_Color.colorValue = Color.white;
 		_MainTex.textureValue = null;
 		_MainTexScroll.vectorValue = new Vector4(0,0.1f,0,0);
-		_DistortionStrength.floatValue = 0.1f;
+		_DetailBaseColor.textureValue = null;
+		_DetailBaseColorTint.colorValue = Color.white;
+		_DetailNormal.textureValue = null;
+		_DetailNormalStrength.floatValue = 1f;
+		_DistortionStrength.floatValue = 0.5f;
 		_Opacity.floatValue = 1f;
-		_CullMode.floatValue = 2f;
 		_BaseColorStochasticToggle.floatValue = 0f;
 		_BaseColorOffset.floatValue = 0f;
-		_ZWrite.floatValue = 0f;
 		_BaseColorDistortionStrength.floatValue = 0.1f;
 		_AngleTint.colorValue = Color.white;
+		_DetailScroll.vectorValue = Vector4.zero;
 	}
 
 	void ResetPrimaryNormal(){
@@ -768,11 +854,11 @@ public class WaterEditor : ShaderGUI {
 
 	void ResetFog(){
 		_FogTint.colorValue = new Vector4(0.11f,0.26f,0.26f,1f);
-		_FogPower.floatValue = 100f;
+		_FogPower.floatValue = 12f;
 	}
 
 	void ResetFoam(){
-		_FoamTexScale.vectorValue = new Vector4(3,3,0,0);
+		_FoamTexScale.vectorValue = new Vector4(5,5,0,0);
 		_FoamRoughness.floatValue = 0.6f;
 		_FoamColor.colorValue = Color.white;
 		_FoamPower.floatValue = 200f;
@@ -785,7 +871,7 @@ public class WaterEditor : ShaderGUI {
 		_FoamNoiseTexScroll.vectorValue = new Vector4(0f,0.1f,0f,0f);
 		_FoamNoiseTexStrength.floatValue = 0f;
 		_FoamNoiseTexCrestStrength.floatValue = 1.1f;
-		_FoamNoiseTexScale.vectorValue = new Vector4(2f,2f,0,0);
+		_FoamNoiseTexScale.vectorValue = new Vector4(3f,3f,0,0);
 		_FoamDistortionStrength.floatValue = 0.1f;
 		_FoamNormalStrength.floatValue = 4f;
 		_FoamNormalToggle.floatValue = 1f;
@@ -806,6 +892,7 @@ public class WaterEditor : ShaderGUI {
 		_ReflCube.textureValue = null;
 		_LightDir.vectorValue = new Vector4(0f,0.75f,1f,0f);
 		_ReflCubeRotation.vectorValue = Vector4.zero;
+		_DetailTextureMode.floatValue = 0f;
 	}
 
 	void ResetRain(){
@@ -831,8 +918,18 @@ public class WaterEditor : ShaderGUI {
 		_EmissionColor.colorValue = Color.white;
 		_EmissionMapScroll.vectorValue = Vector4.zero;
 	}
+
 	void ResetAreaLit(){
 
+	}
+
+	void ResetRendering(Material mat){
+		_TransparencyMode.floatValue = 2f;
+		_StencilRef.floatValue = 65f;
+		_DepthEffects.floatValue = 1f;
+		_ZWrite.floatValue = 0f;
+		_CullMode.floatValue = 2f;
+		ApplyTransparencySettings(mat);
 	}
 
 	void ClearDictionaries(){
@@ -850,5 +947,6 @@ public class WaterEditor : ShaderGUI {
 		tessTabButtons.Clear();
 		emissTabButtons.Clear();
 		areaLitTabButtons.Clear();
+		renderingTabButtons.Clear();
 	}
 }

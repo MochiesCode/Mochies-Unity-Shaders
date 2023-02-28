@@ -12,6 +12,18 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		atten = FadeShadows(i.worldPos, atten);
 	#endif
 
+	float4 detailBC = 0;
+	float2 detailUV = i.uv;
+	#if DETAIL_BASECOLOR_ENABLED
+		detailUV = TRANSFORM_TEX(i.uv, _DetailBaseColor) + (_Time.y * _DetailScroll);
+	#elif DETAIL_NORMAL_ENABLED
+		detailUV = TRANSFORM_TEX(i.uv, _DetailNormal) + (_Time.y * _DetailScroll);
+	#endif
+	
+	#if DETAIL_BASECOLOR_ENABLED
+		detailBC = tex2D(_DetailBaseColor, detailUV) * _DetailBaseColorTint;
+	#endif
+
 	CalculateTangentViewDir(i);
 
 	float3 normalMap;
@@ -104,6 +116,11 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		normalMap = BlendNormals(normalMap, rainNormal);
 	#endif
 
+	#if DETAIL_NORMAL_ENABLED
+		float3 detNorm = UnpackScaleNormal(tex2D(_DetailNormal, detailUV), _DetailNormalStrength);
+		normalMap = lerp(normalMap, detNorm, detailBC.a);
+	#endif
+
 	float2 uvOffset = normalMap.xy * _DistortionStrength;
 	#if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
 		uvOffset.x *= 0.5;
@@ -136,10 +153,17 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	#else
 		float4 mainTex = tex2D(_MainTex, mainTexUV) * surfaceTint;
 	#endif
-	float4 baseCol = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MWGrab, baseUV);
-	float4 col = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MWGrab, screenUV) * mainTex;
-	float depth = saturate(1-GetDepth(i, screenUV));
-	
+
+	#if TRANSPARENCY_GRABPASS
+		float4 baseCol = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MWGrab, baseUV);
+		float4 col = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MWGrab, screenUV) * mainTex;
+		float depth = saturate(1-GetDepth(i, screenUV));
+	#else
+		float4 baseCol = mainTex;
+		float4 col = mainTex;
+		// float depth = 1;
+	#endif
+
 	#if DEPTH_EFFECTS_ENABLED
 		if (isFrontFace && !i.isInVRMirror){
 			#if CAUSTICS_ENABLED
@@ -168,14 +192,15 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 			#if DEPTHFOG_ENABLED
 				float fogDepth = depth;
 				fogDepth = saturate(pow(fogDepth, _FogPower));
+				float fogDepth0 = saturate(pow(fogDepth, _FogPower/2));
 				col.rgb = lerp(col.rgb, lerp(_FogTint.rgb, col.rgb, fogDepth), _FogTint.a);
+				col.rgb = lerp(col.rgb, lerp(_FogTint.rgb*0.5, col.rgb, fogDepth0), _FogTint.a);
 			#endif
 		}
 	#endif
 
 
 	#if FOAM_ENABLED
-		float foamDepth = saturate(pow(depth,_FoamPower));
 		float2 uvFoamOffset = normalMap.xy * _FoamDistortionStrength * 0.1;
 		#if FOAM_STOCHASTIC_ENABLED
 			#define tex2D tex2Dstoch
@@ -199,6 +224,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		float foam = 0;
 		#if DEPTH_EFFECTS_ENABLED
 			if (!i.isInVRMirror){
+				float foamDepth = saturate(pow(depth,_FoamPower));
 				foam = saturate(foamTex.a * foamDepth * _FoamOpacity * foamTexNoise * Average(foamTex.rgb));
 				col.rgb = lerp(col.rgb, foamTex.rgb, foam);
 			}
@@ -221,6 +247,9 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		#endif
 	#endif
 
+	#if DETAIL_BASECOLOR_ENABLED
+		col = lerp(col, detailBC, detailBC.a);
+	#endif
 
 	#if PBR_ENABLED
 		i.normal = normalize(dot(i.normal, i.normal) >= 1.01 ? i.cNormal : i.normal);
@@ -232,7 +261,14 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		if (!isFrontFace)
 			col *= lerp(_AngleTint, 1, NdotV);
 
-		float roughnessMap = tex2D(_RoughnessMap, TRANSFORM_TEX(i.uv, _RoughnessMap));
+		float2 roughnessMapUV = detailUV;
+		if (_DetailTextureMode != 1)
+			roughnessMapUV = TRANSFORM_TEX(i.uv, _RoughnessMap);
+		float roughnessMap = tex2D(_RoughnessMap, roughnessMapUV);
+		#if DETAIL_BASECOLOR_ENABLED
+			if (_DetailTextureMode == 1)
+				roughnessMap *= detailBC.a;
+		#endif
 		float rough = roughnessMap * _Roughness;
 		#if FOAM_ENABLED
 			float foamLerp = (foam + crestFoam);
@@ -240,9 +276,17 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		#endif
 		float roughSq = rough * rough;
 		float roughBRDF = max(roughSq, 0.003);
-
-		float metallicMap = tex2D(_MetallicMap, TRANSFORM_TEX(i.uv, _MetallicMap));
+		
+		float2 metallicMapUV = detailUV;
+		if (_DetailTextureMode != 1)
+			metallicMapUV = TRANSFORM_TEX(i.uv, _MetallicMap);
+		float metallicMap = tex2D(_MetallicMap, metallicMapUV);
+		#if DETAIL_BASECOLOR_ENABLED
+			if (_DetailTextureMode == 1)
+				metallicMap *= detailBC.a;
+		#endif
 		float metallic = metallicMap * _Metallic;
+
 		float omr = unity_ColorSpaceDielectricSpec.a - metallic * unity_ColorSpaceDielectricSpec.a;
 		float3 specularTint = lerp(unity_ColorSpaceDielectricSpec.rgb, 1, metallic);
 
