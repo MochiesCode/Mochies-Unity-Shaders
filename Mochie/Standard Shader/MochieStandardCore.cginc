@@ -638,7 +638,7 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
     float clampedRoughness = max(roughness, 0.002);
 
     #if AREALIT_ENABLED
-        float4 alOcclusion = tex2D(_AreaLitOcclusion, o.tex4);
+        float4 alOcclusion = tex2D(_AreaLitOcclusion, i.tex4);
         AreaLightFragInput ai;
         ai.pos = s.posWorld;
         ai.normal = s.normalWorld;

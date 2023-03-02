@@ -23,7 +23,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		"LTCGI"
 	}, 1);
 
-	string versionLabel = "v1.21";
+	string versionLabel = "v1.21.1";
 	public static string receiverText = "AreaLit Maps";
 	public static string emitterText = "AreaLit Light";
 	public static string projectorText = "AreaLit Projector";
