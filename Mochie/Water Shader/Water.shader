@@ -23,7 +23,8 @@ Shader "Mochie/Water" {
 		_Metallic("Metallic", Range(0,1)) = 0
 		_MetallicMap("Metallic Map", 2D) = "white" {}
 		_Opacity("Opacity", Range(0,1)) = 1
-		
+		_ShadowStrength("Shadow Strength", Range(0,1)) = 0
+
 		[Toggle(_EMISSION_ON)]_EmissionToggle("Emission Toggle", Int) = 0
 		[Toggle(_EMISSIONMAP_STOCHASTIC_ON)]_EmissionMapStochasticToggle("Stochastic Sampling", Int) = 0
 		_EmissionMap("Emission Map", 2D) = "white" {}
@@ -85,7 +86,7 @@ Shader "Mochie/Water" {
 		_VoronoiSpeed("Speed", Float) = 1.5
 		_WaveSpeedGlobal("Wave Global Speed", Float) = 2
 		_WaveScaleGlobal("Wave Global Scale", Float) = 1
-		_WaveStrengthGlobal("Wave Global Strength", Float) = 0.5
+		_WaveStrengthGlobal("Wave Global Strength", Float) = 1.5
 		_WaveSpeed0("Wave 1 Speed", Float) = 1
 		_WaveSpeed1("Wave 2 Speed", Float) = 1.1
 		_WaveSpeed2("Wave 3 Speed", Float) = 1.2
@@ -103,6 +104,7 @@ Shader "Mochie/Water" {
 		_TurbulenceSpeed("Turbulence Speed", Float) = 0.3
 		_VertRemapMin("Remap Min", Float) = -1
 		_VertRemapMax("Remap Max", Float) = 1
+		[ToggleUI]_RecalculateNormals("Recalculate Normals", Int) = 1
 		
 		[Toggle(_CAUSTICS_ON)]_CausticsToggle("Enable", Int) = 1
 		_CausticsTex("Texture", 2D) = "black" {}
@@ -189,7 +191,7 @@ Shader "Mochie/Water" {
 			"RenderType"="Transparent"
 			"DisableBatching"="True"
 			"PreviewType"="Plane"
-			"ForceNoShadowCasting"="True"
+			// "ForceNoShadowCasting"="True"
 			"IgnoreProjector"="True"
 		}
 		Stencil {
@@ -285,7 +287,24 @@ Shader "Mochie/Water" {
 
             ENDCG
         }
-		
+
+		Pass {
+            Tags {"LightMode" = "ShadowCaster"}
+            CGPROGRAM
+			#pragma vertex vert
+            #pragma fragment frag
+            #pragma multi_compile_shadowcaster
+			#pragma shader_feature_local _ _NOISE_TEXTURE_ON _GERSTNER_WAVES_ON _VORONOI_ON
+			#pragma shader_feature_local _ _OPAQUE_MODE_ON _PREMUL_MODE_ON
+			#pragma multi_compile_instancing
+            #pragma target 5.0
+
+			#include "WaterDefines.cginc"
+			#include "WaterVert.cginc"
+			#include "WaterFrag.cginc"
+
+            ENDCG
+        }
     }
 	CustomEditor "WaterEditor"
 }

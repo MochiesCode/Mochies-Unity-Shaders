@@ -23,7 +23,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		"LTCGI"
 	}, 1);
 
-	string versionLabel = "v1.21.1";
+	string versionLabel = "v1.22";
 	public static string receiverText = "AreaLit Maps";
 	public static string emitterText = "AreaLit Light";
 	public static string projectorText = "AreaLit Projector";
@@ -198,6 +198,10 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty uvRimMask = null;
 	MaterialProperty uvRimMaskScroll = null;
 	MaterialProperty uvRimMaskRot = null;
+
+	MaterialProperty uvDetailMask = null;
+	MaterialProperty detailScroll = null;
+	MaterialProperty detailRotate = null;
 
 	MaterialProperty filtering = null;
 	MaterialProperty bicubicLightmap = null;
@@ -410,6 +414,9 @@ internal class MochieStandardGUI : ShaderGUI {
 		audioLinkEmissionMeta = FindProperty("_AudioLinkEmissionMeta", props);
 		occlusionUVSet = FindProperty("_OcclusionUVSet", props);
 		areaLitOcclusion = FindProperty("_AreaLitOcclusion", props);
+		uvDetailMask = FindProperty("_UVDetailMask", props);
+		detailScroll = FindProperty("_DetailScroll", props);
+		detailRotate = FindProperty("_DetailRotate", props);
 	}
 
 	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props){
@@ -855,6 +862,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		bool needsAlphaMaskUV = blendMode.floatValue > 0 && useAlphaMask.floatValue > 0;
 		bool needsRainMaskUV = rainToggle.floatValue == 1 && rainMask.textureValue;
 		bool needsRimMaskUV = rimTog.floatValue == 1 && rimMask.textureValue;
+		bool needsDetailMaskUV = detailMask.textureValue;
 
 		MGUI.PropertyGroup( () => {
 			MGUI.BoldLabel("Primary");
@@ -887,6 +895,17 @@ internal class MochieStandardGUI : ShaderGUI {
 				me.ShaderProperty(uv1Rot, "Rotation");
 				MGUI.SpaceN4();
 			});
+			if (needsDetailMaskUV){
+				MGUI.Space4();
+				MGUI.BoldLabel("Detail Mask");
+				MGUI.PropertyGroupLayer(()=>{
+					MGUI.SpaceN2();
+					me.ShaderProperty(uvDetailMask, Tips.uvSetLabel.text);
+					MGUI.TextureSOScroll(me, detailMask, detailScroll);
+					me.ShaderProperty(detailRotate, "Rotation");
+					MGUI.SpaceN2();
+				});
+			}
 			if (needsHeightMaskUV){
 				MGUI.Space4();
 				MGUI.BoldLabel("Height Mask");
@@ -1185,14 +1204,14 @@ internal class MochieStandardGUI : ShaderGUI {
 		int detailSamplingMode = material.GetInt("_DetailSamplingMode");
 		bool isLite = MGUI.IsLiteVersion(material);
 
+		material.SetInt("_ReflCubeToggle", material.GetTexture("_ReflCube") ? 1 : 0);
+		material.SetInt("_ReflCubeOverrideToggle", material.GetTexture("_ReflCubeOverride") ? 1 : 0);
 		MGUI.SetKeyword(material, "_NORMALMAP", material.GetTexture("_BumpMap") || material.GetTexture("_DetailNormalMap"));
 		MGUI.SetKeyword(material, "_WORKFLOW_PACKED_ON", workflow == 1);
 		MGUI.SetKeyword(material, "_DETAIL_WORKFLOW_PACKED_ON", detailWorkflow == 1);
 		MGUI.SetKeyword(material, "_SPECGLOSSMAP", material.GetTexture("_SpecGlossMap"));
 		MGUI.SetKeyword(material, "_METALLICGLOSSMAP", material.GetTexture("_MetallicGlossMap"));
 		MGUI.SetKeyword(material, "_DETAIL_MULX2", material.GetTexture("_DetailAlbedoMap"));
-		MGUI.SetKeyword(material, "_REFLECTION_FALLBACK_ON", material.GetTexture("_ReflCube") && !isLite);
-		MGUI.SetKeyword(material, "_REFLECTION_OVERRIDE_ON", material.GetTexture("_ReflCubeOverride") && !isLite);
 		MGUI.SetKeyword(material, "_SCREENSPACE_REFLECTIONS_ON", material.GetInt("_SSR") == 1 && !isLite);
 		MGUI.SetKeyword(material, "_SPECULARHIGHLIGHTS_OFF", material.GetInt("_SpecularHighlights") == 0);
 		MGUI.SetKeyword(material, "_GLOSSYREFLECTIONS_OFF", material.GetInt("_GlossyReflections") == 0);
@@ -1205,7 +1224,6 @@ internal class MochieStandardGUI : ShaderGUI {
 		MGUI.SetKeyword(material, "_DETAIL_ROUGH_ON", material.GetTexture("_DetailRoughnessMap"));
 		MGUI.SetKeyword(material, "_DETAIL_AO_ON", material.GetTexture("_DetailAOMap"));
 		MGUI.SetKeyword(material, "_DETAIL_METALLIC_ON", material.GetTexture("_DetailMetallicMap"));
-		MGUI.SetKeyword(material, "_SUBSURFACE_ON", material.GetInt("_Subsurface") == 1 && !isLite);
 		MGUI.SetKeyword(material, "_AUDIOLINK_ON", material.GetInt("_AudioLinkEmission") > 0);
 		MGUI.SetKeyword(material, "_AUDIOLINK_META_ON", material.GetInt("_AudioLinkEmission") > 0 && material.GetInt("_AudioLinkEmissionMeta") > 0);
 		MGUI.SetKeyword(material, "_ALPHAMASK_ON", blendModeEnum > 0 && material.GetInt("_UseAlphaMask") == 1);
@@ -1213,8 +1231,6 @@ internal class MochieStandardGUI : ShaderGUI {
 		MGUI.SetKeyword(material, "BAKERY_SH", material.GetInt("_BakeryMode") == 1);
 		MGUI.SetKeyword(material, "BAKERY_RNM", material.GetInt("_BakeryMode") == 2);
 		MGUI.SetKeyword(material, "BAKERY_MONOSH", material.GetInt("_BakeryMode") == 3);
-		MGUI.SetKeyword(material, "_FILTERING_ON", material.GetInt("_Filtering") == 1 && !isLite);
-		MGUI.SetKeyword(material, "_RAIN_ON", material.GetInt("_RainToggle") == 1 && !isLite);
 		MGUI.SetKeyword(material, "_AREALIT_ON", material.GetInt("_AreaLitToggle") == 1);
 		MGUI.SetKeyword(material, "LTCGI", ltcgiToggle == 1);
 		MGUI.SetKeyword(material, "LTCGI_DIFFUSE_OFF", material.GetInt("_LTCGI_DIFFUSE_OFF") == 1 && ltcgiToggle == 1);

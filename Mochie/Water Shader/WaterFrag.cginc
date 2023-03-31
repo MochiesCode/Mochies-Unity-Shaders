@@ -7,9 +7,24 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 
 	UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
 
-	#if defined(UNITY_PASS_FORWARDADD)
-		UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos);
-		atten = FadeShadows(i.worldPos, atten);
+	#if defined(UNITY_PASS_SHADOWCASTER)
+		return 0;
+	#endif
+
+	UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos);
+	atten = FadeShadows(i.worldPos, atten);
+
+	#if TRANSPARENCY_OPAQUE
+		_Opacity = 1;
+	#endif
+
+	#if GERSTNER_ENABLED
+		if (_RecalculateNormals == 1){
+			_NormalStr0 = -_NormalStr0;
+			_NormalStr1 = -_NormalStr1;
+			_DetailNormalStrength = -_DetailNormalStrength;
+			_FoamNormalStrength = -_FoamNormalStrength;
+		}
 	#endif
 
 	float4 detailBC = 0;
@@ -24,7 +39,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		detailBC = tex2D(_DetailBaseColor, detailUV) * _DetailBaseColorTint;
 	#endif
 
-	CalculateTangentViewDir(i);
+	// CalculateTangentViewDir(i);
 
 	float3 normalMap;
 	float3 detailNormal;
@@ -42,7 +57,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	float3 uv10 = float3(baseUV1, 1);
 	#if FOAM_ENABLED
 		float2 uvFoam = ScaleUV(i.uv, _FoamTexScale, _FoamTexScroll * 0.1);
-		ParallaxOffset(i, uvFoam, _FoamOffset, isFrontFace);
+		// ParallaxOffset(i, uvFoam, _FoamOffset, isFrontFace);
 		float3 uvF0 = float3(uvFoam, 1);
 		float3 uvF1 = uvF0;
 	#endif
@@ -72,10 +87,10 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 			#define tex2D tex2Dstoch
 			_NormalStr0 *= 1.5;
 		#endif
-		ParallaxOffset(i, uv00.xy, _NormalMapOffset0, isFrontFace);
+		// ParallaxOffset(i, uv00.xy, _NormalMapOffset0, isFrontFace);
 		float3 normalMap0 = UnpackScaleNormal(tex2D(_NormalMap0, uv00.xy), _NormalStr0) * uv00.z;
 		#if FLOW_ENABLED
-			ParallaxOffset(i, uv01.xy, _NormalMapOffset0, isFrontFace);
+			// ParallaxOffset(i, uv01.xy, _NormalMapOffset0, isFrontFace);
 			float3 normalMap1 = UnpackScaleNormal(tex2D(_NormalMap0, uv01.xy), _NormalStr0) * uv01.z;
 		#endif
 		#undef tex2D
@@ -84,10 +99,10 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 			#define tex2D tex2Dstoch
 			_NormalStr1 *= 1.5;
 		#endif
-		ParallaxOffset(i, uv10.xy, _NormalMapOffset1, isFrontFace);
+		// ParallaxOffset(i, uv10.xy, _NormalMapOffset1, isFrontFace);
 		float3 detailNormal0 = UnpackScaleNormal(tex2D(_NormalMap1, uv10.xy), _NormalStr1) * uv10.z;
 		#if FLOW_ENABLED
-			ParallaxOffset(i, uv11.xy, _NormalMapOffset1, isFrontFace);
+			// ParallaxOffset(i, uv11.xy, _NormalMapOffset1, isFrontFace);
 			float3 detailNormal1 = UnpackScaleNormal(tex2D(_NormalMap1, uv11.xy), _NormalStr1) * uv11.z;
 			normalMap0 = normalize(normalMap0 + normalMap1);
 			detailNormal0 = normalize(detailNormal0 + detailNormal1);
@@ -99,10 +114,10 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 			#define tex2D tex2Dstoch
 			_NormalStr0 *= 1.5;
 		#endif
-		ParallaxOffset(i, uv00.xy, _NormalMapOffset0, isFrontFace);
+		// ParallaxOffset(i, uv00.xy, _NormalMapOffset0, isFrontFace);
 		float3 normalMap0 = UnpackScaleNormal(tex2D(_NormalMap0, uv00.xy), _NormalStr0) * uv00.z;
 		#if FLOW_ENABLED
-			ParallaxOffset(i, uv01.xy, _NormalMapOffset0, isFrontFace);
+			// ParallaxOffset(i, uv01.xy, _NormalMapOffset0, isFrontFace);
 			float3 normalMap1 = UnpackScaleNormal(tex2D(_NormalMap0, uv01.xy), _NormalStr0) * uv01.z;
 			normalMap = normalize(normalMap0 + normalMap1);
 		#else
@@ -121,7 +136,14 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		normalMap = lerp(normalMap, detNorm, detailBC.a);
 	#endif
 
-	float2 uvOffset = normalMap.xy * _DistortionStrength;
+	float2 refractionDir = normalMap.xy;
+	#if GERSTNER_ENABLED
+		if (_RecalculateNormals == 1){
+			i.normal = normalize(dot(i.normal, i.normal) >= 1.01 ? i.cNormal : i.normal);
+			refractionDir = normalize(normalMap.x * i.tangent + normalMap.y * i.binormal + normalMap.z * i.normal).xz;
+		}
+	#endif
+	float2 uvOffset = refractionDir * _DistortionStrength;
 	#if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
 		uvOffset.x *= 0.5;
 		uvOffset.xy *= 0.5;
@@ -143,7 +165,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	float2 baseUV = i.uvGrab.xy/proj;
 	float2 mainTexUV = TRANSFORM_TEX(i.uv, _MainTex) + _Time.y * 0.1 * _MainTexScroll;
 	mainTexUV += normalMap.xy * _BaseColorDistortionStrength;
-	ParallaxOffset(i, mainTexUV, _BaseColorOffset, isFrontFace);
+	// ParallaxOffset(i, mainTexUV, _BaseColorOffset, isFrontFace);
 	float4 surfaceTint = _Color;
 	if (!isFrontFace)
 		surfaceTint = _BackfaceTint;
@@ -161,7 +183,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	#else
 		float4 baseCol = mainTex;
 		float4 col = mainTex;
-		// float depth = 1;
+		float depth = 1;
 	#endif
 
 	#if DEPTH_EFFECTS_ENABLED
@@ -232,7 +254,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		float crestThreshold = smoothstep(_FoamCrestThreshold, 1, i.wave.y);
 		float crestFoam = saturate(foamTex.a * _FoamOpacity * _FoamCrestStrength * crestThreshold * foamCrestNoise * 10);
 		col.rgb = lerp(col.rgb, foamTex.rgb, crestFoam);
-
+		crestFoam *= 1.5; // Increase roughness strength of crest foam
 		#if FOAM_NORMALS_ENABLED
 			float foamNormalStr = lerp(0,_FoamNormalStrength,foam+crestFoam);
 			#if FLOW_ENABLED
@@ -252,7 +274,6 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	#endif
 
 	#if PBR_ENABLED
-		i.normal = normalize(dot(i.normal, i.normal) >= 1.01 ? i.cNormal : i.normal);
 		float3 normalDir = normalize(normalMap.x * i.tangent + normalMap.y * i.binormal + normalMap.z * i.normal);
 		if (!isFrontFace)
 			normalDir = -normalDir;
@@ -272,7 +293,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		float rough = roughnessMap * _Roughness;
 		#if FOAM_ENABLED
 			float foamLerp = (foam + crestFoam);
-			rough = lerp(rough, _FoamRoughness, foamLerp);
+			rough = lerp(rough, _FoamRoughness, foamLerp*2);
 		#endif
 		float roughSq = rough * rough;
 		float roughBRDF = max(roughSq, 0.003);
@@ -290,27 +311,32 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		float omr = unity_ColorSpaceDielectricSpec.a - metallic * unity_ColorSpaceDielectricSpec.a;
 		float3 specularTint = lerp(unity_ColorSpaceDielectricSpec.rgb, 1, metallic);
 
+		#if BASE_PASS
+			float3 lightDir = _Specular == 1 ? UnityWorldSpaceLightDir(i.worldPos) : _LightDir;
+			lightDir = normalize(lightDir);
+		#else
+			float3 lightDir = normalize(UnityWorldSpaceLightDir(i.worldPos));
+		#endif
+		float3 halfVector = Unity_SafeNormalize(lightDir + viewDir);
+		float NdotL = saturate(dot(normalDir, lightDir));
+		// atten *= NdotL;
+
 		float3 specCol = 0;
 		float3 reflCol = 0;
 		#if SPECULAR_ENABLED
 			if (isFrontFace){
 				float roughInterp = smoothstep(0.001, 0.003, roughSq);
-				#if BASE_PASS
-					float3 lightDir = _Specular == 1 ? UnityWorldSpaceLightDir(i.worldPos) : _LightDir;
-					lightDir = normalize(lightDir);
-				#else
-					float3 lightDir = normalize(UnityWorldSpaceLightDir(i.worldPos));
-				#endif
-				float3 halfVector = Unity_SafeNormalize(lightDir + viewDir);
-				float NdotL = saturate(dot(normalDir, lightDir));
 				float NdotH = saturate(dot(normalDir, halfVector));
 				float LdotH = saturate(dot(lightDir, halfVector));
+				atten *= NdotL;
 				float3 fresnelTerm = FresnelTerm(specularTint, LdotH);
 				float specularTerm = SpecularTerm(NdotL, NdotV, NdotH, roughBRDF);
 				float3 specLightCol = _Specular == 1 ? _LightColor0 : 1;
 				specCol = specLightCol * fresnelTerm * specularTerm;
 				specCol = lerp(smootherstep(0, 0.9, specCol), specCol, roughInterp) * _SpecStrength * _SpecTint;
-				#if defined(UNITY_PASS_FORWARDADD)
+				#if defined(UNITY_PASS_FORWARDBASE)
+					specCol *= _ShadowStrength > 0 ? atten : 1;
+				#else
 					specCol *= atten;
 				#endif
 			}
@@ -392,6 +418,10 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		col = lerp(baseCol, col, _Opacity);
 	#endif
 
+	#if TRANSPARENCY_OPAQUE
+		col.rgb *= lerp(1, atten, _ShadowStrength);
+	#endif
+
 	#if EMISSION_ENABLED
 		float2 emissUV = TRANSFORM_TEX(i.uv, _EmissionMap) + (_Time.y * _EmissionMapScroll);
 		#if EMISS_STOCHASTIC_ENABLED
@@ -401,8 +431,8 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		#endif
 		col.rgb += (emissCol * _EmissionColor);
 	#endif
-
 	UNITY_APPLY_FOG(i.fogCoord, col);
+	
 	return col;
 }
 

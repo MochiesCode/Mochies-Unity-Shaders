@@ -67,11 +67,12 @@ half4 BRDF1_Mochie_PBS (
 
     half grazingTerm = saturate(smoothness + (1-oneMinusReflectivity));
 
-	#if SUBSURFACE_ENABLED
-		half3 diffCol = diffColor * (gi.diffuse + light.color * lerp(diffuseTerm, wrappedDiffuse, thickness));
-	#else
-		half3 diffCol = diffColor * (gi.diffuse + light.color * diffuseTerm);
-	#endif
+	half3 diffCol = 0;
+	if (_Subsurface == 1)
+		diffCol = diffColor * (gi.diffuse + light.color * lerp(diffuseTerm, wrappedDiffuse, thickness));
+	else
+		diffCol = diffColor * (gi.diffuse + light.color * diffuseTerm);
+
 	half3 specCol = specularTerm * light.color * FresnelTerm (specColor, lh) * _SpecularStrength;
 	half3 reflCol = surfaceReduction * gi.specular * FresnelLerp (specColor, grazingTerm, lerp(1, nv, _FresnelStrength*_UseFresnel)) * _ReflectionStrength;
 	#if SSR_ENABLED
@@ -82,18 +83,18 @@ half4 BRDF1_Mochie_PBS (
 	#endif
 
 	half3 subsurfaceCol = 0;
-	#if SUBSURFACE_ENABLED
+	if (_Subsurface == 1){
 		subsurfaceCol = GetSubsurfaceLight(
-					light.color, 
-					light.dir, 
-					normal, 
-					viewDir, 
-					atten, 
-					thickness, 
-					gi.diffuse, 
-					ssColor
-				);
-	#endif
+							light.color, 
+							light.dir, 
+							normal, 
+							viewDir, 
+							atten, 
+							thickness, 
+							gi.diffuse, 
+							ssColor
+						);
+	}
 
 	#ifdef LTCGI
         half3 diffLight = 0;

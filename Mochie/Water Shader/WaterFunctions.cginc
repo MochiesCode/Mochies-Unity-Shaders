@@ -109,13 +109,28 @@ float3 FlowUV (float2 uv, float2 flowVector, float time, float phase) {
 	return uvw;
 }
 
-float3 GerstnerWave(float4 wave, float3 vertex, float speed, float rotation){
+float3 GerstnerWave(float4 wave, float3 vertex, float speed, float rotation, inout float3 tangent, inout float3 binormal){
 	float k = 2 * UNITY_PI / wave.w;
 	float c = sqrt(9.8/k);
 	float2 dir = normalize(wave.xy);
 	dir = Rotate2D(dir, rotation);
 	float f = k * (dot(dir,vertex.xz) - c * _Time.y*0.2*speed);
-	float a = wave.z / k;
+	float steepness = wave.z;
+	float a = steepness / k;
+
+	if (_RecalculateNormals == 1){
+		tangent += float3(
+			-dir.x * dir.x * (steepness * sin(f)),
+			dir.x * (steepness * cos(f)),
+			-dir.x * dir.y * (steepness * sin(f))
+		);
+		binormal += float3(
+			-dir.x * dir.y * (steepness * sin(f)),
+			dir.y * (steepness * cos(f)),
+			-dir.y * dir.y * (steepness * sin(f))
+		);
+	}
+	
 	return float3(0, a * sin(f), dir.y * (a*cos(f)));
 }
 

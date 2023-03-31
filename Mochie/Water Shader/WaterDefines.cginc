@@ -159,12 +159,15 @@ float _TessDistMax;
 float _TessellationOffsetMask;
 float _DetailNormalStrength;
 float2 _BlendNoiseScale;
+float _ShadowStrength;
 int _BlendNoiseSource;
 int _FlowMapUV;
 int _BackfaceReflections;
 int _DetailBaseColorBlend;
 int _DetailNormalBlend;
 int _DetailTextureMode;
+int _RecalculateNormals;
+int _TransparencyMode;
 
 const static float2 jump = float2(0.1, 0.25);
 
@@ -211,6 +214,7 @@ struct v2f {
 		float offsetMask : TEXCOORD14;
 	#endif
 	UNITY_FOG_COORDS(15)
+	UNITY_SHADOW_COORDS(16)
 	UNITY_VERTEX_INPUT_INSTANCE_ID 
 	UNITY_VERTEX_OUTPUT_STEREO
 };

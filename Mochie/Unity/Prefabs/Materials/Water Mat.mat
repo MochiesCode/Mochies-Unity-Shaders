@@ -171,6 +171,7 @@ Material:
     - _Opacity: 1
     - _OpaqueLights: 1
     - _RainToggle: 0
+    - _RecalculateNormals: 1
     - _ReflStrength: 1
     - _Reflections: 1
     - _RippleScale: 40
@@ -181,6 +182,7 @@ Material:
     - _Roughness: 0
     - _SSR: 0
     - _SSRStrength: 1
+    - _ShadowStrength: 0
     - _SpecStrength: 1
     - _Specular: 1
     - _SrcBlend: 1
@@ -214,7 +216,7 @@ Material:
     - _WaveStrength0: 0.1
     - _WaveStrength1: 0.1
     - _WaveStrength2: 0.1
-    - _WaveStrengthGlobal: 0.5
+    - _WaveStrengthGlobal: 1.5
     - _ZWrite: 0
     m_Colors:
     - _AngleTint: {r: 1, g: 1, b: 1, a: 1}

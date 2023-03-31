@@ -88,10 +88,11 @@ inline half3 MochieGI_IndirectSpecular(UnityGIInput data, half3 occlusion, Unity
         #if MIRROR_ENABLED
             specular = Mirror_GlossyEnvironment(glossIn, reflUV);
         #else
-            #if REFLECTION_OVERRIDE
+            if (_ReflCubeOverrideToggle == 1){
                 half3 env0 = Mochie_GlossyEnvironment(UNITY_PASS_TEXCUBE(_ReflCubeOverride), _ReflCubeOverride_HDR, glossIn, originalReflUVW);
                 specular = env0;
-            #else
+            }
+            else {
                 half3 env0 = Mochie_GlossyEnvironment(UNITY_PASS_TEXCUBE(unity_SpecCube0), data.probeHDR[0], glossIn);
                 #ifdef UNITY_SPECCUBE_BLENDING
                     const float kBlendFactor = 0.99999;
@@ -110,12 +111,12 @@ inline half3 MochieGI_IndirectSpecular(UnityGIInput data, half3 occlusion, Unity
                 #else
                     specular = env0;
                 #endif
-            #endif
-            #if REFLECTION_FALLBACK
+            }
+            if (_ReflCubeToggle == 1){
                 half3 env2 = Mochie_GlossyEnvironment(UNITY_PASS_TEXCUBE(_ReflCube), _ReflCube_HDR, glossIn, originalReflUVW);
                 float interpolant = (specular.r + specular.g + specular.b)/3.0;
                 specular = lerp(env2, specular, smoothstep(0, _CubeThreshold * 0.01, interpolant));
-            #endif
+            }
         #endif
     #endif
     return specular * occlusion;
@@ -232,12 +233,12 @@ float3 PerPixelWorldNormal(float4 i_tex, float4 raincoords, float4 tangentToWorl
         float3 normalWorld = NormalizePerPixelNormal(tangent * normalTangent.x + binormal * normalTangent.y + normal * normalTangent.z);
     #else
         float3 normalWorld = normalize(tangentToWorld[2].xyz);
-        #if RAIN_ENABLED
+        if (_RainToggle == 1){
             float mask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_RainMask, sampler_MainTex, raincoords.zw);
             float3 rippleNormal = GetRipplesNormal(raincoords.xy, _RippleScale, _RippleStr*mask, _RippleSpeed);
             normalWorld = BlendNormals(normalWorld, rippleNormal);
             TangentNormal = BlendNormals(TangentNormal, rippleNormal);
-        #endif
+        }
     #endif
 
     return normalWorld;
@@ -285,7 +286,7 @@ struct FragmentCommonData
 	#endif
 };
 
-inline FragmentCommonData RoughnessSetup(float4 i_tex, SampleData sd)
+inline FragmentCommonData RoughnessSetup(float4 i_tex, float2 detailMaskCoords, SampleData sd)
 {
     half2 metallicGloss = MetallicRough(i_tex, sd);
     half metallic = metallicGloss.x;
@@ -293,7 +294,7 @@ inline FragmentCommonData RoughnessSetup(float4 i_tex, SampleData sd)
 
     half oneMinusReflectivity;
     half3 specColor;
-    half3 diffColor = DiffuseAndSpecularFromMetallic(Albedo(i_tex, sd), metallic, /*out*/ specColor, /*out*/ oneMinusReflectivity);
+    half3 diffColor = DiffuseAndSpecularFromMetallic(Albedo(i_tex, detailMaskCoords, sd), metallic, /*out*/ specColor, /*out*/ oneMinusReflectivity);
 
     FragmentCommonData o = (FragmentCommonData)0;
     o.diffColor = diffColor;
@@ -312,7 +313,7 @@ float3 CalculateTangentViewDir(inout float3 tangentViewDir){
 }
 
 // parallax transformed texcoord is used to sample occlusion
-inline FragmentCommonData FragmentSetup (inout float4 i_tex, float4 i_tex2, float4 i_tex3, float3 i_eyeVec, half3 i_viewDirForParallax, float4 tangentToWorld[3], float3 i_posWorld, bool isFrontFace, SampleData sd)
+inline FragmentCommonData FragmentSetup (inout float4 i_tex, float4 i_tex2, float4 i_tex3, float4 i_tex4, float3 i_eyeVec, half3 i_viewDirForParallax, float4 tangentToWorld[3], float3 i_posWorld, bool isFrontFace, SampleData sd)
 {
 	
     i_tex = Parallax(i_tex, CalculateTangentViewDir(i_viewDirForParallax), uvOffset, isFrontFace);
@@ -326,7 +327,7 @@ inline FragmentCommonData FragmentSetup (inout float4 i_tex, float4 i_tex2, floa
         clip (alpha - _Cutoff);
     #endif
 
-    FragmentCommonData o = UNITY_SETUP_BRDF_INPUT (i_tex, sd);
+    FragmentCommonData o = UNITY_SETUP_BRDF_INPUT (i_tex, i_tex4.zw, sd);
     o.normalWorld = PerPixelWorldNormal(i_tex, i_tex3, tangentToWorld, sd);
     o.eyeVec = NormalizePerPixelNormal(i_eyeVec);
     o.posWorld = i_posWorld;
@@ -623,7 +624,7 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
 	#endif
 
 	SampleData sd = SampleDataSetup(i);
-    FragmentCommonData s = FragmentSetup(i.tex, i.tex2, i.tex3, i.eyeVec.xyz, IN_VIEWDIR4PARALLAX(i), i.tangentToWorldAndPackedData, IN_WORLDPOS(i), frontFace, sd);
+    FragmentCommonData s = FragmentSetup(i.tex, i.tex2, i.tex3, i.tex4, i.eyeVec.xyz, IN_VIEWDIR4PARALLAX(i), i.tangentToWorldAndPackedData, IN_WORLDPOS(i), frontFace, sd);
     #if AREALIT_ENABLED
         i.tangentToWorldAndPackedData[2].xyz *= frontFace ? +1 : -1;
     #endif
@@ -853,7 +854,7 @@ half4 fragForwardAddInternal (VertexOutputForwardAdd i, bool frontFace)
 	float4 screenPos = 0;
 
 	SampleData sd = SampleDataSetup(i);
-    FragmentCommonData s = FragmentSetup(i.tex, i.tex2, i.tex3, i.eyeVec.xyz, IN_VIEWDIR4PARALLAX_FWDADD(i), i.tangentToWorldAndLightDir, IN_WORLDPOS_FWDADD(i), frontFace, sd);
+    FragmentCommonData s = FragmentSetup(i.tex, i.tex2, i.tex3, i.tex4, i.eyeVec.xyz, IN_VIEWDIR4PARALLAX_FWDADD(i), i.tangentToWorldAndLightDir, IN_WORLDPOS_FWDADD(i), frontFace, sd);
 
     UNITY_LIGHT_ATTENUATION(atten, i, s.posWorld)
     UnityLight light = AdditiveLight (IN_LIGHTDIR_FWDADD(i), atten);

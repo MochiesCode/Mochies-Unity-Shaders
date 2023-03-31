@@ -66,7 +66,7 @@ namespace Mochie {
 		public static GUIContent queueOffset = new GUIContent("Render Queue Offset", "Offsets the render queue +/- this value.");
 		public static GUIContent useFresnel = new GUIContent("Fresnel", "A rim light effect based on the lighting of the scene");
 		public static GUIContent reflVertexColor = new GUIContent("Vertex Color Reflections", "Multiplies reflection color with vertex color. A good use for this is painting black vertex colors on areas of surfaces you don't want to have visible reflections.");
-		public static GUIContent reflShadows = new GUIContent("Shadowed Reflections", "Uses shadows from either realtime directional lights or baked lightmaps to occlude reflections");
+		public static GUIContent reflShadows = new GUIContent("Specular Occlusion", "Uses shadows from either realtime directional lights or baked lightmaps to occlude reflections");
 		public static GUIContent gsaa = new GUIContent("Specular Antialiasing", "Increases the roughness on rounded corners of normals to hide sparkly artifacts from specular lighting");
 		public static GUIContent bicubicLightmap = new GUIContent("Bicubic Lightmap Sampling", "Samples lightmaps using bicubic filtering to hide aliasing on shadows. Provides a smooth gradient on otherwise low resolution shadows.");
 		public static GUIContent bakeryMode = new GUIContent("Bakery Mode", "Support for the third party lightmapping software Bakery. See Bakery documentation for further details.");
@@ -150,7 +150,7 @@ namespace Mochie {
 		public static GUIContent detailShadowMap = new GUIContent("Detail Shadow Map", "Forces shadows to be rendered anywhere the texture is not white.");
 		public static GUIContent rtSelfShadow = new GUIContent("Directional Light Shadows", "Renders shadows from directional lights. These can be ugly due to unity calculating them at a fairly low resolution.");
 		public static GUIContent attenSmoothing = new GUIContent("Smooth Attenuation", "Attempts to smooth out the attenuation value to avoid sharp artifacts.");
-		public static GUIContent lightingBasedIOR = new GUIContent("Shadowed Reflections", "Darkens reflections inside shadowed areas of the material.");
+		public static GUIContent lightingBasedIOR = new GUIContent("Specular Occlusion", "Darkens reflections inside shadowed areas of the material.");
 		public static GUIContent realtimeSpec = new GUIContent("Realtime Light Only", "Only applies specular highlights when a realtime light is present in the scene.");
 		public static GUIContent specBiasOverride = new GUIContent("Manual Bias", "Manually controls the specularity bias. This tints the specular highlight based on either the base color, or the light color.");
 		public static GUIContent manualSpecBright = new GUIContent("Ignore Environment", "The brightness and color of the specular highlight will be calculated solely based on the strength and tint properties above, rather than the environment lighting in the scene.");

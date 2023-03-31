@@ -62,6 +62,7 @@ Texture2D   	_BumpMap;
 half        	_BumpScale;
 
 Texture2D   	_DetailMask;
+float4			_DetailMask_ST;
 int				_DetailMaskChannel;
 int				_DetailAlbedoBlend;
 half        	_DetailNormalMapScale;
@@ -71,6 +72,10 @@ int				_DetailAOBlend;
 float			_DetailMetallicStrength;
 float			_DetailOcclusionStrength;
 float			_DetailRoughnessStrength;
+int 			_UVDetailMask;
+float2 			_DetailScroll;
+float 			_DetailRotate;
+
 
 Texture2D   	_SpecGlossMap;
 Texture2D   	_MetallicGlossMap;
@@ -140,6 +145,9 @@ float			_RippleSpeed;
 float			_UV5Rotate;
 float2			_UV5Scroll;
 int				_UVRainMask;
+int				_RainToggle;
+
+int _Filtering;
 
 float _ReflectionStrength, _SpecularStrength;
 float _ReflShadowStrength;
@@ -176,6 +184,8 @@ float4 _RNM0_TexelSize;
 
 Texture2D _PackedMap;
 Texture2D _DetailPackedMap;
+int _ReflCubeToggle;
+int _ReflCubeOverrideToggle;
 UNITY_DECLARE_TEXCUBE(_ReflCube);
 UNITY_DECLARE_TEXCUBE(_ReflCubeOverride);
 float4 _ReflCube_HDR, _ReflCubeOverride_HDR;
@@ -296,10 +306,14 @@ void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1, ino
 	texcoord.zw = TRANSFORM_TEX(texcoord.zw, _DetailAlbedoMap);
 	texcoord.zw += _Time.y * _UV1Scroll;
 
+	texcoord4.zw = Rotate2D((SelectUVSet(v, _UVDetailMask)), _DetailRotate);
+	texcoord4.zw = TRANSFORM_TEX(texcoord4.zw, _DetailMask);
+	texcoord4.zw += _Time.y * _DetailScroll;
+
 	texcoord1 = 0;
 	texcoord2 = 0;
 	texcoord3 = 0;
-	texcoord4 = 0;
+	texcoord4 = float4(0,0,texcoord4.zw);
 
 	#ifdef _PARALLAXMAP
 		texcoord1.xy = TRANSFORM_TEX(SelectUVSet(v, _UVHeightMask), _ParallaxMask);
@@ -318,20 +332,18 @@ void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1, ino
 		texcoord2.xy += _Time.y * _UV4Scroll;
 	#endif
 
-	#ifdef FULL_VERSION
-		if (_RimToggle == 1){
-			texcoord2.zw = Rotate2D(SelectUVSet(v, _UVRimMask), _UVRimMaskRotate);
-			texcoord2.zw = TRANSFORM_TEX(texcoord2.zw, _RimMask);
-			texcoord2.zw += _Time.y * _UVRimMaskScroll;
-		}
-	#endif
+	if (_RimToggle == 1){
+		texcoord2.zw = Rotate2D(SelectUVSet(v, _UVRimMask), _UVRimMaskRotate);
+		texcoord2.zw = TRANSFORM_TEX(texcoord2.zw, _RimMask);
+		texcoord2.zw += _Time.y * _UVRimMaskScroll;
+	}
 
-	#ifdef _RAIN_ON
+	if (_RainToggle == 1){
 		texcoord3.xy = v.uv0;
 		texcoord3.zw = Rotate2D(SelectUVSet(v, _UVRainMask), _UV5Rotate);
 		texcoord3.zw = TRANSFORM_TEX(texcoord3.zw, _RainMask);
 		texcoord3.zw += _Time.y * _UV5Scroll;
-	#endif
+	}
 
 	#if AREALIT_ENABLED
 		texcoord4.xy = SelectUVSet(v, _OcclusionUVSet);
@@ -340,14 +352,14 @@ void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1, ino
 }
 
 half3 Filtering(float3 col, float hue, float saturation, float brightness, float contrast, float aces){
-	#ifdef _FILTERING_ON
+	if (_Filtering == 1){
 		if (hue > 0 && hue < 1)
 			col = HSVShift(col, hue, 0, 0);
 		col = lerp(dot(col, float3(0.3,0.59,0.11)), col, saturation);
 		col = GetContrast(col, contrast);
 		col = lerp(col, ACES(col), aces);
 		col *= brightness;
-	#endif
+	}
 	return col;
 }
 
@@ -357,12 +369,12 @@ half DetailMask(float2 uv)
     return detailMask[_DetailMaskChannel];
 }
 
-half3 Albedo(float4 texcoords, SampleData sd)
+half3 Albedo(float4 texcoords, float2 detailTexCoords, SampleData sd)
 {
 	half3 albedo = _Color.rgb * SampleTexture(_MainTex, texcoords.xy, sd).rgb;
 	albedo = Filtering(albedo, _Hue, _Saturation, _Brightness, _Contrast, 0);
 	#if DETAIL_BASECOLOR
-		half mask = DetailMask(texcoords.xy);
+		half mask = DetailMask(detailTexCoords);
 		sd.scaleTransform = _DetailAlbedoMap_ST;
 		half4 detailAlbedo = SampleDetailTexture(_DetailAlbedoMap, sampler_DetailAlbedoMap, texcoords.zw, sd);
 		detailAlbedo.rgb = _DetailColor.rgb * Filtering(detailAlbedo.rgb, _HueDet, _SaturationDet, _BrightnessDet, _ContrastDet, 0);
@@ -498,16 +510,14 @@ half3 Emission(float2 uv, float2 uvMask, SampleData sd)
 }
 
 void Rim(float3 worldPos, float3 normal, inout float3 col, float2 uv){
-	#ifdef FULL_VERSION
-		if (_RimToggle == 1){
-			float rimMask = tex2D(_RimMask, uv);
-			float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - worldPos);
-			float vdn = abs(dot(viewDir, normal));
-			float rim = pow((1-vdn), (1-_RimWidth) * 10);
-			rim = smoothstep(_RimEdge, 1-_RimEdge, rim);
-			col = BlendColors(col, _RimCol, _RimBlending, rim*_RimStr*rimMask);
-		}
-	#endif
+	if (_RimToggle == 1){
+		float rimMask = tex2D(_RimMask, uv);
+		float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - worldPos);
+		float vdn = abs(dot(viewDir, normal));
+		float rim = pow((1-vdn), (1-_RimWidth) * 10);
+		rim = smoothstep(_RimEdge, 1-_RimEdge, rim);
+		col = BlendColors(col, _RimCol, _RimBlending, rim*_RimStr*rimMask);
+	}
 }
 
 
@@ -521,11 +531,11 @@ half3 NormalInTangentSpace(float4 texcoords, float4 raincoords, SampleData sd)
 		half3 detailNormalTangent = SampleDetailTexture(_DetailNormalMap, sampler_DetailNormalMap, texcoords.zw, sd, _DetailNormalMapScale);
 		normalTangent = lerp(normalTangent, BlendNormals(normalTangent, detailNormalTangent), mask);
 	#endif
-	#if RAIN_ENABLED
+	if (_RainToggle == 1){
 		float rainMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_RainMask, sampler_MainTex, raincoords.zw);
 		float3 rippleNormal = GetRipplesNormal(raincoords.xy, _RippleScale, _RippleStr*rainMask, _RippleSpeed);
 		normalTangent = BlendNormals(normalTangent, rippleNormal);
-	#endif
+	}
     return normalTangent;
 }
 #endif

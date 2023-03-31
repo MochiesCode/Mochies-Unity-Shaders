@@ -529,7 +529,7 @@ float2 N11(float2 p){
 
 float3 GetRipplesNormal(float2 uv, float scale, float strength, float speed){
 	float3 normals = float3(0,0,1);
-	if (strength > 0){
+	if (strength != 0){
 		float2 uv_scaled = uv * scale;
 		float2 cell0 = floor(uv_scaled);
 		[unroll]
