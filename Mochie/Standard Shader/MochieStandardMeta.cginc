@@ -22,7 +22,7 @@ struct v2f_meta
 		float2 vizUV        : TEXCOORD4;
 		float4 lightCoord   : TEXCOORD5;
 	#endif
-	float4 localPos : TEXCOORD5;
+	float4 localPos : TEXCOORD6;
 	float3 normal 	: NORMAL;
 };
 

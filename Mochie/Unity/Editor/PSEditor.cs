@@ -17,6 +17,8 @@ public class PSEditor : ShaderGUI {
 	Dictionary<Action, GUIContent> distortTabButtons = new Dictionary<Action, GUIContent>();
 	Dictionary<Action, GUIContent> pulseTabButtons = new Dictionary<Action, GUIContent>();
 	Dictionary<Action, GUIContent> falloffTabButtons = new Dictionary<Action, GUIContent>();
+	Dictionary<Action, GUIContent> audiolinkTabButtons = new Dictionary<Action, GUIContent>();
+	Dictionary<Action, GUIContent> renderingTabButtons = new Dictionary<Action, GUIContent>();
 
     static Dictionary<Material, Toggles> foldouts = new Dictionary<Material, Toggles>();
     Toggles toggles = new Toggles(new string[] {
@@ -24,11 +26,17 @@ public class PSEditor : ShaderGUI {
 			"FILTERING", 
 			"DISTORTION", 
 			"PULSE", 
-			"FALLOFF"
+			"FALLOFF",
+			"AUDIO LINK",
+			"Filtering 1",
+			"Distortion 1",
+			"Opacity 1",
+			"Cutout 1",
+			"RENDER SETTINGS"
 	}, 0);
 
     string header = "ParticleHeader_Pro";
-	string versionLabel = "v2.1";
+	string versionLabel = "v2.2";
 
     // Render Settings
     MaterialProperty _BlendMode = null;
@@ -44,6 +52,7 @@ public class PSEditor : ShaderGUI {
     // Color
     MaterialProperty _MainTex = null;
     MaterialProperty _SecondTex = null;
+	MaterialProperty _SecondTexScroll = null;
     MaterialProperty _TexBlendMode = null;
     MaterialProperty _Color = null;
     MaterialProperty _SecondColor = null;
@@ -82,6 +91,29 @@ public class PSEditor : ShaderGUI {
     MaterialProperty _MaxRange = null;
     MaterialProperty _NearMinRange = null;
     MaterialProperty _NearMaxRange = null;
+
+	// Audio Link
+	MaterialProperty _AudioLink = null;
+	MaterialProperty _AudioLinkStrength = null;
+	MaterialProperty _AudioLinkRemapMin = null;
+	MaterialProperty _AudioLinkRemapMax = null;
+	MaterialProperty _AudioLinkFilterBand = null;
+	MaterialProperty _AudioLinkFilterStrength = null;
+	MaterialProperty _AudioLinkRemapFilterMin = null;
+	MaterialProperty _AudioLinkRemapFilterMax = null;
+	MaterialProperty _AudioLinkDistortionBand = null;
+	MaterialProperty _AudioLinkDistortionStrength = null;
+	MaterialProperty _AudioLinkRemapDistortionMin = null;
+	MaterialProperty _AudioLinkRemapDistortionMax = null;
+	MaterialProperty _AudioLinkOpacityBand = null;
+	MaterialProperty _AudioLinkOpacityStrength = null;
+	MaterialProperty _AudioLinkRemapOpacityMin = null;
+	MaterialProperty _AudioLinkRemapOpacityMax = null;
+	MaterialProperty _AudioLinkCutoutBand = null;
+	MaterialProperty _AudioLinkCutoutStrength = null;
+	MaterialProperty _AudioLinkRemapCutoutMin = null;
+	MaterialProperty _AudioLinkRemapCutoutMax = null;
+
 
     BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 	List<ParticleSystemRenderer> m_RenderersUsingThisMaterial = new List<ParticleSystemRenderer>();
@@ -145,35 +177,29 @@ public class PSEditor : ShaderGUI {
             if (!foldouts.ContainsKey(mat))
                 foldouts.Add(mat, toggles);
 
-            // -----------------
-            // Render Settings
-            // -----------------
-			baseTabButtons.Add(()=>{Toggles.CollapseFoldouts(mat, foldouts, 1);}, MGUI.collapseLabel);
-			baseTabButtons.Add(()=>{ResetBase();}, MGUI.resetLabel);
-			Action baseTabAction = ()=>{
-				if (warnings != ""){
-					EditorGUILayout.HelpBox("Incorrect or missing vertex streams detected:\n" + warnings, MessageType.Warning, true);
-					if (GUILayout.Button(applyStreamsText, EditorStyles.miniButton)){
-						foreach (ParticleSystemRenderer renderer in m_RenderersUsingThisMaterial){
-							if (renderer != null){
-								if (renderer != null)
-									renderer.SetActiveVertexStreams(streams);
-							}
+
+            // Vertex Stream Handler
+			if (warnings != ""){
+				EditorGUILayout.HelpBox("Incorrect or missing vertex streams detected:\n" + warnings, MessageType.Warning, true);
+				if (GUILayout.Button(applyStreamsText, EditorStyles.miniButton)){
+					foreach (ParticleSystemRenderer renderer in m_RenderersUsingThisMaterial){
+						if (renderer != null){
+							if (renderer != null)
+								renderer.SetActiveVertexStreams(streams);
 						}
 					}
 				}
+				MGUI.Space4();
+			}
 
-                // Blending mode dropdown
-				MGUI.PropertyGroup( () => {
-					me.RenderQueueField();
-					me.ShaderProperty(_BlendMode, "Blending Mode");
-					me.ShaderProperty(_Culling, "Culling");
-					me.ShaderProperty(_ZTest, "ZTest");
-				});
+			// Base
+			baseTabButtons.Add(()=>{Toggles.CollapseFoldouts(mat, foldouts, 1);}, MGUI.collapseLabel);
+			baseTabButtons.Add(()=>{ResetBase();}, MGUI.resetLabel);
+			Action baseTabAction = ()=>{
 				MGUI.PropertyGroup( () => {
 					me.ShaderProperty(_Opacity, "Opacity");
 					MGUI.ToggleSlider(me, "Cutout", _IsCutout, _Cutoff);
-					MGUI.ToggleSlider(me, Tips.falloffMode, _Softening, _SoftenStr);
+					MGUI.ToggleSlider(me, Tips.softening, _Softening, _SoftenStr);
 					me.ShaderProperty(_FlipbookBlending, Tips.flipbookBlending);
 				});
 				MGUI.PropertyGroup( () => {
@@ -181,6 +207,7 @@ public class PSEditor : ShaderGUI {
 					me.TexturePropertySingleLine(tex2Label, _SecondTex, _SecondColor, _SecondTex.textureValue ? _TexBlendMode : null);
 					if (_SecondTex.textureValue){
 						MGUI.TexPropLabel("Blending", 113);
+						MGUI.TextureSOScroll(me, _SecondTex, _SecondTexScroll);
 					}
 				});
 			};
@@ -261,6 +288,55 @@ public class PSEditor : ShaderGUI {
 			Foldouts.Foldout("FALLOFF", foldouts, falloffTabButtons, mat, me, falloffTabAction);
         }
 
+		// Audio Link
+		audiolinkTabButtons.Add(()=>{ResetAudioLink();}, MGUI.resetLabel);
+		Action audiolinkTabAction = ()=>{
+			me.ShaderProperty(_AudioLink, "Enable");
+			MGUI.Space4();
+			MGUI.ToggleGroup(_AudioLink.floatValue == 0);
+			me.ShaderProperty(_AudioLinkStrength, "Global Strength");
+			MGUI.SliderMinMax01(_AudioLinkRemapMin, _AudioLinkRemapMax, "Global Remap", 1);
+			MGUI.Space4();
+			MGUI.BoldLabel("Filtering");
+			MGUI.PropertyGroup( () => {
+				me.ShaderProperty(_AudioLinkFilterBand, "Band");
+				me.ShaderProperty(_AudioLinkFilterStrength, "Strength");
+				MGUI.SliderMinMax01(_AudioLinkRemapFilterMin, _AudioLinkRemapFilterMax, "Remap", 1);
+			});
+			MGUI.BoldLabel("Distortion");
+			MGUI.PropertyGroup( () => {
+				me.ShaderProperty(_AudioLinkDistortionBand, "Band");
+				me.ShaderProperty(_AudioLinkDistortionStrength, "Strength");
+				MGUI.SliderMinMax01(_AudioLinkRemapDistortionMin, _AudioLinkRemapDistortionMax, "Remap", 1);
+			});
+			MGUI.BoldLabel("Opacity");
+			MGUI.PropertyGroup( () => {
+				me.ShaderProperty(_AudioLinkOpacityBand, "Band");
+				me.ShaderProperty(_AudioLinkOpacityStrength, "Strength");
+				MGUI.SliderMinMax01(_AudioLinkRemapOpacityMin, _AudioLinkRemapOpacityMax, "Remap", 1);
+			});
+			MGUI.BoldLabel("Cutout");
+			MGUI.PropertyGroup( () => {
+				me.ShaderProperty(_AudioLinkCutoutBand, "Band");
+				me.ShaderProperty(_AudioLinkCutoutStrength, "Strength");
+				MGUI.SliderMinMax01(_AudioLinkRemapCutoutMin, _AudioLinkRemapCutoutMax, "Remap", 1);
+			});
+			MGUI.ToggleGroupEnd();
+		};
+		Foldouts.Foldout("AUDIO LINK", foldouts, audiolinkTabButtons, mat, me, audiolinkTabAction);
+
+		// Rendering
+		renderingTabButtons.Add(()=>{ResetRendering();}, MGUI.resetLabel);
+		Action renderingTabAction = ()=>{
+			MGUI.PropertyGroup( () => {
+				me.RenderQueueField();
+				me.ShaderProperty(_BlendMode, "Blending Mode");
+				me.ShaderProperty(_Culling, "Culling");
+				me.ShaderProperty(_ZTest, "ZTest");
+			});
+		};
+		Foldouts.Foldout("RENDER SETTINGS", foldouts, renderingTabButtons, mat, me, renderingTabAction);
+
 		MGUI.DoFooter(versionLabel);
     }
 
@@ -340,6 +416,7 @@ public class PSEditor : ShaderGUI {
 		bool flipbook = mat.GetInt("_FlipbookBlending") == 1;
 		bool cutout = mat.GetInt("_IsCutout") == 1;
 		bool filtering = mat.GetInt("_Filtering") == 1;
+		bool audiolink = mat.GetInt("_AudioLink") == 1;
 
 		MGUI.SetKeyword(mat, "_ALPHATEST_ON", cutout);
 		MGUI.SetKeyword(mat, "_FADING_ON", softening);
@@ -350,6 +427,7 @@ public class PSEditor : ShaderGUI {
 		MGUI.SetKeyword(mat, "_FALLOFF_ON", falloff);
 		MGUI.SetKeyword(mat, "_FLIPBOOK_BLENDING_ON", flipbook);
 		MGUI.SetKeyword(mat, "_FILTERING_ON", filtering);
+		MGUI.SetKeyword(mat, "_AUDIOLINK_ON", audiolink);
 		mat.SetShaderPassEnabled("Always", distortion);
 		SetBlendMode(mat);
 	}
@@ -397,18 +475,13 @@ public class PSEditor : ShaderGUI {
 	}
 
 	void ResetBase(){
-		_BlendMode.floatValue = 1f;
-		_Culling.floatValue = 2f;
 		_FlipbookBlending.floatValue = 0f;
-		_ZTest.floatValue = 4f;
-		_SrcBlend.floatValue = 1f;
-		_DstBlend.floatValue = 10f;
 		_Color.colorValue = Color.white;
 		_TexBlendMode.floatValue = 0f;
 		_SecondTex.textureValue = null;
 		_SecondColor.colorValue = Color.white;
 		_Opacity.floatValue = 1f;
-		_Cutoff.floatValue = 0f;
+		_Cutoff.floatValue = 0.5f;
 		_IsCutout.floatValue = 0f;
 		_Softening.floatValue = 0f;
 		_SoftenStr.floatValue = 0f;
@@ -444,11 +517,44 @@ public class PSEditor : ShaderGUI {
 		_NearMaxRange.floatValue = 5f;
 	}
 
+	void ResetAudioLink(){
+		_AudioLink.floatValue = 0f;
+		_AudioLinkStrength.floatValue = 1f;
+		_AudioLinkRemapMin.floatValue = 0f;
+		_AudioLinkRemapMax.floatValue = 1f;
+		_AudioLinkFilterBand.floatValue = 0f;
+		_AudioLinkFilterStrength.floatValue = 0f;
+		_AudioLinkRemapFilterMin.floatValue = 0f;
+		_AudioLinkRemapFilterMax.floatValue = 1f;
+		_AudioLinkDistortionBand.floatValue = 0f;
+		_AudioLinkDistortionStrength.floatValue = 0f;
+		_AudioLinkRemapDistortionMin.floatValue = 0f;
+		_AudioLinkRemapDistortionMax.floatValue = 1f;
+		_AudioLinkOpacityBand.floatValue = 0f;
+		_AudioLinkOpacityStrength.floatValue = 0f;
+		_AudioLinkRemapOpacityMin.floatValue = 0f;
+		_AudioLinkRemapOpacityMax.floatValue = 1f;
+		_AudioLinkCutoutBand.floatValue = 0f;
+		_AudioLinkCutoutStrength.floatValue = 0f;
+		_AudioLinkRemapCutoutMin.floatValue = 0f;
+		_AudioLinkRemapCutoutMax.floatValue = 1f;
+	}
+
+	void ResetRendering(){
+		_BlendMode.floatValue = 1f;
+		_Culling.floatValue = 2f;
+		_ZTest.floatValue = 4f;
+		_SrcBlend.floatValue = 1f;
+		_DstBlend.floatValue = 10f;
+	}
+
 	void ClearDictionaries(){
 		baseTabButtons.Clear();
 		filterTabButtons.Clear();
 		distortTabButtons.Clear();
 		pulseTabButtons.Clear();
 		falloffTabButtons.Clear();
+		renderingTabButtons.Clear();
+		audiolinkTabButtons.Clear();
 	}
 }

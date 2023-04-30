@@ -31,4 +31,6 @@
 
 #define FADING_ENABLED defined(_FADING_ON)
 
+#define AUDIOLINK_ENABLED defined(_AUDIOLINK_ON)
+
 #endif // PS_KEYDEFINES_INCLUDED

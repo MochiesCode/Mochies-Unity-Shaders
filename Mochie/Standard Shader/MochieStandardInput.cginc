@@ -488,6 +488,7 @@ half3 Emission(float2 uv, float2 uvMask, SampleData sd)
 	#ifdef _EMISSION
 		float3 emissTex = SampleTexture(_EmissionMap, uv, sd);
 		float emissMask = _EmissionMask.Sample(sampler_MainTex, uvMask+uvOffset).r;
+		_EmissionColor.rgb = pow(_EmissionColor.rgb, 2.2);
 		emissTex *= _EmissionColor.rgb * _EmissionIntensity * emissMask * GetWave(_EmissPulseWave, _EmissPulseSpeed, _EmissPulseStrength);
 		emissTex = Filtering(emissTex, _HueEmiss, _SaturationEmiss, _BrightnessEmiss, _ContrastEmiss, 0);
 		#ifdef THIS_IS_A_META_PASS

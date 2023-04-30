@@ -119,6 +119,7 @@
                 float4 tangent: TANGENT;
                 
                 UNITY_FOG_COORDS(10)
+                UNITY_SHADOW_COORDS(11)
                 UNITY_VERTEX_INPUT_INSTANCE_ID 
                 UNITY_VERTEX_OUTPUT_STEREO
             };
@@ -142,6 +143,7 @@
                 o.cameraPos = GetCameraPos();
                 o.localPos = v.vertex;
                 
+                UNITY_TRANSFER_SHADOW(o, o.pos)
                 UNITY_TRANSFER_FOG(o,o.pos);
                 return o;
             }

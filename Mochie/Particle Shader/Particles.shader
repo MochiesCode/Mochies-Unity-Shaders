@@ -1,4 +1,4 @@
-// BY MOCHIE
+// By Mochie#8794
 
 Shader "Mochie/Particles" {
     Properties {
@@ -17,11 +17,12 @@ Shader "Mochie/Particles" {
         [Enum(Lerp,0, Add,1, Sub,2, Mult,3)]_TexBlendMode("", Int) = 0
         _SecondTex("", 2D) = "white" {}
         [HDR]_SecondColor("", Color) = (1,1,1,1)
+        _SecondTexScroll("", Vector) = (0,0,0,0)
 		_Brightness("", Float) = 1
 		_Opacity("", Range(0,1)) = 1
 
         _IsCutout("", Int) = 0
-        _Cutoff("", Range(0,1)) = 0
+        _Cutoff("", Range(0,1)) = 0.5
         [ToggleUI]_Softening("", Int) = 0
         _SoftenStr("", Range(0, 0.999)) = 0
 
@@ -52,6 +53,32 @@ Shader "Mochie/Particles" {
         _NearMaxRange("", Float) = 5
         _MinRange("", Float) = 8
         _MaxRange("", Float) = 15
+
+        [ToggleUI]_AudioLink("", Int) = 0
+        _AudioLinkStrength("", Range(0,1)) = 1
+        _AudioLinkRemapMin("", Float) = 0
+        _AudioLinkRemapMax("", Float) = 1
+        
+        [Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkFilterBand("", Int) = 0
+        _AudioLinkFilterStrength("", Range(0,1)) = 0
+        _AudioLinkRemapFilterMin("", Float) = 0
+        _AudioLinkRemapFilterMax("", Float) = 1
+
+        [Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkDistortionBand("", Int) = 0
+        _AudioLinkDistortionStrength("", Range(0,1)) = 0
+        _AudioLinkRemapDistortionMin("", Float) = 0
+        _AudioLinkRemapDistortionMax("", Float) = 1
+
+        [Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkOpacityBand("", Int) = 0
+        _AudioLinkOpacityStrength("", Range(0,1)) = 0
+        _AudioLinkRemapOpacityMin("", Float) = 0
+        _AudioLinkRemapOpacityMax("", Float) = 1
+
+        [Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkCutoutBand("", Int) = 0
+        _AudioLinkCutoutStrength("", Range(0,1)) = 0
+        _AudioLinkRemapCutoutMin("", Float) = 0
+        _AudioLinkRemapCutoutMax("", Float) = 1
+
 
 		[HideInInspector]_NaNLmao("", Float) = 0.0
     }
@@ -89,6 +116,7 @@ Shader "Mochie/Particles" {
 			#pragma shader_feature_local _FALLOFF_ON
 			#pragma shader_feature_local _FLIPBOOK_BLENDING_ON
 			#pragma shader_feature_local _FADING_ON
+            #pragma shader_feature_local _AUDIOLINK_ON
             #pragma multi_compile_instancing
             #include "PSDefines.cginc"
 

@@ -119,6 +119,7 @@ float4 GetSSR(const float3 wPos, const float3 viewDir, float3 rayDir, const half
 
 		float blurFac = max(1,min(12, 12 * (-2)*(smoothness-1)));
 		float4 reflection = float4(GetBlurredGP(_GrabTexture, _GrabTexture_TexelSize.zw, uvs.xy, blurFac*1.5),1);
+		// float4 reflection = float4(tex2Dlod(_GrabTexture, float4(uvs.xy,0,0)).rgb,1);
 
 		reflection.rgb = lerp(reflection.rgb, reflection.rgb*albedo.rgb,smoothstep(0, 1.75, metallic));
 

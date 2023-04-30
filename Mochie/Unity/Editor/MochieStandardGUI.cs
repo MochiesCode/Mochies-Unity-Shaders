@@ -23,7 +23,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		"LTCGI"
 	}, 1);
 
-	string versionLabel = "v1.22";
+	string versionLabel = "v1.22.1";
 	public static string receiverText = "AreaLit Maps";
 	public static string emitterText = "AreaLit Light";
 	public static string projectorText = "AreaLit Projector";
@@ -645,7 +645,6 @@ internal class MochieStandardGUI : ShaderGUI {
 				}
 			}
 			me.TexturePropertySingleLine(Tips.normalMapText, bumpMap, bumpMap.textureValue ? bumpScale : null);
-			me.TexturePropertySingleLine(Tips.detailMaskText, detailMask, detailMask.textureValue ? detailMaskChannel : null);
 			DoEmissionArea(material);
 		});
 	}
@@ -681,7 +680,6 @@ internal class MochieStandardGUI : ShaderGUI {
 			}
 			bool hasDetailAlbedo = detailAlbedoMap.textureValue;
 			me.TexturePropertySingleLine(Tips.albedoText, detailAlbedoMap, hasDetailAlbedo ? detailColor : null, hasDetailAlbedo ? detailAlbedoBlend : null);
-			me.TexturePropertySingleLine(Tips.normalMapText, detailNormalMap, detailNormalMap.textureValue ? detailNormalMapScale : null);
 			if (detailWorkflow.floatValue == 1){
 				me.TexturePropertySingleLine(Tips.packedMapText, detailPackedMap);
 				MGUI.sRGBWarning(detailPackedMap);
@@ -718,6 +716,8 @@ internal class MochieStandardGUI : ShaderGUI {
 				me.TexturePropertySingleLine(Tips.roughnessText, detailRoughnessMap, hasRoughness ? detailRoughnessStrength : null, hasRoughness ? detailRoughBlend : null);
 				MGUI.sRGBWarning(detailRoughnessMap);
 				me.TexturePropertySingleLine(Tips.occlusionText, detailAOMap, hasAO ? detailOcclusionStrength : null, hasAO ? detailAOBlend : null);
+				me.TexturePropertySingleLine(Tips.normalMapText, detailNormalMap, detailNormalMap.textureValue ? detailNormalMapScale : null);
+				me.TexturePropertySingleLine(Tips.detailMaskText, detailMask, detailMask.textureValue ? detailMaskChannel : null);
 				MGUI.sRGBWarning(detailAOMap);
 			}
 		});
@@ -744,7 +744,9 @@ internal class MochieStandardGUI : ShaderGUI {
 					me.ShaderProperty(audioLinkEmissionMeta, Tips.audioLinkEmissionMeta);
 				}
 				MGUI.Space2();
+				
 				me.TexturePropertySingleLine(Tips.emissionText, emissionMap, emissionColorForRendering, emissIntensity);
+				// me.TexturePropertyWithHDRColor(Tips.emissionText, emissionMap, emissionColorForRendering, false);
 				MGUI.TexPropLabel("Intensity", 105);
 				MGUI.SpaceN2();
 				me.TexturePropertySingleLine(Tips.maskText, emissionMask);

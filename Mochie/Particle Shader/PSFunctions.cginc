@@ -1,9 +1,43 @@
 #ifndef PS_FUNCTIONS_INCLUDED
 #define PS_FUNCTIONS_INCLUDED
 
+float GetAudioLinkBand(audioLinkData al, int band, float remapMin, float remapMax){
+	float4 bands = float4(al.bass, al.lowMid, al.upperMid, al.treble);
+	return Remap(bands[band], _AudioLinkRemapMin, _AudioLinkRemapMax, remapMin, remapMax);
+}
+
+void GrabExists(inout audioLinkData al, inout float versionBand, inout float versionTime){
+	float width = 0;
+	float height = 0;
+	_AudioTexture.GetDimensions(width, height);
+	if (width > 64){
+		versionBand = 0.0625;
+		versionTime = 0.25;
+	}
+	al.textureExists = width > 16;
+}
+
+float SampleAudioTexture(float time, float band){
+	return MOCHIE_SAMPLE_TEX2D_LOD(_AudioTexture, float2(time,band),0);
+}
+
+void InitializeAudioLink(inout audioLinkData al, float time){
+	float versionBand = 1;
+	float versionTime = 1;
+	GrabExists(al, versionBand, versionTime);
+	if (al.textureExists){
+		time *= versionTime;
+		al.bass = SampleAudioTexture(time, 0.125 * versionBand);
+		al.lowMid = SampleAudioTexture(time, 0.375 * versionBand);
+		al.upperMid = SampleAudioTexture(time, 0.625 * versionBand);
+		al.treble = SampleAudioTexture(time, 0.875 * versionBand);
+	}
+}
+
 float4 ApplyLayeredTex(v2f i, float4 texCol){
 	float alpha = _BlendMode == 1 ? texCol.a : 1;
-	float4 secondTexCol = tex2D(_SecondTex, i.uv0.xy) * _SecondColor;
+	float2 secondTexUV = TRANSFORM_TEX(i.uv0, _SecondTex) + (_Time.y * _SecondTexScroll);
+	float4 secondTexCol = tex2D(_SecondTex, secondTexUV) * _SecondColor;
 	switch (_TexBlendMode){
 		case 0: texCol = lerp(secondTexCol*alpha, texCol, texCol.a); break;
 		case 1: texCol.rgb += secondTexCol.rgb*alpha; break;
@@ -14,7 +48,13 @@ float4 ApplyLayeredTex(v2f i, float4 texCol){
     return texCol;
 }
 
-void ApplyDistortion(inout v2f i, float alpha){
+void ApplyDistortion(inout v2f i, float alpha, audioLinkData al){
+	#if AUDIOLINK_ENABLED
+		if (_AudioLinkDistortionStrength > 0){
+			float alDistortion = GetAudioLinkBand(al, _AudioLinkDistortionBand, _AudioLinkRemapDistortionMin, _AudioLinkRemapDistortionMax);
+			_DistortionStr *= lerp(1, alDistortion, _AudioLinkDistortionStrength * _AudioLinkStrength);
+		}
+	#endif
 	float2 duv = i.uv0.xy - (_Time.y*_DistortionSpeed);
 	duv *= _NormalMapScale;
 	float2 normal = UnpackNormal(tex2D(_NormalMap, duv)).rg;
@@ -31,7 +71,8 @@ void ApplyDistortion(inout v2f i, float alpha){
 }
 
 
-float3 GetHSVFilter(float4 col){
+float3 GetHSVFilter(float4 col, audioLinkData al){
+	float3 baseCol = col;
 	_Hue += lerp(0, frac(_Time.y*_AutoShiftSpeed), _AutoShift);
 	float3 filteredCol = HSVShift(col.rgb, _Hue, 0, 0);
 	filteredCol = GetSaturation(filteredCol, _Saturation);
@@ -39,6 +80,13 @@ float3 GetHSVFilter(float4 col){
 	filteredCol = GetContrast(filteredCol, _Contrast);
 	col.rgb = lerp(col.rgb, filteredCol, col.a);
 	col.rgb *= _Brightness;
+	#if AUDIOLINK_ENABLED
+		if (_AudioLinkFilterStrength > 0){
+			float alFilter = GetAudioLinkBand(al, _AudioLinkFilterBand, _AudioLinkRemapFilterMin, _AudioLinkRemapFilterMax);
+			alFilter = lerp(1, alFilter, _AudioLinkFilterStrength * _AudioLinkStrength);
+			col.rgb = lerp(baseCol, col.rgb, alFilter);
+		}
+	#endif
     return col;
 }
 
@@ -56,11 +104,11 @@ void Softening(v2f i, inout float fade){
 	#endif
 }
 
-float4 GetTexture(v2f i){ 
+float4 GetTexture(v2f i, audioLinkData al){ 
 
 	#if DISTORTION_ENABLED
 		float4 texCol = tex2D(_MainTex, i.uv0.xy);
-		ApplyDistortion(i, texCol.a);
+		ApplyDistortion(i, texCol.a, al);
 		#if DISTORTION_UV_ENABLED
 			texCol = tex2D(_MainTex, i.uv0.xy);
 		#endif
@@ -77,6 +125,13 @@ float4 GetTexture(v2f i){
 	#endif
 
     #if ALPHA_TEST_ENABLED
+		#if AUDIOLINK_ENABLED
+			if (_AudioLinkCutoutStrength > 0){
+				float alCutout = GetAudioLinkBand(al, _AudioLinkCutoutBand, _AudioLinkRemapCutoutMin, _AudioLinkRemapCutoutMax);
+				alCutout = lerp(1, alCutout, _AudioLinkCutoutStrength * _AudioLinkStrength);
+				_Cutoff = lerp(1, _Cutoff, alCutout);
+			}
+		#endif
         clip(texCol.a - _Cutoff);
 	#endif
 
@@ -132,9 +187,18 @@ float4 GetColor(v2f i){
     	i.color.a *= fade;
 	#endif
 
+	audioLinkData al = (audioLinkData)0;
+	#if AUDIOLINK_ENABLED
+		InitializeAudioLink(al, 0);
+		if (_AudioLinkOpacityStrength > 0){
+			float alOpacity = GetAudioLinkBand(al, _AudioLinkOpacityBand, _AudioLinkRemapOpacityMin, _AudioLinkRemapOpacityMax);
+			_Opacity *= lerp(1, alOpacity, _AudioLinkOpacityStrength * _AudioLinkStrength);
+		}
+	#endif
+
 	i.color.a *= _Opacity;
     float4 col = 1;
-	float4 tex = GetTexture(i);
+	float4 tex = GetTexture(i, al);
 	float falloff = 1;
 	float pulse = 1;
 	#if FALLOFF_ENABLED
@@ -171,7 +235,7 @@ float4 GetColor(v2f i){
 	#endif
 
 	#if FILTERING_ENABLED
-		col.rgb = GetHSVFilter(col);
+		col.rgb = GetHSVFilter(col, al);
 	#endif
 
     return col;

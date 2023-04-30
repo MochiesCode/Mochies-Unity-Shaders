@@ -19,10 +19,35 @@ float _NaNLmao;
 MOCHIE_DECLARE_TEX2D_SCREENSPACE(_MPSGrab); float4 _MPSGrab_TexelSize;
 sampler2D _SecondTex;
 sampler2D _NormalMap;
-float2 _NormalMapScale, _DistortionSpeed;
+float4 _SecondTex_ST;
+float2 _NormalMapScale, _DistortionSpeed, _SecondTexScroll;
 int _Distortion, _DistortMainTex, _TexBlendMode, _Filtering, _AutoShift, _Layering;
 float _DistortionStr, _DistortionBlend;
 float _Hue, _Saturation, _Contrast, _HDR, _AutoShiftSpeed;
+
+Texture2D _AudioTexture;
+SamplerState sampler_AudioTexture;
+
+float _AudioLink;
+float _AudioLinkStrength;
+float _AudioLinkRemapMin;
+float _AudioLinkRemapMax;
+float _AudioLinkFilterBand;
+float _AudioLinkFilterStrength;
+float _AudioLinkRemapFilterMin;
+float _AudioLinkRemapFilterMax;
+float _AudioLinkDistortionBand;
+float _AudioLinkDistortionStrength;
+float _AudioLinkRemapDistortionMin;
+float _AudioLinkRemapDistortionMax;
+float _AudioLinkOpacityBand;
+float _AudioLinkOpacityStrength;
+float _AudioLinkRemapOpacityMin;
+float _AudioLinkRemapOpacityMax;
+float _AudioLinkCutoutBand;
+float _AudioLinkCutoutStrength;
+float _AudioLinkRemapCutoutMin;
+float _AudioLinkRemapCutoutMax;
 
 struct appdata {
     float3 vertex : POSITION;
@@ -55,6 +80,13 @@ struct v2f {
     UNITY_VERTEX_OUTPUT_STEREO
 };
 
+struct audioLinkData {
+	bool textureExists;
+	float bass;
+	float lowMid;
+	float upperMid;
+	float treble;
+};
 
 #include "../Common/Utilities.cginc"
 #include "../Common/Color.cginc"
