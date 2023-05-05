@@ -457,6 +457,9 @@ struct VertexOutputForwardBase
     float4 refl                           : TEXCOORD16;
     float4 tex3                           : TEXCOORD17;
     float4 tex4                           : TEXCOORD18;
+    #if VRSL_ENABLED
+    nointerpolation float3 dmxColor       : TEXCOORD19;
+    #endif
 	float4 color                          : COLOR;
     UNITY_VERTEX_INPUT_INSTANCE_ID
     UNITY_VERTEX_OUTPUT_STEREO
@@ -470,6 +473,16 @@ VertexOutputForwardBase vertForwardBase (VertexInput v)
     UNITY_TRANSFER_INSTANCE_ID(v, o);
     UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 
+    //VRSL Stuff
+    #if VRSL_ENABLED
+        uint dmx = GetDMXChannel();
+        float pan = GetPanValue(dmx);
+	    float tilt = GetTiltValue(dmx);
+        v.vertex = DMXMovement(v.vertex, v.color, 0, pan, tilt, _FixtureRotationOrigin);
+        v.normal = calculateRotations(float4(v.normal.x, v.normal.y, v.normal.z, 0), v.color, 1, pan, tilt, _FixtureRotationOrigin).xyz;
+    #endif
+    //End VRSL Stuff
+
     float4 posWorld = mul(unity_ObjectToWorld, v.vertex);
     #if UNITY_REQUIRE_FRAG_WORLDPOS
         #if UNITY_PACK_WORLDPOS_WITH_TANGENT
@@ -480,6 +493,7 @@ VertexOutputForwardBase vertForwardBase (VertexInput v)
             o.posWorld = posWorld.xyz;
         #endif
     #endif
+
     o.pos = UnityObjectToClipPos(v.vertex);
 	o.localPos = v.vertex;
 	o.color = v.color;
@@ -519,6 +533,12 @@ VertexOutputForwardBase vertForwardBase (VertexInput v)
 	#endif
  
     o.refl = ComputeNonStereoScreenPos(o.pos);
+
+    //VRSL Stuff
+    #if VRSL_ENABLED
+        o.dmxColor = DMXEmission(o.tex.xy);
+    #endif
+    //End VRSL Stuff
 
     UNITY_TRANSFER_FOG_COMBINED_WITH_EYE_VEC(o,o.pos);
     return o;
@@ -743,6 +763,17 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
 			);
 
     c.rgb += Emission(i.tex.xy, i.tex1.zw, sd);
+    #if VRSL_ENABLED
+        float3 emissionMap = SampleTexture(_DMXEmissionMap, i.tex.xy, sd);
+        #if _VRSL_MIX_MULT
+            c.rgb += (i.dmxColor * emissionMap);
+        #elif _VRSL_MIX_ADD
+            c.rgb += (i.dmxColor + emissionMap);
+        #elif _VRSL_MIX_MIX
+            float mixture = (emissionMap.r + emissionMap.g + emissionMap.b)/3;
+            c.rgb += lerp(emissionMap, emissionMap * i.dmxColor, mixture);
+        #endif
+    #endif
 
     #if AREALIT_ENABLED
         float3 areaLitColor = s.diffColor * diffTerm + s.specColor * specTerm;
@@ -793,6 +824,17 @@ VertexOutputForwardAdd vertForwardAdd (VertexInput v)
     VertexOutputForwardAdd o;
     UNITY_INITIALIZE_OUTPUT(VertexOutputForwardAdd, o);
     UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+
+    //VRSL Stuff
+    #if VRSL_ENABLED
+        uint dmx = GetDMXChannel();
+        float pan = GetPanValue(dmx);
+	    float tilt = GetTiltValue(dmx);
+        v.vertex = DMXMovement(v.vertex, v.color, 0, pan, tilt, _FixtureRotationOrigin);
+        v.normal = calculateRotations(float4(v.normal.x, v.normal.y, v.normal.z, 0), v.color, 1, pan, tilt, _FixtureRotationOrigin).xyz;
+        //v.tangent = calculateRotations(float4(v.tangent.x, v.tangent.y, v.tangent.z, 0), v.color, 1, pan, tilt, _FixtureRotationOrigin).xyz;
+    #endif
+    //End VRSL Stuff
 
     float4 posWorld = mul(unity_ObjectToWorld, v.vertex);
     o.pos = UnityObjectToClipPos(v.vertex);

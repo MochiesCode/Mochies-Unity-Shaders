@@ -231,6 +231,39 @@ Shader "Mochie/Standard" {
         [HideInInspector] _ReflectionTex1("", 2D) = "white" {}
 
 		[HideInInspector] BAKERY_META_ALPHA_ENABLE ("Enable Bakery alpha meta pass", Float) = 1.0
+
+
+		//VRSL Stuff
+		[ToggleUI] _VRSLToggle ("Enable VRSL", Int) = 0
+		[ToggleUI] _DMXEmissionMapMix ("Mixture", Int) = 0
+		[ToggleUI] _ThirteenChannelMode ("13-Channel Mode", Int) = 0
+		_DMXChannel ("Starting DMX Channel", Int) = 0
+		_DMXEmissionMap("DMX Emission Map", 2D) = "white" {}
+		[ToggleUI] _NineUniverseMode ("Extended Universe Mode", Int) = 0
+		[ToggleUI] _PanInvert ("Invert Mover Pan", Int) = 0
+		[ToggleUI] _TiltInvert ("Invert Mover Tilt", Int) = 0
+		[ToggleUI] _EnablePanMovement ("Enable Pan Movement", Int) = 0
+		[ToggleUI] _EnableTiltMovement ("Enable Tilt Movement", Int) = 0
+		[ToggleUI] _EnableStrobe ("Enable Strobe", Int) = 0
+		[ToggleUI] _EnableVerticalMode ("Enable Vertical Mode", Int) = 0
+		[ToggleUI] _EnableCompatibilityMode ("Enable Compatibility Mode", Int) = 0
+		_FixtureBaseRotationY("Mover Pan Offset (Blue + Green)", Range(-540,540)) = 0
+		_FixtureRotationX("Mover Tilt Offset (Blue)", Range(-180,180)) = 0
+		_FinalIntensity("Final Intensity", Range(0,1)) = 1
+		_GlobalIntensity("Global Intensity", Range(0,1)) = 1
+		_UniversalIntensity ("Universal Intensity", Range (0,1)) = 1
+		_FixtureRotationOrigin("Fixture Pivot Origin", Float) = (0, 0.014709, -1.02868, 0)
+		_MaxMinPanAngle("Max/Min Pan Angle (-x, x)", Float) = 180
+		_MaxMinTiltAngle("Max/Min Tilt Angle (-y, y)", Float) = 180
+		_FixtureMaxIntensity ("Maximum Cone Intensity",Range (0,10)) = 1.0
+		[HDR]_EmissionDMX("Color", Color) = (1,1,1)
+		//End VRSL Stuff
+
+
+
+
+
+		
     }
 
     CGINCLUDE
@@ -298,6 +331,18 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _MIRROR_ON
 			#pragma shader_feature_local LOD_FADE_CROSSFADE
 			#pragma shader_feature _ FOG_LINEAR FOG_EXP FOG_EXP2
+			//VRSL Stuff
+			#pragma shader_feature_local _VRSL_ON
+			#pragma shader_feature_local _VRSLTHIRTEENCHAN_ON
+			#pragma shader_feature_local _VRSLPAN_ON
+			#pragma shader_feature_local _VRSLTILT_ON
+			#pragma shader_feature_local _STROBE_ON
+			#pragma shader_feature_local _VRSL_MIX_MULT
+			#pragma shader_feature_local _VRSL_MIX_ADD
+			#pragma shader_feature_local _VRSL_MIX_MIX
+			//End VRSL Stuff
+			#pragma shader_feature_local _
+
             #pragma multi_compile_fwdbase
             #pragma multi_compile_instancing
             #include "MochieStandardCoreForward.cginc"
@@ -334,6 +379,12 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _ALPHAMASK_ON
 			#pragma shader_feature_local LOD_FADE_CROSSFADE
 			#pragma shader_feature _ FOG_LINEAR FOG_EXP FOG_EXP2
+			//VRSL Stuff
+			#pragma shader_feature_local _VRSL_ON
+			#pragma shader_feature_local _VRSLTHIRTEENCHAN_ON
+			#pragma shader_feature_local _VRSLPAN_ON
+			#pragma shader_feature_local _VRSLTILT_ON
+			//End VRSL Stuff
             #pragma multi_compile_fwdadd_fullshadows
 			#pragma multi_compile_instancing
             #include "MochieStandardCoreForward.cginc"
@@ -360,6 +411,12 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _ _DETAIL_STOCHASTIC_ON _DETAIL_TSS_ON _DETAIL_TRIPLANAR_ON
 			#pragma shader_feature_local _ALPHAMASK_ON
 			#pragma shader_feature_local LOD_FADE_CROSSFADE
+			//VRSL Stuff
+			#pragma shader_feature_local _VRSL_ON
+			#pragma shader_feature_local _VRSLTHIRTEENCHAN_ON
+			#pragma shader_feature_local _VRSLPAN_ON
+			#pragma shader_feature_local _VRSLTILT_ON
+			//End VRSL Stuff
             #pragma multi_compile_shadowcaster
             #pragma multi_compile_instancing
 			#pragma skip_variants FOG_LINEAR FOG_EXP FOG_EXP2
@@ -394,6 +451,16 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _AUDIOLINK_ON
 			#pragma shader_feature_local _AUDIOLINK_META_ON
             #pragma shader_feature EDITOR_VISUALIZATION
+			//VRSL Stuff
+			#pragma shader_feature_local _VRSL_ON
+			#pragma shader_feature_local _VRSLTHIRTEENCHAN_ON
+			#pragma shader_feature_local _VRSLPAN_ON
+			#pragma shader_feature_local _VRSLTILT_ON
+			#pragma shader_feature_local _STROBE_ON
+			#pragma shader_feature_local _VRSL_MIX_MULT
+			#pragma shader_feature_local _VRSL_MIX_ADD
+			#pragma shader_feature_local _VRSL_MIX_MIX
+			//End VRSL Stuff
             #include "MochieStandardMeta.cginc"
             ENDCG
         }

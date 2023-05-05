@@ -210,5 +210,10 @@ namespace Mochie {
 		public static GUIContent globalTint = new GUIContent("Global Tint", "Determines the color of the majority of effects in the shader.");
 		public static GUIContent emissionAO = new GUIContent("Emission (AO)", "Takes an ambient occlusion map and inverts it to determine emission. This is the same technique used by bungie for the effect in Destiny.");
 		public static GUIContent invertTint = new GUIContent("Invert Tint", "Uses an inverted copy of the base color texture to determine outline tint.");
+
+		//VRSL Stuff
+		public static GUIContent dmxEmissionMapTip = new GUIContent("DMX Emission Map/Mask", "An emission that determins where the DMX Emission will affect the mesh");
+		public static GUIContent nineUniverseMode = new GUIContent("9-Universe Mode", "Enable/Disable 9-Universe Mode Compatibility");
+		//End VRSL Stuff
 	}
 }

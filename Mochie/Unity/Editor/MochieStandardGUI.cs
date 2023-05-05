@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
@@ -21,6 +21,9 @@ internal class MochieStandardGUI : ShaderGUI {
 		"Rain",
 		"AreaLit",
 		"LTCGI"
+		//VRSL Stuff
+		,"VRSL"
+		//End VRSL Stuff
 	}, 1);
 
 	string versionLabel = "v1.22.1";
@@ -230,6 +233,38 @@ internal class MochieStandardGUI : ShaderGUI {
 
 	MaterialProperty occlusionUVSet = null;
 	MaterialProperty areaLitOcclusion = null;
+	
+
+
+	//VRSL Stuff
+	MaterialProperty vrslToggle = null;
+	MaterialProperty thirteenChannelMode = null;
+	MaterialProperty dmxChannel = null;
+	MaterialProperty dmxEmissionMap = null;
+	MaterialProperty nineUniverseMode = null;
+	MaterialProperty invertPan = null;
+	MaterialProperty invertTilt = null;
+	MaterialProperty panToggle = null;
+	MaterialProperty tiltToggle = null;
+	MaterialProperty strobeToggle = null;
+	MaterialProperty verticalToggle = null;
+	MaterialProperty compatibilityToggle = null;
+	MaterialProperty baseRotationY = null;
+	MaterialProperty baseRotationX = null;
+	MaterialProperty finalIntensity = null;
+	MaterialProperty globalIntensity = null;
+	MaterialProperty universalIntensity = null;
+	MaterialProperty rotationOrigin = null;
+	MaterialProperty maxMinPanAngle = null;
+	MaterialProperty maxMinTiltAngle = null;
+	MaterialProperty fixtureMaxIntensity = null;
+	MaterialProperty dmxEmissionMapMix = null;
+	MaterialProperty dmxEmissionColor = null;
+	//End VRSL Stuff
+
+
+
+
 
 	MaterialEditor me;
 
@@ -417,6 +452,31 @@ internal class MochieStandardGUI : ShaderGUI {
 		uvDetailMask = FindProperty("_UVDetailMask", props);
 		detailScroll = FindProperty("_DetailScroll", props);
 		detailRotate = FindProperty("_DetailRotate", props);
+		//VRSL Stuff
+		vrslToggle = FindProperty("_VRSLToggle", props);
+		thirteenChannelMode = FindProperty("_ThirteenChannelMode", props);
+		dmxChannel = FindProperty("_DMXChannel", props);
+		dmxEmissionMap = FindProperty("_DMXEmissionMap", props);
+		dmxEmissionMapMix = FindProperty("_DMXEmissionMapMix", props);
+		dmxEmissionColor = FindProperty("_EmissionDMX", props);
+		nineUniverseMode = FindProperty("_NineUniverseMode", props);
+		invertPan = FindProperty("_PanInvert", props);
+		invertTilt = FindProperty("_TiltInvert", props);
+		panToggle = FindProperty("_EnablePanMovement", props);
+		tiltToggle = FindProperty("_EnableTiltMovement", props);
+		strobeToggle = FindProperty("_EnableStrobe", props);
+		verticalToggle = FindProperty("_EnableVerticalMode", props);
+		compatibilityToggle = FindProperty("_EnableCompatibilityMode", props);
+		baseRotationY = FindProperty("_FixtureBaseRotationY", props);
+		baseRotationX = FindProperty("_FixtureRotationX", props);
+		finalIntensity = FindProperty("_FinalIntensity", props);
+		globalIntensity = FindProperty("_GlobalIntensity", props);
+		universalIntensity = FindProperty("_UniversalIntensity", props);
+		rotationOrigin = FindProperty("_FixtureRotationOrigin", props);
+		maxMinPanAngle = FindProperty("_MaxMinPanAngle", props);
+		maxMinTiltAngle = FindProperty("_MaxMinTiltAngle", props);
+		fixtureMaxIntensity = FindProperty("_FixtureMaxIntensity", props);
+		//End VRSL Stuff
 	}
 
 	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props){
@@ -540,6 +600,20 @@ internal class MochieStandardGUI : ShaderGUI {
 				material.DisableKeyword("LTCGI_DIFFUSE_OFF");
 				material.DisableKeyword("LTCGI_SPECULAR_OFF");
 			}
+			//VRSL Stuff
+			// VRSL
+			if (Shader.Find("VRSL/Standard Mover/Fixture") != null){
+				bool vrslFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "VRSL");
+				if (vrslFoldout){
+					DoVRSLArea(material);
+				}
+			}
+			else {
+				vrslToggle.floatValue = 0f;
+				material.SetInt("_VRSLToggle", 0);
+				material.DisableKeyword("_VRSL_ON");
+			}
+			//End VRSL Stuff
 
 			// Watermark and version display
 			MGUI.DoFooter(versionLabel);
@@ -1124,6 +1198,74 @@ internal class MochieStandardGUI : ShaderGUI {
 			MGUI.ToggleGroupEnd();
 		});
 	}
+	//VRSL Stuff
+	void DoVRSLArea(Material material)
+	{
+		MGUI.PropertyGroup(()=>{
+			me.ShaderProperty(vrslToggle, "Enable");
+			MGUI.ToggleGroup(vrslToggle.floatValue == 0);
+			MGUI.PropertyGroupLayer(()=>{
+				MGUI.SpaceN2();
+				me.ShaderProperty(dmxChannel, "DMX Channel");
+				int chanMode = thirteenChannelMode.floatValue == 0 ? 0 : 1;
+				chanMode = EditorGUILayout.IntPopup("DMX Mappings",chanMode,new string[]{"5-Channel", "13-Channel"}, new int[]{0,1});
+				material.SetInt("_ThirteenChannelMode", chanMode);
+
+				int gridMode = 0;
+				if(verticalToggle.floatValue == 1 && compatibilityToggle.floatValue == 0){
+					gridMode = 1;
+				}
+				else if(verticalToggle.floatValue == 0 && compatibilityToggle.floatValue == 1){
+					gridMode = 2;
+				}else{
+					gridMode = 0;
+				}
+				gridMode = EditorGUILayout.IntPopup("Grid Mode",gridMode,new string[]{"Horizontal", "Vertical", "Legacy"}, new int[]{0,1,2});
+				material.SetInt("_EnableVerticalMode", gridMode == 1 ? 1 : 0);
+				material.SetInt("_EnableCompatibilityMode", gridMode == 2 ? 1 : 0);
+				me.ShaderProperty(nineUniverseMode, Tips.nineUniverseMode);
+				MGUI.BoldLabel("Emission");
+				MGUI.PropertyGroupLayer(()=>{
+					me.TexturePropertySingleLine(Tips.dmxEmissionMapTip, dmxEmissionMap);
+					me.ShaderProperty(dmxEmissionColor, "Emission Color");
+					CheckTrilinear(dmxEmissionMap.textureValue);
+					int mapmix = (int)(dmxEmissionMapMix.floatValue);
+					mapmix = EditorGUILayout.IntPopup("Emission Map Blending",mapmix,new string[]{"Multiply", "Add", "Mix"}, new int[]{0,1,2});
+					material.SetInt("_DMXEmissionMapMix", mapmix);
+					me.ShaderProperty(universalIntensity, "Universal Intensity");
+					me.ShaderProperty(finalIntensity, "Final Intensity");
+					me.ShaderProperty(globalIntensity, "Global Intensity");
+					me.ShaderProperty(fixtureMaxIntensity, "Fixture Max Intensity");
+					me.ShaderProperty(strobeToggle, "Enable Strobe");
+				});
+
+				MGUI.BoldLabel("Movement");
+				MGUI.PropertyGroupLayer(()=>{
+					me.ShaderProperty(rotationOrigin, "Fixture Pivot/Roptation Origin");
+					me.ShaderProperty(panToggle, "Pan");
+					MGUI.ToggleGroup(panToggle.floatValue == 0);
+					MGUI.PropertyGroupLayer(()=>{
+						me.ShaderProperty(maxMinPanAngle, "Max/Min Pan Angle (-x, x)");
+						me.ShaderProperty(baseRotationY, "Pan Offset");
+						me.ShaderProperty(invertPan, "Invert Pan");
+						});
+					MGUI.ToggleGroupEnd();
+					me.ShaderProperty(tiltToggle, "Tilt");
+					MGUI.ToggleGroup(tiltToggle.floatValue == 0);
+					MGUI.PropertyGroupLayer(()=>{
+						me.ShaderProperty(maxMinTiltAngle, "Max/Min Tilt Angle (-y, y)");
+						me.ShaderProperty(baseRotationX, "Tilt Offset");
+						me.ShaderProperty(invertTilt, "Invert Tilt");
+						});
+					});
+					MGUI.ToggleGroupEnd();
+				
+				MGUI.SpaceN2();
+			});
+		});
+		MGUI.ToggleGroupEnd();
+	}
+	//End VRSL Stuff
 
 	public override void AssignNewShaderToMaterial(Material material, Shader oldShader, Shader newShader){
 		// _Emission property is lost after assigning Standard shader to the material
@@ -1238,6 +1380,17 @@ internal class MochieStandardGUI : ShaderGUI {
 		MGUI.SetKeyword(material, "LTCGI_DIFFUSE_OFF", material.GetInt("_LTCGI_DIFFUSE_OFF") == 1 && ltcgiToggle == 1);
 		MGUI.SetKeyword(material, "LTCGI_SPECULAR_OFF", material.GetInt("_LTCGI_SPECULAR_OFF") == 1 && ltcgiToggle == 1);
 		MGUI.SetKeyword(material, "_MIRROR_ON", material.GetInt("_MirrorToggle") == 1);
+
+		//VRSL Stuff
+		MGUI.SetKeyword(material, "_VRSL_ON", material.GetInt("_VRSLToggle") == 1);
+		MGUI.SetKeyword(material, "_VRSLTHIRTEENCHAN_ON", material.GetInt("_ThirteenChannelMode") == 1);
+		MGUI.SetKeyword(material, "_VRSLPAN_ON", material.GetInt("_EnablePanMovement") == 1);
+		MGUI.SetKeyword(material, "_VRSLTILT_ON", material.GetInt("_EnableTiltMovement") == 1);
+		MGUI.SetKeyword(material, "_STROBE_ON", material.GetInt("_EnableStrobe") == 1);
+		MGUI.SetKeyword(material, "_VRSL_MIX_MULT", material.GetInt("_DMXEmissionMapMix") == 0);
+		MGUI.SetKeyword(material, "_VRSL_MIX_ADD", material.GetInt("_DMXEmissionMapMix") == 1);
+		MGUI.SetKeyword(material, "_VRSL_MIX_MIX", material.GetInt("_DMXEmissionMapMix") == 2);
+		//End VRSL Stuff
 
 		if (samplingMode < 3){
 			if (!material.GetTexture("_PackedMap"))

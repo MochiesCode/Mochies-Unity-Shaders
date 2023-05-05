@@ -11,6 +11,9 @@
 #include "../Common/Sampling.cginc"
 #include "MochieStandardSampling.cginc"
 
+#if VRSL_ENABLED
+	#include "Packages/com.acchosen.vr-stage-lighting/Runtime/Shaders/VRSLDMX.cginc"
+#endif
 
 #if (defined(_ALPHABLEND_ON) || defined(_ALPHAPREMULTIPLY_ON)) && defined(UNITY_USE_DITHER_MASK_FOR_ALPHABLENDED_SHADOWS)
     #define UNITY_STANDARD_USE_DITHER_MASK 1
@@ -71,6 +74,13 @@ float2		_UV0Scroll;
 float2		_UV1Scroll;
 float2		_UV4Scroll;
 
+//VRSL Stuff
+#if VRSL_ENABLED
+	int				_ThirteenChannelMode;
+	float4 			_FixtureRotationOrigin;
+#endif
+//End VRSL Stuff
+
 Texture2D _PackedMap;
 int _RoughnessMult, _MetallicMult, _OcclusionMult, _HeightMult;
 int _RoughnessChannel, _MetallicChannel, _OcclusionChannel, _HeightChannel;
@@ -104,6 +114,21 @@ half ShadowGetOneMinusReflectivity(half2 uv, SampleData sd)
     return OneMinusReflectivityFromMetallic(metallicity);
 }
 
+#if VRSL_ENABLED
+float4 DMXMovement(float4 input, float4 vertexColor, int normalsCheck, float pan, float tilt, float4 rotationOrigin)
+{
+	#if VRSL_ENABLED
+		#if _VRSLTHIRTEENCHAN_ON
+			return calculateRotations(input, vertexColor, normalsCheck, pan, tilt, rotationOrigin);
+		#else
+			return input;
+		#endif
+	#else
+		return input;
+	#endif
+}
+#endif
+
 // SHADOW_ONEMINUSREFLECTIVITY(): workaround to get one minus reflectivity based on UNITY_SETUP_BRDF_INPUT
 #define SHADOW_JOIN2(a, b) a##b
 #define SHADOW_JOIN(a, b) SHADOW_JOIN2(a,b)
@@ -119,6 +144,9 @@ struct VertexInput
 	float2 uv3      : TEXCOORD3;
 	float2 uv4      : TEXCOORD4;
     half4 tangent   : TANGENT;
+	#if VRSL_ENABLED
+	float4 color	: COLOR_Centroid;
+	#endif
     UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
@@ -131,6 +159,7 @@ struct VertexOutputShadowCaster
 	float4 localPos : TEXCOORD4;
 	float3 normal : TEXCOORD5;
 	half3 viewDirForParallax : TEXCOORD6;
+	
 };
 
 float2 SelectUVSet(VertexInput v, int selection){
@@ -177,6 +206,16 @@ void vertShadowCaster (VertexInput v
     #ifdef UNITY_STANDARD_USE_STEREO_SHADOW_OUTPUT_STRUCT
         UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(os);
     #endif
+	//VRSL Stuff
+    #if VRSL_ENABLED
+        uint dmx = GetDMXChannel();
+        float pan = GetPanValue(dmx);
+	    float tilt = GetTiltValue(dmx);
+        v.vertex = DMXMovement(v.vertex, v.color, 0, pan, tilt, _FixtureRotationOrigin);
+        v.normal = calculateRotations(float4(v.normal.x, v.normal.y, v.normal.z, 0), v.color, 1, pan, tilt, _FixtureRotationOrigin).xyz;
+        //v.tangent = calculateRotations(float4(v.tangent.x, v.tangent.y, v.tangent.z, 0), v.color, 1, pan, tilt, _FixtureRotationOrigin).xyz;
+    #endif
+    //End VRSL Stuff
     TRANSFER_SHADOW_CASTER_NOPOS(o,opos)
     #if defined(UNITY_STANDARD_USE_SHADOW_UVS)
         o.tex = TRANSFORM_TEX(v.uv0, _MainTex);

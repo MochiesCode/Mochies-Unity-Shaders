@@ -17,12 +17,18 @@
 #include "MochieStandardSampling.cginc"
 
 #if AREALIT_ENABLED
-	#include "../../AreaLit/Shader/Lighting.hlsl"
+	#include "Assets/AreaLit/Shader/Lighting.hlsl"
 #endif
 
 #ifdef LTCGI
 	#include "Assets/_pi_/_LTCGI/Shaders/LTCGI.cginc"
 #endif
+
+//VRSL Stuff
+#if VRSL_ENABLED
+	#include "Packages/com.acchosen.vr-stage-lighting/Runtime/Shaders/VRSLDMX.cginc"
+#endif
+//End VRSL Stuff
 
 //---------------------------------------
 // Directional lightmaps & Parallax require tangent space too
@@ -219,6 +225,17 @@ float3 shadowedReflections;
 	int				_AudioLinkEmission;
 	float			_AudioLinkEmissionStrength;
 #endif
+
+//VRSL Stuff
+#if VRSL_ENABLED
+	Texture2D   	_DMXEmissionMap;
+	int				_ThirteenChannelMode;
+	int				_DMXEmissionMapMix;
+	float			_UniversalIntensity;
+	float4 			_FixtureRotationOrigin;
+	float			_FixtureMaxIntensity;
+#endif
+//End VRSL Stuff
 
 float GSAARoughness(float3 normal, float roughness){
 	float3 normalDDX = ddx(normal);
@@ -509,6 +526,51 @@ half3 Emission(float2 uv, float2 uvMask, SampleData sd)
 		return 0;
 	#endif
 }
+
+half3 DMXEmission(float2 uv)
+{
+	#if VRSL_ENABLED
+		// float3 emissTex = SampleTexture(_DMXEmissionMap, uv, sd);
+		float3 emissionDMX = pow(getAltBaseEmission().rgb, 2.2);
+		float3 emissTex = emissionDMX * _FixtureMaxIntensity;
+		uint dmxChannel = GetDMXChannel();
+		float4 dmxColor = float4(1,1,1,1);
+		#if _VRSLTHIRTEENCHAN_ON
+			dmxColor = ReadDMX(dmxChannel +(uint)5, _Udon_DMXGridRenderTexture) * GetDMXColor(dmxChannel+(uint)7);
+			#if _STROBE_ON
+				float strobe = GetImmediateStrobeOutput(dmxChannel + (uint)6);
+				dmxColor *= strobe;
+			#endif
+		#else
+		//5-Channel Mode
+			dmxColor = ReadDMX(dmxChannel, _Udon_DMXGridRenderTexture) * GetDMXColor(dmxChannel+(uint)1);
+			#if _STROBE_ON
+				float strobe = GetImmediateStrobeOutput(dmxChannel + (uint)4);
+				dmxColor *= strobe;
+			#endif
+		#endif
+		emissTex = emissTex * dmxColor.rgb * getGlobalIntensity() * getFinalIntensity() * _UniversalIntensity;
+		emissTex = Filtering(emissTex, _HueEmiss, _SaturationEmiss, _BrightnessEmiss, _ContrastEmiss, 0);
+		return emissTex;
+	#else
+		return 0;
+	#endif
+}
+
+#if VRSL_ENABLED
+float4 DMXMovement(float4 input, float4 vertexColor, int normalsCheck, float pan, float tilt, float4 rotationOrigin)
+{
+	#if VRSL_ENABLED
+		#if _VRSLTHIRTEENCHAN_ON
+			return calculateRotations(input, vertexColor, normalsCheck, pan, tilt, rotationOrigin);
+		#else
+			return input;
+		#endif
+	#else
+		return input;
+	#endif
+}
+#endif
 
 void Rim(float3 worldPos, float3 normal, inout float3 col, float2 uv){
 	if (_RimToggle == 1){
