@@ -230,7 +230,7 @@ Shader "Mochie/Standard" {
 		[HideInInspector] _ReflectionTex0("", 2D) = "white" {}
         [HideInInspector] _ReflectionTex1("", 2D) = "white" {}
 
-		[HideInInspector] BAKERY_META_ALPHA_ENABLE ("Enable Bakery alpha meta pass", Float) = 1.0
+		// [HideInInspector] BAKERY_META_ALPHA_ENABLE ("Enable Bakery alpha meta pass", Float) = 1.0
     }
 
     CGINCLUDE
@@ -398,37 +398,37 @@ Shader "Mochie/Standard" {
             ENDCG
         }
 		
-        Pass {
-            Name "META_BAKERY"
-            Tags {"LightMode"="Meta"}
-            Cull [_MetaCull]
+        // Pass {
+        //     Name "META_BAKERY"
+        //     Tags {"LightMode"="Meta"}
+        //     Cull [_MetaCull]
 
-            CGPROGRAM
-            #pragma vertex vert_meta
-            #pragma fragment frag_meta
-			#define MOCHIE_STANDARD
-			#define BAKERY_META
-			#pragma shader_feature_local _WORKFLOW_PACKED_ON
-			#pragma shader_feature_local _DETAIL_WORKFLOW_PACKED_ON
-            #pragma shader_feature_local _EMISSION
-            #pragma shader_feature_local _METALLICGLOSSMAP
-            #pragma shader_feature_local _SPECGLOSSMAP
-            #pragma shader_feature_local ___ _DETAIL_MULX2
-			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON
-			#pragma shader_feature_local _ _DETAIL_STOCHASTIC_ON _DETAIL_TSS_ON _DETAIL_TRIPLANAR_ON
-			#pragma shader_feature_local _DETAIL_ROUGH_ON
-			#pragma shader_feature_local _DETAIL_AO_ON
-			#pragma shader_feature_local _DETAIL_METALLIC_ON
-			#pragma shader_feature_local _ALPHAMASK_ON
-			#pragma shader_feature_local _OPAQUELIGHTS_OFF
-			#pragma shader_feature_local _AREALIT_ON
-			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
-			#pragma shader_feature_local _AUDIOLINK_ON
-			#pragma shader_feature_local _AUDIOLINK_META_ON
-            #pragma shader_feature EDITOR_VISUALIZATION
-            #include "MochieStandardMeta.cginc"
-            ENDCG
-        }
+        //     CGPROGRAM
+        //     #pragma vertex vert_meta
+        //     #pragma fragment frag_meta
+		// 	#define MOCHIE_STANDARD
+		// 	#define BAKERY_META
+		// 	#pragma shader_feature_local _WORKFLOW_PACKED_ON
+		// 	#pragma shader_feature_local _DETAIL_WORKFLOW_PACKED_ON
+        //     #pragma shader_feature_local _EMISSION
+        //     #pragma shader_feature_local _METALLICGLOSSMAP
+        //     #pragma shader_feature_local _SPECGLOSSMAP
+        //     #pragma shader_feature_local ___ _DETAIL_MULX2
+		// 	#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON
+		// 	#pragma shader_feature_local _ _DETAIL_STOCHASTIC_ON _DETAIL_TSS_ON _DETAIL_TRIPLANAR_ON
+		// 	#pragma shader_feature_local _DETAIL_ROUGH_ON
+		// 	#pragma shader_feature_local _DETAIL_AO_ON
+		// 	#pragma shader_feature_local _DETAIL_METALLIC_ON
+		// 	#pragma shader_feature_local _ALPHAMASK_ON
+		// 	#pragma shader_feature_local _OPAQUELIGHTS_OFF
+		// 	#pragma shader_feature_local _AREALIT_ON
+		// 	#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
+		// 	#pragma shader_feature_local _AUDIOLINK_ON
+		// 	#pragma shader_feature_local _AUDIOLINK_META_ON
+        //     #pragma shader_feature EDITOR_VISUALIZATION
+        //     #include "MochieStandardMeta.cginc"
+        //     ENDCG
+        // }
     }
     FallBack "VertexLit"
     CustomEditor "MochieStandardGUI"
