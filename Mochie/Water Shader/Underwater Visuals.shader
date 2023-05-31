@@ -105,7 +105,7 @@
 				UNITY_TRANSFER_INSTANCE_ID(v, o);
 				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 
-				if (_RenderMode == 0){
+				// if (_RenderMode == 0){
 					// v.vertex.xyz = Rotate3D(v.vertex.xyz, float3(0,180,0));
 					// v.vertex.z += 0.1;
 					v.vertex.x *= 1.4;
@@ -114,11 +114,11 @@
 					o.localPos = oPos;
 					o.raycast = UnityObjectToViewPos(oPos).xyz * float3(-1,-1,1);
 					o.pos = UnityObjectToClipPos(oPos);
-				}
-				else {
-					o.pos = UnityObjectToClipPos(v.vertex);
-					o.localPos = v.vertex;
-				}
+				// }
+				// else {
+				// 	o.pos = UnityObjectToClipPos(v.vertex);
+				// 	o.localPos = v.vertex;
+				// }
 				o.uv = ComputeGrabScreenPos(o.pos);
                 return o;
             }
@@ -234,7 +234,7 @@
 					o.cameraPos = (unity_StereoWorldSpaceCameraPos[0] + unity_StereoWorldSpaceCameraPos[1]) * 0.5;
 				#endif
 
-				if (_RenderMode == 0){
+				// if (_RenderMode == 0){
 					// v.vertex.xyz = Rotate3D(v.vertex.xyz, float3(0,180,0));
 					// v.vertex.z += 0.1;
 					v.vertex.x *= 1.4;
@@ -242,10 +242,10 @@
 					float4 oPos = mul(unity_WorldToObject, wPos);
 					o.raycast = UnityObjectToViewPos(oPos).xyz * float3(-1,-1,1);
 					o.pos = UnityObjectToClipPos(oPos);
-				}
-				else {
-					o.pos = UnityObjectToClipPos(v.vertex);
-				}
+				// }
+				// else {
+				// 	o.pos = UnityObjectToClipPos(v.vertex);
+				// }
 				o.uv = ComputeGrabScreenPos(o.pos);
                 return o;
             }
@@ -359,7 +359,7 @@
 					o.cameraPos = (unity_StereoWorldSpaceCameraPos[0] + unity_StereoWorldSpaceCameraPos[1]) * 0.5;
 				#endif
 
-				if (_RenderMode == 0){
+				// if (_RenderMode == 0){
 					// v.vertex.xyz = Rotate3D(v.vertex.xyz, float3(0,180,0));
 					// v.vertex.z += 0.1;
 					v.vertex.x *= 1.4;
@@ -367,10 +367,10 @@
 					float4 oPos = mul(unity_WorldToObject, wPos);
 					o.raycast = UnityObjectToViewPos(oPos).xyz * float3(-1,-1,1);
 					o.pos = UnityObjectToClipPos(oPos);
-				}
-				else {
-					o.pos = UnityObjectToClipPos(v.vertex);
-				}
+				// }
+				// else {
+				// 	o.pos = UnityObjectToClipPos(v.vertex);
+				// }
 				o.uv = ComputeGrabScreenPos(o.pos);
                 return o;
             }

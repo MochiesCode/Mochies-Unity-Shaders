@@ -18,6 +18,7 @@ Shader "Mochie/Uber" {
 		[Enum(2D,0, Cubemap,1, Combined,2)]_CubeMode("en3", Int) = 0
 		[Enum(Base Color Alpha,0, Alpha Mask,1)]_UseAlphaMask("en2", Int) = 0
 		_Cutoff("ra", Range(0,1)) = 0.5
+		_AlphaStrength("ra", Range(0,1)) = 1
 		_NearClip("fl", Float) = 0
 		_NearClipMask("tex", 2D) = "white" {}
 		[ToggleUI]_NearClipToggle("tog", Int) = 0
@@ -158,7 +159,14 @@ Shader "Mochie/Uber" {
 		_HeightContrast("ra", Range(-1,2)) = 1
 		_HeightRemapMin("fl", Float) = 0
 		_HeightRemapMax("fl", Float) = 1
-
+		[ToggleUI]_MetallicFiltering("tog", Int) = 0
+		[ToggleUI]_PreviewMetallic("tog", Int) = 0
+		_MetallicLightness("ra", Range(-1,1)) = 0
+		_MetallicIntensity("ra", Range(0,1)) = 0
+		_MetallicContrast("ra", Range(-1,2)) = 1
+		_MetallicRemapMin("fl", Float) = 0
+		_MetallicRemapMax("fl", Float) = 1
+		
 		// Base Color Dissolve
 		[ToggleUI]_BCDissolveToggle("tog", Int) = 0
 		_MainTex2("tex", 2D) = "white" {}
@@ -354,6 +362,11 @@ Shader "Mochie/Uber" {
 		[HDR]_EmissionColor("col", Color) = (0,0,0)
 		_EmissScroll("vec", Vector) = (0,0,0,0)
 		_EmissIntensity("ra", Float) = 1
+		
+		_EmissionMap2("tex", 2D) = "white" {}
+		[HDR]_EmissionColor2("col", Color) = (0,0,0)
+		_EmissScroll2("vec", Vector) = (0,0,0,0)
+		_EmissIntensity2("ra", Float) = 1
 
 		// LIGHT REACTIVITY
 		[ToggleUI]_ReactToggle("tog", Int) = 0
@@ -564,6 +577,14 @@ Shader "Mochie/Uber" {
 		_AudioLinkRemapOutlineMin("fl", Float) = 0
 		_AudioLinkRemapOutlineMax("fl", Float) = 1
 
+		_OscilloscopeStrength("ra", Range(0,1)) = 0
+		[HDR]_OscilloscopeCol("col", Color) = (1,1,1,1)
+		_OscilloscopeScale("vec", Vector) = (1,1,0,0)
+		_OscilloscopeOffset("vec", Vector) = (0,0,0,0)
+		_OscilloscopeRot("ra", Range(0,360)) = 0
+		_OscilloscopeMarginLR("vec", Vector) = (0,1,0,0)
+		_OscilloscopeMarginTB("vec", Vector) = (1,0,0,0)
+		
 		//----------------------------
 		// SPECIAL FEATURES
 		//----------------------------
@@ -645,6 +666,7 @@ Shader "Mochie/Uber" {
 		[HDR]_WFColor("col", Color) = (0,0,0,1)
 		_WFVisibility("ra", Range(0,1)) = 1
 		_WFFill("ra", Range(0,1)) = 0
+		[ToggleUI]_WireframeTransparency("tog", Int) = 0 
 		_PatternMult("fl", Float) = 2.5
 
 		// TOUCH ANYTHING BELOW HERE AND YOUR SHADER WILL BREAK

@@ -168,7 +168,7 @@ void GetVertexLightData(g2f i, inout lighting l){
 float3 GetLightDir(g2f i, lighting l) {
 	float3 lightDir = UnityWorldSpaceLightDir(i.worldPos);
 	#if FORWARD_PASS
-		lightDir *=  l.lightEnv;
+		lightDir *= l.lightEnv;
 		lightDir += (unity_SHAr.xyz + unity_SHAg.xyz + unity_SHAb.xyz) * !l.lightEnv;
 		#if VERTEX_LIGHT
 			lightDir += l.vLightDir;

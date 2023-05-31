@@ -63,7 +63,9 @@ internal class USEditor : ShaderGUI {
 	Dictionary<Action, GUIContent> wfTabButtons = new Dictionary<Action, GUIContent>();
 	Dictionary<Action, GUIContent> renderTabButtons = new Dictionary<Action, GUIContent>();
 	Dictionary<Action, GUIContent> alOutlineTabButtons = new Dictionary<Action, GUIContent>();
-	
+	Dictionary<Action, GUIContent> alVizTabButtons = new Dictionary<Action, GUIContent>();
+	Dictionary<Action, GUIContent> metallicTabButtons = new Dictionary<Action, GUIContent>();
+
 	Toggles toggles = new Toggles(new string[] {
 			"BASE", 
 			"TEXTURES",
@@ -100,6 +102,7 @@ internal class USEditor : ShaderGUI {
 			"Secondary Layer",
 			"Environment Rim",
 			"Smoothness Filter",
+			"Metallic Filter",
 			"RENDER SETTINGS",
 			"Curvature Filter",
 			"Primary Maps",
@@ -143,6 +146,8 @@ internal class USEditor : ShaderGUI {
 			"Iridescence",
 			"UV Distortion 1",
 			"Outline 1",
+			// "Visualizers",
+			"Oscilloscope",
 			"DEBUG"
 	}, 0);
 
@@ -156,7 +161,7 @@ internal class USEditor : ShaderGUI {
 
 	static readonly string unityFolderPath = "Assets/Mochie/Unity";
 	string header = "Header_Pro";
-	string versionLabel = "v1.27.1";
+	string versionLabel = "v1.29";
 	// β
 	
 	MaterialProperty _RenderMode = null; 
@@ -303,6 +308,13 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _RoughContrast = null;
 	MaterialProperty _RoughLightness = null;
 	MaterialProperty _RoughIntensity = null;
+	MaterialProperty _MetallicFiltering = null;
+	MaterialProperty _MetallicContrast = null;
+	MaterialProperty _MetallicLightness = null;
+	MaterialProperty _MetallicIntensity = null;
+	MaterialProperty _MetallicRemapMin = null;
+	MaterialProperty _MetallicRemapMax = null;
+	MaterialProperty _PreviewMetallic = null;
 	MaterialProperty _VLightCont = null;
 	MaterialProperty _SubsurfaceMask = null;
 	MaterialProperty _UnlitMatcap1 = null;
@@ -679,6 +691,19 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _VertexColor = null;
 	MaterialProperty _FresnelToggle = null;
 	MaterialProperty _FresnelStrength = null;
+	MaterialProperty _OscilloscopeStrength = null;
+	MaterialProperty _OscilloscopeCol = null;
+	MaterialProperty _OscilloscopeScale = null;
+	MaterialProperty _OscilloscopeOffset = null;
+	MaterialProperty _OscilloscopeRot = null;
+	MaterialProperty _OscilloscopeMarginLR = null;
+	MaterialProperty _OscilloscopeMarginTB = null;
+	MaterialProperty _EmissionMap2 = null;
+	MaterialProperty _EmissionColor2 = null;
+	MaterialProperty _EmissScroll2 = null;
+	MaterialProperty _EmissIntensity2 = null;
+	MaterialProperty _AlphaStrength = null;
+	MaterialProperty _WireframeTransparency = null;
 
 	MaterialProperty _VRCFallback = null;
 	MaterialProperty _NaNLmao = null;
@@ -775,8 +800,10 @@ internal class USEditor : ShaderGUI {
 			me.ShaderProperty(_CubeMode, Tips.cubeModeLabel);
 			if (EditorGUI.EndChangeCheck())
 				SetBlendMode(mat);
-			if (isCutout || isTransparent)
+			if (isCutout || isTransparent){
 				me.ShaderProperty(_UseAlphaMask, Tips.useAlphaMaskLabel);
+				me.ShaderProperty(_AlphaStrength, "Alpha Strength");
+			}
 			if (blendMode == 1)
 				me.ShaderProperty(_Cutoff, "Cutout");
 			GUILayout.Space(8);
@@ -993,8 +1020,26 @@ internal class USEditor : ShaderGUI {
 				};
 				Foldouts.SubFoldout("Masks", foldouts, maskingTabButtons, mat, me, maskingTabAction);
 
-				// Roughness Filtering
+				
 				if (workflow == 0 || workflow >= 3){
+
+					// Metallic Filtering
+					metallicTabButtons.Add(()=>{DoMetallicFilterReset();}, MGUI.resetLabel);
+					Action metallicTabAction = ()=>{
+						MGUI.PropertyGroup(() => {
+							MGUI.ToggleGroup(_MetallicFiltering.floatValue == 0);
+							me.ShaderProperty(_PreviewMetallic, "Preview");
+							MGUI.SliderMinMax01(_MetallicRemapMin, _MetallicRemapMax, "Remap", 1);
+							me.ShaderProperty(_MetallicLightness, "Lightness");
+							me.ShaderProperty(_MetallicIntensity, "Intensity");
+							me.ShaderProperty(_MetallicContrast, "Contrast");
+							MGUI.ToggleGroupEnd();
+						});
+					};
+					MGUI.ToggleGroupEnd();
+					Foldouts.SubFoldout("Metallic Filter", foldouts, metallicTabButtons, mat, me, metallicTabAction, _MetallicFiltering);
+
+					// Roughness Filtering
 					roughnessTabButtons.Add(()=>{DoRoughFilterReset();}, MGUI.resetLabel);
 					Action roughnessTabAction = ()=>{
 						MGUI.PropertyGroup(() => {
@@ -1500,15 +1545,17 @@ internal class USEditor : ShaderGUI {
 		emissTabButtons.Add(()=>{DoEmissionReset();}, MGUI.resetLabel);
 		Action emissTabAction = ()=>{
 			me.ShaderProperty(_EmissionToggle, "Enable");
+			MGUI.ToggleGroup(_EmissionToggle.floatValue == 0);
 			MGUI.PropertyGroup(() => {
-				MGUI.ToggleGroup(_EmissionToggle.floatValue == 0);
 				me.TexturePropertySingleLine(Tips.emissTexLabel, _EmissionMap, _EmissionColor, _EmissIntensity);
 				MGUI.TexPropLabel("Intensity", 111);
-				if (_EmissionMap.textureValue){
-					MGUI.TextureSOScroll(me, _EmissionMap, _EmissScroll);
-				}
+				MGUI.TextureSOScroll(me, _EmissionMap, _EmissScroll);
 			});
-
+			MGUI.PropertyGroup(() => {
+				me.TexturePropertySingleLine(Tips.emissTexLabel, _EmissionMap2, _EmissionColor2, _EmissIntensity2);
+				MGUI.TexPropLabel("Intensity", 111);
+				MGUI.TextureSOScroll(me, _EmissionMap2, _EmissScroll2);
+			});
 			lrTabButtons.Add(()=>{DoLRReset();}, MGUI.resetLabel);
 			Action lrTabAction = ()=>{
 				MGUI.ToggleGroup(_ReactToggle.floatValue == 0);
@@ -1781,7 +1828,22 @@ internal class USEditor : ShaderGUI {
 			MGUI.ToggleGroup(_AudioLinkToggle.floatValue == 0);
 			MGUI.SliderMinMax(_AudioLinkRemapMin, _AudioLinkRemapMax, 0f, 2f, "Remap", 0);
 			MGUI.Space6();
-			
+
+			alVizTabButtons.Add(()=>{DoAudioLinkVizReset();}, MGUI.resetLabel);
+			Action alVizTabAction = ()=>{
+				// MGUI.BoldLabel("Oscilloscope");
+				MGUI.PropertyGroup(() => {
+					me.ShaderProperty(_OscilloscopeStrength, "Strength");
+					me.ShaderProperty(_OscilloscopeCol, "Color");
+					MGUI.Vector2Field(_OscilloscopeMarginLR, "Margin Left/Right");
+					MGUI.Vector2Field(_OscilloscopeMarginTB, "Margin Top/Bottom");
+					MGUI.Vector2Field(_OscilloscopeScale, "Scale");
+					MGUI.Vector2Field(_OscilloscopeOffset, "Offset");
+					me.ShaderProperty(_OscilloscopeRot, "Rotation");
+				});	
+			};
+			Foldouts.SubFoldout("Oscilloscope", foldouts, alVizTabButtons, mat, me, alVizTabAction);
+
 			alEmissTabButtons.Add(()=>{DoAudioLinkEmissionReset();}, MGUI.resetLabel);
 			Action alEmissTabAction = ()=>{
 				MGUI.PropertyGroup(() => {
@@ -2101,6 +2163,8 @@ internal class USEditor : ShaderGUI {
 						me.ShaderProperty(_WFColor, "Color");
 						me.ShaderProperty(_WFVisibility, "Wire Opacity");
 						me.ShaderProperty(_WFFill, "Fill Opacity");
+						if (isTransparent)
+							me.ShaderProperty(_WireframeTransparency, "Use Alpha");
 						MGUI.ToggleGroupEnd();
 					});
 				};
@@ -2316,6 +2380,8 @@ internal class USEditor : ShaderGUI {
 		bool prevSmooth = mat.GetInt("_SmoothnessFiltering") == 1 && mat.GetInt("_PreviewSmooth") == 1;
 		prevSmooth = prevSmooth && (workflow == 1 || workflow == 2);
 		bool prevHeight = mat.GetInt("_HeightFiltering") == 1 && mat.GetInt("_PreviewHeight") == 1;
+		bool prevMetal = mat.GetInt("_MetallicFiltering") == 1 && mat.GetInt("_PreviewMetallic") == 1;
+		prevMetal = prevMetal && (workflow == 0 || workflow >= 3); 
 
 		// Begone grabpass
 		bool ssrEnabled = ssr == 1 && reflToggle == 1 && renderMode > 0;
@@ -2333,7 +2399,7 @@ internal class USEditor : ShaderGUI {
 		SetKeyword(mat, "_SHADING_ON", renderMode == 1);
 		SetKeyword(mat, "_SPECULAR_ANISO_ON", specToggle == 2 && renderMode > 0);
 		SetKeyword(mat, "_SPECULAR_COMBINED_ON", specToggle == 3 && renderMode > 0);
-		SetKeyword(mat, "_PBR_PREVIEW_ON", (prevAO || prevRough || prevSmooth || prevHeight) && renderMode > 0);
+		SetKeyword(mat, "_PBR_PREVIEW_ON", (prevAO || prevRough || prevSmooth || prevHeight || prevMetal) && renderMode > 0);
 		SetKeyword(mat, "_UV_DISTORTION_ON", distortMode > 0);
 		SetKeyword(mat, "_UV_DISTORTION_NORMALMAP_ON", distortMode == 1);
 		SetKeyword(mat, "_FILTERING_ON", filterToggle == 1);
@@ -2746,6 +2812,7 @@ internal class USEditor : ShaderGUI {
 		DoSmoothFilterReset();
 		DoAOFilterReset();
 		DoHeightFilterReset();
+		DoMetallicFilterReset();
 	}
 
 	void DoPrimaryMapsReset(){
@@ -2805,6 +2872,15 @@ internal class USEditor : ShaderGUI {
 		_HeightContrast.floatValue = 1f;
 		_HeightRemapMin.floatValue = 0f;
 		_HeightRemapMax.floatValue = 1f;
+	}
+
+	void DoMetallicFilterReset(){
+		_PreviewMetallic.floatValue = 0f;
+		_MetallicLightness.floatValue = 0f;
+		_MetallicIntensity.floatValue = 0f;
+		_MetallicContrast.floatValue = 1f;
+		_MetallicRemapMin.floatValue = 0f;
+		_MetallicRemapMax.floatValue = 1f;
 	}
 
 	void DoBCDissolveReset(){
@@ -2998,6 +3074,9 @@ internal class USEditor : ShaderGUI {
 		DoAudioLinkVertManipReset();
 		DoAudioLinkEmissionReset();
 		DoAudioLinkUVDistortionReset();
+		DoAudioLinkOutlineReset();
+		DoAudioLinkVizReset();
+
 	}
 
 	void DoAudioLinkUVDistortionReset(){
@@ -3080,6 +3159,16 @@ internal class USEditor : ShaderGUI {
 		_AudioLinkOutlineMultiplier.floatValue = 0f;
 		_AudioLinkRemapOutlineMin.floatValue = 0f;
 		_AudioLinkRemapOutlineMax.floatValue = 1f;
+	}
+
+	void DoAudioLinkVizReset(){
+		_OscilloscopeStrength.floatValue = 0f;
+		_OscilloscopeCol.colorValue = Color.white;
+		_OscilloscopeScale.vectorValue = Vector4.one;
+		_OscilloscopeOffset.vectorValue = Vector4.zero;
+		_OscilloscopeRot.floatValue = 0f;
+		_OscilloscopeMarginLR.vectorValue = new Vector4(0,1,0,0);
+		_OscilloscopeMarginTB.vectorValue = new Vector4(1,0,0,0);
 	}
 
 	void DoLRReset(){
@@ -3370,5 +3459,7 @@ internal class USEditor : ShaderGUI {
 		wfTabButtons.Clear();
 		renderTabButtons.Clear();
 		alOutlineTabButtons.Clear();
+		alVizTabButtons.Clear();
+		metallicTabButtons.Clear();
 	}
 }

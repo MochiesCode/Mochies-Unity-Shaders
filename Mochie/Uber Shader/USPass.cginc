@@ -144,6 +144,10 @@ float4 frag (g2f i, bool frontFace : SV_IsFrontFace) : SV_Target {
     lighting l = GetLighting(i, m, atten, frontFace);
 	float4 albedo = GetAlbedo(i, l, m, al);
 
+	#if NON_OPAQUE_RENDERING
+		albedo.a = lerp(1, albedo.a, _AlphaStrength);
+	#endif
+
 	#if ALPHA_TEST
 		ApplyCutout(i, l.screenUVs, albedo);
 	#endif
@@ -216,14 +220,18 @@ float4 frag (g2f i, bool frontFace : SV_IsFrontFace) : SV_Target {
 			#endif
 			ApplyFalloffRim(i, diffuse.rgb, falloffRim);
 		#endif
-		ApplyWireframe(i, diffuse.rgb);
-		ApplyAudioLinkWireframe(i, diffuse.rgb);
+		ApplyWireframe(i, diffuse);
+		ApplyAudioLinkWireframe(i, diffuse);
 	#endif
-	
+
+	#if AUDIOLINK_ENABLED
+		ApplyVisualizers(i, diffuse.rgb);
+	#endif
+
 	#if BCDISSOLVE_ENABLED
 		diffuse.rgb += bcRimColor;
 	#endif
-	
+
 	#if POST_FILTERING_ENABLED
 		ApplyFiltering(i, m, diffuse.rgb);
 	#endif
@@ -231,6 +239,7 @@ float4 frag (g2f i, bool frontFace : SV_IsFrontFace) : SV_Target {
     UNITY_APPLY_FOG(i.fogCoord, diffuse);
 
 	#if PBR_PREVIEW_ENABLED
+		ApplyMetallicPreview(diffuse.rgb);
 		ApplyRoughPreview(diffuse.rgb);
 		ApplySmoothPreview(diffuse.rgb);
 		ApplyAOPreview(diffuse.rgb);
@@ -419,6 +428,7 @@ float4 frag(g2f i) : SV_Target {
 		else {
 			albedo.a = lerp(baseColor.a, outlineTex.a, _UseOutlineTexAlpha);
 		}
+		albedo.a = lerp(1, albedo.a, _AlphaStrength);
 		ApplyCutout(i, l.screenUVs, albedo);
 		#if X_FEATURES && !DISSOLVE_GEOMETRY
 			if (_DissolveStyle > 0){
@@ -476,10 +486,10 @@ float4 frag(g2f i) : SV_Target {
 				ApplyDissolveRim(i, al, col.rgb); 
 			#endif
 		#endif
-		ApplyWireframe(i, col.rgb);
-		ApplyAudioLinkWireframe(i, diffuse.rgb);
+		ApplyWireframe(i, col);
+		ApplyAudioLinkWireframe(i, diffuse);
 	#endif
-
+	
 	#if POST_FILTERING_ENABLED
 		ApplyFiltering(i, m, col.rgb);
 	#endif
@@ -630,6 +640,10 @@ float4 frag(g2f i) : SV_Target {
 		}
 		#if ALPHA_PREMULTIPLY
 			albedo.a = ShadowPremultiplyAlpha(i, albedo.a);
+		#endif
+		
+		#if NON_OPAQUE_RENDERING
+			albedo.a = lerp(1, albedo.a, _AlphaStrength);
 		#endif
 
 		if (_BlendMode == 1){

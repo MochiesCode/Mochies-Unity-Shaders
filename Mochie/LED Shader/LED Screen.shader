@@ -64,7 +64,11 @@ Shader "Mochie/LED Screen" {
 		};
 
 		#include "RGBSubPixel.cginc"
-
+		
+		float3 ACES_Inv(float3 x) {
+			return (sqrt(-10127.*x*x + 13702.*x + 9.) + 59.*x - 3.) / (502. - 486.*x);
+		}
+		
 		void surf (Input IN, inout SurfaceOutputStandard o) {
 			if (_IsAVProInput == 1){
 				IN.uv_MainTex.y = 1-IN.uv_MainTex.y;
@@ -79,6 +83,7 @@ Shader "Mochie/LED Screen" {
 			o.Alpha = alpha;
 			o.Emission = finalCol * _Color;
 			o.Metallic = 0;
+			
 			#ifdef _SPECGLOSSMAP
 				o.Smoothness = 1-(tex2D(_SpecGlossMap, IN.uv_SpecGlossMap) * _Glossiness);
 			#else

@@ -14,9 +14,10 @@
         _Metallic("Metallic", Range(0,1)) = 0
 		_Occlusion("Occlusion", Range(0,1)) = 1
         _NormalStrength("Normal Strength", Float) = 1
-        _Refraction("Refraction Strength", Float) = 5
+         [KeywordEnum(ULTRA, HIGH, MED, LOW)]BlurQuality("Blur Quality", Int) = 1
 		_Blur("Blur Strength", Float) = 1
-        [KeywordEnum(ULTRA, HIGH, MED, LOW)]BlurQuality("Blur Quality", Int) = 1
+        _Refraction("Refraction Strength", Float) = 5
+        [ToggleUI]_RefractMeshNormals("Refract Mesh Normals", Int) = 0
 
         [Toggle(_RAIN_ON)]_RainToggle("Enable", Int) = 0
 		[HideInInspector]_RainSheet("Texture Sheet", 2D) = "black" {}
@@ -98,6 +99,7 @@
             float _Strength, _Speed;
             float _Refraction;
             float _Blur;
+            float _RefractMeshNormals;
 
             struct appdata {
                 float4 vertex : POSITION;
@@ -166,6 +168,7 @@
                 float3 binormal = cross(i.normal, i.tangent.xyz) * (i.tangent.w * unity_WorldTransformParams.w);
                 float3 normalDir = normalize(normalMap.x * i.tangent + normalMap.y * binormal + normalMap.z * i.normal);
                 normalDir = lerp(-normalDir, normalDir, isFrontFace);
+                normalMap = lerp(-normalMap, normalMap, isFrontFace);
                 
                 float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPos);
                 float3 lightDir = normalize(UnityWorldSpaceLightDir(i.worldPos));
@@ -201,7 +204,8 @@
                     #endif
                 #endif
 
-                float2 offset = normalDir * _Refraction * 0.01;
+                // float2 offset = lerp(normalMap, normalDir, _RefractMeshNormals) * _Refraction * 0.01;
+                float2 offset = normalMap * _Refraction * 0.01;
                 float2 screenUV = (i.uvGrab.xy / max(EPSILON, i.uvGrab.w)) + offset;
                 // float3 wPos = GetWorldSpacePixelPos(i.localPos, screenUV);
                 // float dist = distance(wPos, i.cameraPos);

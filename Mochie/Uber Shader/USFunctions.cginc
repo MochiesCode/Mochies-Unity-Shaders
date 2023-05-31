@@ -1,13 +1,6 @@
 #ifndef US_FUNCTIONS_INCLUDED
 #define US_FUNCTIONS_INCLUDED
 
-#if !X_FEATURES
-float GetAudioLinkBand(audioLinkData al, int band, float remapMin, float remapMax){
-	float4 bands = float4(al.bass, al.lowMid, al.upperMid, al.treble);
-	return Remap(bands[band], _AudioLinkRemapMin, _AudioLinkRemapMax, remapMin, remapMax);
-}
-#endif
-
 //----------------------------
 // Color Filtering
 //----------------------------
@@ -253,37 +246,6 @@ float4 GetAlbedo(g2f i, lighting l, masks m, audioLinkData al){
 }
 
 //----------------------------
-// Audio Link
-//----------------------------
-void GrabExists(inout audioLinkData al, inout float versionBand, inout float versionTime){
-	float width = 0;
-	float height = 0;
-	_AudioTexture.GetDimensions(width, height);
-	if (width > 64){
-		versionBand = 0.0625;
-		versionTime = 0.25;
-	}
-	al.textureExists = width > 16;
-}
-
-float SampleAudioTexture(float time, float band){
-	return MOCHIE_SAMPLE_TEX2D_LOD(_AudioTexture, float2(time,band),0);
-}
-
-void InitializeAudioLink(inout audioLinkData al, float time){
-	float versionBand = 1;
-	float versionTime = 1;
-	GrabExists(al, versionBand, versionTime);
-	if (al.textureExists){
-		time *= versionTime;
-		al.bass = SampleAudioTexture(time, 0.125 * versionBand);
-		al.lowMid = SampleAudioTexture(time, 0.375 * versionBand);
-		al.upperMid = SampleAudioTexture(time, 0.625 * versionBand);
-		al.treble = SampleAudioTexture(time, 0.875 * versionBand);
-	}
-}
-
-//----------------------------
 // Emission/Rim
 //----------------------------
 float GetPulse(g2f i){
@@ -303,7 +265,10 @@ float GetPulse(g2f i){
 }
 
 float3 GetEmission(g2f i, masks m, audioLinkData al){
-	float3 emiss = MOCHIE_SAMPLE_TEX2D(_EmissionMap, i.uv.zw).rgb * _EmissionColor.rgb;
+	float3 emiss = MOCHIE_SAMPLE_TEX2D(_EmissionMap, i.uv.zw).rgb * _EmissionColor.rgb * _EmissIntensity;
+	float2 emiss2uv = ScaleOffsetScrollUV(i.rawUV, _EmissionMap2_ST.xy, _EmissionMap2_ST.zw, _EmissScroll2);
+	float3 emiss2 = MOCHIE_SAMPLE_TEX2D(_EmissionMap2, emiss2uv).rgb * _EmissionColor2.rgb * _EmissIntensity2;
+	emiss += emiss2;
 	emiss *= m.emissMask;
 	#if !OUTLINE_PASS
 		#if PULSE_ENABLED
@@ -314,7 +279,7 @@ float3 GetEmission(g2f i, masks m, audioLinkData al){
 			emiss *= lerp(1, emissValueAL, _AudioLinkEmissionMultiplier*_AudioLinkStrength);
 		#endif
 	#endif
-	return emiss * _EmissIntensity;
+	return emiss;
 }
 
 #if SHADING_ENABLED
@@ -355,6 +320,8 @@ void ApplyRimLighting(g2f i, lighting l, masks m, audioLinkData al, inout float3
 
 float3 GetMetallicWorkflow(g2f i, lighting l, masks m, float3 albedo){
 	metallic = lerp(_Metallic, MOCHIE_SAMPLE_TEX2D_SAMPLER(_MetallicGlossMap, sampler_MainTex, i.uv.xy), _UseMetallicMap);
+	metallic = lerp(metallic, Remap(metallic, 0, 1, _MetallicRemapMin, _MetallicRemapMax), _MetallicFiltering);
+	ApplyPBRFiltering(metallic, _MetallicContrast, _MetallicIntensity, _MetallicLightness, _MetallicFiltering, prevMetal);
 	roughness = lerp(_Glossiness, MOCHIE_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, sampler_MainTex, i.uv.xy), _UseSpecMap);
 	roughness = lerp(roughness, GetDetailRough(i, roughness), _DetailRoughStrength * m.detailMask * _UsingDetailRough);
 	roughness = lerp(roughness, Remap(roughness, 0, 1, _RoughRemapMin, _RoughRemapMax), _RoughnessFiltering);
@@ -401,6 +368,9 @@ float3 GetSpecWorkflow(g2f i, lighting l, masks m, float3 albedo){
 
 
 float3 GetPackedWorkflow(g2f i, lighting l, masks m, float3 albedo){
+	metallic = lerp(metallic, Remap(metallic, 0, 1, _MetallicRemapMin, _MetallicRemapMax), _MetallicFiltering);
+	ApplyPBRFiltering(metallic, _MetallicContrast, _MetallicIntensity, _MetallicLightness, _MetallicFiltering, prevMetal);
+
 	roughness = lerp(roughness, GetDetailRough(i, roughness), _DetailRoughStrength * m.detailMask * _UsingDetailRough);
 	roughness = lerp(roughness, Remap(roughness, 0, 1, _RoughRemapMin, _RoughRemapMax), _RoughnessFiltering);
 	ApplyPBRFiltering(roughness, _RoughContrast, _RoughIntensity, _RoughLightness, _RoughnessFiltering, prevRough);
@@ -454,6 +424,10 @@ void ApplyHeightPreview(inout float3 diffuse){
 	#if PARALLAX_ENABLED
 		diffuse = lerp(diffuse, prevHeight, _HeightFiltering * _PreviewHeight);
 	#endif
+}
+
+void ApplyMetallicPreview(inout float3 diffuse){
+	diffuse = lerp(diffuse, prevMetal, _MetallicFiltering * _PreviewMetallic);
 }
 
 //----------------------------

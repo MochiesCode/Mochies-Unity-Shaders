@@ -8,10 +8,10 @@ using Mochie;
 
 public class UnderwaterEditor : ShaderGUI {
 
-	string versionLabel = "v1.0";
+	string versionLabel = "v1.0.1";
 
 	// Base
-	MaterialProperty _RenderMode = null;
+	// MaterialProperty _RenderMode = null;
 	MaterialProperty _Color = null;
 	MaterialProperty _StencilRef = null;
 
@@ -66,7 +66,7 @@ public class UnderwaterEditor : ShaderGUI {
 			
 			MGUI.BoldLabel("Base");
 			MGUI.PropertyGroup(()=>{
-				me.ShaderProperty(_RenderMode, "Mesh Rendering Mode");
+				// me.ShaderProperty(_RenderMode, "Mesh Rendering Mode");
 				me.ShaderProperty(_Color, "Color");
 				me.ShaderProperty(_StencilRef, "Stencil Reference");
 				if (MGUI.ResetButton())
@@ -167,7 +167,7 @@ public class UnderwaterEditor : ShaderGUI {
 	}
 
 	void ResetBase(){
-		_RenderMode.floatValue = 0f;
+		// _RenderMode.floatValue = 0f;
 		_Color.colorValue = Color.white;
 		_StencilRef.floatValue = 65f;
 	}
