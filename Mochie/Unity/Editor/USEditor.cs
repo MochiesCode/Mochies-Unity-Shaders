@@ -161,7 +161,7 @@ internal class USEditor : ShaderGUI {
 
 	static readonly string unityFolderPath = "Assets/Mochie/Unity";
 	string header = "Header_Pro";
-	string versionLabel = "v1.29";
+	string versionLabel = "v1.30";
 	// β
 	
 	MaterialProperty _RenderMode = null; 
@@ -704,6 +704,10 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _EmissIntensity2 = null;
 	MaterialProperty _AlphaStrength = null;
 	MaterialProperty _WireframeTransparency = null;
+	MaterialProperty _DetailMetallicBlending = null;
+	MaterialProperty _UsingDetailMetallic = null;
+	MaterialProperty _DetailMetallic = null;
+	MaterialProperty _DetailMetallicStrength = null;
 
 	MaterialProperty _VRCFallback = null;
 	MaterialProperty _NaNLmao = null;
@@ -924,12 +928,16 @@ internal class USEditor : ShaderGUI {
 					bool usingDetOcc = _DetailOcclusionMap.textureValue;
 					bool usingDetAlbedo = _DetailAlbedoMap.textureValue;
 					bool usingDetNormal = _DetailNormalMap.textureValue;
+					bool usingDetMetal = _DetailMetallic.textureValue;
 					me.TexturePropertySingleLine(Tips.baseColorLabel, _DetailAlbedoMap, usingDetAlbedo ? _DetailAlbedoStrength : null, usingDetAlbedo ? _DetailAlbedoBlending : null);
-					me.TexturePropertySingleLine(Tips.normalTexLabel, _DetailNormalMap, usingDetNormal ? _DetailNormalMapScale : null);
-					if (workflow == 0 || workflow >= 3)
+					if (workflow == 0 || workflow >= 3){
+						me.TexturePropertySingleLine(Tips.metallicTexLabel, _DetailMetallic, usingDetMetal ? _DetailMetallicStrength : null, usingDetMetal ? _DetailMetallicBlending : null);
 						me.TexturePropertySingleLine(Tips.roughnessTexLabel, _DetailRoughnessMap, usingDetRough ? _DetailRoughStrength : null, usingDetRough ? _DetailRoughBlending : null);
+					}
 					me.TexturePropertySingleLine(Tips.occlusionTexLabel, _DetailOcclusionMap, usingDetOcc ? _DetailOcclusionStrength : null, usingDetOcc ? _DetailOcclusionBlending : null);
-					if (usingDetAlbedo || usingDetNormal || usingDetRough || usingDetOcc) {
+					me.TexturePropertySingleLine(Tips.normalTexLabel, _DetailNormalMap, usingDetNormal ? _DetailNormalMapScale : null);
+
+					if (usingDetAlbedo || usingDetNormal || usingDetRough || usingDetOcc || usingDetMetal) {
 						MGUI.TextureSOScroll(me, _DetailAlbedoMap, _DetailScroll);
 						me.ShaderProperty(_DetailRot, "Rotation");
 					}
@@ -2287,6 +2295,7 @@ internal class USEditor : ShaderGUI {
 		bool usingDetailRough = mat.GetTexture("_DetailRoughnessMap");
 		bool usingDetailOcc = mat.GetTexture("_DetailOcclusionMap");
 		bool usingDetailAlbedo = mat.GetTexture("_DetailAlbedoMap");
+		bool usingDetailMetallic = mat.GetTexture("_DetailMetallic");
 
 		// Setting floats based on render mode/texture presence/etc
 		mat.SetInt("_IsCubeBlendMask", mat.GetTexture("_CubeBlendMask") ? 1 : 0);
@@ -2362,6 +2371,11 @@ internal class USEditor : ShaderGUI {
 			mat.SetInt("_UsingDetailOcclusion", 1);
 		else
 			mat.SetInt("_UsingDetailOcclusion", 0);
+		
+		if (usingDetailMetallic)
+			mat.SetInt("_UsingDetailMetallic", 1);
+		else
+			mat.SetInt("_UsingDetailMetallic", 0);
 
 		// Matcap normal maps
 		if (matcapNormal0)

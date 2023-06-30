@@ -22,8 +22,8 @@ void ApplyLREmission(lighting l, inout float3 diffuse, float3 emiss){
 }
 
 float3 GetDetailAO(g2f i, float3 aoIn){
-	float3 detailAO = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailOcclusionMap, sampler_MainTex, i.uv2.xy);
-	return BlendColors(aoIn, detailAO, _DetailOcclusionBlending);
+	float4 detailAO = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailOcclusionMap, sampler_MainTex, i.uv2.xy);
+	return BlendColorsAlpha(aoIn, detailAO, _DetailOcclusionBlending, detailAO.a);
 }
 
 float3 GetAO(g2f i, masks m){

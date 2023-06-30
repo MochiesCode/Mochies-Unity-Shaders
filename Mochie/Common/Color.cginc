@@ -312,6 +312,19 @@ float BlendScalars(float scalar0, float scalar1, int blendType){
 	return blends[blendType];
 }
 
+float BlendScalarsAlpha(float scalar0, float scalar1, int blendType, float alpha){
+	float blends[7] = {
+		scalar0 + scalar1,
+		lerp(scalar0, scalar1, alpha),
+		scalar0 * scalar1,
+		scalar0 * scalar1 * mochie_ColorSpaceDouble.x,
+		BlendOverlay(scalar0, scalar1),
+		BlendScreen(scalar0, scalar1),
+		BlendLerp(scalar0, scalar1)
+	};
+	return blends[blendType];
+}
+
 float BlendScalars(float scalar0, float scalar1, int blendType, float interpolator){
 	float blends[7] = {
 		scalar0 + (scalar1*interpolator),

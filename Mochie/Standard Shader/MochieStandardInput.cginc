@@ -209,6 +209,7 @@ float3 shadowedReflections;
 	float4 _NoiseTexSSR_TexelSize;
 	float _EdgeFade;
 	float _SSRStrength;
+	float _SSRHeight;
 #endif
 
 #if AUDIOLINK_ENABLED

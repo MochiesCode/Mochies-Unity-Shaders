@@ -97,8 +97,8 @@ float4 GetSSR(const float3 wPos, const float3 viewDir, float3 rayDir, const half
 		float4 noiseRGBA = tex2Dlod(_NoiseTexSSR, float4(noiseUvs.xy,0,0));
 		float noise = noiseRGBA.r;
 		
-		float3 reflectedRay = wPos + (0.2*0.09/FdotR + noise*0.09)*rayDir;
-		float4 finalPos = ReflectRay(reflectedRay, rayDir, 0.2, 0.02, 0.09, noise, 50);
+		float3 reflectedRay = wPos + (_SSRHeight*_SSRHeight/FdotR + noise*_SSRHeight)*rayDir;
+		float4 finalPos = ReflectRay(reflectedRay, rayDir, _SSRHeight, 0.02, _SSRHeight, noise, 50);
 		float totalSteps = finalPos.w;
 		finalPos.w = 1;
 		

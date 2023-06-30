@@ -8,7 +8,7 @@ using Mochie;
 
 public class GlassEditor : ShaderGUI {
 
-	string versionLabel = "v1.1.3";
+	string versionLabel = "v1.2";
 
 	// Surface
 	MaterialProperty _GrabpassTint = null;
@@ -26,7 +26,7 @@ public class GlassEditor : ShaderGUI {
 	MaterialProperty _Refraction = null;
 	MaterialProperty _Blur = null;
 	MaterialProperty BlurQuality = null;
-	MaterialProperty _RefractMeshNormals = null;
+	// MaterialProperty _RefractMeshNormals = null;
 
 	// Rain
 	MaterialProperty _RainToggle = null;
@@ -39,6 +39,7 @@ public class GlassEditor : ShaderGUI {
 	MaterialProperty _ReflectionsToggle = null;
 	MaterialProperty _SpecularToggle = null;
 	MaterialProperty _Culling = null;
+	MaterialProperty _SamplingMode = null;
 	MaterialProperty _BlendMode = null;
 	MaterialProperty _LitBaseColor = null;
 
@@ -60,6 +61,8 @@ public class GlassEditor : ShaderGUI {
 
         EditorGUI.BeginChangeCheck(); {
 			
+			MGUI.SetKeyword(mat, "_STOCHASTIC_SAMPLING_ON", mat.GetInt("_SamplingMode") == 1);
+
 			MGUI.BoldLabel("SURFACE");
 			MGUI.PropertyGroup(()=>{
 				if (_BlendMode.floatValue == 0)
@@ -108,6 +111,7 @@ public class GlassEditor : ShaderGUI {
 				me.ShaderProperty(_LitBaseColor, "Lit Base Color");
 				me.RenderQueueField();
 				me.ShaderProperty(_Culling, "Culling Mode");
+				me.ShaderProperty(_SamplingMode, "Sampling Mode");
 				EditorGUI.BeginChangeCheck();
 				me.ShaderProperty(_BlendMode, "Transparency");
 				if (EditorGUI.EndChangeCheck())

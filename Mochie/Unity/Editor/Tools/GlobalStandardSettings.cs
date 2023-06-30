@@ -179,15 +179,17 @@ namespace Mochie {
                     m.SetInt("_OcclusionChannel", (int)occlusionChannel);
                     m.SetInt("_HeightChannel", (int)heightChannel);
 
-                    // Since packed texture is a separate slot, move an existing PBR texture into it
-                    if (m.GetTexture("_SpecGlossMap") != null)
-                        m.SetTexture("_PackedMap", m.GetTexture("_SpecGlossMap"));
-                    else if (m.GetTexture("_MetallicGlossMap") != null)
-                        m.SetTexture("_PackedMap", m.GetTexture("_MetallicGlossMap"));
-                    else if (m.GetTexture("_OcclusionMap") != null)
-                        m.SetTexture("_PackedMap", m.GetTexture("_OcclusionMap"));
-                    else if (m.GetTexture("_ParallaxMap") != null)
-                        m.SetTexture("_PackedMap", m.GetTexture("_ParallaxMap"));
+                    // Since packed texture is a separate slot, move an existing PBR texture into it when there is no existing packed map
+                    if (m.GetTexture("_PackedMap") == null){
+                        if (m.GetTexture("_SpecGlossMap") != null)
+                            m.SetTexture("_PackedMap", m.GetTexture("_SpecGlossMap"));
+                        else if (m.GetTexture("_MetallicGlossMap") != null)
+                            m.SetTexture("_PackedMap", m.GetTexture("_MetallicGlossMap"));
+                        else if (m.GetTexture("_OcclusionMap") != null)
+                            m.SetTexture("_PackedMap", m.GetTexture("_OcclusionMap"));
+                        else if (m.GetTexture("_ParallaxMap") != null)
+                            m.SetTexture("_PackedMap", m.GetTexture("_ParallaxMap"));
+                    }
                 }       
             }
         }

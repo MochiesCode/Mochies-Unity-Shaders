@@ -1,4 +1,14 @@
-﻿float3 GetCameraPos(){
+﻿
+float4 SampleTexture(sampler2D tex, float2 uv){
+	#if defined(_STOCHASTIC_SAMPLING_ON)
+		return tex2Dstoch(tex, uv);
+	#else
+		return tex2D(tex, uv);
+	#endif
+	return 0;
+}
+
+float3 GetCameraPos(){
     float3 cameraPos = _WorldSpaceCameraPos;
     #if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
         cameraPos = (unity_StereoWorldSpaceCameraPos[0] + unity_StereoWorldSpaceCameraPos[1]) * 0.5;
@@ -47,19 +57,6 @@ float3 GetWorldSpacePixelPos(float4 vertex, float2 scrnPos){
 	return worldSpacePos;
 }
 
-float3 tex2Dnormal(sampler2D tex, float2 uv, float strength){
-	float offset = 0.15;
-	offset = pow(offset, 3) * 0.1;
-	float2 offsetU = float2(uv.x + offset, uv.y);
-	float2 offsetV = float2(uv.x, uv.y + offset);
-	float normalSample = tex2D(tex, uv);
-	float uSample = tex2D(tex, offsetU);
-	float vSample = tex2D(tex, offsetV);
-	float3 va = float3(1, 0, (uSample - normalSample) * strength);
-	float3 vb = float3(0, 1, (vSample - normalSample) * strength);
-	return normalize(cross(va, vb));
-}
-
 float2 ScaleOffset(float2 uv, float2 tiling, float2 offset){
 	return uv * tiling + offset;
 }
@@ -81,7 +78,7 @@ float3 GetFlipbookNormals(v2f i, inout float flipbookBase){
 
 #include "GlassKernels.cginc"
 
-float3 tex2Dblur(sampler2D tex, float2 uv, float str){
+float3 BlurredGrabpassSample(sampler2D tex, float2 uv, float str){
 	float3 blurCol = 0;
 	float2 blurStr = str;
 	blurStr.x *= 0.5625;

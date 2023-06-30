@@ -63,6 +63,7 @@ MOCHIE_DECLARE_TEX2D_NOSAMPLER(_DetailRoughnessMap);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_DetailOcclusionMap);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_DetailNormalMap);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_ScatterTex);
+MOCHIE_DECLARE_TEX2D_NOSAMPLER(_DetailMetallic);
 
 // NPR Shading
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_RimTex); 
@@ -225,6 +226,9 @@ int _MatcapNormal0Toggle;
 int _MatcapNormal1Toggle;
 int _MatcapNormal0Mix;
 int _MatcapNormal1Mix;
+int _DetailMetallicBlending;
+int _UsingDetailMetallic;
+float _DetailMetallicStrength;
 
 float _RefractionBlurStrength;
 float _IridescenceStrength;

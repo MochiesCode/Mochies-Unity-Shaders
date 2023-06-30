@@ -225,11 +225,11 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty lightTex2 = null;
 	MaterialProperty lightTex3 = null;
 	MaterialProperty opaqueLights = null;
-
 	MaterialProperty mirrorToggle = null;
-
 	MaterialProperty occlusionUVSet = null;
 	MaterialProperty areaLitOcclusion = null;
+	MaterialProperty ssrHeight = null;
+
 
 	MaterialEditor me;
 
@@ -417,6 +417,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		uvDetailMask = FindProperty("_UVDetailMask", props);
 		detailScroll = FindProperty("_DetailScroll", props);
 		detailRotate = FindProperty("_DetailRotate", props);
+		ssrHeight = FindProperty("_SSRHeight", props);
 	}
 
 	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props){
@@ -772,6 +773,7 @@ internal class MochieStandardGUI : ShaderGUI {
 					MGUI.ToggleFloat(me, Tips.ssrText, ssr, ssrStrength);
 					if (ssr.floatValue == 1){
 						me.ShaderProperty(edgeFade, Tips.edgeFadeText);
+						me.ShaderProperty(ssrHeight, "Depth");
 					}
 					MGUI.ToggleFloat(me, Tips.reflVertexColor, reflVertexColor, reflVertexColorStrength);
 				}

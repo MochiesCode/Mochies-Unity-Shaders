@@ -54,7 +54,8 @@ Shader "Mochie/Water" {
 		[ToggleUI]_BackfaceReflections("Backface Reflections", Int) = 1
 		[ToggleUI]_SSR("Screenspace Reflections", Int) = 0
 		_SSRStrength("SSR Strength", Float) = 1
-		_EdgeFadeSSR("Edge Fade", Float) = 0.1
+		_EdgeFadeSSR("Edge Fade", Range(0,1)) = 0.1
+		_SSRHeight("SSR Height", Range(0.1, 0.5)) = 0.1
 		_ReflCube("Cubemap", CUBE) = "gray" {}
 		_ReflCubeRotation("Rotation", Vector) = (0,0,0,0)
 		[Enum(Off,0, Directional Light,1, Manual,2)]_Specular("Specular", Int) = 1
@@ -176,7 +177,7 @@ Shader "Mochie/Water" {
 
 		[IntRange]_StencilRef("Stencil Reference", Range(1,255)) = 65
 		[Enum(Opaque,0, Premultiplied,1, Grabpass,2)]_TransparencyMode("Transparency Mode", Int) = 2
-		[Enum(UnityEngine.Rendering.CullMode)]_CullMode("Cull", Int) = 2
+		[Enum(UnityEngine.Rendering.CullMode)]_CullMode("Cull", Int) = 0
 		[Enum(Off,0, On,1)]_ZWrite("ZWrite", Int) = 0
 		[Enum(Off,0, On,1)]_DepthEffects("Depth Effects", Int) = 1
 		

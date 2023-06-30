@@ -320,10 +320,15 @@ void ApplyRimLighting(g2f i, lighting l, masks m, audioLinkData al, inout float3
 
 float3 GetMetallicWorkflow(g2f i, lighting l, masks m, float3 albedo){
 	metallic = lerp(_Metallic, MOCHIE_SAMPLE_TEX2D_SAMPLER(_MetallicGlossMap, sampler_MainTex, i.uv.xy), _UseMetallicMap);
+	if (_UsingDetailMetallic == 1)
+		metallic = lerp(metallic, GetDetailMetallic(i, metallic), _DetailMetallicStrength * m.detailMask);
 	metallic = lerp(metallic, Remap(metallic, 0, 1, _MetallicRemapMin, _MetallicRemapMax), _MetallicFiltering);
 	ApplyPBRFiltering(metallic, _MetallicContrast, _MetallicIntensity, _MetallicLightness, _MetallicFiltering, prevMetal);
+	metallic = saturate(metallic);
+	
 	roughness = lerp(_Glossiness, MOCHIE_SAMPLE_TEX2D_SAMPLER(_SpecGlossMap, sampler_MainTex, i.uv.xy), _UseSpecMap);
-	roughness = lerp(roughness, GetDetailRough(i, roughness), _DetailRoughStrength * m.detailMask * _UsingDetailRough);
+	if (_UsingDetailRough == 1)
+		roughness = lerp(roughness, GetDetailRough(i, roughness), _DetailRoughStrength * m.detailMask);
 	roughness = lerp(roughness, Remap(roughness, 0, 1, _RoughRemapMin, _RoughRemapMax), _RoughnessFiltering);
 	ApplyPBRFiltering(roughness, _RoughContrast, _RoughIntensity, _RoughLightness, _RoughnessFiltering, prevRough);
 
@@ -368,10 +373,14 @@ float3 GetSpecWorkflow(g2f i, lighting l, masks m, float3 albedo){
 
 
 float3 GetPackedWorkflow(g2f i, lighting l, masks m, float3 albedo){
+	if (_UsingDetailMetallic == 1)
+		metallic = lerp(metallic, GetDetailMetallic(i, metallic), _DetailMetallicStrength * m.detailMask);
 	metallic = lerp(metallic, Remap(metallic, 0, 1, _MetallicRemapMin, _MetallicRemapMax), _MetallicFiltering);
 	ApplyPBRFiltering(metallic, _MetallicContrast, _MetallicIntensity, _MetallicLightness, _MetallicFiltering, prevMetal);
+	metallic = saturate(metallic);
 
-	roughness = lerp(roughness, GetDetailRough(i, roughness), _DetailRoughStrength * m.detailMask * _UsingDetailRough);
+	if (_UsingDetailRough == 1)
+		roughness = lerp(roughness, GetDetailRough(i, roughness), _DetailRoughStrength * m.detailMask);
 	roughness = lerp(roughness, Remap(roughness, 0, 1, _RoughRemapMin, _RoughRemapMax), _RoughnessFiltering);
 	ApplyPBRFiltering(roughness, _RoughContrast, _RoughIntensity, _RoughLightness, _RoughnessFiltering, prevRough);
 

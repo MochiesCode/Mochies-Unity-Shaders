@@ -135,7 +135,7 @@ Shader "Mochie/Standard" {
 		_ReflCube("Reflection Fallback", CUBE) = "" {}
 		_ReflCubeOverride("Reflection Override", CUBE) = "" {}
 		_CubeThreshold("Threshold", Range(0.0001,1)) = 0.45
-		_EdgeFade("SSR Edge Fade", Range(0,1)) = 0.1
+		_EdgeFade("Edge Fade", Range(0,1)) = 0.1
 		
 		[ToggleUI]_Subsurface("Subsurface Scattering", Int) = 0
 		[ToggleUI]_ScatterAlbedoTint("Scatter Albedo Tint", Int) = 0
@@ -180,6 +180,7 @@ Shader "Mochie/Standard" {
 		_LTCGIStrength("LTCGI Strength", Float) = 1
 		_FresnelStrength("Fresnel Strength", Float) = 1
 		_SSRStrength("SSR Strength", Float) = 1
+		_SSRHeight("SSR Height", Range(0.1, 0.5)) = 0.1
 		_ReflectionStrength("Relfection Strength", Float) = 1
 		_SpecularStrength("Specular Strength", Float) = 1
 		_QueueOffset("Queue Offset", Int) = 0

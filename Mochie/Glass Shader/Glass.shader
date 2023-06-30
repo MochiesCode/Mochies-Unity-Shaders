@@ -14,7 +14,7 @@
         _Metallic("Metallic", Range(0,1)) = 0
 		_Occlusion("Occlusion", Range(0,1)) = 1
         _NormalStrength("Normal Strength", Float) = 1
-         [KeywordEnum(ULTRA, HIGH, MED, LOW)]BlurQuality("Blur Quality", Int) = 1
+        [KeywordEnum(ULTRA, HIGH, MED, LOW)]BlurQuality("Blur Quality", Int) = 1
 		_Blur("Blur Strength", Float) = 1
         _Refraction("Refraction Strength", Float) = 5
         [ToggleUI]_RefractMeshNormals("Refract Mesh Normals", Int) = 0
@@ -31,6 +31,7 @@
         [Toggle(_REFLECTIONS_ON)]_ReflectionsToggle("Reflections", Int) = 1
         [Toggle(_SPECULAR_HIGHLIGHTS_ON)]_SpecularToggle("Specular Highlights", Int) = 1
         [Toggle(_LIT_BASECOLOR_ON)]_LitBaseColor("Lit Base Color", Int) = 1
+        [Enum(Default,0, Stochastic,1)]_SamplingMode("Sampling Mode", Int) = 0
 		[Enum(UnityEngine.Rendering.CullMode)]_Culling("Culling", Int) = 2
         [Enum(Grabpass,0, Premultiplied,1, Off,2)]_BlendMode("Transparency", Int) = 0
         [HideInInspector]_SrcBlend("Src Blend", Int) = 1
@@ -65,6 +66,7 @@
             #pragma shader_feature_local _SPECULAR_HIGHLIGHTS_ON
             #pragma shader_feature_local _GRABPASS_ON
             #pragma shader_feature_local _LIT_BASECOLOR_ON
+            #pragma shader_feature_local _STOCHASTIC_SAMPLING_ON
             #pragma target 5.0
 
             #include "UnityCG.cginc"
@@ -126,6 +128,7 @@
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
+            #include "../Common/Sampling.cginc"
             #include "GlassFunctions.cginc"
 
             v2f vert (appdata v){
@@ -160,7 +163,7 @@
 		        float3 reflCol = 0;
                 float flipbookBase = 0;
 
-                float3 normalMap = UnpackScaleNormal(tex2D(_NormalMap, TRANSFORM_TEX(i.uv, _NormalMap)), _NormalStrength);
+                float3 normalMap = UnpackScaleNormal(SampleTexture(_NormalMap, TRANSFORM_TEX(i.uv, _NormalMap)), _NormalStrength);
                 #if defined(_RAIN_ON)
                     float3 flipbookNormals = GetFlipbookNormals(i, flipbookBase);
                     normalMap = BlendNormals(flipbookNormals, normalMap);
@@ -174,13 +177,13 @@
                 float3 lightDir = normalize(UnityWorldSpaceLightDir(i.worldPos));
                 float3 reflDir = reflect(-viewDir, normalDir);
 
-                float roughnessMap = tex2D(_RoughnessMap, TRANSFORM_TEX(i.uv, _RoughnessMap)) * _Roughness;
+                float roughnessMap = SampleTexture(_RoughnessMap, TRANSFORM_TEX(i.uv, _RoughnessMap)) * _Roughness;
                 float roughness = saturate(roughnessMap-flipbookBase);
 
                 #if defined(_SPECULAR_HIGHLIGHTS_ON) || defined(_REFLECTIONS_ON)
                     float roughSq = roughness * roughness;
                     float roughBRDF = max(roughSq, 0.003);
-                    float metallic = tex2D(_MetallicMap, TRANSFORM_TEX(i.uv, _MetallicMap)) * _Metallic;
+                    float metallic = SampleTexture(_MetallicMap, TRANSFORM_TEX(i.uv, _MetallicMap)) * _Metallic;
                     float omr = unity_ColorSpaceDielectricSpec.a - metallic * unity_ColorSpaceDielectricSpec.a;
                     float3 specularTint = lerp(unity_ColorSpaceDielectricSpec.rgb, 1, metallic);
 
@@ -210,26 +213,29 @@
                 // float3 wPos = GetWorldSpacePixelPos(i.localPos, screenUV);
                 // float dist = distance(wPos, i.cameraPos);
                 // _Blur *= 1-min(dist/10, 1);
+
                 float3 grabCol = 0;
+
                 #ifdef _GRABPASS_ON
                     float blurStr = _Blur * 0.0125;
                     #if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
                         blurStr *= 0.25;
                     #endif
                     if (_Roughness > 0 && _Blur > 0)
-                        grabCol = tex2Dblur(_GlassGrab, screenUV, (roughness * blurStr));
+                        grabCol = BlurredGrabpassSample(_GlassGrab, screenUV, (roughness * blurStr));
                     else
                         grabCol = UNITY_SAMPLE_SCREENSPACE_TEXTURE(_GlassGrab, screenUV);
                     grabCol *= _GrabpassTint;
+                    
                 #endif
-                
-                float4 baseColorTex = tex2D(_BaseColor, TRANSFORM_TEX(i.uv, _BaseColor)) * _BaseColorTint;
+
+                float4 baseColorTex = SampleTexture(_BaseColor, TRANSFORM_TEX(i.uv, _BaseColor)) * _BaseColorTint;
                 float3 baseColor = baseColorTex.rgb * baseColorTex.a;
                 #ifdef _LIT_BASECOLOR_ON
                     float3 lightCol = ShadeSH9(normalDir) + _LightColor0;
                     baseColor *= saturate(lightCol);
                 #endif
-                float occlusion = lerp(1, tex2D(_OcclusionMap, TRANSFORM_TEX(i.uv, _OcclusionMap)), _Occlusion);
+                float occlusion = lerp(1, SampleTexture(_OcclusionMap, TRANSFORM_TEX(i.uv, _OcclusionMap)), _Occlusion);
                 float3 specularity = (specCol + reflCol) * _SpecularityTint;
 
                 float3 col = (specularity + grabCol + baseColor) * occlusion;

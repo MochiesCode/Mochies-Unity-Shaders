@@ -247,7 +247,12 @@ float4 frag (g2f i, bool frontFace : SV_IsFrontFace) : SV_Target {
 	#endif
 	
 	float4 finalCol = diffuse + (mainTexSampler*0.000001);
-	finalCol.a = saturate(finalCol.a);
+	#if NON_OPAQUE_RENDERING
+		finalCol.a = saturate(finalCol.a);
+	#else
+		finalCol.a = 1;
+	#endif
+
 	return finalCol;
 }
 #endif
@@ -496,7 +501,13 @@ float4 frag(g2f i) : SV_Target {
 
 	UNITY_APPLY_FOG(i.fogCoord, col);
 	float4 finalCol = col + (mainTexSampler*0.000001);
-	finalCol.a = saturate(finalCol.a);
+	
+	#if NON_OPAQUE_RENDERING
+		finalCol.a = saturate(finalCol.a);
+	#else
+		finalCol.a = 1;
+	#endif
+
     return finalCol;
 }
 #endif

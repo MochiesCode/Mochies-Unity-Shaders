@@ -72,18 +72,23 @@ Shader "Mochie/Uber (Outline)" {
 		// DETAIL MAPS
 		_DetailAlbedoMap("tex", 2D) = "gray" {}
 		_DetailAlbedoStrength("ra", Range(0,1)) = 1
-		[Enum(Add,0, Sub,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailAlbedoBlending("en6", Int) = 3
+		[Enum(Add,0, Alpha,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailAlbedoBlending("en6", Int) = 3
 		_UsingDetailAlbedo("tog", Int) = 0
 		_DetailRoughnessMap("tex", 2D) = "white" {}
 		_DetailRoughStrength("ra", Range(0,1)) = 1
-		[Enum(Add,0, Sub,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailRoughBlending("en6", Int) = 6
+		[Enum(Add,0, Alpha,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailRoughBlending("en6", Int) = 6
 		_UsingDetailRough("tog", Int) = 0
 		_DetailOcclusionMap("tex", 2D) = "white" {}
 		_DetailOcclusionStrength("ra", Range(0,1)) = 1
-		[Enum(Add,0, Sub,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailOcclusionBlending("en6", Int) = 2
+		[Enum(Add,0, Alpha,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailOcclusionBlending("en6", Int) = 2
 		_UsingDetailOcclusion("tog", Int) = 0
 		_DetailNormalMap("tex", 2D) = "bump" {}
 		_DetailNormalMapScale("ra", Range(-2,2)) = 1
+		[Enum(Add,0, Alpha,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailMetallicBlending("en6", Int) = 0
+		_UsingDetailMetallic("tog", Int) = 0
+		_DetailMetallic("tex", 2D) = "white" {}
+		_DetailMetallicStrength("ra", Range(0,1)) = 1
+
 		_DetailScroll("vec", Vector) = (0,0,0,0)
 		[Enum(UV0,0, UV1,1, UV2,2)]_UVSec("en3", Int) = 0
 
