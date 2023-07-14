@@ -26,7 +26,7 @@
 
 //VRSL Stuff
 #if VRSL_ENABLED
-	#include "Packages/com.acchosen.vr-stage-lighting/Runtime/Shaders/VRSLDMX.cginc"
+	#include "MochieVRSLDMX.cginc"
 #endif
 //End VRSL Stuff
 
@@ -536,14 +536,22 @@ half3 DMXEmission(float2 uv)
 		uint dmxChannel = GetDMXChannel();
 		float4 dmxColor = float4(1,1,1,1);
 		#if _VRSLTHIRTEENCHAN_ON
-			dmxColor = ReadDMX(dmxChannel +(uint)5, _Udon_DMXGridRenderTexture) * GetDMXColor(dmxChannel+(uint)7);
+			#ifdef _VRSL_LEGACY_TEXTURES
+				dmxColor = ReadDMX(dmxChannel +(uint)5, _OSCGridRenderTextureRAW) * GetDMXColor(dmxChannel+(uint)7);
+			#else
+				dmxColor = ReadDMX(dmxChannel +(uint)5, _Udon_DMXGridRenderTexture) * GetDMXColor(dmxChannel+(uint)7);
+			#endif
 			#if _STROBE_ON
 				float strobe = GetImmediateStrobeOutput(dmxChannel + (uint)6);
 				dmxColor *= strobe;
 			#endif
 		#else
 		//5-Channel Mode
-			dmxColor = ReadDMX(dmxChannel, _Udon_DMXGridRenderTexture) * GetDMXColor(dmxChannel+(uint)1);
+			#ifdef _VRSL_LEGACY_TEXTURES
+				dmxColor = ReadDMX(dmxChannel, _OSCGridRenderTextureRAW) * GetDMXColor(dmxChannel+(uint)1);
+			#else
+				dmxColor = ReadDMX(dmxChannel, _Udon_DMXGridRenderTexture) * GetDMXColor(dmxChannel+(uint)1);
+			#endif
 			#if _STROBE_ON
 				float strobe = GetImmediateStrobeOutput(dmxChannel + (uint)4);
 				dmxColor *= strobe;

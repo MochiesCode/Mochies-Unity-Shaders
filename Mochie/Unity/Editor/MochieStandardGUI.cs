@@ -260,6 +260,11 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty fixtureMaxIntensity = null;
 	MaterialProperty dmxEmissionMapMix = null;
 	MaterialProperty dmxEmissionColor = null;
+	MaterialProperty legacyVRSLTextures = null;
+
+	MaterialProperty _OSCGridRenderTextureRAW = null;
+	MaterialProperty _OSCGridRenderTexture = null;
+	MaterialProperty _OSCGridStrobeTimer = null;
 	//End VRSL Stuff
 
 
@@ -459,6 +464,13 @@ internal class MochieStandardGUI : ShaderGUI {
 		dmxEmissionMap = FindProperty("_DMXEmissionMap", props);
 		dmxEmissionMapMix = FindProperty("_DMXEmissionMapMix", props);
 		dmxEmissionColor = FindProperty("_EmissionDMX", props);
+		legacyVRSLTextures = FindProperty("_UseLegacyDMXTextures", props);
+		_OSCGridRenderTextureRAW = FindProperty("_OSCGridRenderTextureRAW", props);
+		_OSCGridRenderTexture = FindProperty("_OSCGridRenderTexture", props);
+		_OSCGridStrobeTimer = FindProperty("_OSCGridStrobeTimer", props);
+
+
+
 		nineUniverseMode = FindProperty("_NineUniverseMode", props);
 		invertPan = FindProperty("_PanInvert", props);
 		invertTilt = FindProperty("_TiltInvert", props);
@@ -1220,6 +1232,18 @@ internal class MochieStandardGUI : ShaderGUI {
 				}else{
 					gridMode = 0;
 				}
+				me.ShaderProperty(legacyVRSLTextures, "Use Legacy VRSL Textures");
+
+				if(legacyVRSLTextures.floatValue == 1)
+				{
+
+					EditorGUI.indentLevel++;
+					me.TexturePropertySingleLine(new GUIContent("DMX Texture For Lights"), _OSCGridRenderTextureRAW);
+					me.TexturePropertySingleLine(new GUIContent("DMX Texture For Movement"), _OSCGridRenderTexture);
+					me.TexturePropertySingleLine(new GUIContent("DMX Texture For Strobe"), _OSCGridStrobeTimer);
+					EditorGUI.indentLevel--;
+				}
+
 				gridMode = EditorGUILayout.IntPopup("Grid Mode",gridMode,new string[]{"Horizontal", "Vertical", "Legacy"}, new int[]{0,1,2});
 				material.SetInt("_EnableVerticalMode", gridMode == 1 ? 1 : 0);
 				material.SetInt("_EnableCompatibilityMode", gridMode == 2 ? 1 : 0);
@@ -1383,6 +1407,7 @@ internal class MochieStandardGUI : ShaderGUI {
 
 		//VRSL Stuff
 		MGUI.SetKeyword(material, "_VRSL_ON", material.GetInt("_VRSLToggle") == 1);
+		MGUI.SetKeyword(material, "_VRSL_LEGACY_TEXTURES", material.GetInt("_UseLegacyDMXTextures") == 1);
 		MGUI.SetKeyword(material, "_VRSLTHIRTEENCHAN_ON", material.GetInt("_ThirteenChannelMode") == 1);
 		MGUI.SetKeyword(material, "_VRSLPAN_ON", material.GetInt("_EnablePanMovement") == 1);
 		MGUI.SetKeyword(material, "_VRSLTILT_ON", material.GetInt("_EnableTiltMovement") == 1);

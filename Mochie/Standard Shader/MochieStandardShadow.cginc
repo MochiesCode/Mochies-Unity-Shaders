@@ -12,7 +12,7 @@
 #include "MochieStandardSampling.cginc"
 
 #if VRSL_ENABLED
-	#include "Packages/com.acchosen.vr-stage-lighting/Runtime/Shaders/VRSLDMX.cginc"
+	#include "MochieVRSLDMX.cginc"
 #endif
 
 #if (defined(_ALPHABLEND_ON) || defined(_ALPHAPREMULTIPLY_ON)) && defined(UNITY_USE_DITHER_MASK_FOR_ALPHABLENDED_SHADOWS)

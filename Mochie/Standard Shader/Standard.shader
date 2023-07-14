@@ -236,6 +236,12 @@ Shader "Mochie/Standard" {
 		//VRSL Stuff
 		[ToggleUI] _VRSLToggle ("Enable VRSL", Int) = 0
 		[ToggleUI] _DMXEmissionMapMix ("Mixture", Int) = 0
+		[ToggleUI] _UseLegacyDMXTextures ("Legacy DMX Textures", Int) = 0
+
+		[NoScaleOffset] _OSCGridRenderTextureRAW("OSC Grid Render Texture (RAW Unsmoothed)", 2D) = "white" {}
+		[NoScaleOffset] _OSCGridRenderTexture("OSC Grid Render Texture (To Control Lights)", 2D) = "white" {}
+		[NoScaleOffset] _OSCGridStrobeTimer ("OSC Grid Render Texture (For Strobe Timings", 2D) = "white" {}
+
 		[ToggleUI] _ThirteenChannelMode ("13-Channel Mode", Int) = 0
 		_DMXChannel ("Starting DMX Channel", Int) = 0
 		_DMXEmissionMap("DMX Emission Map", 2D) = "white" {}
@@ -340,6 +346,7 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _VRSL_MIX_MULT
 			#pragma shader_feature_local _VRSL_MIX_ADD
 			#pragma shader_feature_local _VRSL_MIX_MIX
+			#pragma shader_feature_local _VRSL_LEGACY_TEXTURES
 			//End VRSL Stuff
 			#pragma shader_feature_local _
 
