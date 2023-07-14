@@ -128,14 +128,14 @@ Material:
     - _CausticsSurfaceFade: 100
     - _CausticsThreshold: 0
     - _CausticsToggle: 1
-    - _CullMode: 2
+    - _CullMode: 0
     - _DepthEffects: 1
     - _DetailNormalStrength: 1
     - _DetailTextureMode: 0
     - _DistortionStrength: 0.5
     - _DstBlend: 0
     - _EdgeFadeOffset: 0.5
-    - _EdgeFadePower: 200
+    - _EdgeFadePower: 400
     - _EdgeFadeSSR: 0.1
     - _EdgeFadeToggle: 1
     - _EmissionMapStochasticToggle: 0
@@ -181,6 +181,7 @@ Material:
     - _Rotation1: 0
     - _Roughness: 0
     - _SSR: 0
+    - _SSRHeight: 0.1
     - _SSRStrength: 1
     - _ShadowStrength: 0
     - _SpecStrength: 1

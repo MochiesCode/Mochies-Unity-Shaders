@@ -2,8 +2,13 @@
 #define USBRDF_INCLUDED
 
 float GetDetailRough(g2f i, float roughIn){
-	float detailRough = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailRoughnessMap, sampler_MainTex, i.uv2.xy);
-	return BlendScalars(roughIn, detailRough, _DetailRoughBlending);
+	float4 detailRough = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailRoughnessMap, sampler_MainTex, i.uv2.xy);
+	return BlendScalarsAlpha(roughIn, detailRough, _DetailRoughBlending, detailRough.a);
+}
+
+float GetDetailMetallic(g2f i, float metalIn){
+	float4 detailMetallic = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailMetallic, sampler_MainTex, i.uv2.xy);
+	return BlendScalarsAlpha(metalIn, detailMetallic, _DetailMetallicBlending, detailMetallic.a);
 }
 
 float3 BlurSample(float2 uv, float2 strength){

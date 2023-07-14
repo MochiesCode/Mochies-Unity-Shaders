@@ -51,7 +51,7 @@ public class WaterEditor : ShaderGUI {
 	}, 0);
 
     string header = "WaterHeader_Pro";
-	string versionLabel = "v1.12";
+	string versionLabel = "v1.13";
 
 	MaterialProperty _Color = null;
 	MaterialProperty _AngleTint = null;
@@ -212,6 +212,7 @@ public class WaterEditor : ShaderGUI {
 	MaterialProperty _StencilRef = null;
 	MaterialProperty _RecalculateNormals = null;
 	MaterialProperty _ShadowStrength = null;
+	MaterialProperty _SSRHeight = null;
 
     BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 	bool m_FirstTimeApply = true;
@@ -345,8 +346,10 @@ public class WaterEditor : ShaderGUI {
 					me.ShaderProperty(_ReflStrength, "Strength");
 					if (_DepthEffects.floatValue == 1){
 						MGUI.ToggleFloat(me, "Screenspace Reflections", _SSR, _SSRStrength);
-						if (_SSR.floatValue > 0)
+						if (_SSR.floatValue > 0){
 							me.ShaderProperty(_EdgeFadeSSR, "Edge Fade");
+							me.ShaderProperty(_SSRHeight, "Depth");
+						}
 					}
 					me.ShaderProperty(_BackfaceReflections, "Apply to Backfaces");
 					MGUI.ToggleGroupEnd();

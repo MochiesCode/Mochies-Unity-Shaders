@@ -30,7 +30,7 @@ float4 RGBSubPixelConvert(sampler2D mainTex, sampler2D rgbTex, float2 uv0, float
 	e.rgb = lerp(e.rgb, pow(e.rgb,2.2), _IsAVProInput);
 
 	//do RGB pixels
-	uv1 *= _RGBSubPixelTex_ST.xy + _RGBSubPixelTex_ST.zw;
+	uv1 = uv1 * _RGBSubPixelTex_ST.xy + _RGBSubPixelTex_ST.zw;
 	float3 rgbpixel = tex2D(rgbTex, uv1).rgb;
 	alpha = tex2D(rgbTex, uv1).a;
 

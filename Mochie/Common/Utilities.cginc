@@ -1,6 +1,30 @@
 #ifndef UTILITIES_INCLUDED
 #define UTILITIES_INCLUDED
 
+float2 Rotate2D(float2 coords, float rot){
+	rot *= (UNITY_PI/180.0);
+	float sinVal = sin(rot);
+	float cosX = cos(rot);
+	float2x2 mat = float2x2(cosX, -sinVal, sinVal, cosX);
+	mat = ((mat*0.5)+0.5)*2-1;
+	return mul(coords, mat);
+}
+
+float2 ScaleOffsetScrollUV(float2 uv, float2 scale, float2 offset, float2 scroll){
+	return (uv + offset + (scroll * _Time.y * 0.1)) * scale;
+}
+
+float2 ScaleOffsetUV(float2 uv, float2 scale, float2 offset){
+	return uv * scale + offset;
+}
+
+float2 ScaleOffsetRotateUV(float2 uv, float2 scale, float2 offset, float rot){
+	uv -= offset + 0.5;
+	uv = Rotate2D(uv, rot) + 0.5;
+	uv = (uv - 0.5) / scale + 0.5;
+    return uv;
+}
+
 bool IsInMirror(){
 	return unity_CameraProjection[2][0] != 0.f || unity_CameraProjection[2][1] != 0.f;
 }
@@ -334,15 +358,6 @@ float2 GetPolarCoords(float2 uv, float2 center, float radialScale, float lengthS
     float radius = length(delta) * 2 * radialScale;
     float angle = atan2(delta.x, delta.y) * 1.0/6.28 * lengthScale;
     return float2(radius, angle);
-}
-
-float2 Rotate2D(float2 coords, float rot){
-	rot *= (UNITY_PI/180.0);
-	float sinVal = sin(rot);
-	float cosX = cos(rot);
-	float2x2 mat = float2x2(cosX, -sinVal, sinVal, cosX);
-	mat = ((mat*0.5)+0.5)*2-1;
-	return mul(coords, mat);
 }
 
 float3 Rotate3D(float3 coords, float3 axis){

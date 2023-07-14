@@ -63,6 +63,7 @@ MOCHIE_DECLARE_TEX2D_NOSAMPLER(_DetailRoughnessMap);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_DetailOcclusionMap);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_DetailNormalMap);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_ScatterTex);
+MOCHIE_DECLARE_TEX2D_NOSAMPLER(_DetailMetallic);
 
 // NPR Shading
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_RimTex); 
@@ -115,8 +116,8 @@ MOCHIE_DECLARE_TEX2D_NOSAMPLER(_PackedMask3);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_IridescenceMask);
 
 // Requires dedicated samplers
-MOCHIE_DECLARE_TEX2D(_AudioTexture);
 MOCHIE_DECLARE_TEX2D(_EmissionMap);
+MOCHIE_DECLARE_TEX2D(_EmissionMap2);
 MOCHIE_DECLARE_TEX2D(_ShadowRamp);
 MOCHIE_DECLARE_TEX2D(_NoiseTexSSR);
 MOCHIE_DECLARE_TEX2D(_AudioLinkTriOffsetMask);
@@ -153,6 +154,7 @@ float4 _FilterMask_ST;
 float4 _TeamColorMask_ST;
 float4 _EmissMask_ST;
 float4 _EmissPulseMask_ST;
+float4 _EmissionMap2_ST;
 float4 _RefractionDissolveMask_ST;
 float4 _OutlineMask_ST;
 float4 _BCNoiseTex_ST;
@@ -224,6 +226,9 @@ int _MatcapNormal0Toggle;
 int _MatcapNormal1Toggle;
 int _MatcapNormal0Mix;
 int _MatcapNormal1Mix;
+int _DetailMetallicBlending;
+int _UsingDetailMetallic;
+float _DetailMetallicStrength;
 
 float _RefractionBlurStrength;
 float _IridescenceStrength;
@@ -365,6 +370,9 @@ float4 _EmissionColor;
 int _PulseToggle, _PulseWaveform, _ReactToggle, _CrossMode;
 float _PulseSpeed, _PulseStr, _Crossfade, _ReactThresh;
 
+float4 _EmissionColor2;
+float _EmissIntensity2;
+float2 _EmissScroll2;
 float _EmissIntensity;
 float _DetailNormalmapScale;
 float _Parallax;
@@ -379,7 +387,6 @@ float4 _ReflCol, _ReflCube_HDR, _NoiseTexSSR_TexelSize;
 float _ReflectionStr, _ReflRough;
 int _Reflections, _ReflUseRough, _ReflStepping, _ReflSteps;
 int _Dith, _MaxSteps, _SSR, _LightingBasedIOR;
-float4 _AudioTexture_TexelSize;
 float4 _CameraDepthTexture_TexelSize;
 float _Alpha, _Blur, _EdgeFade, _RTint, _LRad, _SRad, _Step;
 float _AudioLinkRimMultiplier;
@@ -437,7 +444,18 @@ float _AudioLinkRemapUVDistortionMax;
 float _AudioLinkRemapRimPulseMin;
 float _AudioLinkRemapRimPulseMax;
 
+float _OscilloscopeStrength;
+float4 _OscilloscopeCol;
+float2 _OscilloscopeScale, _OscilloscopeOffset;
+float _OscilloscopeRot;
+float2 _OscilloscopeMarginLR, _OscilloscopeMarginTB;
+
 float _MainTexRot, _DetailRot;
+float _AlphaStrength;
+
+int _MetallicFiltering, _PreviewMetallic;
+float _MetallicIntensity, _MetallicContrast, _MetallicLightness;
+float _MetallicRemapMin, _MetallicRemapMax;
 
 // Outputs
 float4 packedTex;
@@ -456,6 +474,7 @@ float _NaNLmao;
 float prevRough;
 float prevSmooth;
 float prevHeight;
+float prevMetal;
 float prevCurve;
 float audioLink;
 float3 bcRimColor;
@@ -538,7 +557,7 @@ struct appdata {
 
 int _GeomFXToggle;
 int _ShatterClones, _DissolveClones, _GlitchClones, _WFClones, _DFClones;
-int _WireframeToggle, _WFMode;
+int _WireframeToggle, _WFMode, _WireframeTransparency;
 int _GlitchToggle;
 int _ShatterToggle;
 int _CloneToggle, _ClonePattern, _ClonePosition, _SaturateEP;
@@ -634,6 +653,7 @@ struct g2f {
 	UNITY_VERTEX_OUTPUT_STEREO
 };
 
+#include "USAudioLink.cginc"
 #include "USXFeatures.cginc"
 
 #else
@@ -671,6 +691,7 @@ struct v2f {
 };
 #endif
 
+#include "USAudioLink.cginc"
 #include "USSSR.cginc"
 #include "USBRDF.cginc"
 #include "USLighting.cginc"

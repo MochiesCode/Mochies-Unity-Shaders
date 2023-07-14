@@ -26,7 +26,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		//End VRSL Stuff
 	}, 1);
 
-	string versionLabel = "v1.22.1";
+	string versionLabel = "v1.22.3";
 	public static string receiverText = "AreaLit Maps";
 	public static string emitterText = "AreaLit Light";
 	public static string projectorText = "AreaLit Projector";
@@ -228,9 +228,7 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty lightTex2 = null;
 	MaterialProperty lightTex3 = null;
 	MaterialProperty opaqueLights = null;
-
 	MaterialProperty mirrorToggle = null;
-
 	MaterialProperty occlusionUVSet = null;
 	MaterialProperty areaLitOcclusion = null;
 	
@@ -269,6 +267,7 @@ internal class MochieStandardGUI : ShaderGUI {
 
 
 
+	MaterialProperty ssrHeight = null;
 
 
 	MaterialEditor me;
@@ -489,6 +488,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		maxMinTiltAngle = FindProperty("_MaxMinTiltAngle", props);
 		fixtureMaxIntensity = FindProperty("_FixtureMaxIntensity", props);
 		//End VRSL Stuff
+		ssrHeight = FindProperty("_SSRHeight", props);
 	}
 
 	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props){
@@ -858,6 +858,7 @@ internal class MochieStandardGUI : ShaderGUI {
 					MGUI.ToggleFloat(me, Tips.ssrText, ssr, ssrStrength);
 					if (ssr.floatValue == 1){
 						me.ShaderProperty(edgeFade, Tips.edgeFadeText);
+						me.ShaderProperty(ssrHeight, "Depth");
 					}
 					MGUI.ToggleFloat(me, Tips.reflVertexColor, reflVertexColor, reflVertexColorStrength);
 				}

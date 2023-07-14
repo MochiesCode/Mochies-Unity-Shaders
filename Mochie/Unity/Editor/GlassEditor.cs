@@ -8,7 +8,7 @@ using Mochie;
 
 public class GlassEditor : ShaderGUI {
 
-	string versionLabel = "v1.1.2";
+	string versionLabel = "v1.2";
 
 	// Surface
 	MaterialProperty _GrabpassTint = null;
@@ -26,6 +26,7 @@ public class GlassEditor : ShaderGUI {
 	MaterialProperty _Refraction = null;
 	MaterialProperty _Blur = null;
 	MaterialProperty BlurQuality = null;
+	// MaterialProperty _RefractMeshNormals = null;
 
 	// Rain
 	MaterialProperty _RainToggle = null;
@@ -38,6 +39,7 @@ public class GlassEditor : ShaderGUI {
 	MaterialProperty _ReflectionsToggle = null;
 	MaterialProperty _SpecularToggle = null;
 	MaterialProperty _Culling = null;
+	MaterialProperty _SamplingMode = null;
 	MaterialProperty _BlendMode = null;
 	MaterialProperty _LitBaseColor = null;
 
@@ -59,6 +61,8 @@ public class GlassEditor : ShaderGUI {
 
         EditorGUI.BeginChangeCheck(); {
 			
+			MGUI.SetKeyword(mat, "_STOCHASTIC_SAMPLING_ON", mat.GetInt("_SamplingMode") == 1);
+
 			MGUI.BoldLabel("SURFACE");
 			MGUI.PropertyGroup(()=>{
 				if (_BlendMode.floatValue == 0)
@@ -69,10 +73,10 @@ public class GlassEditor : ShaderGUI {
 			MGUI.PropertyGroup(()=>{
 				me.TexturePropertySingleLine(Tips.baseColorLabel, _BaseColor);
 				MGUI.TextureSO(me, _BaseColor, _BaseColor.textureValue);
-				me.TexturePropertySingleLine(Tips.roughnessTexLabel, _RoughnessMap, _Roughness);
-				MGUI.TextureSO(me, _RoughnessMap, _RoughnessMap.textureValue);
 				me.TexturePropertySingleLine(Tips.metallicMapText, _MetallicMap, _Metallic);
 				MGUI.TextureSO(me, _MetallicMap, _MetallicMap.textureValue);
+				me.TexturePropertySingleLine(Tips.roughnessTexLabel, _RoughnessMap, _Roughness);
+				MGUI.TextureSO(me, _RoughnessMap, _RoughnessMap.textureValue);
 				me.TexturePropertySingleLine(Tips.occlusionTexLabel, _OcclusionMap, _OcclusionMap.textureValue ? _Occlusion : null);
 				MGUI.TextureSO(me, _OcclusionMap, _OcclusionMap.textureValue);
 				me.TexturePropertySingleLine(Tips.normalMapText, _NormalMap, _NormalMap.textureValue ? _NormalStrength : null);
@@ -83,6 +87,7 @@ public class GlassEditor : ShaderGUI {
 					me.ShaderProperty(BlurQuality, "Blur Quality");
 					me.ShaderProperty(_Blur, "Blur Strength");
 					me.ShaderProperty(_Refraction, "Refraction");
+					// me.ShaderProperty(_RefractMeshNormals, "Refract Mesh Normals");
 				});
 			}
 			MGUI.Space10();
@@ -106,6 +111,7 @@ public class GlassEditor : ShaderGUI {
 				me.ShaderProperty(_LitBaseColor, "Lit Base Color");
 				me.RenderQueueField();
 				me.ShaderProperty(_Culling, "Culling Mode");
+				me.ShaderProperty(_SamplingMode, "Sampling Mode");
 				EditorGUI.BeginChangeCheck();
 				me.ShaderProperty(_BlendMode, "Transparency");
 				if (EditorGUI.EndChangeCheck())

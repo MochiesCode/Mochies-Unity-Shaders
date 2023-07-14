@@ -13,6 +13,7 @@
 float4 _MWGrab_TexelSize;
 float4 _NoiseTexSSR_TexelSize;
 sampler2D _NoiseTexSSR;
+float _SSRHeight;
 
 float3 GetBlurredGP(const float2 texelSize, const float2 uvs, const float dim){
 	float2 pixSize = 2/texelSize;
@@ -101,8 +102,8 @@ float4 GetSSR(const float3 wPos, const float3 viewDir, float3 rayDir, const half
 		float4 noiseRGBA = tex2Dlod(_NoiseTexSSR, float4(noiseUvs.xy,0,0));
 		float noise = noiseRGBA.r;
 		
-		float3 reflectedRay = wPos + (0.2*0.09/FdotR + noise*0.09)*rayDir;
-		float4 finalPos = ReflectRay(reflectedRay, rayDir, 0.2, 0.02, 0.09, noise, 50);
+		float3 reflectedRay = wPos + (_SSRHeight*_SSRHeight/FdotR + noise*_SSRHeight)*rayDir;
+		float4 finalPos = ReflectRay(reflectedRay, rayDir, _SSRHeight, 0.02, _SSRHeight, noise, 50);
 		float totalSteps = finalPos.w;
 		finalPos.w = 1;
 		

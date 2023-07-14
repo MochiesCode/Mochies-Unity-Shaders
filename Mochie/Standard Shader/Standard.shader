@@ -135,7 +135,7 @@ Shader "Mochie/Standard" {
 		_ReflCube("Reflection Fallback", CUBE) = "" {}
 		_ReflCubeOverride("Reflection Override", CUBE) = "" {}
 		_CubeThreshold("Threshold", Range(0.0001,1)) = 0.45
-		_EdgeFade("SSR Edge Fade", Range(0,1)) = 0.1
+		_EdgeFade("Edge Fade", Range(0,1)) = 0.1
 		
 		[ToggleUI]_Subsurface("Subsurface Scattering", Int) = 0
 		[ToggleUI]_ScatterAlbedoTint("Scatter Albedo Tint", Int) = 0
@@ -180,6 +180,7 @@ Shader "Mochie/Standard" {
 		_LTCGIStrength("LTCGI Strength", Float) = 1
 		_FresnelStrength("Fresnel Strength", Float) = 1
 		_SSRStrength("SSR Strength", Float) = 1
+		_SSRHeight("SSR Height", Range(0.1, 0.5)) = 0.1
 		_ReflectionStrength("Relfection Strength", Float) = 1
 		_SpecularStrength("Specular Strength", Float) = 1
 		_QueueOffset("Queue Offset", Int) = 0
@@ -188,8 +189,8 @@ Shader "Mochie/Standard" {
 		_ReflVertexColorStrength("Vertex Color Reflection Strength", Float) = 1
 
 		_ContrastReflShad("Contrast", Float) = 1
-		_BrightnessReflShad("Brightness", Float) = 1
-		_HDRReflShad("HDR", Float) = 0
+		_BrightnessReflShad("Brightness", Float) = 100
+		_HDRReflShad("HDR", Float) = 1
 		_TintReflShad("Tint", Color) = (1,1,1,1)
 
 		[ToggleUI]_RainToggle("Enable", Int) = 0
@@ -270,6 +271,7 @@ Shader "Mochie/Standard" {
 
 
 		
+		// [HideInInspector] BAKERY_META_ALPHA_ENABLE ("Enable Bakery alpha meta pass", Float) = 1.0
     }
 
     CGINCLUDE
@@ -350,6 +352,7 @@ Shader "Mochie/Standard" {
 			//End VRSL Stuff
 			#pragma shader_feature_local _
 
+			#pragma multi_compile_fog
             #pragma multi_compile_fwdbase
             #pragma multi_compile_instancing
             #include "MochieStandardCoreForward.cginc"
@@ -392,6 +395,7 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _VRSLPAN_ON
 			#pragma shader_feature_local _VRSLTILT_ON
 			//End VRSL Stuff
+			#pragma multi_compile_fog
             #pragma multi_compile_fwdadd_fullshadows
 			#pragma multi_compile_instancing
             #include "MochieStandardCoreForward.cginc"
@@ -472,37 +476,37 @@ Shader "Mochie/Standard" {
             ENDCG
         }
 		
-        Pass {
-            Name "META_BAKERY"
-            Tags {"LightMode"="Meta"}
-            Cull [_MetaCull]
+        // Pass {
+        //     Name "META_BAKERY"
+        //     Tags {"LightMode"="Meta"}
+        //     Cull [_MetaCull]
 
-            CGPROGRAM
-            #pragma vertex vert_meta
-            #pragma fragment frag_meta
-			#define MOCHIE_STANDARD
-			#define BAKERY_META
-			#pragma shader_feature_local _WORKFLOW_PACKED_ON
-			#pragma shader_feature_local _DETAIL_WORKFLOW_PACKED_ON
-            #pragma shader_feature_local _EMISSION
-            #pragma shader_feature_local _METALLICGLOSSMAP
-            #pragma shader_feature_local _SPECGLOSSMAP
-            #pragma shader_feature_local ___ _DETAIL_MULX2
-			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON
-			#pragma shader_feature_local _ _DETAIL_STOCHASTIC_ON _DETAIL_TSS_ON _DETAIL_TRIPLANAR_ON
-			#pragma shader_feature_local _DETAIL_ROUGH_ON
-			#pragma shader_feature_local _DETAIL_AO_ON
-			#pragma shader_feature_local _DETAIL_METALLIC_ON
-			#pragma shader_feature_local _ALPHAMASK_ON
-			#pragma shader_feature_local _OPAQUELIGHTS_OFF
-			#pragma shader_feature_local _AREALIT_ON
-			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
-			#pragma shader_feature_local _AUDIOLINK_ON
-			#pragma shader_feature_local _AUDIOLINK_META_ON
-            #pragma shader_feature EDITOR_VISUALIZATION
-            #include "MochieStandardMeta.cginc"
-            ENDCG
-        }
+        //     CGPROGRAM
+        //     #pragma vertex vert_meta
+        //     #pragma fragment frag_meta
+		// 	#define MOCHIE_STANDARD
+		// 	#define BAKERY_META
+		// 	#pragma shader_feature_local _WORKFLOW_PACKED_ON
+		// 	#pragma shader_feature_local _DETAIL_WORKFLOW_PACKED_ON
+        //     #pragma shader_feature_local _EMISSION
+        //     #pragma shader_feature_local _METALLICGLOSSMAP
+        //     #pragma shader_feature_local _SPECGLOSSMAP
+        //     #pragma shader_feature_local ___ _DETAIL_MULX2
+		// 	#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON
+		// 	#pragma shader_feature_local _ _DETAIL_STOCHASTIC_ON _DETAIL_TSS_ON _DETAIL_TRIPLANAR_ON
+		// 	#pragma shader_feature_local _DETAIL_ROUGH_ON
+		// 	#pragma shader_feature_local _DETAIL_AO_ON
+		// 	#pragma shader_feature_local _DETAIL_METALLIC_ON
+		// 	#pragma shader_feature_local _ALPHAMASK_ON
+		// 	#pragma shader_feature_local _OPAQUELIGHTS_OFF
+		// 	#pragma shader_feature_local _AREALIT_ON
+		// 	#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
+		// 	#pragma shader_feature_local _AUDIOLINK_ON
+		// 	#pragma shader_feature_local _AUDIOLINK_META_ON
+        //     #pragma shader_feature EDITOR_VISUALIZATION
+        //     #include "MochieStandardMeta.cginc"
+        //     ENDCG
+        // }
     }
     FallBack "VertexLit"
     CustomEditor "MochieStandardGUI"
