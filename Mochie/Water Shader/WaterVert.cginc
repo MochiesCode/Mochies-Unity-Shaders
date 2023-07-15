@@ -128,7 +128,7 @@ v2f vert (
 	#if defined(UNITY_PASS_SHADOWCASTER)
 		TRANSFER_SHADOW_CASTER_NORMALOFFSET(o);
 	#else
-		UNITY_TRANSFER_SHADOW(o, v.vu1);
+		UNITY_TRANSFER_SHADOW(o, v.uv1);
 	#endif
 	return o;
 }
