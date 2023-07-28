@@ -231,8 +231,6 @@ Shader "Mochie/Standard" {
 		[HideInInspector] _ReflectionTex0("", 2D) = "white" {}
         [HideInInspector] _ReflectionTex1("", 2D) = "white" {}
 
-		[HideInInspector] BAKERY_META_ALPHA_ENABLE ("Enable Bakery alpha meta pass", Float) = 1.0
-
 
 		//VRSL Stuff
 		[ToggleUI] _VRSLToggle ("Enable VRSL", Int) = 0
