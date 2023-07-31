@@ -51,7 +51,7 @@ public class WaterEditor : ShaderGUI {
 	}, 0);
 
     string header = "WaterHeader_Pro";
-	string versionLabel = "v1.13";
+	string versionLabel = "v1.13.1";
 
 	MaterialProperty _Color = null;
 	MaterialProperty _AngleTint = null;
@@ -792,7 +792,7 @@ public class WaterEditor : ShaderGUI {
 
 	void ResetPrimaryNormal(){
 		_NormalMapScale0.vectorValue = new Vector4(3f,3f,0,0);
-		_NormalStr0.floatValue = 0.1f;
+		_NormalStr0.floatValue = 0.2f;
 		_Rotation0.floatValue = 0f;
 		_NormalMapScroll0.vectorValue = new Vector4(0.1f,0.1f,0,0);
 		_Normal0StochasticToggle.floatValue = 0f;
@@ -800,7 +800,7 @@ public class WaterEditor : ShaderGUI {
 	}
 
 	void ResetSecondaryNormal(){
-		_NormalStr1.floatValue = 0.2f;
+		_NormalStr1.floatValue = 0.3f;
 		_NormalMapScale1.vectorValue = new Vector4(4f,4f,0,0);
 		_NormalMapScroll1.vectorValue = new Vector4(-0.1f, 0.1f, 0,0);
 		_Rotation1.floatValue = 0f;
@@ -878,7 +878,7 @@ public class WaterEditor : ShaderGUI {
 		_FoamTexScroll.vectorValue = new Vector4(0.1f,-0.1f,0,0);
 		_FoamStochasticToggle.floatValue = 0f;
 		// _FoamOffset.floatValue = 0f;
-		_FoamCrestStrength.floatValue = 1f;
+		_FoamCrestStrength.floatValue = 0f;
 		_FoamCrestThreshold.floatValue = 0.5f;
 		_FoamNoiseTexScroll.vectorValue = new Vector4(0f,0.1f,0f,0f);
 		_FoamNoiseTexStrength.floatValue = 0f;

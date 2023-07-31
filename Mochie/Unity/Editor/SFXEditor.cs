@@ -49,12 +49,13 @@ public class SFXEditor : ShaderGUI {
 			"NOISE",
 			"Noise 1",
 			"AUDIO LINK",
-			"Image Overlay 1"
+			"Image Overlay 1",
+			"Sobel Filter",
 	}, 0);
 
     // Texture file names
 	string header = "SFXHeader_Pro";
-	string versionLabel = "v1.14";
+	string versionLabel = "v1.15";
 	
     // Commonly used strings
     string modeLabel = "Mode";
@@ -306,6 +307,10 @@ public class SFXEditor : ShaderGUI {
 	MaterialProperty _NoiseMinRange = null;
 	MaterialProperty _NoiseMaxRange = null;
 	MaterialProperty _DisplayGlobalGizmo = null;
+	MaterialProperty _SobelFilterToggle = null;
+	MaterialProperty _SobelFilterColor = null;
+	MaterialProperty _SobelFilterBackgroundColor = null;
+	MaterialProperty _SobelFilterOpacity = null;
 
     BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
     MaterialEditor m_MaterialEditor;
@@ -480,13 +485,13 @@ public class SFXEditor : ShaderGUI {
 					me.ShaderProperty(_FilterStrength, "Opacity");
 					me.ShaderProperty(_ColorUseGlobal, ugfLabel);
 					if (_ColorUseGlobal.floatValue == 0){
-						MGUI.PropertyGroup(() => {
+						MGUI.PropertyGroup(()=>{
 							me.ShaderProperty(_ColorMinRange, minLabel);
 							me.ShaderProperty(_ColorMaxRange, maxLabel);
 						});
 					}
 					else MGUI.Space6();
-					MGUI.PropertyGroup(() => {
+					MGUI.PropertyGroup(()=>{
 						me.ShaderProperty(_Color, "Tint");
 						if (_AutoShift.floatValue == 0)
 							me.ShaderProperty(_Hue, "Hue");
@@ -494,23 +499,23 @@ public class SFXEditor : ShaderGUI {
 							me.ShaderProperty(_AutoShiftSpeed, "Shift Speed");
 						me.ShaderProperty(_AutoShift, "Auto Shift");
 					});
-					MGUI.PropertyGroup(() => {
+					MGUI.PropertyGroup(()=>{
 						MGUI.Vector3FieldRGB(_RGB, "RGB Multiplier");
 						me.ShaderProperty(_Brightness, "Brightness");
 						me.ShaderProperty(_Contrast, "Contrast");
 						me.ShaderProperty(_HDR, "HDR");
 					});
-					MGUI.PropertyGroup(() => {
+					MGUI.PropertyGroup(()=>{
 						me.ShaderProperty(_Saturation, "Saturation");
-						MGUI.PropertyGroupLayer(() => {
+						MGUI.PropertyGroupLayer(()=>{
 							me.ShaderProperty(_SaturationR, "Red Saturation");
 							me.ShaderProperty(_SaturationG, "Green Saturation");
 							me.ShaderProperty(_SaturationB, "Blue Saturation");
 						});
 					});
-					MGUI.PropertyGroup(() => {
+					MGUI.PropertyGroup(()=>{
 						me.ShaderProperty(_Invert, "Invert");
-						MGUI.PropertyGroupLayer(() => {
+						MGUI.PropertyGroupLayer(()=>{
 							me.ShaderProperty(_InvertR, "Red Inversion");
 							me.ShaderProperty(_InvertG, "Green Inversion");
 							me.ShaderProperty(_InvertB, "Blue Inversion");
@@ -529,13 +534,13 @@ public class SFXEditor : ShaderGUI {
 					MGUI.Space6();
                     me.ShaderProperty(_ShakeUseGlobal, ugfLabel);
                     if (_ShakeUseGlobal.floatValue == 0){
-						MGUI.PropertyGroup(() => {
+						MGUI.PropertyGroup(()=>{
 							me.ShaderProperty(_ShakeMinRange, minLabel);
 							me.ShaderProperty(_ShakeMaxRange, maxLabel);
 						});
                     }
 					else MGUI.Space6();
-					MGUI.PropertyGroup(() => {
+					MGUI.PropertyGroup(()=>{
 						if (_ShakeModel.floatValue == 1 || _ShakeModel.floatValue == 2){
 							me.ShaderProperty(_Amplitude, "Amplitude");
 							me.ShaderProperty(_ShakeSpeedX, speedXLabel);
@@ -560,20 +565,20 @@ public class SFXEditor : ShaderGUI {
 					MGUI.Space6();
                     me.ShaderProperty(_DistortionUseGlobal, ugfLabel);
                     if (_DistortionUseGlobal.floatValue == 0){
-						MGUI.PropertyGroup(() => {
+						MGUI.PropertyGroup(()=>{
 							me.ShaderProperty(_DistortionMinRange, minLabel);
 							me.ShaderProperty(_DistortionMaxRange, maxLabel);
 						});
                     }
 					else MGUI.Space6();
-					MGUI.PropertyGroup(() => {
+					MGUI.PropertyGroup(()=>{
 						me.TexturePropertySingleLine(normalMapLabel, _NormalMap);
 						me.TextureScaleOffsetProperty(_NormalMap);
 						me.ShaderProperty(_DistortionStr, strengthLabel);
 						me.ShaderProperty(_DistortionSpeed, speedLabel);
 					});
                     if (_DistortionModel.floatValue == 2){
-						MGUI.PropertyGroup(() => {
+						MGUI.PropertyGroup(()=>{
 							MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
 							me.ShaderProperty(_DistortionRadius, radiusLabel);
 							me.ShaderProperty(_DistortionFade, fadeLabel);
@@ -600,13 +605,13 @@ public class SFXEditor : ShaderGUI {
 					MGUI.Space6();
 					me.ShaderProperty(_BlurUseGlobal, ugfLabel);
 					if (_BlurUseGlobal.floatValue == 0){
-						MGUI.PropertyGroup(() => {
+						MGUI.PropertyGroup(()=>{
 							me.ShaderProperty(_BlurMinRange, minLabel);
 							me.ShaderProperty(_BlurMaxRange, maxLabel);
 						});
 					}
 					else MGUI.Space6();
-					MGUI.PropertyGroup(() => {
+					MGUI.PropertyGroup(()=>{
 						me.ShaderProperty(_BlurOpacity, "Opacity");
 						me.ShaderProperty(_BlurStr, strengthLabel);
 						if (_BlurModel.floatValue == 3){
@@ -618,7 +623,7 @@ public class SFXEditor : ShaderGUI {
 						if (_BlurModel.floatValue == 3){
 							me.ShaderProperty(_DoF, "Depth of Field");
 							if (_DoF.floatValue == 1){
-								MGUI.PropertyGroupLayer(() => {
+								MGUI.PropertyGroupLayer(()=>{
 									MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
 									me.ShaderProperty(_DoFRadius, radiusLabel);
 									me.ShaderProperty(_DoFFade, fadeLabel);
@@ -627,11 +632,11 @@ public class SFXEditor : ShaderGUI {
 							}
 						}
 					});
-					MGUI.PropertyGroup(_BlurModel.floatValue != 3, () => {
+					MGUI.PropertyGroup(_BlurModel.floatValue != 3, ()=>{
 						if (_BlurModel.floatValue != 3){
 							me.ShaderProperty(_DoF, "Depth of Field");
 							if (_DoF.floatValue == 1){
-								MGUI.PropertyGroupLayer(() => {
+								MGUI.PropertyGroupLayer(()=>{
 									MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
 									me.ShaderProperty(_DoFRadius, radiusLabel);
 									me.ShaderProperty(_DoFFade, fadeLabel);
@@ -658,17 +663,17 @@ public class SFXEditor : ShaderGUI {
 					MGUI.Space6();
 					me.ShaderProperty(_NoiseUseGlobal, ugfLabel);
 					if (_NoiseUseGlobal.floatValue == 0){
-						MGUI.PropertyGroup(() => {
+						MGUI.PropertyGroup(()=>{
 							me.ShaderProperty(_NoiseMinRange, minLabel);
 							me.ShaderProperty(_NoiseMaxRange, maxLabel);
 						});
 					}
 					else MGUI.Space6();
-					MGUI.PropertyGroup(() => {
+					MGUI.PropertyGroup(()=>{
 						me.ShaderProperty(_Noise, "Noise (Grayscale)");
 						MGUI.Vector3FieldRGB(_NoiseRGB, "Noise (RGB)");
 						me.ShaderProperty(_ScanLine, "Scan Lines");
-						MGUI.PropertyGroupLayer(() => {
+						MGUI.PropertyGroupLayer(()=>{
 							me.ShaderProperty(_ScanLineThick, "Bar Thickness");
 							me.ShaderProperty(_ScanLineSpeed, "Scroll Speed");
 						});
@@ -686,13 +691,13 @@ public class SFXEditor : ShaderGUI {
 						MGUI.Space6();
 						me.ShaderProperty(_ZoomUseGlobal, ugfLabel);
 						if (_ZoomUseGlobal.floatValue == 0){
-							MGUI.PropertyGroup(() => {
+							MGUI.PropertyGroup(()=>{
 								me.ShaderProperty(_ZoomMinRange, minLabel);
 								me.ShaderProperty(_ZoomMaxRange, maxLabel);
 							});
 						}
 						else MGUI.Space6();
-						MGUI.PropertyGroup(() => {
+						MGUI.PropertyGroup(()=>{
 							if (_Zoom.floatValue == 2){
 								me.ShaderProperty(_ZoomStrR, "Red");
 								me.ShaderProperty(_ZoomStrG, "Green");
@@ -713,13 +718,13 @@ public class SFXEditor : ShaderGUI {
 						MGUI.Space6();
 						me.ShaderProperty(_SSTUseGlobal, ugfLabel);
 						if (_SSTUseGlobal.floatValue == 0){
-							MGUI.PropertyGroup(() => {
+							MGUI.PropertyGroup(()=>{
 								me.ShaderProperty(_SSTMinRange, minLabel);
 								me.ShaderProperty(_SSTMaxRange, maxLabel);
 							});
 						}
 						else MGUI.Space6();
-						MGUI.PropertyGroup(() => {
+						MGUI.PropertyGroup(()=>{
 							if (_SST.floatValue != 3){
 								me.TexturePropertySingleLine(screenTexLabel, _ScreenTex, _SSTColor, _SSTBlend);
 							}
@@ -736,7 +741,7 @@ public class SFXEditor : ShaderGUI {
 								MGUI.ToggleGroupEnd();
 							}
 						});
-						MGUI.PropertyGroup(() => {
+						MGUI.PropertyGroup(()=>{
 							me.ShaderProperty(_SSTScale, "Scale");
 							me.ShaderProperty(_SSTWidth, "Width");
 							me.ShaderProperty(_SSTHeight, "Height");
@@ -756,13 +761,13 @@ public class SFXEditor : ShaderGUI {
 						MGUI.Space6();
 						me.ShaderProperty(_FogUseGlobal, ugfLabel);
 						if (_FogUseGlobal.floatValue == 0){
-							MGUI.PropertyGroup(() => {
+							MGUI.PropertyGroup(()=>{
 								me.ShaderProperty(_FogMinRange, minLabel);
 								me.ShaderProperty(_FogMaxRange, maxLabel);
 							});
 						}
 						else MGUI.Space6();
-						MGUI.PropertyGroup(() => {
+						MGUI.PropertyGroup(()=>{
 							MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
 							me.ShaderProperty(_FogColor, colorLabel);
 							me.ShaderProperty(_FogRadius, radiusLabel);
@@ -770,7 +775,7 @@ public class SFXEditor : ShaderGUI {
 							me.ShaderProperty(_FogP2O, p2oLabel);
 							me.ShaderProperty(_FogSafeZone, "Safe Zone");
 							if (_FogSafeZone.floatValue == 1){
-								MGUI.PropertyGroupLayer(() => {	
+								MGUI.PropertyGroupLayer(()=>{	
 									me.ShaderProperty(_FogSafeRadius, "Vision Radius");
 									me.ShaderProperty(_FogSafeMaxRange, "Outer Perimeter");
 									me.ShaderProperty(_FogSafeOpacity, "Opacity");
@@ -790,13 +795,13 @@ public class SFXEditor : ShaderGUI {
 						MGUI.Space6();
 						me.ShaderProperty(_TPUseGlobal, ugfLabel);
 						if (_TPUseGlobal.floatValue == 0){
-							MGUI.PropertyGroup(() => {
+							MGUI.PropertyGroup(()=>{
 								me.ShaderProperty(_TPMinRange, minLabel);
 								me.ShaderProperty(_TPMaxRange, maxLabel);
 							});
 						}
 						else MGUI.Space6();
-						MGUI.PropertyGroup(() => {
+						MGUI.PropertyGroup(()=>{
 							MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
 							me.TexturePropertySingleLine(tpTexLabel, _TPTexture, _TPColor);
 							if (_TPTexture.textureValue){
@@ -812,7 +817,7 @@ public class SFXEditor : ShaderGUI {
 								MGUI.Vector3Field(_TPNoiseScroll, "Scroll Speed", false);
 							}
 						});
-						MGUI.PropertyGroup(() => {
+						MGUI.PropertyGroup(()=>{
 							me.ShaderProperty(_TPRadius, radiusLabel);
 							if (_Triplanar.floatValue == 2){
 								me.ShaderProperty(_TPScanFade, fadeLabel);
@@ -835,13 +840,13 @@ public class SFXEditor : ShaderGUI {
 						MGUI.Space6();
 						me.ShaderProperty(_OLUseGlobal, ugfLabel);
 						if (_OLUseGlobal.floatValue == 0){
-							MGUI.PropertyGroup(() => {
+							MGUI.PropertyGroup(()=>{
 								me.ShaderProperty(_OLMinRange, minLabel);
 								me.ShaderProperty(_OLMaxRange, maxLabel);
 							});
 						}
 						else MGUI.Space6();
-						MGUI.PropertyGroup(() => {
+						MGUI.PropertyGroup(()=>{
 							MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
 							if (_OutlineType.floatValue == 2)
 								me.ShaderProperty(_AuraSampleCount, "Sample Count");
@@ -866,7 +871,7 @@ public class SFXEditor : ShaderGUI {
 				miscTabButtons.Add(()=>{ResetExtras();}, MGUI.resetLabel);
 				Action miscTabAction = ()=>{
 					Action letterboxTabAction = ()=>{
-						MGUI.PropertyGroup(() => {
+						MGUI.PropertyGroup(()=>{
 							MGUI.ToggleGroup(_Letterbox.floatValue == 0);
 							me.ShaderProperty(_UseZoomFalloff, "Use Zoom Falloff");
 							me.ShaderProperty(_LetterboxStr, "Bar Width");
@@ -876,7 +881,7 @@ public class SFXEditor : ShaderGUI {
 					Foldouts.SubFoldout("Letterbox", foldouts, null, mat, me, letterboxTabAction, _Letterbox);
 
 					Action pulseTabAction = ()=>{
-						MGUI.PropertyGroup(() => {
+						MGUI.PropertyGroup(()=>{
 							MGUI.ToggleGroup(_Pulse.floatValue == 0);
 							me.ShaderProperty(_WaveForm, "Waveform");
 							MGUI.ToggleGroup(_WaveForm.floatValue == 0);
@@ -889,7 +894,7 @@ public class SFXEditor : ShaderGUI {
 					Foldouts.SubFoldout("Pulse", foldouts, null, mat, me, pulseTabAction, _Pulse);
 
 					Action uvManipTabAction = ()=>{
-						MGUI.PropertyGroup(() => {
+						MGUI.PropertyGroup(()=>{
 							MGUI.ToggleGroup(_Shift.floatValue == 0);
 							me.ShaderProperty(_InvertX, "Invert X");
 							me.ShaderProperty(_InvertY, "Invert Y");
@@ -901,7 +906,7 @@ public class SFXEditor : ShaderGUI {
 					Foldouts.SubFoldout("UV Manipulation", foldouts, null, mat, me, uvManipTabAction, _Shift);
 
 					Action roundingTabAction = ()=>{
-						MGUI.PropertyGroup(() => {
+						MGUI.PropertyGroup(()=>{
 							MGUI.ToggleGroup(_RoundingToggle.floatValue == 0);
 							me.ShaderProperty(_RoundingOpacity, "Opacity");
 							me.ShaderProperty(_Rounding, "Precision");
@@ -911,7 +916,7 @@ public class SFXEditor : ShaderGUI {
 					Foldouts.SubFoldout("Rounding", foldouts, null, mat, me, roundingTabAction, _RoundingToggle);
 
 					Action nmTabAction = ()=>{
-						MGUI.PropertyGroup(() => {
+						MGUI.PropertyGroup(()=>{
 							MGUI.ToggleGroup(_NMFToggle.floatValue == 0);
 							me.ShaderProperty(_NMFOpacity, "Opacity");
 							me.ShaderProperty(_NormalMapFilter, "Strength");
@@ -924,7 +929,7 @@ public class SFXEditor : ShaderGUI {
 						if (_DepthBufferToggle.floatValue == 1){
 							MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
 						}
-						MGUI.PropertyGroup(() => {
+						MGUI.PropertyGroup(()=>{
 							MGUI.ToggleGroup(_DepthBufferToggle.floatValue == 0);
 							me.ShaderProperty(_DBOpacity, "Opacity");
 							me.ShaderProperty(_DBColor, "Tint");
@@ -932,6 +937,16 @@ public class SFXEditor : ShaderGUI {
 						});
 					};
 					Foldouts.SubFoldout("Depth Buffer", foldouts, null, mat, me, depthTabAction, _DepthBufferToggle);
+					Action sobelFilterTabAction = ()=>{					
+						MGUI.PropertyGroup(()=>{
+							MGUI.ToggleGroup(_SobelFilterToggle.floatValue == 0);
+							me.ShaderProperty(_SobelFilterColor, "Line Color");
+							me.ShaderProperty(_SobelFilterBackgroundColor, "Background Color");
+							me.ShaderProperty(_SobelFilterOpacity, "Opacity");
+							MGUI.ToggleGroupEnd();
+						});
+					};
+					Foldouts.SubFoldout("Sobel Filter", foldouts, null, mat, me, sobelFilterTabAction, _SobelFilterToggle);
 				};
 				Foldouts.Foldout("MISC", foldouts, miscTabButtons, mat, me, miscTabAction);
 			}
@@ -948,7 +963,7 @@ public class SFXEditor : ShaderGUI {
 				Dictionary<Action, GUIContent> alFilteringTabButtons = new Dictionary<Action, GUIContent>();
 				alFilteringTabButtons.Add(()=>{ResetALFiltering();}, MGUI.resetLabel);
 				Action alFilteringTabAction = ()=>{
-					MGUI.PropertyGroup(() => {
+					MGUI.PropertyGroup(()=>{
 						me.ShaderProperty(_AudioLinkFilteringBand, "Band");
 						me.ShaderProperty(_AudioLinkFilteringStrength, "Strength");
 						MGUI.SliderMinMax(_AudioLinkFilteringMin, _AudioLinkFilteringMax, 0f, 2f, "Remap", 1);
@@ -959,7 +974,7 @@ public class SFXEditor : ShaderGUI {
 				Dictionary<Action, GUIContent> alShakeTabButtons = new Dictionary<Action, GUIContent>();
 				alShakeTabButtons.Add(()=>{ResetALShake();}, MGUI.resetLabel);
 				Action alShakeTabAction = ()=>{
-					MGUI.PropertyGroup(() => {
+					MGUI.PropertyGroup(()=>{
 						me.ShaderProperty(_AudioLinkShakeBand, "Band");
 						me.ShaderProperty(_AudioLinkShakeStrength, "Strength");
 						MGUI.SliderMinMax(_AudioLinkShakeMin, _AudioLinkShakeMax, 0f, 2f, "Remap", 1);
@@ -970,7 +985,7 @@ public class SFXEditor : ShaderGUI {
 				Dictionary<Action, GUIContent> alDistortionTabButtons = new Dictionary<Action, GUIContent>();
 				alDistortionTabButtons.Add(()=>{ResetALDistortion();}, MGUI.resetLabel);
 				Action alDistortionTabAction = ()=>{
-					MGUI.PropertyGroup(() => {
+					MGUI.PropertyGroup(()=>{
 						me.ShaderProperty(_AudioLinkDistortionBand, "Band");
 						me.ShaderProperty(_AudioLinkDistortionStrength, "Strength");
 						MGUI.SliderMinMax(_AudioLinkDistortionMin, _AudioLinkDistortionMax, 0f, 2f, "Remap", 1);
@@ -981,7 +996,7 @@ public class SFXEditor : ShaderGUI {
 				Dictionary<Action, GUIContent> alBlurTabButtons = new Dictionary<Action, GUIContent>();
 				alBlurTabButtons.Add(()=>{ResetALBlur();}, MGUI.resetLabel);
 				Action alBlurTabAction = ()=>{
-					MGUI.PropertyGroup(() => {
+					MGUI.PropertyGroup(()=>{
 						me.ShaderProperty(_AudioLinkBlurBand, "Band");
 						me.ShaderProperty(_AudioLinkBlurStrength, "Strength");
 						MGUI.SliderMinMax(_AudioLinkBlurMin, _AudioLinkBlurMax, 0f, 2f, "Remap", 1);
@@ -992,7 +1007,7 @@ public class SFXEditor : ShaderGUI {
 				Dictionary<Action, GUIContent> alNoiseTabButtons = new Dictionary<Action, GUIContent>();
 				alNoiseTabButtons.Add(()=>{ResetALNoise();}, MGUI.resetLabel);
 				Action alNoiseTabAction = ()=>{
-					MGUI.PropertyGroup(() => {
+					MGUI.PropertyGroup(()=>{
 						me.ShaderProperty(_AudioLinkNoiseBand, "Band");
 						me.ShaderProperty(_AudioLinkNoiseStrength, "Strength");
 						MGUI.SliderMinMax(_AudioLinkNoiseMin, _AudioLinkNoiseMax, 0f, 2f, "Remap", 1);
@@ -1004,7 +1019,7 @@ public class SFXEditor : ShaderGUI {
 					Dictionary<Action, GUIContent> alZoomTabButtons = new Dictionary<Action, GUIContent>();
 					alZoomTabButtons.Add(()=>{ResetALZoom();}, MGUI.resetLabel);
 					Action alZoomTabAction = ()=>{
-						MGUI.PropertyGroup(() => {
+						MGUI.PropertyGroup(()=>{
 							me.ShaderProperty(_AudioLinkZoomBand, "Band");
 							me.ShaderProperty(_AudioLinkZoomStrength, "Strength");
 							MGUI.SliderMinMax(_AudioLinkZoomMin, _AudioLinkZoomMax, 0f, 2f, "Remap", 1);
@@ -1015,7 +1030,7 @@ public class SFXEditor : ShaderGUI {
 					Dictionary<Action, GUIContent> alSSTTabButtons = new Dictionary<Action, GUIContent>();
 					alSSTTabButtons.Add(()=>{ResetALSST();}, MGUI.resetLabel);
 					Action alSSTTabAction = ()=>{
-						MGUI.PropertyGroup(() => {
+						MGUI.PropertyGroup(()=>{
 							me.ShaderProperty(_AudioLinkSSTBand, "Band");
 							me.ShaderProperty(_AudioLinkSSTStrength, "Strength");
 							MGUI.SliderMinMax(_AudioLinkSSTMin, _AudioLinkSSTMax, 0f, 2f, "Remap", 1);
@@ -1026,7 +1041,7 @@ public class SFXEditor : ShaderGUI {
 					Dictionary<Action, GUIContent> alFogTabButtons = new Dictionary<Action, GUIContent>();
 					alFogTabButtons.Add(()=>{ResetALFog();}, MGUI.resetLabel);
 					Action alFogTabAction = ()=>{
-						MGUI.PropertyGroup(() => {
+						MGUI.PropertyGroup(()=>{
 							me.ShaderProperty(_AudioLinkFogBand, "Band");
 							me.ShaderProperty(_AudioLinkFogOpacity, "Opacity");
 							me.ShaderProperty(_AudioLinkFogRadius, "Radius");
@@ -1038,7 +1053,7 @@ public class SFXEditor : ShaderGUI {
 					Dictionary<Action, GUIContent> alTriplanarTabButtons = new Dictionary<Action, GUIContent>();
 					alTriplanarTabButtons.Add(()=>{ResetALTriplanar();}, MGUI.resetLabel);
 					Action alTriplanarTabAction = ()=>{
-						MGUI.PropertyGroup(() => {
+						MGUI.PropertyGroup(()=>{
 							me.ShaderProperty(_AudioLinkTriplanarBand, "Band");
 							me.ShaderProperty(_AudioLinkTriplanarOpacity, "Opacity");
 							me.ShaderProperty(_AudioLinkTriplanarRadius, "Radius");
@@ -1050,7 +1065,7 @@ public class SFXEditor : ShaderGUI {
 					Dictionary<Action, GUIContent> alOutlineTabButtons = new Dictionary<Action, GUIContent>();
 					alOutlineTabButtons.Add(()=>{ResetALOutline();}, MGUI.resetLabel);
 					Action alOutlineTabAction = ()=>{
-						MGUI.PropertyGroup(() => {
+						MGUI.PropertyGroup(()=>{
 							me.ShaderProperty(_AudioLinkOutlineBand, "Band");
 							me.ShaderProperty(_AudioLinkOutlineStrength, "Strength");
 							MGUI.SliderMinMax(_AudioLinkOutlineMin, _AudioLinkOutlineMax, 0f, 2f, "Remap", 1);
@@ -1061,7 +1076,7 @@ public class SFXEditor : ShaderGUI {
 					Dictionary<Action, GUIContent> alMiscTabButtons = new Dictionary<Action, GUIContent>();
 					alMiscTabButtons.Add(()=>{ResetALMisc();}, MGUI.resetLabel);
 					Action alMiscTabAction = ()=>{
-						MGUI.PropertyGroup(() => {
+						MGUI.PropertyGroup(()=>{
 							me.ShaderProperty(_AudioLinkMiscBand, "Band");
 							me.ShaderProperty(_AudioLinkMiscStrength, "Strength");
 							MGUI.SliderMinMax(_AudioLinkMiscMin, _AudioLinkMiscMax, 0f, 2f, "Remap", 1);
@@ -1099,6 +1114,7 @@ public class SFXEditor : ShaderGUI {
 		int noiseMode = mat.GetInt("_NoiseMode");
 		int letterboxMode = mat.GetInt("_Letterbox");
 		int audioLink = mat.GetInt("_AudioLinkToggle");
+		int sobelFilter = mat.GetInt("_SobelFilterToggle");
 
 		bool isXVersion = MGUI.IsXVersion(mat);
 		bool filteringEnabled = filterMode > 0;
@@ -1122,6 +1138,7 @@ public class SFXEditor : ShaderGUI {
 		bool outlineEnabled = outlineMode > 0 && isXVersion;
 		bool letterboxEnabled = letterboxMode > 0 && isXVersion;
 		bool audioLinkEnabled = audioLink == 1;
+		bool sobelFilterEnabled = sobelFilter == 1;
 		
 		SetKeyword(mat, "_COLOR_ON", filteringEnabled);
 		SetKeyword(mat, "_SHAKE_ON", shakeEnabled);
@@ -1142,6 +1159,7 @@ public class SFXEditor : ShaderGUI {
 		SetKeyword(mat, "_OUTLINE_ON", outlineEnabled);
 		SetKeyword(mat, "_NOISE_ON", noiseEnabled);
 		SetKeyword(mat, "_AUDIOLINK_ON", audioLinkEnabled);
+		SetKeyword(mat, "_SOBEL_FILTER_ON", sobelFilterEnabled);
 
 		mat.SetShaderPassEnabled("Always", zoomEnabled || zoomRGBEnabled || sstEnabled || sstDistEnabled ||  letterboxEnabled);
 	}
@@ -1462,5 +1480,9 @@ public class SFXEditor : ShaderGUI {
 		_NMFOpacity.floatValue = 1f;
 		_DBColor.colorValue = Color.white;
 		_DepthBufferToggle.floatValue = 0f;
+		_SobelFilterColor.colorValue = Color.white;
+		_SobelFilterBackgroundColor.colorValue = new Color(0,0,0,1);
+		_SobelFilterToggle.floatValue = 0f;
+		_SobelFilterOpacity.floatValue = 1f;
 	}
 }

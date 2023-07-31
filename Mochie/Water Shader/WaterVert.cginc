@@ -42,6 +42,10 @@ v2f vert (
 		float3 wave0 = 0;
 		float3 wave1 = 0;
 		float3 wave2 = 0;
+		float offsetMask = 1;
+		#ifdef TESSELLATION_VARIANT
+			offsetMask = o.offsetMask;
+		#endif
 		if (_RecalculateNormals == 1){
 			o.tangent = float3(1,0,0);
 			o.binormal = float3(0,0,1);
@@ -58,21 +62,21 @@ v2f vert (
 			_WaveSpeed0 *= _WaveSpeedGlobal;
 			_WaveScale0 *= _WaveScaleGlobal;
 			float4 waveProperties0 = float4(0,1, _WaveStrength0 + turb, _WaveScale0);
-			wave0 = GerstnerWave(waveProperties0, v.vertex.xyz, _WaveSpeed0, _WaveDirection0, o.tangent, o.binormal);
+			wave0 = GerstnerWave(waveProperties0, v.vertex.xyz, _WaveSpeed0, _WaveDirection0, o.tangent, o.binormal, offsetMask);
 		}
 		if (_WaveStrength1 > 0){
 			_WaveStrength1 *= _WaveStrengthGlobal;
 			_WaveSpeed1 *= _WaveSpeedGlobal;
 			_WaveScale1 *= _WaveScaleGlobal;
 			float4 waveProperties1 = float4(0,1, _WaveStrength1 + turb, _WaveScale1);
-			wave1 = GerstnerWave(waveProperties1, v.vertex.xyz, _WaveSpeed1, _WaveDirection1, o.tangent, o.binormal);
+			wave1 = GerstnerWave(waveProperties1, v.vertex.xyz, _WaveSpeed1, _WaveDirection1, o.tangent, o.binormal, offsetMask);
 		}
 		if (_WaveStrength2 > 0){
 			_WaveStrength2 *= _WaveStrengthGlobal;
 			_WaveSpeed2 *= _WaveSpeedGlobal;
 			_WaveScale2 *= _WaveScaleGlobal;
 			float4 waveProperties2 = float4(0,1, _WaveStrength2 + turb, _WaveScale2);
-			wave2 = GerstnerWave(waveProperties2, v.vertex.xyz, _WaveSpeed2, _WaveDirection2, o.tangent, o.binormal);
+			wave2 = GerstnerWave(waveProperties2, v.vertex.xyz, _WaveSpeed2, _WaveDirection2, o.tangent, o.binormal, offsetMask);
 		}
 		o.wave = wave0 + wave1 + wave2;
 		#ifdef TESSELLATION_VARIANT

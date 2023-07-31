@@ -1,4 +1,6 @@
 ﻿
+#include "../Common/Utilities.cginc"
+
 float4 SampleTexture(sampler2D tex, float2 uv){
 	#if defined(_STOCHASTIC_SAMPLING_ON)
 		return tex2Dstoch(tex, uv);
@@ -8,57 +10,21 @@ float4 SampleTexture(sampler2D tex, float2 uv){
 	return 0;
 }
 
-float3 GetCameraPos(){
-    float3 cameraPos = _WorldSpaceCameraPos;
-    #if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
-        cameraPos = (unity_StereoWorldSpaceCameraPos[0] + unity_StereoWorldSpaceCameraPos[1]) * 0.5;
-    #endif
-    return cameraPos;
-}
-
 float3 ShadeSH9(float3 normal){
 	return max(0, ShadeSH9(float4(normal,1)));
 }
 
-float4x4 inverse(float4x4 input){
-	#define minor(a,b,c) determinant(float3x3(input.a, input.b, input.c))
-	float4x4 cofactors = float4x4(
-		minor(_22_23_24, _32_33_34, _42_43_44), 
-		-minor(_21_23_24, _31_33_34, _41_43_44),
-		minor(_21_22_24, _31_32_34, _41_42_44),
-		-minor(_21_22_23, _31_32_33, _41_42_43),
-
-		-minor(_12_13_14, _32_33_34, _42_43_44),
-		minor(_11_13_14, _31_33_34, _41_43_44),
-		-minor(_11_12_14, _31_32_34, _41_42_44),
-		minor(_11_12_13, _31_32_33, _41_42_43),
-
-		minor(_12_13_14, _22_23_24, _42_43_44),
-		-minor(_11_13_14, _21_23_24, _41_43_44),
-		minor(_11_12_14, _21_22_24, _41_42_44),
-		-minor(_11_12_13, _21_22_23, _41_42_43),
-
-		-minor(_12_13_14, _22_23_24, _32_33_34),
-		minor(_11_13_14, _21_23_24, _31_33_34),
-		-minor(_11_12_14, _21_22_24, _31_32_34),
-		minor(_11_12_13, _21_22_23, _31_32_33)
-	);
-	#undef minor
-	return transpose(cofactors) / determinant(input);
-}
-
-float3 GetWorldSpacePixelPos(float4 vertex, float2 scrnPos){
-	float4 worldPos = mul(unity_ObjectToWorld, float4(vertex.xyz, 1));
-	float4 screenPos = mul(UNITY_MATRIX_VP, worldPos); 
-	worldPos = mul(inverse(UNITY_MATRIX_VP), screenPos);
-	float3 worldDir = worldPos.xyz - _WorldSpaceCameraPos;
-	float depth = LinearEyeDepth(UNITY_SAMPLE_SCREENSPACE_TEXTURE(_CameraDepthTexture, scrnPos)) / screenPos.w;
-	float3 worldSpacePos = worldDir * depth + _WorldSpaceCameraPos;
-	return worldSpacePos;
-}
-
-float2 ScaleOffset(float2 uv, float2 tiling, float2 offset){
-	return uv * tiling + offset;
+float3 tex2DnormalGlass(sampler2D tex, float2 uv, float strength){
+	float offset = 0.15;
+	offset = pow(offset, 3) * 0.1;
+	float2 offsetU = float2(uv.x + offset, uv.y);
+	float2 offsetV = float2(uv.x, uv.y + offset);
+	float normalSample = smoothstep(0.15, 1, tex2Dbias(tex, float4(uv, 0, _RainBias)));
+	float uSample = smoothstep(0.15, 1, tex2Dbias(tex, float4(offsetU, 0, _RainBias)));
+	float vSample = smoothstep(0.15, 1, tex2Dbias(tex, float4(offsetV, 0, _RainBias)));
+	float3 va = float3(1, 0, (uSample - normalSample) * strength);
+	float3 vb = float3(0, 1, (vSample - normalSample) * strength);
+	return normalize(cross(va, vb));
 }
 
 float2 GetFlipbookUV(float2 uv, float width, float height, float speed, float2 invertAxis){
@@ -69,11 +35,30 @@ float2 GetFlipbookUV(float2 uv, float width, float height, float speed, float2 i
 	return (uv + float2(tileX, tileY)) * tileCount;
 }
 
-float3 GetFlipbookNormals(v2f i, inout float flipbookBase){
-	float2 uv = frac(ScaleOffset(i.uv, float2(_XScale, _YScale), 0));
+float3 GetFlipbookNormals(v2f i, inout float flipbookBase, float mask){
+	float2 uv = frac(ScaleOffsetUV(i.uv, float2(_XScale, _YScale), 0));
 	float2 flipUV = GetFlipbookUV(uv, _Columns, _Rows, _Speed, float2(0,1));
-	flipbookBase = tex2D(_RainSheet, flipUV);
-	return tex2Dnormal(_RainSheet, flipUV, _Strength);
+	flipbookBase = tex2D(_RainSheet, flipUV) * mask;
+	return tex2DnormalGlass(_RainSheet, flipUV, _Strength*mask);
+}
+
+// based on https://www.toadstorm.com/blog/?p=742
+void ApplyExtraDroplets(v2f i, inout float3 rainNormal, inout float flipbookBase, float mask){
+	if (_DynamicDroplets > 0){
+		float2 dropletMaskUV = ScaleOffsetUV(i.uv, float2(_XScale, _YScale), 0);
+		float4 dropletMask = tex2Dbias(_DropletMask, float4(dropletMaskUV,0,_RainBias));
+		float3 dropletMaskNormal = UnpackScaleNormal(float4(dropletMask.rg,1,1), _Strength*2*mask);
+		float droplets = Remap(dropletMask.b, 0, 1, -1, 1);
+		droplets += (_Time.y*(_Speed/200.0));
+		droplets = frac(droplets);
+		droplets = dropletMask.a - droplets;
+		droplets = Remap(droplets, 1-_DynamicDroplets, 1, 0, 1);
+		float dropletRough = smoothstep(0, 0.1, droplets);
+		droplets = smoothstep(0, 0.4, droplets);
+		flipbookBase = smoothstep(0, 0.1, flipbookBase);
+		flipbookBase = saturate(flipbookBase + dropletRough);
+		rainNormal = lerp(rainNormal, dropletMaskNormal, droplets);
+	}
 }
 
 #include "GlassKernels.cginc"
@@ -159,8 +144,4 @@ float SpecularTerm(float NdotL, float NdotV, float NdotH, float roughness){
 	float dotTerm = UNITY_INV_PI * rough2 / (d * d + 1e-7f);
 
 	return max(0, visibilityTerm * dotTerm * UNITY_PI * NdotL);
-}
-
-float Safe_DotClamped(float3 a, float3 b){
-	return max(0.00001, dot(a,b));
 }

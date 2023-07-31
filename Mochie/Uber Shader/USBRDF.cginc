@@ -163,6 +163,7 @@ float3 GetWorldReflections(float3 reflDir, float3 worldPos, float roughness){
 
 float3 GetReflections(g2f i, lighting l, masks m, float roughness){
     float3 reflections = 0;
+	// roughness = lerp(roughness*roughness, saturate(roughness*2), saturate(1-l.NdotV));
 	if (m.reflectionMask > 0){
 		#if !CUBEMAP_REFLECTIONS
 			#if REFLCUBE_EXISTS

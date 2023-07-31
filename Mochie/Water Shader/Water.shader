@@ -32,7 +32,7 @@ Shader "Mochie/Water" {
 		_EmissionMapScroll("Emission Map Scroll", Vector) = (0,0,0,0)
 		
 		[NoScaleOffset]_NormalMap0 ("", 2D) = "bump" {}
-		_NormalStr0("Strength", Float) = 0.1
+		_NormalStr0("Strength", Float) = 0.2
 		_NormalMapScale0("Scale", Vector) = (3,3,0,0)
 		_Rotation0("Rotation", Float) = 0
 		_NormalMapScroll0("Scrolling", Vector) = (0.1,0.1,0,0)
@@ -41,7 +41,7 @@ Shader "Mochie/Water" {
 
 		[Toggle(_NORMALMAP_1_ON)]_Normal1Toggle("Enable", Int) = 1
 		[NoScaleOffset]_NormalMap1("", 2D) = "bump" {}
-		_NormalStr1("Strength", Float) = 0.2
+		_NormalStr1("Strength", Float) = 0.3
 		_NormalMapScale1("Scale", Vector) = (4,4,0,0)
 		_Rotation1("Rotation", Float) = 0
 		_NormalMapScroll1("Scrolling", Vector) = (-0.1,0.1,0,0)
@@ -142,7 +142,7 @@ Shader "Mochie/Water" {
 		_FoamOpacity("Opacity", Float) = 3
 		_FoamOffset("Parallax Offset", Float) = 0
 		_FoamCrestThreshold("Crest Threshold", Float) = 0.5
-		_FoamCrestStrength("Crest Strength", Float) = 1
+		_FoamCrestStrength("Crest Strength", Float) = 0
 		[Toggle(_FOAM_STOCHASTIC_ON)]_FoamStochasticToggle("Stochastic Sampling", Int) = 0
 		_FoamDistortionStrength("Distortion Strength", Float) = 0.1
 		[ToggleUI]_FoamNormalToggle("Foam Normals", Int) = 1
@@ -184,6 +184,7 @@ Shader "Mochie/Water" {
 		[HideInInspector]_SrcBlend("__src", Float) = 1.0
         [HideInInspector]_DstBlend("__dst", Float) = 0.0
 		[HideInInspector]_NoiseTexSSR("SSR Noise Tex", 2D) = "black"
+		[HideInInspector]_ZeroProp("", Float) = 0
     }
 
     SubShader {

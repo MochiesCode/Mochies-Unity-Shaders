@@ -49,20 +49,21 @@ float4 _CameraDepthTexture_TexelSize;
 #define TRANSPARENCY_GRABPASS			!defined(_PREMUL_MODE_ON) && !defined(_OPAQUE_MODE_ON)
 
 MOCHIE_DECLARE_TEX2D_SCREENSPACE(_MWGrab);
-sampler2D _MainTex;
-sampler2D _NormalMap0, _NormalMap1;
-sampler2D _FlowMap;
+MOCHIE_DECLARE_TEX2D(_FlowMap);
+MOCHIE_DECLARE_TEX2D_NOSAMPLER(_MainTex);
+MOCHIE_DECLARE_TEX2D_NOSAMPLER(_NormalMap0);
+MOCHIE_DECLARE_TEX2D_NOSAMPLER(_NormalMap1);
+MOCHIE_DECLARE_TEX2D_NOSAMPLER(_FoamTex);
+MOCHIE_DECLARE_TEX2D_NOSAMPLER(_FoamNoiseTex);
+MOCHIE_DECLARE_TEX2D_NOSAMPLER(_CausticsTex);
+MOCHIE_DECLARE_TEX2D_NOSAMPLER(_BlendNoise);
+MOCHIE_DECLARE_TEX2D_NOSAMPLER(_RoughnessMap);
+MOCHIE_DECLARE_TEX2D_NOSAMPLER(_MetallicMap);
+MOCHIE_DECLARE_TEX2D_NOSAMPLER(_EmissionMap);
+MOCHIE_DECLARE_TEX2D_NOSAMPLER(_AreaLitMask);
+MOCHIE_DECLARE_TEX2D_NOSAMPLER(_DetailBaseColor);
+MOCHIE_DECLARE_TEX2D_NOSAMPLER(_DetailNormal);
 sampler2D _NoiseTex;
-sampler2D _FoamTex;
-sampler2D _FoamNoiseTex;
-sampler2D _CausticsTex;
-sampler2D _BlendNoise;
-sampler2D _RoughnessMap;
-sampler2D _MetallicMap;
-sampler2D _EmissionMap;
-sampler2D _AreaLitMask;
-sampler2D _DetailBaseColor;
-sampler2D _DetailNormal;
 samplerCUBE _ReflCube;
 
 float _AreaLitStrength;
@@ -169,6 +170,7 @@ int _DetailTextureMode;
 int _RecalculateNormals;
 int _TransparencyMode;
 
+float _ZeroProp;
 const static float2 jump = float2(0.1, 0.25);
 
 #ifdef TESSELLATION_VARIANT

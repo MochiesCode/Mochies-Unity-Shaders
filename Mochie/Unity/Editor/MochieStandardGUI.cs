@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
@@ -23,7 +23,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		"LTCGI"
 	}, 1);
 
-	string versionLabel = "v1.22.3";
+	string versionLabel = "v1.23.1";
 	public static string receiverText = "AreaLit Maps";
 	public static string emitterText = "AreaLit Light";
 	public static string projectorText = "AreaLit Projector";
@@ -229,7 +229,7 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty occlusionUVSet = null;
 	MaterialProperty areaLitOcclusion = null;
 	MaterialProperty ssrHeight = null;
-
+	MaterialProperty unityFogToggle = null;
 
 	MaterialEditor me;
 
@@ -418,6 +418,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		detailScroll = FindProperty("_DetailScroll", props);
 		detailRotate = FindProperty("_DetailRotate", props);
 		ssrHeight = FindProperty("_SSRHeight", props);
+		unityFogToggle = FindProperty("_UnityFogToggle", props);
 	}
 
 	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props){
@@ -680,9 +681,14 @@ internal class MochieStandardGUI : ShaderGUI {
 
 			}
 			bool hasDetailAlbedo = detailAlbedoMap.textureValue;
+			bool hasDetailNormal = detailNormalMap.textureValue;
+			bool hasMetallic = detailMetallicMap.textureValue;
+			bool hasRoughness = detailRoughnessMap.textureValue;
+			bool hasAO = detailAOMap.textureValue;
 			me.TexturePropertySingleLine(Tips.albedoText, detailAlbedoMap, hasDetailAlbedo ? detailColor : null, hasDetailAlbedo ? detailAlbedoBlend : null);
 			if (detailWorkflow.floatValue == 1){
 				me.TexturePropertySingleLine(Tips.packedMapText, detailPackedMap);
+				me.TexturePropertySingleLine(Tips.normalMapText, detailNormalMap, hasDetailNormal ? detailNormalMapScale : null);
 				MGUI.sRGBWarning(detailPackedMap);
 				if (detailPackedMap.textureValue){
 					MGUI.PropertyGroupLayer(()=>{
@@ -709,15 +715,12 @@ internal class MochieStandardGUI : ShaderGUI {
 				}
 			}
 			else {
-				bool hasMetallic = detailMetallicMap.textureValue;
-				bool hasRoughness = detailRoughnessMap.textureValue;
-				bool hasAO = detailAOMap.textureValue;
 				me.TexturePropertySingleLine(Tips.metallicMapText, detailMetallicMap, hasMetallic ? detailMetallicStrength : null, hasMetallic ? detailMetallicBlend : null);
 				MGUI.sRGBWarning(detailMetallicMap);
 				me.TexturePropertySingleLine(Tips.roughnessText, detailRoughnessMap, hasRoughness ? detailRoughnessStrength : null, hasRoughness ? detailRoughBlend : null);
 				MGUI.sRGBWarning(detailRoughnessMap);
 				me.TexturePropertySingleLine(Tips.occlusionText, detailAOMap, hasAO ? detailOcclusionStrength : null, hasAO ? detailAOBlend : null);
-				me.TexturePropertySingleLine(Tips.normalMapText, detailNormalMap, detailNormalMap.textureValue ? detailNormalMapScale : null);
+				me.TexturePropertySingleLine(Tips.normalMapText, detailNormalMap, hasDetailNormal ? detailNormalMapScale : null);
 				me.TexturePropertySingleLine(Tips.detailMaskText, detailMask, detailMask.textureValue ? detailMaskChannel : null);
 				MGUI.sRGBWarning(detailAOMap);
 			}
@@ -988,6 +991,7 @@ internal class MochieStandardGUI : ShaderGUI {
 				me.ShaderProperty(_BAKERY_SHNONLINEAR, "Bakery Non-Linear SH");
 				me.ShaderProperty(_BAKERY_LMSPEC, "Bakery Lightmap Specular");
 				me.ShaderProperty(bicubicLightmap, Tips.bicubicLightmap);
+				me.ShaderProperty(unityFogToggle, "Unity Fog");
 				me.EnableInstancingField();
 				MGUI.SpaceN2();
 				me.DoubleSidedGIField();

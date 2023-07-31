@@ -754,7 +754,9 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
     Rim(s.posWorld, s.normalWorld, c.rgb, i.tex2.zw);
 
     UNITY_EXTRACT_FOG_FROM_EYE_VEC(i);
-    UNITY_APPLY_FOG(_unity_fogCoord, c.rgb);
+    if (_UnityFogToggle == 1){
+        UNITY_APPLY_FOG(_unity_fogCoord, c.rgb);
+    }
     return OutputForward (c, s.alpha);
 }
 
@@ -865,7 +867,9 @@ half4 fragForwardAddInternal (VertexOutputForwardAdd i, bool frontFace)
 				s.metallic, s.thickness, s.subsurfaceColor, atten, 0, i.color, light, noIndirect);
 								
     UNITY_EXTRACT_FOG_FROM_EYE_VEC(i);
-    UNITY_APPLY_FOG_COLOR(_unity_fogCoord, c.rgb, half4(0,0,0,0)); // fog towards black in additive pass
+    if (_UnityFogToggle == 1){
+        UNITY_APPLY_FOG_COLOR(_unity_fogCoord, c.rgb, half4(0,0,0,0)); // fog towards black in additive pass
+    }
     return OutputForward (c, s.alpha);
 }
 

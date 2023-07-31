@@ -8,7 +8,7 @@ using Mochie;
 
 public class GlassEditor : ShaderGUI {
 
-	string versionLabel = "v1.2";
+	string versionLabel = "v1.3";
 
 	// Surface
 	MaterialProperty _GrabpassTint = null;
@@ -26,7 +26,6 @@ public class GlassEditor : ShaderGUI {
 	MaterialProperty _Refraction = null;
 	MaterialProperty _Blur = null;
 	MaterialProperty BlurQuality = null;
-	// MaterialProperty _RefractMeshNormals = null;
 
 	// Rain
 	MaterialProperty _RainToggle = null;
@@ -34,6 +33,14 @@ public class GlassEditor : ShaderGUI {
 	MaterialProperty _XScale = null;
 	MaterialProperty _YScale = null;
 	MaterialProperty _Strength = null;
+	MaterialProperty _RainMode = null;
+	MaterialProperty _RainMask = null;
+	MaterialProperty _RainMaskChannel = null;
+	MaterialProperty _RippleScale = null;
+	MaterialProperty _RippleSpeed = null;
+	MaterialProperty _RippleStrength = null;
+	MaterialProperty _DynamicDroplets = null;
+	MaterialProperty _RainBias = null;
 
 	// Render Settings
 	MaterialProperty _ReflectionsToggle = null;
@@ -42,6 +49,7 @@ public class GlassEditor : ShaderGUI {
 	MaterialProperty _SamplingMode = null;
 	MaterialProperty _BlendMode = null;
 	MaterialProperty _LitBaseColor = null;
+	MaterialProperty _QueueOffset = null;
 
     BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 	bool m_FirstTimeApply = true;
@@ -61,8 +69,6 @@ public class GlassEditor : ShaderGUI {
 
         EditorGUI.BeginChangeCheck(); {
 			
-			MGUI.SetKeyword(mat, "_STOCHASTIC_SAMPLING_ON", mat.GetInt("_SamplingMode") == 1);
-
 			MGUI.BoldLabel("SURFACE");
 			MGUI.PropertyGroup(()=>{
 				if (_BlendMode.floatValue == 0)
@@ -87,7 +93,6 @@ public class GlassEditor : ShaderGUI {
 					me.ShaderProperty(BlurQuality, "Blur Quality");
 					me.ShaderProperty(_Blur, "Blur Strength");
 					me.ShaderProperty(_Refraction, "Refraction");
-					// me.ShaderProperty(_RefractMeshNormals, "Refract Mesh Normals");
 				});
 			}
 			MGUI.Space10();
@@ -96,10 +101,27 @@ public class GlassEditor : ShaderGUI {
 			me.ShaderProperty(_RainToggle, "Enable");
 			MGUI.ToggleGroup(_RainToggle.floatValue == 0f);
 			MGUI.PropertyGroup(()=>{
-				me.ShaderProperty(_Speed, "Speed");
-				me.ShaderProperty(_XScale, "X Scale");
-				me.ShaderProperty(_YScale, "Y Scale");
-				me.ShaderProperty(_Strength, "Strength");
+				me.ShaderProperty(_RainMode, "Mode");
+				if (_RainMode.floatValue == 0){
+					me.ShaderProperty(_Strength, "Strength");
+					me.ShaderProperty(_Speed, "Speed");
+					me.ShaderProperty(_XScale, "X Scale");
+					me.ShaderProperty(_YScale, "Y Scale");
+					me.ShaderProperty(_RainBias, "Mip Bias");
+					me.ShaderProperty(_DynamicDroplets, "Dynamic Droplets");
+				}
+				else {
+					me.ShaderProperty(_RippleStrength, "Strength");
+					me.ShaderProperty(_RippleSpeed, "Speed");
+					me.ShaderProperty(_RippleScale, "Scale");
+				}
+				bool hasRainMask = _RainMask.textureValue;
+				MGUI.Space4();
+				me.TexturePropertySingleLine(Tips.maskText, _RainMask, hasRainMask ? _RainMaskChannel : null);
+				if (hasRainMask){
+					MGUI.TexPropLabel("Channel", 105);
+					MGUI.TextureSO(me, _RainMask);
+				}
 			});
 			MGUI.ToggleGroupEnd();
 			MGUI.Space10();
@@ -109,30 +131,50 @@ public class GlassEditor : ShaderGUI {
 				me.ShaderProperty(_ReflectionsToggle, "Reflections");
 				me.ShaderProperty(_SpecularToggle, "Specular Highlights");
 				me.ShaderProperty(_LitBaseColor, "Lit Base Color");
-				me.RenderQueueField();
+			});
+			MGUI.PropertyGroup(()=>{
+				MGUI.SpaceN1();
+				_QueueOffset.floatValue = (int)_QueueOffset.floatValue;
+				MGUI.DummyProperty("Render Queue:", mat.renderQueue.ToString());
+				me.ShaderProperty(_QueueOffset, Tips.queueOffset);
 				me.ShaderProperty(_Culling, "Culling Mode");
 				me.ShaderProperty(_SamplingMode, "Sampling Mode");
-				EditorGUI.BeginChangeCheck();
+				/// EditorGUI.BeginChangeCheck();
 				me.ShaderProperty(_BlendMode, "Transparency");
-				if (EditorGUI.EndChangeCheck())
-					SetBlendMode(mat);
+				// if (EditorGUI.EndChangeCheck())
+				// 	SetBlendMode(mat);
 			});
 			MGUI.ToggleGroupEnd();
 		}
 		if (EditorGUI.EndChangeCheck()){
-			SetBlendMode(mat);
+			SetKeywords(mat);
 		}
+		SetBlendMode(mat);
 		MGUI.Space10();
 		MGUI.DoFooter(versionLabel);
     }
 
+	void SetKeywords(Material mat){
+		MGUI.SetKeyword(mat, "_STOCHASTIC_SAMPLING_ON", mat.GetInt("_SamplingMode") == 1);
+		MGUI.SetKeyword(mat, "_NORMALMAP_ON", mat.GetTexture("_NormalMap"));
+		MGUI.SetKeyword(mat, "_RAINMODE_RIPPLE", mat.GetInt("_RainMode") == 1);
+	}
+
 	void SetBlendMode(Material mat){
 		int blendMode = mat.GetInt("_BlendMode");
+		int rainToggle = mat.GetInt("_RainToggle");
+		float roughness = mat.GetFloat("_Roughness");
+		bool hasNormal = mat.GetTexture("_NormalMap") && mat.GetFloat("_NormalStrength") > 0;
+		bool canGrab = roughness > 0 || rainToggle == 1 || hasNormal;
+		if (blendMode == 0) blendMode = canGrab ? blendMode : 1;
+
 		switch (blendMode){
 			case 0: // Grabpass
-				mat.SetOverrideTag("RenderType", "Opaque");
+				mat.SetOverrideTag("RenderType", "Transparent");
 				mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
 				mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
+				mat.SetInt("_ZWrite", 0);
+				mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent+mat.GetInt("_QueueOffset");
 				mat.SetShaderPassEnabled("Always", true);
 				MGUI.SetKeyword(mat, "_GRABPASS_ON", true);
 				break;
@@ -140,6 +182,8 @@ public class GlassEditor : ShaderGUI {
 				mat.SetOverrideTag("RenderType", "Transparent");
 				mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
 				mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+				mat.SetInt("_ZWrite", 0);
+				mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent+mat.GetInt("_QueueOffset");
 				mat.SetShaderPassEnabled("Always", false);
 				MGUI.SetKeyword(mat, "_GRABPASS_ON", false);
 				break;
@@ -147,6 +191,8 @@ public class GlassEditor : ShaderGUI {
 				mat.SetOverrideTag("RenderType", "Opaque");
 				mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
 				mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
+				mat.SetInt("_ZWrite", 1);
+				mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Geometry+mat.GetInt("_QueueOffset");
 				mat.SetShaderPassEnabled("Always", false);
 				MGUI.SetKeyword(mat, "_GRABPASS_ON", false);
 				break;

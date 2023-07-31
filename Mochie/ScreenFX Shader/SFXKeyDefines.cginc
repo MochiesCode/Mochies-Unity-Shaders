@@ -49,4 +49,6 @@
 
 #define AUDIOLINK_ENABLED defined(_AUDIOLINK_ON)
 
+#define SOBEL_FILTER_ENABLED defined(_SOBEL_FILTER_ON)
+
 #endif

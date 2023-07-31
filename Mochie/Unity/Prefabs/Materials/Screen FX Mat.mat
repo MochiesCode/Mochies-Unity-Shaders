@@ -224,6 +224,8 @@ Material:
     - _ShiftY: 0
     - _Sizzle: 0
     - _SobelClearInner: 1
+    - _SobelFilterOpacity: 1
+    - _SobelFilterToggle: 0
     - _SrcBlend: 1
     - _TPFade: 0.5
     - _TPMaxRange: 15
@@ -255,6 +257,8 @@ Material:
     - _OutlineCol: {r: 0, g: 0, b: 0, a: 1}
     - _RGB: {r: 1, g: 1, b: 1, a: 0}
     - _SSTColor: {r: 1, g: 1, b: 1, a: 1}
+    - _SobelFilterBackgroundColor: {r: 0, g: 0, b: 0, a: 1}
+    - _SobelFilterColor: {r: 1, g: 1, b: 1, a: 1}
     - _TPColor: {r: 1, g: 1, b: 1, a: 1}
     - _TPNoiseScroll: {r: 0, g: 0, b: 0, a: 0}
     - _TPScroll: {r: 0, g: 0, b: 0, a: 0}

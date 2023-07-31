@@ -148,6 +148,7 @@ int				_UVRainMask;
 int				_RainToggle;
 
 int _Filtering;
+int _UnityFogToggle;
 
 float _ReflectionStrength, _SpecularStrength;
 float _ReflShadowStrength;
