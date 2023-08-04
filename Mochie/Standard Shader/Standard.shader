@@ -298,7 +298,7 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _OPAQUELIGHTS_OFF
 			#pragma shader_feature_local _AREALIT_ON
 			#pragma shader_feature_local _MIRROR_ON
-			#pragma multi_compile _ LOD_FADE_CROSSFADE
+			// #pragma multi_compile _ LOD_FADE_CROSSFADE
 			#pragma multi_compile_fog
             #pragma multi_compile_fwdbase
             #pragma multi_compile_instancing
@@ -334,7 +334,7 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _DETAIL_METALLIC_ON
 			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
 			#pragma shader_feature_local _ALPHAMASK_ON
-			#pragma multi_compile _ LOD_FADE_CROSSFADE
+			// #pragma multi_compile _ LOD_FADE_CROSSFADE
 			#pragma multi_compile_fog
             #pragma multi_compile_fwdadd_fullshadows
 			#pragma multi_compile_instancing
@@ -361,7 +361,7 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON
 			#pragma shader_feature_local _ _DETAIL_STOCHASTIC_ON _DETAIL_TSS_ON _DETAIL_TRIPLANAR_ON
 			#pragma shader_feature_local _ALPHAMASK_ON
-			#pragma multi_compile _ LOD_FADE_CROSSFADE
+			// #pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma multi_compile_shadowcaster
             #pragma multi_compile_instancing
 			#pragma skip_variants FOG_LINEAR FOG_EXP FOG_EXP2
