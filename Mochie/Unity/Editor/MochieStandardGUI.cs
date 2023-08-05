@@ -22,7 +22,8 @@ internal class MochieStandardGUI : ShaderGUI {
 		"AreaLit",
 		"LTCGI"
 		//VRSL Stuff
-		,"VRSL"
+		,"VRSL DMX"
+		,"VRSL GI"
 		//End VRSL Stuff
 	}, 1);
 
@@ -264,11 +265,58 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty _OSCGridRenderTexture = null;
 	MaterialProperty _OSCGridStrobeTimer = null;
 	//End VRSL Stuff
-
-
+	MaterialProperty uvshifttoggle = null;
+	MaterialProperty uvshiftx = null;
+	MaterialProperty uvshifty = null;
 
 	MaterialProperty ssrHeight = null;
 
+	MaterialProperty _VRSLGIStrength = null;
+    MaterialProperty _VRSLDiffuseMix = null;
+    MaterialProperty _VRSLSpecularMultiplier = null;
+    MaterialProperty _VRSLMetallicGlossMap = null;
+    MaterialProperty _UseVRSLMetallicGlossMap = null;
+    MaterialProperty _VRSLMetallicMapStrength = null;
+    MaterialProperty _VRSLGlossMapStrength = null;
+    MaterialProperty _VRSLSmoothnessChannel = null;
+    MaterialProperty _VRSLMetallicChannel = null;
+    MaterialProperty _VRSLSpecularShine = null;
+    MaterialProperty _VRSLShadowMask1 = null;
+    MaterialProperty _VRSLShadowMask2 = null;
+    MaterialProperty _VRSLShadowMask3 = null;
+    MaterialProperty _UseVRSLShadowMask1 = null;
+    MaterialProperty _UseVRSLShadowMask2 = null;
+    MaterialProperty _UseVRSLShadowMask3 = null;
+    MaterialProperty _VRSL_LightTexture = null;
+    MaterialProperty _VRSLGIQuadLightingSystem = null;
+    MaterialProperty _VRSLGIVertexFalloff = null;
+    MaterialProperty _VRSLGIVertexAttenuation = null;
+    MaterialProperty _VRSLInvertSmoothnessMap = null;
+    MaterialProperty _VRSLInvertMetallicMap = null;
+    MaterialProperty _UseGlobalVRSLLightTexture = null;
+
+    MaterialProperty _UseVRSLShadowMask1RStrength = null;
+    MaterialProperty _UseVRSLShadowMask1GStrength = null;
+    MaterialProperty _UseVRSLShadowMask1BStrength = null;
+    MaterialProperty _UseVRSLShadowMask1AStrength = null;
+
+    MaterialProperty _UseVRSLShadowMask2RStrength = null;
+    MaterialProperty _UseVRSLShadowMask2GStrength = null;
+    MaterialProperty _UseVRSLShadowMask2BStrength = null;
+    MaterialProperty _UseVRSLShadowMask2AStrength = null;
+
+    MaterialProperty _UseVRSLShadowMask3RStrength = null;
+    MaterialProperty _UseVRSLShadowMask3GStrength = null;
+    MaterialProperty _UseVRSLShadowMask3BStrength = null;
+    MaterialProperty _UseVRSLShadowMask3AStrength = null;
+    MaterialProperty _ShadowMaskActiveChannels = null;
+    MaterialProperty _VRSLSpecularFunction = null;
+
+    MaterialProperty _VRSLShadowMaskUVSet = null;
+    //MaterialProperty _VRSLGIDiffuseMode = null;
+	
+	        MaterialProperty _VRSLGlossiness = null;
+        MaterialProperty _VRSLSpecularStrength = null;
 
 	MaterialEditor me;
 
@@ -276,6 +324,9 @@ internal class MochieStandardGUI : ShaderGUI {
 	bool emissionEnabled = false;
 
 	public void FindProperties(MaterialProperty[] props, Material mat){
+		uvshifttoggle = FindProperty("UVShiftToggle", props);
+		uvshiftx = FindProperty("_UV0ShiftX", props);
+		uvshifty = FindProperty("_UV0ShiftY", props);
 		blendMode = FindProperty("_BlendMode", props);
 		workflow = FindProperty("_Workflow", props);
 		albedoMap = FindProperty("_MainTex", props);
@@ -305,6 +356,62 @@ internal class MochieStandardGUI : ShaderGUI {
 		detailNormalMapScale = FindProperty("_DetailNormalMapScale", props);
 		detailNormalMap = FindProperty("_DetailNormalMap", props);
 		uvSetSecondary = FindProperty("_UVSec", props);
+
+		_VRSLGlossiness = FindProperty("_VRSLGlossiness", props);
+		_VRSLSpecularStrength = FindProperty("_VRSLSpecularStrength", props);
+		_VRSLGIStrength = FindProperty("_VRSLGIStrength", props);
+		_VRSLDiffuseMix = FindProperty("_VRSLDiffuseMix", props); 
+		_VRSLSpecularMultiplier = FindProperty("_VRSLSpecularMultiplier", props);  
+		_VRSLSpecularShine = FindProperty("_VRSLSpecularShine", props);
+		_VRSLSpecularFunction = FindProperty("_VRSLSpecularFunction", props); 
+		//_VRSLGIDiffuseMode = FindProperty("_VRSLGIDiffuseMode", props);
+		_VRSL_LightTexture = FindProperty("_VRSL_LightTexture", props);
+		_UseGlobalVRSLLightTexture = FindProperty("_UseGlobalVRSLLightTexture", props);
+
+
+		_VRSLShadowMaskUVSet = FindProperty("_VRSLShadowMaskUVSet", props);
+		_UseVRSLShadowMask1RStrength = FindProperty("_UseVRSLShadowMask1RStrength", props);
+		_UseVRSLShadowMask1GStrength = FindProperty("_UseVRSLShadowMask1GStrength", props);
+		_UseVRSLShadowMask1BStrength = FindProperty("_UseVRSLShadowMask1BStrength", props);
+		_UseVRSLShadowMask1AStrength = FindProperty("_UseVRSLShadowMask1AStrength", props);
+
+		_UseVRSLShadowMask2RStrength = FindProperty("_UseVRSLShadowMask2RStrength", props);
+		_UseVRSLShadowMask2GStrength = FindProperty("_UseVRSLShadowMask2GStrength", props);
+		_UseVRSLShadowMask2BStrength = FindProperty("_UseVRSLShadowMask2BStrength", props);
+		_UseVRSLShadowMask2AStrength = FindProperty("_UseVRSLShadowMask2AStrength", props);
+
+		_UseVRSLShadowMask3RStrength = FindProperty("_UseVRSLShadowMask3RStrength", props);
+		_UseVRSLShadowMask3GStrength = FindProperty("_UseVRSLShadowMask3GStrength", props);
+		_UseVRSLShadowMask3BStrength = FindProperty("_UseVRSLShadowMask3BStrength", props);
+		_UseVRSLShadowMask3AStrength = FindProperty("_UseVRSLShadowMask3AStrength", props);
+
+		_ShadowMaskActiveChannels = FindProperty("_ShadowMaskActiveChannels", props);
+
+		_VRSLInvertSmoothnessMap = FindProperty("_VRSLInvertSmoothnessMap", props);
+		_VRSLInvertMetallicMap = FindProperty("_VRSLInvertMetallicMap", props);
+
+		_UseVRSLShadowMask1 = FindProperty("_UseVRSLShadowMask1", props);
+		_UseVRSLShadowMask2 = FindProperty("_UseVRSLShadowMask2", props);
+		_UseVRSLShadowMask3 = FindProperty("_UseVRSLShadowMask3", props);
+		_VRSLShadowMask3 = FindProperty("_VRSLShadowMask3", props);
+		_VRSLShadowMask2 = FindProperty("_VRSLShadowMask2", props);
+		_VRSLShadowMask1 = FindProperty("_VRSLShadowMask1", props);
+		_VRSLMetallicChannel = FindProperty("_VRSLMetallicChannel", props); 
+		_VRSLSmoothnessChannel = FindProperty("_VRSLSmoothnessChannel", props); 
+		_VRSLGlossMapStrength = FindProperty("_VRSLGlossMapStrength", props);
+		_VRSLMetallicMapStrength = FindProperty("_VRSLMetallicMapStrength", props); 
+		_VRSLMetallicGlossMap = FindProperty("_VRSLMetallicGlossMap", props);
+		_UseVRSLMetallicGlossMap = FindProperty("_UseVRSLMetallicGlossMap", props);
+		vrslToggle = FindProperty("_VRSLToggle", props);
+
+
+
+
+
+
+
+
+
 		packedMap = FindProperty("_PackedMap", props);
 		useHeight = FindProperty("_UseHeight", props);
 		saturation = FindProperty("_Saturation", props);
@@ -615,7 +722,7 @@ internal class MochieStandardGUI : ShaderGUI {
 			//VRSL Stuff
 			// VRSL
 			if (Shader.Find("VRSL/Standard Mover/Fixture") != null){
-				bool vrslFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "VRSL");
+				bool vrslFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "VRSL DMX");
 				if (vrslFoldout){
 					DoVRSLArea(material);
 				}
@@ -625,6 +732,29 @@ internal class MochieStandardGUI : ShaderGUI {
 				material.SetInt("_VRSLToggle", 0);
 				material.DisableKeyword("_VRSL_ON");
 			}
+
+			if(Shader.Find("VRSL/GI-Addon/Standard Shader") != null)
+			{
+				bool vrslGIFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "VRSL GI");
+				if(vrslGIFoldout)
+				{
+					DoVRSLGIArea(material);
+				}
+			}
+			else 
+			{
+				material.SetFloat("useVRSLGI", 0f);
+				material.DisableKeyword("_VRSL_GI");
+			}
+
+
+
+
+//material.SetFloat("useVRSLGI",EditorGUILayout.Toggle("Use VRSL GI",FloatToBool(material.GetFloat("useVRSLGI"))) ? 1.0f : 0.0f);
+
+
+
+
 			//End VRSL Stuff
 
 			// Watermark and version display
@@ -929,6 +1059,12 @@ internal class MochieStandardGUI : ShaderGUI {
 		});
 	}
 
+	bool FloatToBool(float input)
+	{
+		return input == 1.0f;
+	}
+
+
 	void DoRainArea(){
 		MGUI.PropertyGroup(()=>{
 			me.ShaderProperty(rainToggle, "Enable");
@@ -968,6 +1104,13 @@ internal class MochieStandardGUI : ShaderGUI {
 				if (EditorGUI.EndChangeCheck())
 					emissionMap.textureScaleAndOffset = albedoMap.textureScaleAndOffset; 
 				me.ShaderProperty(uv0Rot, "Rotation");
+				me.ShaderProperty(uvshifttoggle, "UV Shift");
+				if(uvshifttoggle.floatValue == 1.0f)
+				{
+					me.ShaderProperty(uvshiftx, "X Shift");
+					me.ShaderProperty(uvshifty, "Y Shift");
+				}
+
 				MGUI.SpaceN2();
 			});
 			MGUI.Space4();
@@ -1211,6 +1354,338 @@ internal class MochieStandardGUI : ShaderGUI {
 			MGUI.ToggleGroupEnd();
 		});
 	}
+
+
+
+
+
+        void SetVRSLMetalMapKeyword(int input, Material material)
+        {
+            switch(input)
+            {
+                case 0:
+                    material.EnableKeyword("_VRSL_METAL_R");
+                    material.DisableKeyword("_VRSL_METAL_G");
+                    material.DisableKeyword("_VRSL_METAL_B");
+                    material.DisableKeyword("_VRSL_METAL_A");
+                    break;
+                case 1:
+                    material.DisableKeyword("_VRSL_METAL_R");
+                    material.EnableKeyword("_VRSL_METAL_G");
+                    material.DisableKeyword("_VRSL_METAL_B");
+                    material.DisableKeyword("_VRSL_METAL_A");
+                    break;
+                case 2:
+                    material.DisableKeyword("_VRSL_METAL_R");
+                    material.DisableKeyword("_VRSL_METAL_G");
+                    material.EnableKeyword("_VRSL_METAL_B");
+                    material.DisableKeyword("_VRSL_METAL_A");
+                    break;
+                case 3:
+                    material.DisableKeyword("_VRSL_METAL_R");
+                    material.DisableKeyword("_VRSL_METAL_G");
+                    material.DisableKeyword("_VRSL_METAL_B");
+                    material.EnableKeyword("_VRSL_METAL_A");
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        void SetVRSLSpecularFunctionKeyword(int input, Material material)
+        {
+            switch(input)
+            {
+                case 0:
+                    material.EnableKeyword("_VRSL_SPECFUNC_GGX");
+                    material.DisableKeyword("_VRSL_SPECFUNC_BECKMAN");
+                    material.DisableKeyword("_VRSL_SPECFUNC_PHONG");
+                    break;
+                case 1:
+                    material.DisableKeyword("_VRSL_SPECFUNC_GGX");
+                    material.EnableKeyword("_VRSL_SPECFUNC_BECKMAN");
+                    material.DisableKeyword("_VRSL_SPECFUNC_PHONG");
+                    break;
+                case 2:
+                    material.DisableKeyword("_VRSL_SPECFUNC_GGX");
+                    material.DisableKeyword("_VRSL_SPECFUNC_BECKMAN");
+                    material.EnableKeyword("_VRSL_SPECFUNC_PHONG");
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        void SetVRSLShadowMaskActiveChannelsKeyword(int input, Material material)
+        {
+            switch(input)
+            {
+                case 0:
+                    material.DisableKeyword("_VRSL_SHADOWMASK_RG");
+                    material.DisableKeyword("_VRSL_SHADOWMASK_RGB");
+                    material.DisableKeyword("_VRSL_SHADOWMASK_RGBA");;
+                    break;
+                case 1:
+                    material.EnableKeyword("_VRSL_SHADOWMASK_RG");
+                    material.DisableKeyword("_VRSL_SHADOWMASK_RGB");
+                    material.DisableKeyword("_VRSL_SHADOWMASK_RGBA");
+                    break;
+                case 2:
+                    material.DisableKeyword("_VRSL_SHADOWMASK_RG");
+                    material.EnableKeyword("_VRSL_SHADOWMASK_RGB");
+                    material.DisableKeyword("_VRSL_SHADOWMASK_RGBA");
+                    break;
+                case 3:
+                    material.DisableKeyword("_VRSL_SHADOWMASK_UV0");
+                    material.DisableKeyword("_VRSL_SHADOWMASK_RGB");
+                    material.EnableKeyword("_VRSL_SHADOWMASK_RGBA");
+                    break;               
+                default:
+                    break;
+            }
+        }
+
+        void SetVRSLShadowMaskUVKeyword(int input, Material material)
+        {
+            switch(input)
+            {
+                case 0:
+                    material.EnableKeyword("_VRSL_SHADOWMASK_UV0");
+                    material.DisableKeyword("_VRSL_SHADOWMASK_UV1");
+                    material.DisableKeyword("_VRSL_SHADOWMASK_UV2");
+                    material.DisableKeyword("_VRSL_SHADOWMASK_UV3");
+                    material.DisableKeyword("_VRSL_SHADOWMASK_UV4");
+                    break;
+                case 1:
+                    material.DisableKeyword("_VRSL_SHADOWMASK_UV0");
+                    material.EnableKeyword("_VRSL_SHADOWMASK_UV1");
+                    material.DisableKeyword("_VRSL_SHADOWMASK_UV2");
+                    material.DisableKeyword("_VRSL_SHADOWMASK_UV3");
+                    material.DisableKeyword("_VRSL_SHADOWMASK_UV4");
+                    break;
+                case 2:
+                    material.DisableKeyword("_VRSL_SHADOWMASK_UV0");
+                    material.DisableKeyword("_VRSL_SHADOWMASK_UV1");
+                    material.EnableKeyword("_VRSL_SHADOWMASK_UV2");
+                    material.DisableKeyword("_VRSL_SHADOWMASK_UV3");
+                    material.DisableKeyword("_VRSL_SHADOWMASK_UV4");
+                    break;
+                case 3:
+                    material.DisableKeyword("_VRSL_SHADOWMASK_UV0");
+                    material.DisableKeyword("_VRSL_SHADOWMASK_UV1");
+                    material.DisableKeyword("_VRSL_SHADOWMASK_UV2");
+                    material.EnableKeyword("_VRSL_SHADOWMASK_UV3");
+                    material.DisableKeyword("_VRSL_SHADOWMASK_UV4");
+                    break;               
+                case 4:
+                    material.DisableKeyword("_VRSL_SHADOWMASK_UV0");
+                    material.DisableKeyword("_VRSL_SHADOWMASK_UV1");
+                    material.DisableKeyword("_VRSL_SHADOWMASK_UV2");
+                    material.DisableKeyword("_VRSL_SHADOWMASK_UV3");
+                    material.EnableKeyword("_VRSL_SHADOWMASK_UV4");
+                    break;
+                default:
+                    break;
+            }
+        }
+        void SetVRSLSpecMapKeyword(int input, Material material)
+        {
+            switch(input)
+            {
+                case 0:
+                    material.EnableKeyword("_VRSL_SPEC_R");
+                    material.DisableKeyword("_VRSL_SPEC_G");
+                    material.DisableKeyword("_VRSL_SPEC_B");
+                    material.DisableKeyword("_VRSL_SPEC_A");
+                    break;
+                case 1:
+                    material.DisableKeyword("_VRSL_SPEC_R");
+                    material.EnableKeyword("_VRSL_SPEC_G");
+                    material.DisableKeyword("_VRSL_SPEC_B");
+                    material.DisableKeyword("_VRSL_SPEC_A");
+                    break;
+                case 2:
+                    material.DisableKeyword("_VRSL_SPEC_R");
+                    material.DisableKeyword("_VRSL_SPEC_G");
+                    material.EnableKeyword("_VRSL_SPEC_B");
+                    material.DisableKeyword("_VRSL_SPEC_A");
+                    break;
+                case 3:
+                    material.DisableKeyword("_VRSL_SPEC_R");
+                    material.DisableKeyword("_VRSL_SPEC_G");
+                    material.DisableKeyword("_VRSL_SPEC_B");
+                    material.EnableKeyword("_VRSL_SPEC_A");
+                    break;
+                default:
+                    break;
+            }
+        }
+
+	void DoVRSLGIArea(Material material)
+	{
+		MGUI.PropertyGroup(()=>{
+		//m_MaterialEditor.ShaderProperty(vrslToggle, "Enable");
+		material.SetFloat("useVRSLGI",EditorGUILayout.Toggle("Enable",FloatToBool(material.GetFloat("useVRSLGI"))) ? 1.0f : 0.0f);
+		MGUI.ToggleGroup(material.GetFloat("useVRSLGI") == 0);
+		MGUI.PropertyGroupLayer(()=>{
+			if(material.shader.name.Contains("Project") == true){
+				me.ShaderProperty(_VRSLGIQuadLightingSystem, "Priority System");
+				if(material.GetInt("_VRSLGIQuadLightingSystem") == 1)
+				{
+					EditorGUI.indentLevel++;
+					me.ShaderProperty(_VRSLGIVertexFalloff, "Falloff Algorithm");
+					me.ShaderProperty(_VRSLGIVertexAttenuation, "Falloff Amount");
+					EditorGUI.indentLevel--;
+				}
+			}
+			MGUI.PropertyGroup(()=>{
+
+			material.SetFloat("useVRSLGISpecular",EditorGUILayout.Toggle("Specular",FloatToBool(material.GetFloat("useVRSLGISpecular"))) ? 1.0f : 0.0f);
+			MGUI.ToggleGroup(material.GetFloat("useVRSLGISpecular") == 0);
+			MGUI.PropertyGroupLayer(()=>{
+			//me.ShaderProperty(_VRSLGlossiness, "VRSL Specular Smoothness");
+			me.ShaderProperty(_VRSLSpecularFunction, "Specular Function");
+			SetVRSLSpecularFunctionKeyword(Mathf.RoundToInt(_VRSLSpecularFunction.floatValue),material);
+			string s = "Smoothness";
+			// if(material.shader.name.Contains("Project") == false)
+			// {
+			// 	string smoothnessDescriptor = _VRSLInvertSmoothnessMap.floatValue == 1.0f ? "Roughness" : "Smoothness";
+			// 	me.ShaderProperty(_UseVRSLMetallicGlossMap, "Use Seperate Metallic "+ smoothnessDescriptor +" Map");
+			// 	if(Mathf.RoundToInt(_UseVRSLMetallicGlossMap.floatValue) == 1)
+			// 	{
+			// 		EditorGUI.indentLevel++;
+			// 		me.TexturePropertySingleLine(new GUIContent("Metallic " + smoothnessDescriptor +" Map"), _VRSLMetallicGlossMap);
+			// 		EditorGUI.indentLevel--;
+			// 	}
+			// 	MGUI.Space8();
+			// 	me.ShaderProperty(_VRSLSmoothnessChannel, smoothnessDescriptor + " Channel");
+			// 	SetVRSLSpecMapKeyword(Mathf.RoundToInt(_VRSLSmoothnessChannel.floatValue), material);
+			// 	EditorGUI.indentLevel++;
+			// 	me.ShaderProperty(_VRSLInvertSmoothnessMap, "Invert Smoothness (To Roughness)");
+				
+
+			// 	s = smoothnessDescriptor;
+			// 	// bool invertSmoothness = EditorGUILayout.Toggle("Invert Smoothness",_VRSLInvertSmoothnessMap.floatValue == -1.0f);
+			// 	//  material.SetFloat("_VRSLInvertSmoothnessMap", invertSmoothness ? -1.0f : 1.0f);
+			// 	me.ShaderProperty(_VRSLGlossMapStrength, smoothnessDescriptor + " Map Mix");
+			// 	EditorGUI.indentLevel--;
+			// 	me.ShaderProperty(_VRSLMetallicChannel, "Metallic Channel");
+			// 	SetVRSLMetalMapKeyword(Mathf.RoundToInt(_VRSLMetallicChannel.floatValue), material);
+			// 	EditorGUI.indentLevel++;
+			// 	me.ShaderProperty(_VRSLInvertMetallicMap, "Invert Metallics");
+			// 	// bool invertMetallics= EditorGUILayout.Toggle("Invert Metallics",_VRSLInvertMetallicMap.floatValue == -1.0f);
+			// 	//  material.SetFloat("_VRSLInvertMetallicMap", invertMetallics ? -1.0f : 1.0f);
+			// 	me.ShaderProperty(_VRSLMetallicMapStrength, "Metallic Map Mix");
+			// 	EditorGUI.indentLevel--;
+
+
+			// 	MGUI.Space8();
+			// }
+			// float g = EditorGUILayout.Slider("VRSL Specular Base " + s,Mathf.InverseLerp(1.0f, 0.1f, _VRSLGlossiness.floatValue),0.0f, 1.0f);
+			// _VRSLGlossiness.floatValue = Mathf.Lerp(1.0f, 0.1f, g);
+			// EditorGUILayout.Space(4);
+			// me.ShaderProperty(_VRSLSpecularStrength, "VRSL Metallic/Specular Mixture");
+			me.ShaderProperty(_VRSLSpecularMultiplier,"VRSL Specular Multiplier");
+			me.ShaderProperty(_VRSLSpecularShine, "Specular Shine Power");
+			});});MGUI.ToggleGroupEnd();
+			if(material.shader.name.Contains("Project") == false)
+			{
+			MGUI.Space8();
+			MGUI.PropertyGroup(()=>{
+				me.ShaderProperty(_VRSLShadowMaskUVSet, "UV Set");
+				SetVRSLShadowMaskUVKeyword(Mathf.RoundToInt(_VRSLShadowMaskUVSet.floatValue),material);
+				me.ShaderProperty(_ShadowMaskActiveChannels, "Active Channels");
+				int activeChannelsSetting = Mathf.RoundToInt(_ShadowMaskActiveChannels.floatValue);
+				SetVRSLShadowMaskActiveChannelsKeyword(activeChannelsSetting,material);
+				me.ShaderProperty(_UseVRSLShadowMask1, "Use Shadow Mask 1");
+				MGUI.ToggleGroup(material.GetFloat("_UseVRSLShadowMask1") == 0);
+				EditorGUI.indentLevel++;
+				me.TexturePropertySingleLine(new GUIContent("Shadow Mask 1"), _VRSLShadowMask1);
+				me.ShaderProperty(_UseVRSLShadowMask1RStrength, "R Strength");
+				if(activeChannelsSetting > 0)
+				{
+					me.ShaderProperty(_UseVRSLShadowMask1GStrength, "G Strength");
+					if(activeChannelsSetting > 1)
+					{
+						me.ShaderProperty(_UseVRSLShadowMask1BStrength, "B Strength");
+						if(activeChannelsSetting > 2)
+						{
+							me.ShaderProperty(_UseVRSLShadowMask1AStrength, "A Strength");
+						}
+					}
+				}
+				EditorGUI.indentLevel--;
+				MGUI.ToggleGroupEnd();
+				
+				me.ShaderProperty(_UseVRSLShadowMask2, "Use Shadow Mask 2");
+				MGUI.ToggleGroup(material.GetFloat("_UseVRSLShadowMask2") == 0);
+				EditorGUI.indentLevel++;
+				me.TexturePropertySingleLine(new GUIContent("Shadow Mask 2"), _VRSLShadowMask2);
+				me.ShaderProperty(_UseVRSLShadowMask2RStrength, "R Strength");
+				if(activeChannelsSetting > 0)
+				{
+					me.ShaderProperty(_UseVRSLShadowMask2GStrength, "G Strength");
+					if(activeChannelsSetting > 1)
+					{
+						me.ShaderProperty(_UseVRSLShadowMask2BStrength, "B Strength");
+						if(activeChannelsSetting > 2)
+						{
+							me.ShaderProperty(_UseVRSLShadowMask2AStrength, "A Strength");
+						}
+					}
+				}
+				EditorGUI.indentLevel--;
+				MGUI.ToggleGroupEnd();
+
+				me.ShaderProperty(_UseVRSLShadowMask3, "Use Shadow Mask 3");
+				MGUI.ToggleGroup(material.GetFloat("_UseVRSLShadowMask3") == 0);
+				EditorGUI.indentLevel++;
+				me.TexturePropertySingleLine(new GUIContent("Shadow Mask 3"), _VRSLShadowMask3);
+				me.ShaderProperty(_UseVRSLShadowMask3RStrength, "R Strength");
+				if(activeChannelsSetting > 0)
+				{
+					me.ShaderProperty(_UseVRSLShadowMask3GStrength, "G Strength");
+					if(activeChannelsSetting > 1)
+					{
+						me.ShaderProperty(_UseVRSLShadowMask3BStrength, "B Strength");
+						if(activeChannelsSetting > 2)
+						{
+							me.ShaderProperty(_UseVRSLShadowMask3AStrength, "A Strength");
+						}
+					}
+				}
+				EditorGUI.indentLevel--;
+				MGUI.ToggleGroupEnd();
+				
+			});
+			}MGUI.Space8();
+
+			// me.ShaderProperty(_UseGlobalVRSLLightTexture, "Use Global Light Texture");
+			// EditorGUI.indentLevel++;
+			// if(_UseGlobalVRSLLightTexture.floatValue == 1.0f)
+			// {
+			// 	EditorGUILayout.LabelField("Using Global Texture: _Udon_VRSL_GI_LightTexture");
+			// }
+			// else
+			// {
+				me.TexturePropertySingleLine(new GUIContent("VRSL Light Texture"), _VRSL_LightTexture);
+			// }
+			// EditorGUI.indentLevel--;
+
+			//me.ShaderProperty(_VRSLGIDiffuseMode, "Diffuse Mode");
+			me.ShaderProperty(_VRSLGIStrength,"Strength");
+			me.ShaderProperty(_VRSLDiffuseMix,"Diffuse Texture Mix");
+		// if(material.shader.name.Contains("Project"))
+		// {
+		//     me.ShaderProperty(_ProjectorColor, "VRSL Projector Color");
+		//     me.ShaderProperty(_VRSLProjectorStrength, "VRSL Projector Strength");
+		// }
+		
+		});});MGUI.ToggleGroupEnd();
+		EditorGUILayout.Space(5);
+	}
+
+
 	//VRSL Stuff
 	void DoVRSLArea(Material material)
 	{
@@ -1254,9 +1729,9 @@ internal class MochieStandardGUI : ShaderGUI {
 					me.TexturePropertySingleLine(Tips.dmxEmissionMapTip, dmxEmissionMap);
 					me.ShaderProperty(dmxEmissionColor, "Emission Color");
 					CheckTrilinear(dmxEmissionMap.textureValue);
-					int mapmix = (int)(dmxEmissionMapMix.floatValue);
-					mapmix = EditorGUILayout.IntPopup("Emission Map Blending",mapmix,new string[]{"Multiply", "Add", "Mix"}, new int[]{0,1,2});
-					material.SetInt("_DMXEmissionMapMix", mapmix);
+					// int mapmix = (int)(dmxEmissionMapMix.floatValue);
+					// mapmix = EditorGUILayout.IntPopup("Emission Map Blending",mapmix,new string[]{"Multiply", "Add", "Mix"}, new int[]{0,1,2});
+					// material.SetInt("_DMXEmissionMapMix", mapmix);
 					me.ShaderProperty(universalIntensity, "Universal Intensity");
 					me.ShaderProperty(finalIntensity, "Final Intensity");
 					me.ShaderProperty(globalIntensity, "Global Intensity");
@@ -1413,9 +1888,16 @@ internal class MochieStandardGUI : ShaderGUI {
 		MGUI.SetKeyword(material, "_VRSLPAN_ON", material.GetInt("_EnablePanMovement") == 1);
 		MGUI.SetKeyword(material, "_VRSLTILT_ON", material.GetInt("_EnableTiltMovement") == 1);
 		MGUI.SetKeyword(material, "_STROBE_ON", material.GetInt("_EnableStrobe") == 1);
-		MGUI.SetKeyword(material, "_VRSL_MIX_MULT", material.GetInt("_DMXEmissionMapMix") == 0);
-		MGUI.SetKeyword(material, "_VRSL_MIX_ADD", material.GetInt("_DMXEmissionMapMix") == 1);
-		MGUI.SetKeyword(material, "_VRSL_MIX_MIX", material.GetInt("_DMXEmissionMapMix") == 2);
+		// MGUI.SetKeyword(material, "_VRSL_MIX_MULT", material.GetInt("_DMXEmissionMapMix") == 0);
+		// MGUI.SetKeyword(material, "_VRSL_MIX_ADD", material.GetInt("_DMXEmissionMapMix") == 1);
+		// MGUI.SetKeyword(material, "_VRSL_MIX_MIX", material.GetInt("_DMXEmissionMapMix") == 2);
+
+		MGUI.SetKeyword(material,"_VRSL_GI", material.GetFloat("useVRSLGI") == 1.0f);
+        MGUI.SetKeyword(material,"_VRSL_GI_SPECULARHIGHLIGHTS", material.GetFloat("useVRSLGISpecular") == 1.0f);
+
+		MGUI.SetKeyword(material, "_VRSL_SHADOWMASK1", material.GetInt("_UseVRSLShadowMask1") == 1);
+		MGUI.SetKeyword(material, "_VRSL_SHADOWMASK2", material.GetInt("_UseVRSLShadowMask2") == 1);
+		MGUI.SetKeyword(material, "_VRSL_SHADOWMASK3", material.GetInt("_UseVRSLShadowMask3") == 1);
 		//End VRSL Stuff
 
 		if (samplingMode < 3){

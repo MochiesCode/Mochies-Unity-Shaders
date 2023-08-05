@@ -153,6 +153,74 @@ float2			_UV5Scroll;
 int				_UVRainMask;
 int				_RainToggle;
 
+
+#ifdef _VRSL_GI
+	#ifdef      _VRSL_GLOBALLIGHTTEXTURE
+		Texture2D   _Udon_VRSL_GI_LightTexture;
+	#else
+		Texture2D   _VRSL_LightTexture;
+	#endif
+
+		uniform float4  _VRSL_LightTexture_TexelSize;
+		SamplerState    VRSL_BilinearClampSampler, VRSLGI_PointClampSampler;
+		int     _Udon_VRSL_GI_LightCount;
+		sampler2D   _VRSLMetallicGlossMap;
+		half        _VRSLMetallicMapStrength;
+		half        _VRSLGlossMapStrength;
+		half        _VRSLSmoothnessChannel;
+		half        _VRSLMetallicChannel;
+		half        _VRSLInvertMetallicMap;
+		half        _VRSLInvertSmoothnessMap;
+
+		Texture2D   _VRSLShadowMask1;
+		Texture2D   _VRSLShadowMask2;
+		Texture2D   _VRSLShadowMask3;
+
+		int         _UseVRSLShadowMask1;
+		int         _UseVRSLShadowMask2;
+		int         _UseVRSLShadowMask3;
+
+
+		int         _VRSLGIVertexFalloff;
+		float       _VRSLGIVertexAttenuation;
+
+
+	half        _VRSLSpecularShine;
+	half        _VRSLGlossiness;
+	half        _VRSLSpecularStrength;
+	half        _VRSLGIStrength;
+	half        _VRSLDiffuseMix;
+	half        _VRSLSpecularMultiplier;
+
+	half        _UseVRSLShadowMask1RStrength;
+	half        _UseVRSLShadowMask1GStrength;
+	half        _UseVRSLShadowMask1BStrength;
+	half        _UseVRSLShadowMask1AStrength;
+
+	half        _UseVRSLShadowMask2RStrength;
+	half        _UseVRSLShadowMask2GStrength;
+	half        _UseVRSLShadowMask2BStrength;
+	half        _UseVRSLShadowMask2AStrength;
+
+	half        _UseVRSLShadowMask3RStrength;
+	half        _UseVRSLShadowMask3GStrength;
+	half        _UseVRSLShadowMask3BStrength;
+	half        _UseVRSLShadowMask3AStrength;
+
+	half        _VRSLShadowMaskUVSet;
+
+	//float4      _ProjectorColor;
+	half        _VRSLProjectorStrength;
+
+ #endif
+
+int				UVShiftToggle;
+half			_UV0ShiftX;
+half			_UV0ShiftY;
+
+
+
+
 int _Filtering;
 
 float _ReflectionStrength, _SpecularStrength;
@@ -314,11 +382,33 @@ float2 SelectUVSet(VertexInput v, int selection){
 	return uvs[selection];
 }
 
+
+#ifdef _VRSL_GI
+    float2 VRSLShadowMaskCoords(VertexInput v)
+    {
+        
+        float2 texcoord;
+        #if _VRSL_SHADOWMASK_UV0
+            texcoord = TRANSFORM_TEX(v.uv0, _MainTex); // Always source from uv0
+        #elif _VRSL_SHADOWMASK_UV1
+            texcoord = TRANSFORM_TEX(v.uv1, _MainTex); // Always source from uv0
+        #elif _VRSL_SHADOWMASK_UV2
+            texcoord = TRANSFORM_TEX(v.uv2, _MainTex); // Always source from uv0
+        #elif _VRSL_SHADOWMASK_UV3
+            texcoord = TRANSFORM_TEX(v.uv3, _MainTex); // Always source from uv0
+        #elif _VRSL_SHADOWMASK_UV4
+            texcoord = TRANSFORM_TEX(v.uv4, _MainTex); // Always source from uv0
+        #endif
+        return texcoord;
+    }
+#endif
+
 void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1, inout float4 texcoord2, inout float4 texcoord3, inout float4 texcoord4)
 {
 	texcoord.xy = Rotate2D(SelectUVSet(v, _UVPri), _UV0Rotate);
 	texcoord.xy = TRANSFORM_TEX(texcoord.xy, _MainTex);
 	texcoord.xy += _Time.y * _UV0Scroll;
+	texcoord.xy+= float2(_UV0ShiftX * UVShiftToggle, _UV0ShiftY * UVShiftToggle);
 
 	texcoord.zw = Rotate2D((SelectUVSet(v, _UVSec)), _UV1Rotate);
 	texcoord.zw = TRANSFORM_TEX(texcoord.zw, _DetailAlbedoMap);

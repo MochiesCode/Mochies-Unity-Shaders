@@ -159,6 +159,10 @@ Shader "Mochie/Standard" {
 		_UVRimMaskScroll("Scrolling", Vector) = (0,0,0,0)
 		_UVRimMaskRotate("Rotation", Float) = 0
 
+		[ToggleUI]UVShiftToggle("Enable", Int) = 0
+		_UV0ShiftX("UV0 Shift X", Float) = 0
+		_UV0ShiftY("UV0 Shift Y", Float) = 0
+
 		_MetaCull("", Int) = 0
 		[Enum(UnityEngine.Rendering.CullMode)]_Cull("", Int) = 2
 		[ToggleOff]_SpecularHighlights("Specular Highlights", Float) = 1.0
@@ -267,6 +271,50 @@ Shader "Mochie/Standard" {
 
 
 
+		        [ToggleOff] useVRSLGI("Use VRSL GI", Float) = 0.0
+        [ToggleOff] _UseGlobalVRSLLightTexture("Use Global VRSL Light Texture", Float) = 0.0
+        [ToggleOff] useVRSLGISpecular("Use VRSL GI Specular", Float) = 1.0
+        _VRSLDiffuseMix ("VRSL Diffuse Mix", Range(0, 1)) = 1.0
+        _VRSLMetallicGlossMap("VRSL Metallic Gloss Map", 2D) = "white" {}
+        [ToggleUI] _UseVRSLMetallicGlossMap ("Use VRSL Metallic Gloss Map", Int) = 0
+        _VRSLMetallicMapStrength("VRSL Metallic Map Mix",  Range(0.0, 1.0)) = 1.0
+        _VRSLGlossMapStrength("VRSL Gloss Map Mix",  Range(0.0, 1.0)) = 1.0
+        _VRSLSpecularShine("VRSL Specular Shine",  Range(0.0, 1.0)) = 1.0
+        _VRSLGlossiness("VRSL Smoothness", Range(0, 1)) = 1
+        _VRSLSpecularStrength("VRSL Specular Strength", Range(0.0, 1.0)) = 0.5
+        _VRSLGIStrength("GI Strength", Range(0.1, 500)) = 1.0
+        _VRSLSpecularMultiplier("Specular Multiplier", Range(1, 10)) = 1.0
+
+		[ToggleUI] _UseVRSLShadowMask1 ("Use VRSL Shadow Mask 1", Int) = 0
+        [NoScaleOffset] _VRSLShadowMask1("VRSL GI ShadowMask 1", 2D) = "white" {}
+        _UseVRSLShadowMask1RStrength("VRSL SM 1 R Strength", Range(0.0, 1.0)) = 1.0
+        _UseVRSLShadowMask1GStrength("VRSL SM 1 G Strength", Range(0.0, 1.0)) = 1.0
+        _UseVRSLShadowMask1BStrength("VRSL SM 1 B Strength", Range(0.0, 1.0)) = 1.0
+        _UseVRSLShadowMask1AStrength("VRSL SM 1 A Strength", Range(0.0, 1.0)) = 1.0
+        [ToggleUI] _UseVRSLShadowMask2 ("Use VRSL Shadow Mask 2", Int) = 0
+        [NoScaleOffset] _VRSLShadowMask2("VRSL GI ShadowMask 2", 2D) = "white" {}
+        _UseVRSLShadowMask2RStrength("VRSL SM 2 R Strength", Range(0.0, 1.0)) = 1.0
+        _UseVRSLShadowMask2GStrength("VRSL SM 2 G Strength", Range(0.0, 1.0)) = 1.0
+        _UseVRSLShadowMask2BStrength("VRSL SM 2 B Strength", Range(0.0, 1.0)) = 1.0
+        _UseVRSLShadowMask2AStrength("VRSL SM 2 A Strength", Range(0.0, 1.0)) = 1.0
+        [ToggleUI] _UseVRSLShadowMask3 ("Use VRSL Shadow Mask 3", Int) = 0
+        [NoScaleOffset] _VRSLShadowMask3("VRSL GI ShadowMask 3", 2D) = "white" {}
+        _UseVRSLShadowMask3RStrength("VRSL SM 3 R Strength", Range(0.0, 1.0)) = 1.0
+        _UseVRSLShadowMask3GStrength("VRSL SM 3 G Strength", Range(0.0, 1.0)) = 1.0
+        _UseVRSLShadowMask3BStrength("VRSL SM 3 B Strength", Range(0.0, 1.0)) = 1.0
+        _UseVRSLShadowMask3AStrength("VRSL SM 3 A Strength", Range(0.0, 1.0)) = 1.0
+        [ToggleUI] _VRSLInvertSmoothnessMap("VRSL GI Invert Smoothness Map", Float) = 0.0 
+        [ToggleUI] _VRSLInvertMetallicMap("VRSL GI Invert Metallic Map", Float) = 0.0
+		[Enum(R,0,RG,1,RGB,2,RGBA,3)] _ShadowMaskActiveChannels ("Shadow Mask Active Channels", Int) = 0
+
+        [Enum(GGX,0, Beckman,1, Blinn Phong,2)]_VRSLSpecularFunction("VRSL Specular Function", Int) = 0
+
+        [Enum(UV0,0,UV1,1, UV2,2, UV3,3, UV4,4)]_VRSLShadowMaskUVSet("UV Set for occlusion map", Float) = 1
+
+        [NoScaleOffset] _VRSL_LightTexture("VRSL Light Texture", 2D) = "white" {}
+        [NoScaleOffset] _VRSL_LightCounter("VRSL Light Counter Texture", 2D) = "white" {}
+		[Enum(R,0,G,1,B,2,A,3)] _VRSLMetallicChannel ("Metallic texture channel", Float) = 0
+		[Enum(R,0,G,1,B,2,A,3)] _VRSLSmoothnessChannel ("Smoothness texture channel", Float) = 3
 
 		
 		// [HideInInspector] BAKERY_META_ALPHA_ENABLE ("Enable Bakery alpha meta pass", Float) = 1.0
@@ -305,6 +353,19 @@ Shader "Mochie/Standard" {
 			#pragma vertex vertBase
             #pragma fragment fragBase
 			#define MOCHIE_STANDARD
+			#define VRLSGI_USE_BUILTIN_SPECULAR
+
+            #pragma shader_feature_local _VRSL_GI
+            #pragma shader_feature_local _VRSL_GI_SPECULARHIGHLIGHTS
+            #pragma shader_feature_local _VRSL_SPECFUNC_GGX _VRSL_SPECFUNC_BECKMAN _VRSL_SPECFUNC_PHONG
+            #pragma shader_feature_local _VRSL_SHADOWMASK_UV0 _VRSL_SHADOWMASK_UV1
+            #pragma shader_feature_local _VRSL_SHADOWMASK1
+			#pragma shader_feature_local _VRSL_SHADOWMASK2
+            #pragma shader_feature_local _VRSL_SHADOWMASK3
+			#pragma shader_feature_local _ _VRSL_SHADOWMASK_RG _VRSL_SHADOWMASK_RGB _VRSL_SHADOWMASK_RGBA
+
+
+
 			#pragma shader_feature_local _WORKFLOW_PACKED_ON
 			#pragma shader_feature_local _DETAIL_WORKFLOW_PACKED_ON
             #pragma shader_feature_local _NORMALMAP
@@ -343,16 +404,13 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _VRSLPAN_ON
 			#pragma shader_feature_local _VRSLTILT_ON
 			#pragma shader_feature_local _STROBE_ON
-			#pragma shader_feature_local _VRSL_MIX_MULT
-			#pragma shader_feature_local _VRSL_MIX_ADD
-			#pragma shader_feature_local _VRSL_MIX_MIX
 			#pragma shader_feature_local _VRSL_LEGACY_TEXTURES
 			//End VRSL Stuff
-			#pragma shader_feature_local _
 
 			#pragma multi_compile_fog
             #pragma multi_compile_fwdbase
             #pragma multi_compile_instancing
+			#define VRSL_ENABLED defined(_VRSL_ON)
             #include "MochieStandardCoreForward.cginc"
             ENDCG
         }
@@ -466,9 +524,6 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _VRSLPAN_ON
 			#pragma shader_feature_local _VRSLTILT_ON
 			#pragma shader_feature_local _STROBE_ON
-			#pragma shader_feature_local _VRSL_MIX_MULT
-			#pragma shader_feature_local _VRSL_MIX_ADD
-			#pragma shader_feature_local _VRSL_MIX_MIX
 			//End VRSL Stuff
             #include "MochieStandardMeta.cginc"
             ENDCG

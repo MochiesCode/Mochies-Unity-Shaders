@@ -15,6 +15,9 @@
 
 static float3 TangentNormal = float3(0,0,1);
 
+#ifdef _VRSL_GI
+    #include "Assets/VRSL Addons/VRSL-GI Shader Package/VRSLGI-Functions.cginc"
+#endif
 //-------------------------------------------------------------------------------------
 // counterpart for NormalizePerPixelNormal
 // skips normalization per-vertex and expects normalization to happen per-pixel
@@ -460,6 +463,9 @@ struct VertexOutputForwardBase
     #if VRSL_ENABLED
     nointerpolation float3 dmxColor       : TEXCOORD19;
     #endif
+    #ifdef _VRSL_GI
+        float2 shadowMaskUV               : TEXCOORD20;
+    #endif
 	float4 color                          : COLOR;
     UNITY_VERTEX_INPUT_INSTANCE_ID
     UNITY_VERTEX_OUTPUT_STEREO
@@ -537,6 +543,10 @@ VertexOutputForwardBase vertForwardBase (VertexInput v)
     //VRSL Stuff
     #if VRSL_ENABLED
         o.dmxColor = DMXEmission(o.tex.xy);
+    #endif
+
+    #ifdef _VRSL_GI
+       o.shadowMaskUV = VRSLShadowMaskCoords(v);
     #endif
     //End VRSL Stuff
 
@@ -762,17 +772,27 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
 				s.metallic, s.thickness, s.subsurfaceColor, atten, i.ambientOrLightmapUV, i.color, gi.light, gi.indirect
 			);
 
+    #if _VRSL_GI
+        //#ifndef VRSL_GI_PROJECTOR
+        // #if defined(_VRSL_GI) && defined(_VRSL_GI_SPECULARHIGHLIGHTS) && !defined(_VRSL_MG_MAP) && !defined(VRSL_GI_PROJECTOR)
+            float2 mg = float2(s.metallic, s.smoothness);
+        // #else
+        //     float2 mg = VRSLMetallicGloss(i.tex.xy);
+        // #endif
+        c.rgb += VRSLGI(s.posWorld, s.normalWorld, _VRSLGlossiness, -s.eyeVec, s.diffColor, mg, i.shadowMaskUV.xy, occlusion);
+    #endif
+
     c.rgb += Emission(i.tex.xy, i.tex1.zw, sd);
     #if VRSL_ENABLED
         float3 emissionMap = SampleTexture(_DMXEmissionMap, i.tex.xy, sd);
-        #if _VRSL_MIX_MULT
+        // #if _VRSL_MIX_MULT
             c.rgb += (i.dmxColor * emissionMap);
-        #elif _VRSL_MIX_ADD
-            c.rgb += (i.dmxColor + emissionMap);
-        #elif _VRSL_MIX_MIX
-            float mixture = (emissionMap.r + emissionMap.g + emissionMap.b)/3;
-            c.rgb += lerp(emissionMap, emissionMap * i.dmxColor, mixture);
-        #endif
+        // #elif _VRSL_MIX_ADD
+        //     c.rgb += (i.dmxColor + emissionMap);
+        // #elif _VRSL_MIX_MIX
+        //     float mixture = (emissionMap.r + emissionMap.g + emissionMap.b)/3;
+        //     c.rgb += lerp(emissionMap, emissionMap * i.dmxColor, mixture);
+        // #endif
     #endif
 
     #if AREALIT_ENABLED
