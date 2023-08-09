@@ -4,7 +4,12 @@ ShaderImporter:
   externalObjects: {}
   defaultTextures:
   - _MainTex: {instanceID: 0}
-  - _NormalMap0: {fileID: 2800000, guid: 7ad1e725b3c53a34dae68f092ff297cf, type: 3}
+  - _DetailBaseColor: {instanceID: 0}
+  - _DetailNormal: {instanceID: 0}
+  - _RoughnessMap: {instanceID: 0}
+  - _MetallicMap: {instanceID: 0}
+  - _EmissionMap: {instanceID: 0}
+  - _NormalMap0: {fileID: 2800000, guid: 6d095a40a0b25e746a709fedd6a9aae6, type: 3}
   - _NormalMap1: {fileID: 2800000, guid: 8c0fe4ffb1eaa3748a17395d8c9bd71a, type: 3}
   - _ReflCube: {instanceID: 0}
   - _FlowMap: {fileID: 2800000, guid: 923a20e8c8f439648bdf7025c790db42, type: 3}
@@ -13,6 +18,12 @@ ShaderImporter:
   - _CausticsTex: {instanceID: 0}
   - _FoamTex: {fileID: 2800000, guid: 6c6c8f6678ed78e4eb543b06dcbc5b8a, type: 3}
   - _FoamNoiseTex: {fileID: 2800000, guid: dfbb7eeed695dc14d82b08d887041406, type: 3}
+  - _AreaLitMask: {instanceID: 0}
+  - _LightMesh: {instanceID: 0}
+  - _LightTex0: {instanceID: 0}
+  - _LightTex1: {instanceID: 0}
+  - _LightTex2: {instanceID: 0}
+  - _LightTex3: {instanceID: 0}
   - _NoiseTexSSR: {fileID: 2800000, guid: b7359cc7e3e84444b88656ff6c166220, type: 3}
   nonModifiableTextures: []
   userData: 

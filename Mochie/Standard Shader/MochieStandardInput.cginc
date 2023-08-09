@@ -222,6 +222,7 @@ half			_UV0ShiftY;
 
 
 int _Filtering;
+int _UnityFogToggle;
 
 float _ReflectionStrength, _SpecularStrength;
 float _ReflShadowStrength;

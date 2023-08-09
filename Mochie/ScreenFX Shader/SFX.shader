@@ -249,6 +249,10 @@ Shader "Mochie/Screen FX" {
 		[ToggleUI]_DepthBufferToggle("", Int) = 0
 		_DBOpacity("", Range(0,1)) = 1
 		_DBColor("", Color) = (1,1,1,1)
+		[ToggleUI]_SobelFilterToggle("", Int) = 0
+		[HDR]_SobelFilterColor("", Color) = (1,1,1,1)
+		_SobelFilterBackgroundColor("", Color) = (0,0,0,1)
+		_SobelFilterOpacity("", Range(0,1)) = 1
     }
     SubShader {
         Tags {

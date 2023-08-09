@@ -232,6 +232,7 @@ Shader "Mochie/Standard" {
 		[HideInInspector]_NaNLmao("lol", Float) = 0
 
 		[ToggleUI]_MirrorToggle("Mirror Mode", Int) = 0
+		[ToggleUI]_UnityFogToggle("Unity Fog", Int) = 1
 		[HideInInspector] _ReflectionTex0("", 2D) = "white" {}
         [HideInInspector] _ReflectionTex1("", 2D) = "white" {}
 
@@ -396,17 +397,7 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _OPAQUELIGHTS_OFF
 			#pragma shader_feature_local _AREALIT_ON
 			#pragma shader_feature_local _MIRROR_ON
-			#pragma multi_compile _ LOD_FADE_CROSSFADE
-			#pragma shader_feature _ FOG_LINEAR FOG_EXP FOG_EXP2
-			//VRSL Stuff
-			#pragma shader_feature_local _VRSL_ON
-			#pragma shader_feature_local _VRSLTHIRTEENCHAN_ON
-			#pragma shader_feature_local _VRSLPAN_ON
-			#pragma shader_feature_local _VRSLTILT_ON
-			#pragma shader_feature_local _STROBE_ON
-			#pragma shader_feature_local _VRSL_LEGACY_TEXTURES
-			//End VRSL Stuff
-
+			#pragma shader_feature_local LOD_FADE_CROSSFADE
 			#pragma multi_compile_fog
             #pragma multi_compile_fwdbase
             #pragma multi_compile_instancing
@@ -443,14 +434,7 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _DETAIL_METALLIC_ON
 			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
 			#pragma shader_feature_local _ALPHAMASK_ON
-			#pragma multi_compile _ LOD_FADE_CROSSFADE
-			#pragma shader_feature _ FOG_LINEAR FOG_EXP FOG_EXP2
-			//VRSL Stuff
-			#pragma shader_feature_local _VRSL_ON
-			#pragma shader_feature_local _VRSLTHIRTEENCHAN_ON
-			#pragma shader_feature_local _VRSLPAN_ON
-			#pragma shader_feature_local _VRSLTILT_ON
-			//End VRSL Stuff
+			#pragma shader_feature_local LOD_FADE_CROSSFADE
 			#pragma multi_compile_fog
             #pragma multi_compile_fwdadd_fullshadows
 			#pragma multi_compile_instancing
@@ -477,13 +461,7 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON
 			#pragma shader_feature_local _ _DETAIL_STOCHASTIC_ON _DETAIL_TSS_ON _DETAIL_TRIPLANAR_ON
 			#pragma shader_feature_local _ALPHAMASK_ON
-			#pragma multi_compile _ LOD_FADE_CROSSFADE
-			//VRSL Stuff
-			#pragma shader_feature_local _VRSL_ON
-			#pragma shader_feature_local _VRSLTHIRTEENCHAN_ON
-			#pragma shader_feature_local _VRSLPAN_ON
-			#pragma shader_feature_local _VRSLTILT_ON
-			//End VRSL Stuff
+			#pragma shader_feature_local LOD_FADE_CROSSFADE
             #pragma multi_compile_shadowcaster
             #pragma multi_compile_instancing
 			#pragma skip_variants FOG_LINEAR FOG_EXP FOG_EXP2

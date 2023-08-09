@@ -157,6 +157,8 @@ float depth;
 	float _ShiftX, _ShiftY, _Rotate;
 	int _Pulse, _WaveForm, _PulseColor;
 	float _PulseSpeed, _NormalMapFilter, _NMFToggle, _NMFOpacity, _DBOpacity;
+	float _SobelFilterOpacity;
+	float4 _SobelFilterColor, _SobelFilterBackgroundColor;
 #endif
 
 struct audioLinkData {

@@ -36,7 +36,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	#endif
 	
 	#if DETAIL_BASECOLOR_ENABLED
-		detailBC = tex2D(_DetailBaseColor, detailUV) * _DetailBaseColorTint;
+		detailBC = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailBaseColor, sampler_FlowMap, detailUV) * _DetailBaseColorTint;
 	#endif
 
 	// CalculateTangentViewDir(i);
@@ -62,13 +62,14 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		float3 uvF1 = uvF0;
 	#endif
 
+	float2 uvFlow = ScaleUV(i.uvFlow, _FlowMapScale, 0);
+	float4 flowMap = MOCHIE_SAMPLE_TEX2D(_FlowMap, uvFlow);
+	flowMap = lerp(0, flowMap, _ZeroProp);
 	#if FLOW_ENABLED
-		float2 uvFlow = ScaleUV(i.uvFlow, _FlowMapScale, 0);
-		float4 flowMap = tex2D(_FlowMap, uvFlow);
 		float blendNoise = flowMap.a;
 		if (_BlendNoiseSource == 1){
 			float2 uvBlend = ScaleUV(i.uv, _BlendNoiseScale, 0);
-			blendNoise = tex2D(_BlendNoise, uvBlend);
+			blendNoise = MOCHIE_SAMPLE_TEX2D_SAMPLER(_BlendNoise, sampler_FlowMap, uvBlend);
 		}
 		float2 flow = (flowMap.rg * 2 - 1) * _FlowStrength * 0.1;
 		float time = _Time.y * _FlowSpeed + blendNoise;
@@ -84,46 +85,61 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 
 	#if NORMALMAP1_ENABLED
 		#if STOCHASTIC0_ENABLED
-			#define tex2D tex2Dstoch
 			_NormalStr0 *= 1.5;
+			float4 normalMap0Sample = tex2Dstoch(_NormalMap0, sampler_FlowMap, uv00.xy);
+		#else
+			float4 normalMap0Sample = MOCHIE_SAMPLE_TEX2D_SAMPLER(_NormalMap0, sampler_FlowMap, uv00.xy);
 		#endif
-		// ParallaxOffset(i, uv00.xy, _NormalMapOffset0, isFrontFace);
-		float3 normalMap0 = UnpackScaleNormal(tex2D(_NormalMap0, uv00.xy), _NormalStr0) * uv00.z;
-		#if FLOW_ENABLED
-			// ParallaxOffset(i, uv01.xy, _NormalMapOffset0, isFrontFace);
-			float3 normalMap1 = UnpackScaleNormal(tex2D(_NormalMap0, uv01.xy), _NormalStr0) * uv01.z;
-		#endif
-		#undef tex2D
+		float3 normalMap0 = UnpackScaleNormal(normalMap0Sample, _NormalStr0) * uv00.z;
 
-		#if STOCHASTIC1_ENABLED
-			#define tex2D tex2Dstoch
-			_NormalStr1 *= 1.5;
-		#endif
-		// ParallaxOffset(i, uv10.xy, _NormalMapOffset1, isFrontFace);
-		float3 detailNormal0 = UnpackScaleNormal(tex2D(_NormalMap1, uv10.xy), _NormalStr1) * uv10.z;
 		#if FLOW_ENABLED
-			// ParallaxOffset(i, uv11.xy, _NormalMapOffset1, isFrontFace);
-			float3 detailNormal1 = UnpackScaleNormal(tex2D(_NormalMap1, uv11.xy), _NormalStr1) * uv11.z;
+			#if STOCHASTIC0_ENABLED
+				float4 normalMap1Sample = tex2Dstoch(_NormalMap0, sampler_FlowMap, uv01.xy);
+			#else
+				float4 normalMap1Sample = MOCHIE_SAMPLE_TEX2D_SAMPLER(_NormalMap0, sampler_FlowMap, uv01.xy);
+			#endif
+			float3 normalMap1 = UnpackScaleNormal(normalMap1Sample, _NormalStr0) * uv01.z;
+		#endif
+		
+		#if STOCHASTIC1_ENABLED
+			_NormalStr1 *= 1.5;
+			float4 detailNormal0Sample = tex2Dstoch(_NormalMap1, sampler_FlowMap, uv10.xy);
+		#else
+			float4 detailNormal0Sample = MOCHIE_SAMPLE_TEX2D_SAMPLER(_NormalMap1, sampler_FlowMap, uv10.xy);
+		#endif
+		float3 detailNormal0 = UnpackScaleNormal(detailNormal0Sample, _NormalStr1) * uv10.z;
+
+		#if FLOW_ENABLED
+			#if STOCHASTIC1_ENABLED
+				float4 detailNormal1Sample = tex2Dstoch(_NormalMap1, sampler_FlowMap, uv11.xy);
+			#else
+				float4 detailNormal1Sample = MOCHIE_SAMPLE_TEX2D_SAMPLER(_NormalMap1, sampler_FlowMap, uv11.xy);
+			#endif
+			float3 detailNormal1 = UnpackScaleNormal(detailNormal1Sample, _NormalStr1) * uv11.z;
 			normalMap0 = normalize(normalMap0 + normalMap1);
 			detailNormal0 = normalize(detailNormal0 + detailNormal1);
 		#endif
-		#undef tex2D
 		normalMap = BlendNormals(normalMap0, detailNormal0);
 	#else
 		#if STOCHASTIC0_ENABLED
-			#define tex2D tex2Dstoch
 			_NormalStr0 *= 1.5;
+			float4 normalMap0Sample = tex2Dstoch(_Normalmap0, sampler_flowMap, uv00.xy);
+		#else
+			float4 normalMap0Sample = MOCHIE_SAMPLE_TEX2D_SAMPLER(_NormalMap0, sampler_FlowMap, uv00.xy);
 		#endif
-		// ParallaxOffset(i, uv00.xy, _NormalMapOffset0, isFrontFace);
-		float3 normalMap0 = UnpackScaleNormal(tex2D(_NormalMap0, uv00.xy), _NormalStr0) * uv00.z;
+		float3 normalMap0 = UnpackScaleNormal(normalMap0Sample, _NormalStr0) * uv00.z;
+
 		#if FLOW_ENABLED
-			// ParallaxOffset(i, uv01.xy, _NormalMapOffset0, isFrontFace);
-			float3 normalMap1 = UnpackScaleNormal(tex2D(_NormalMap0, uv01.xy), _NormalStr0) * uv01.z;
+			#if STOCHASTIC0_ENABLED
+				float4 normalMap1Sample = tex2Dstoch(_NormalMap0, sampler_FlowMap, uv01.xy), _NormalStr0);
+			#else
+				float4 normalMap1Sample = MOCHIE_SAMPLE_TEX2D_SAMPLER(_NormalMap0, sampler_FlowMap, uv01.xy);
+			#endif
+			float3 normalMap1 = UnpackScaleNormal(normalMap1, _NormalStr0) * uv01.z;
 			normalMap = normalize(normalMap0 + normalMap1);
 		#else
 			normalMap = normalize(normalMap0);
 		#endif
-		#undef tex2D
 	#endif
 
 	#if RAIN_ENABLED
@@ -132,7 +148,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	#endif
 
 	#if DETAIL_NORMAL_ENABLED
-		float3 detNorm = UnpackScaleNormal(tex2D(_DetailNormal, detailUV), _DetailNormalStrength);
+		float3 detNorm = UnpackScaleNormal(MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailNormal, sampler_FlowMap, detailUV), _DetailNormalStrength);
 		normalMap = lerp(normalMap, detNorm, detailBC.a);
 	#endif
 
@@ -165,15 +181,14 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	float2 baseUV = i.uvGrab.xy/proj;
 	float2 mainTexUV = TRANSFORM_TEX(i.uv, _MainTex) + _Time.y * 0.1 * _MainTexScroll;
 	mainTexUV += normalMap.xy * _BaseColorDistortionStrength;
-	// ParallaxOffset(i, mainTexUV, _BaseColorOffset, isFrontFace);
 	float4 surfaceTint = _Color;
 	if (!isFrontFace)
 		surfaceTint = _BackfaceTint;
 
 	#if BASECOLOR_STOCHASTIC_ENABLED
-		float4 mainTex = tex2Dstoch(_MainTex, mainTexUV) * surfaceTint;
+		float4 mainTex = tex2Dstoch(_MainTex, sampler_FlowMap, mainTexUV) * surfaceTint;
 	#else
-		float4 mainTex = tex2D(_MainTex, mainTexUV) * surfaceTint;
+		float4 mainTex = MOCHIE_SAMPLE_TEX2D_SAMPLER(_MainTex, sampler_FlowMap, mainTexUV) * surfaceTint;
 	#endif
 
 	#if TRANSPARENCY_GRABPASS
@@ -194,7 +209,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 				if (caustFade > 0){
 					float3 wPos = GetWorldSpacePixelPosSP(i.localPos, screenUV);
 					float2 depthUV = Rotate3D(wPos, _CausticsRotation).xz;
-					float3 causticsOffset = UnpackNormal(tex2D(_NormalMap0, (depthUV*_CausticsDistortionScale*0.1)+_Time.y*_CausticsDistortionSpeed*0.05));
+					float3 causticsOffset = UnpackNormal(MOCHIE_SAMPLE_TEX2D_SAMPLER(_NormalMap0, sampler_FlowMap, (depthUV*_CausticsDistortionScale*0.1)+_Time.y*_CausticsDistortionSpeed*0.05));
 					float2 causticsUV = (depthUV + uvOffset + (causticsOffset.xy * _CausticsDistortion)) * _CausticsScale;
 					float voronoi0 = Voronoi2D(causticsUV, _Time.y*_CausticsSpeed);
 					float voronoi1 = Voronoi2D(causticsUV, (_Time.y*_CausticsSpeed)+_CausticsDisp);
@@ -224,25 +239,35 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 
 	#if FOAM_ENABLED
 		float2 uvFoamOffset = normalMap.xy * _FoamDistortionStrength * 0.1;
-		#if FOAM_STOCHASTIC_ENABLED
-			#define tex2D tex2Dstoch
-		#endif
 		#if FLOW_ENABLED
 			uvF0.xy += uvFoamOffset;
 			uvF1.xy += uvFoamOffset;
-			float4 foamTex0 = tex2D(_FoamTex, uvF0.xy) * uvF0.z;
-			float4 foamTex1 = tex2D(_FoamTex, uvF1.xy) * uvF1.z;
+			#if FOAM_STOCHASTIC_ENABLED
+				float4 foamTex0 = tex2Dstoch(_FoamTex, sampler_FlowMap, uvF0.xy) * uvF0.z;
+				float4 foamTex1 = tex2Dstoch(_FoamTex, sampler_FlowMap, uvF1.xy) * uvF1.z;
+			#else
+				float4 foamTex0 = MOCHIE_SAMPLE_TEX2D_SAMPLER(_FoamTex, sampler_FlowMap, uvF0.xy) * uvF0.z;
+				float4 foamTex1 = MOCHIE_SAMPLE_TEX2D_SAMPLER(_FoamTex, sampler_FlowMap, uvF1.xy) * uvF1.z;
+			#endif
 			float4 foamTex = (foamTex0 + foamTex1) * _FoamColor;
 		#else
 			uvFoam += uvFoamOffset;
-			float4 foamTex = tex2D(_FoamTex, uvFoam) * _FoamColor;
+			#if FOAM_STOCHASTIC_ENABLED
+				float4 foamTex = tex2Dstoch(_FoamTex, sampler_FlowMap, uvFoam) * _FoamColor;
+			#else
+				float4 foamTex = MOCHIE_SAMPLE_TEX2D_SAMPLER(_FoamTex, sampler_FlowMap, uvFoam) * _FoamColor;
+			#endif
 		#endif
 
 		float2 foamNoiseUV = ScaleUV(i.uv.xy, _FoamNoiseTexScale, _FoamNoiseTexScroll);
-		float foamNoise = Average(tex2D(_FoamNoiseTex, foamNoiseUV).rgb);
+		#if FOAM_STOCHASTIC_ENABLED
+			float3 foamNoiseSample = tex2Dstoch(_FoamNoiseTex, sampler_FlowMap, foamNoiseUV);
+		#else
+			float3 foamNoiseSample = MOCHIE_SAMPLE_TEX2D_SAMPLER(_FoamNoiseTex, sampler_FlowMap, foamNoiseUV);
+		#endif
+		float foamNoise = Average(foamNoiseSample);
 		float foamTexNoise = lerp(1, foamNoise, _FoamNoiseTexStrength);
 		float foamCrestNoise = lerp(1, foamNoise, _FoamNoiseTexCrestStrength);
-		#undef tex2D
 		float foam = 0;
 		#if DEPTH_EFFECTS_ENABLED
 			if (!i.isInVRMirror){
@@ -258,11 +283,11 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		#if FOAM_NORMALS_ENABLED
 			float foamNormalStr = lerp(0,_FoamNormalStrength,foam+crestFoam);
 			#if FLOW_ENABLED
-				float3 foamNormalTex0 = tex2Dnormal(_FoamTex, uvF0.xy, 0.15, foamNormalStr) * uvF0.z;
-				float3 foamNormalTex1 = tex2Dnormal(_FoamTex, uvF1.xy, 0.15, foamNormalStr) * uvF1.z;
+				float3 foamNormalTex0 = tex2Dnormal(_FoamTex, sampler_FlowMap, uvF0.xy, 0.15, foamNormalStr) * uvF0.z;
+				float3 foamNormalTex1 = tex2Dnormal(_FoamTex, sampler_FlowMap, uvF1.xy, 0.15, foamNormalStr) * uvF1.z;
 				float3 foamNormal = (foamNormalTex0 + foamNormalTex1);
 			#else
-				float3 foamNormal = tex2Dnormal(_FoamTex, uvFoam, 0.15,foamNormalStr);
+				float3 foamNormal = tex2Dnormal(_FoamTex, sampler_FlowMap, uvFoam, 0.15,foamNormalStr);
 			#endif
 			// normalMap = lerp(normalMap, foamNormal, saturate((foam+crestFoam)*10)); 
 			normalMap = BlendNormals(foamNormal, normalMap);
@@ -285,7 +310,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		float2 roughnessMapUV = detailUV;
 		if (_DetailTextureMode != 1)
 			roughnessMapUV = TRANSFORM_TEX(i.uv, _RoughnessMap);
-		float roughnessMap = tex2D(_RoughnessMap, roughnessMapUV);
+		float roughnessMap = MOCHIE_SAMPLE_TEX2D_SAMPLER(_RoughnessMap, sampler_FlowMap, roughnessMapUV);
 		#if DETAIL_BASECOLOR_ENABLED
 			if (_DetailTextureMode == 1)
 				roughnessMap *= detailBC.a;
@@ -301,7 +326,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		float2 metallicMapUV = detailUV;
 		if (_DetailTextureMode != 1)
 			metallicMapUV = TRANSFORM_TEX(i.uv, _MetallicMap);
-		float metallicMap = tex2D(_MetallicMap, metallicMapUV);
+		float metallicMap = MOCHIE_SAMPLE_TEX2D_SAMPLER(_MetallicMap, sampler_FlowMap, metallicMapUV);
 		#if DETAIL_BASECOLOR_ENABLED
 			if (_DetailTextureMode == 1)
 				metallicMap *= detailBC.a;
@@ -386,7 +411,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 			ShadeAreaLights(ai, diffTerm, specTerm, true, !IsSpecularOff(), IsStereo());
 
 			float3 areaLitColor = col.rgb * diffTerm + specularTint * specTerm;
-			col.rgb += areaLitColor * _AreaLitStrength * tex2D(_AreaLitMask, TRANSFORM_TEX(i.uv, _AreaLitMask)).r;
+			col.rgb += areaLitColor * _AreaLitStrength * MOCHIE_SAMPLE_TEX2D_SAMPLER(_AreaLitMask, sampler_FlowMap, TRANSFORM_TEX(i.uv, _AreaLitMask)).r;
 		#endif
 	#endif
 	
@@ -425,15 +450,15 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	#if EMISSION_ENABLED
 		float2 emissUV = TRANSFORM_TEX(i.uv, _EmissionMap) + (_Time.y * _EmissionMapScroll);
 		#if EMISS_STOCHASTIC_ENABLED
-			float3 emissCol = tex2Dstoch(_EmissionMap, emissUV);
+			float3 emissCol = tex2Dstoch(_EmissionMap, sampler_FlowMap, emissUV);
 		#else
-			float3 emissCol = tex2D(_EmissionMap, emissUV);
+			float3 emissCol = MOCHIE_SAMPLE_TEX2D_SAMPLER(_EmissionMap, sampler_FlowMap, emissUV);
 		#endif
 		col.rgb += (emissCol * _EmissionColor);
 	#endif
 	UNITY_APPLY_FOG(i.fogCoord, col);
 	
-	return col;
+	return col + flowMap;
 }
 
 #include "WaterTess.cginc"

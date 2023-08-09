@@ -27,6 +27,16 @@
 		_XScale("X Scale", Float) = 1.5
         _YScale("Y Scale", Float) = 1.5
 		_Strength("Normal Strength", Float) = 0.3
+		_RippleScale("Ripple Scale", float) = 10
+		_RippleSpeed("Ripple Speed", float) = 10
+		_RippleStrength("Ripple Strength", float) = 1
+        [Enum(Droplets,0, Ripples,1)]_RainMode("Mode", Int) = 0
+        _RainMask("Mask", 2D) = "white" {}
+        [Enum(Red,0, Green,1, Blue,2, Alpha,0)]_RainMaskChannel("Channel", Int) = 0
+        _DropletMask("Rain Droplet Mask", 2D) = "white" {}
+        _DynamicDroplets("Droplet Strength", Range(0,1)) = 0.5
+        _RainBias("Rain Bias", Float) = -1
+        _Test("Test", Float) = 1
 
         [Toggle(_REFLECTIONS_ON)]_ReflectionsToggle("Reflections", Int) = 1
         [Toggle(_SPECULAR_HIGHLIGHTS_ON)]_SpecularToggle("Specular Highlights", Int) = 1
@@ -36,6 +46,9 @@
         [Enum(Grabpass,0, Premultiplied,1, Off,2)]_BlendMode("Transparency", Int) = 0
         [HideInInspector]_SrcBlend("Src Blend", Int) = 1
         [HideInInspector]_DstBlend("Dst Blend", Int) = 0
+        [HideInInspector]_ZWrite("Z Write", Int) = 0
+        [HideInInspector]_MaterialResetCheck("Reset", Int) = 0
+        _QueueOffset("Queue Offset", Int) = 0
     }
     SubShader {
         Tags { 
@@ -50,7 +63,7 @@
         }
         Cull [_Culling]
         Blend [_SrcBlend] [_DstBlend]
-        ZWrite Off
+        ZWrite [_ZWrite]
 
         Pass {
             Name "ForwardBase"
@@ -67,69 +80,11 @@
             #pragma shader_feature_local _GRABPASS_ON
             #pragma shader_feature_local _LIT_BASECOLOR_ON
             #pragma shader_feature_local _STOCHASTIC_SAMPLING_ON
+            #pragma shader_feature_local _NORMALMAP_ON
+            #pragma shader_feature_local _RAINMODE_RIPPLE
             #pragma target 5.0
 
-            #include "UnityCG.cginc"
-            #include "AutoLight.cginc"
-            #include "UnityPBSLighting.cginc"
-
-            #define EPSILON 1.192092896e-07
-
-            UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
-            UNITY_DECLARE_SCREENSPACE_TEXTURE(_GlassGrab);
-            sampler2D _RainSheet;
-            sampler2D _BaseColor;
-            sampler2D _RoughnessMap;
-            sampler2D _OcclusionMap;
-            sampler2D _MetallicMap;
-            sampler2D _NormalMap;
-            float4 _RoughnessMap_ST;
-            float4 _OcclusionMap_ST;
-            float4 _MetallicMap_ST;
-            float4 _NormalMap_ST;
-            float4 _RainSheet_ST;
-            float4 _BaseColor_ST;
-            float4 _BaseColorTint;
-            float4 _SpecularityTint;
-            float4 _GrabpassTint;
-            float _NormalStrength;
-            float _Roughness;
-            float _Metallic;
-            float _Occlusion;
-            float _Rows, _Columns;
-            float _XScale, _YScale;
-            float _Strength, _Speed;
-            float _Refraction;
-            float _Blur;
-            float _RefractMeshNormals;
-
-            struct appdata {
-                float4 vertex : POSITION;
-                float4 uv : TEXCOORD0;
-                float3 normal : NORMAL;
-                float4 tangent : TANGENT;
-                UNITY_VERTEX_INPUT_INSTANCE_ID
-            };
-
-            struct v2f {
-                float4 pos : SV_POSITION;
-                float4 uv : TEXCOORD0;
-                float4 uvGrab : TEXCOORD1;
-                float3 worldPos : TEXCOORD2;
-                float3 binormal : TEXCOORD3;
-                float4 localPos : TEXCOORD4;
-                float3 cameraPos : TEXCOORD5;
-                float3 normal : NORMAL;
-                float4 tangent: TANGENT;
-                
-                UNITY_FOG_COORDS(10)
-                UNITY_SHADOW_COORDS(11)
-                UNITY_VERTEX_INPUT_INSTANCE_ID 
-                UNITY_VERTEX_OUTPUT_STEREO
-            };
-
-            #include "../Common/Sampling.cginc"
-            #include "GlassFunctions.cginc"
+            #include "GlassDefines.cginc"
 
             v2f vert (appdata v){
                 v2f o = (v2f)0;
@@ -163,13 +118,29 @@
 		        float3 reflCol = 0;
                 float flipbookBase = 0;
 
-                float3 normalMap = UnpackScaleNormal(SampleTexture(_NormalMap, TRANSFORM_TEX(i.uv, _NormalMap)), _NormalStrength);
-                #if defined(_RAIN_ON)
-                    float3 flipbookNormals = GetFlipbookNormals(i, flipbookBase);
-                    normalMap = BlendNormals(flipbookNormals, normalMap);
+                float3 normalDir = normalize(i.normal);
+                float3 normalMap = 0;
+                #if defined(_NORMALMAP_ON)
+                    normalMap = UnpackScaleNormal(SampleTexture(_NormalMap, TRANSFORM_TEX(i.uv, _NormalMap)), _NormalStrength);
                 #endif
-                float3 binormal = cross(i.normal, i.tangent.xyz) * (i.tangent.w * unity_WorldTransformParams.w);
-                float3 normalDir = normalize(normalMap.x * i.tangent + normalMap.y * binormal + normalMap.z * i.normal);
+                #if defined(_RAIN_ON)
+                    float rainMask = tex2D(_RainMask, TRANSFORM_TEX(i.uv, _RainMask));
+                    #if defined(_RAINMODE_RIPPLE)
+                        float3 rainNormal = GetRipplesNormal(i.uv, _RippleScale, _RippleStrength*rainMask, _RippleSpeed);
+                    #else
+                        float3 rainNormal = GetFlipbookNormals(i, flipbookBase, rainMask);
+                        ApplyExtraDroplets(i, rainNormal, flipbookBase, rainMask);
+                    #endif
+                    #if defined(_NORMALMAP_ON)
+                        normalMap = BlendNormals(rainNormal, normalMap);
+                    #else
+                        normalMap = rainNormal;
+                    #endif
+                #endif
+                #if defined(_NORMALMAP_ON) || defined(_RAIN_ON)
+                    float3 binormal = cross(i.normal, i.tangent.xyz) * (i.tangent.w * unity_WorldTransformParams.w);
+                    normalDir = normalize(normalMap.x * i.tangent + normalMap.y * binormal + normalMap.z * i.normal);
+                #endif
                 normalDir = lerp(-normalDir, normalDir, isFrontFace);
                 normalMap = lerp(-normalMap, normalMap, isFrontFace);
                 
@@ -246,7 +217,7 @@
                 #endif
 
                 UNITY_APPLY_FOG(i.fogCoord, finalCol);
-                return finalCol;
+                return finalCol; // float4(flipbookBase.xxx, 1);
             }
             ENDCG
         }

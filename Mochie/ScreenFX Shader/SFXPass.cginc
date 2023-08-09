@@ -50,6 +50,10 @@ v2f vert (appdata v){
 
 float4 frag (v2f i) : SV_Target {
 	
+	#if defined(SHADER_API_MOBILE)
+		discard;
+	#endif
+	
 	UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
 
     MirrorCheck();
@@ -100,6 +104,9 @@ float4 frag (v2f i) : SV_Target {
 		#endif
 		ApplyDepthBuffer(i, col.rgb, miscAudioLinkStrength);
 		ApplyNormalMap(i, col.rgb, miscAudioLinkStrength);
+		#if SOBEL_FILTER_ENABLED
+			ApplySobelFilter(i, col.rgb, miscAudioLinkStrength);
+		#endif
 		#if OUTLINE_ENABLED
 			ApplyOutline(i, col.rgb, ald);
 		#endif
