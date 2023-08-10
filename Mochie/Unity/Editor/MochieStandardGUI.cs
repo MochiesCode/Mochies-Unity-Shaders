@@ -23,7 +23,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		"LTCGI"
 	}, 1);
 
-	string versionLabel = "v1.23.2";
+	string versionLabel = "v1.23.3";
 	public static string receiverText = "AreaLit Maps";
 	public static string emitterText = "AreaLit Light";
 	public static string projectorText = "AreaLit Projector";
@@ -689,6 +689,7 @@ internal class MochieStandardGUI : ShaderGUI {
 			if (detailWorkflow.floatValue == 1){
 				me.TexturePropertySingleLine(Tips.packedMapText, detailPackedMap);
 				me.TexturePropertySingleLine(Tips.normalMapText, detailNormalMap, hasDetailNormal ? detailNormalMapScale : null);
+				me.TexturePropertySingleLine(Tips.detailMaskText, detailMask, detailMask.textureValue ? detailMaskChannel : null);
 				MGUI.sRGBWarning(detailPackedMap);
 				if (detailPackedMap.textureValue){
 					MGUI.PropertyGroupLayer(()=>{

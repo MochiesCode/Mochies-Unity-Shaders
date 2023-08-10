@@ -211,7 +211,7 @@ half3 WorldNormal(half4 tan2world[3])
     }
 #endif
 
-float3 PerPixelWorldNormal(float4 i_tex, float4 raincoords, float4 tangentToWorld[3], SampleData sd)
+float3 PerPixelWorldNormal(float4 i_tex, float4 raincoords, float4 tangentToWorld[3], float4 detailCoords, SampleData sd)
 {
     #ifdef _NORMALMAP
         half3 tangent = tangentToWorld[0].xyz;
@@ -228,7 +228,7 @@ float3 PerPixelWorldNormal(float4 i_tex, float4 raincoords, float4 tangentToWorl
             binormal = newB * sign (dot (newB, binormal));
         #endif
         
-        half3 normalTangent = NormalInTangentSpace(i_tex, raincoords, sd);
+        half3 normalTangent = NormalInTangentSpace(i_tex, raincoords, detailCoords.zw, sd);
         TangentNormal = normalTangent;
         float3 normalWorld = NormalizePerPixelNormal(tangent * normalTangent.x + binormal * normalTangent.y + normal * normalTangent.z);
     #else
@@ -288,7 +288,7 @@ struct FragmentCommonData
 
 inline FragmentCommonData RoughnessSetup(float4 i_tex, float2 detailMaskCoords, SampleData sd)
 {
-    half2 metallicGloss = MetallicRough(i_tex, sd);
+    half2 metallicGloss = MetallicRough(i_tex, detailMaskCoords, sd);
     half metallic = metallicGloss.x;
     half smoothness = metallicGloss.y; // this is 1 minus the square root of real roughness m.
 
@@ -328,7 +328,7 @@ inline FragmentCommonData FragmentSetup (inout float4 i_tex, float4 i_tex2, floa
     #endif
 
     FragmentCommonData o = UNITY_SETUP_BRDF_INPUT (i_tex, i_tex4.zw, sd);
-    o.normalWorld = PerPixelWorldNormal(i_tex, i_tex3, tangentToWorld, sd);
+    o.normalWorld = PerPixelWorldNormal(i_tex, i_tex3, tangentToWorld, i_tex4, sd);
     o.eyeVec = NormalizePerPixelNormal(i_eyeVec);
     o.posWorld = i_posWorld;
 
@@ -631,7 +631,7 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
     UNITY_SETUP_INSTANCE_ID(i);
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
 
-    half3 occlusion = Occlusion(i.tex, sd);
+    half3 occlusion = Occlusion(i.tex, i.tex4.zw, sd);
     float perceptualRoughness = SmoothnessToPerceptualRoughness(s.smoothness);
     if (_GSAA == 1)
         perceptualRoughness = GSAARoughness(s.normalWorld, perceptualRoughness);
