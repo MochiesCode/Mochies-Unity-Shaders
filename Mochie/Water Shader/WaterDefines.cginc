@@ -19,7 +19,7 @@ float4 _CameraDepthTexture_TexelSize;
 #define BASE_PASS 						defined(UNITY_PASS_FORWARDBASE)
 #define ADD_PASS 						defined(UNITY_PASS_FORWARDADD)
 #define NORMALMAP1_ENABLED 				defined(_NORMALMAP_1_ON)
-#define REFLECTIONS_ENABLED 			defined(_REFLECTIONS_ON) && !defined(UNITY_PASS_FORWARDADD)
+#define REFLECTIONS_ENABLED 			defined(_REFLECTIONS_ON)
 #define REFLECTIONS_MANUAL_ENABLED 		defined(_REFLECTIONS_MANUAL_ON)
 #define SPECULAR_ENABLED 				defined(_SPECULAR_ON)
 #define PBR_ENABLED 					defined(_REFLECTIONS_ON) || defined(_SPECULAR_ON)
@@ -27,11 +27,11 @@ float4 _CameraDepthTexture_TexelSize;
 #define NOISE_TEXTURE_ENABLED			defined(_NOISE_TEXTURE_ON)
 #define GERSTNER_ENABLED 				defined(_GERSTNER_WAVES_ON)
 #define VORONOI_ENABLED					defined(_VORONOI_ON)
-#define DEPTHFOG_ENABLED 				defined(_DEPTHFOG_ON) && !defined(UNITY_PASS_FORWARDADD)
+#define VERT_FLIPBOOK_ENABLED			defined(_VERT_FLIPBOOK_ON)
+#define DEPTHFOG_ENABLED 				defined(_DEPTHFOG_ON)
 #define FOAM_ENABLED 					defined(_FOAM_ON)
-#define CAUSTICS_ENABLED 				defined(_CAUSTICS_ON) && !defined(UNITY_PASS_FORWARDADD)
 #define EDGEFADE_ENABLED 				defined(_EDGEFADE_ON)
-#define SSR_ENABLED 					defined(_SCREENSPACE_REFLECTIONS_ON) && !defined(UNITY_PASS_FORWARDADD)
+#define SSR_ENABLED 					defined(_SCREENSPACE_REFLECTIONS_ON)
 #define STOCHASTIC0_ENABLED 			defined(_NORMALMAP_0_STOCHASTIC_ON)
 #define STOCHASTIC1_ENABLED 			defined(_NORMALMAP_1_STOCHASTIC_ON)
 #define FOAM_STOCHASTIC_ENABLED 		defined(_FOAM_STOCHASTIC_ON)
@@ -47,6 +47,12 @@ float4 _CameraDepthTexture_TexelSize;
 #define TRANSPARENCY_PREMUL				defined(_PREMUL_MODE_ON)
 #define TRANSPARENCY_OPAQUE				defined(_OPAQUE_MODE_ON)
 #define TRANSPARENCY_GRABPASS			!defined(_PREMUL_MODE_ON) && !defined(_OPAQUE_MODE_ON)
+#define CAUSTICS_VORONOI				defined(_CAUSTICS_VORONOI_ON)
+#define CAUSTICS_TEXTURE				defined(_CAUSTICS_TEXTURE_ON)
+#define CAUSTICS_FLIPBOOK				defined(_CAUSTICS_FLIPBOOK_ON)
+#define CAUSTICS_ENABLED				defined(_CAUSTICS_VORONOI_ON) || defined(_CAUSTICS_TEXTURE_ON) || defined(_CAUSTICS_FLIPBOOK_ON)
+#define NORMALMAP_FLIPBOOK_MODE			defined(_NORMALMAP_FLIPBOOK_ON)
+#define NORMALMAP_FLIPBOOK_STOCH		defined(_NORMALMAP_FLIPBOOK_STOCHASTIC_ON)
 
 MOCHIE_DECLARE_TEX2D_SCREENSPACE(_MWGrab);
 MOCHIE_DECLARE_TEX2D(_FlowMap);
@@ -63,14 +69,34 @@ MOCHIE_DECLARE_TEX2D_NOSAMPLER(_EmissionMap);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_AreaLitMask);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_DetailBaseColor);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_DetailNormal);
+MOCHIE_DECLARE_TEX2D_NOSAMPLER(_OpacityMask);
+
+MOCHIE_DECLARE_TEX2DARRAY(_VertOffsetFlipbook);
+MOCHIE_DECLARE_TEX2DARRAY_NOSAMPLER(_NormalMapFlipbook);
+MOCHIE_DECLARE_TEX2DARRAY_NOSAMPLER(_CausticsTexArray);
+
 sampler2D _NoiseTex;
 samplerCUBE _ReflCube;
+
+float4 _CausticsTex_TexelSize;
+float4 _OpacityMask_ST;
+float2 _OpacityMaskScroll;
 
 float _AreaLitStrength;
 float _AreaLitRoughnessMult;
 float4 _AreaLitMask_ST;
 
-float4 _FogTint, _Color, _FoamColor, _ReflTint, _SpecTint;
+float2 _NormalMapFlipbookScale;
+float _NormalMapFlipbookStrength;
+float _NormalMapFlipbookSpeed;
+
+float2 _VertOffsetFlipbookScale;
+float _VertOffsetFlipbookStrength;
+float _VertOffsetFlipbookSpeed;
+
+float _CausticsFlipbookSpeed;
+
+float4 _FogTint, _Color, _FoamColor, _ReflTint, _SpecTint, _NonGrabColor;
 float4 _ReflCube_HDR;
 float4 _MainTex_ST;
 float3 _Offset;
@@ -98,7 +124,6 @@ float _VoronoiWaveHeight;
 float3 _VoronoiOffset;
 
 float4 _BackfaceTint;
-
 float2 _NoiseTexScale;
 float2 _NoiseTexScroll;
 float2 _FoamTexScale;
@@ -144,6 +169,8 @@ float _Specular;
 float _RippleStr;
 float _RippleScale;
 float _RippleSpeed;
+float _RippleSize;
+float _RippleDensity;
 float _FoamNormalStrength;
 float _CausticsDisp;
 float _CausticsDistortion;
@@ -169,6 +196,8 @@ int _DetailNormalBlend;
 int _DetailTextureMode;
 int _RecalculateNormals;
 int _TransparencyMode;
+
+float _Test;
 
 float _ZeroProp;
 const static float2 jump = float2(0.1, 0.25);

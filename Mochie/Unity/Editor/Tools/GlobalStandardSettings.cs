@@ -20,7 +20,7 @@ namespace Mochie {
         List<Material> standardLiteMaterials = new List<Material>();
         List<Material> standardUnityMaterials = new List<Material>();
 
-        // Bakery Settings
+        // Bakery settings
         enum BakeryMode {None, SH, RNM, MonoSH}
         BakeryMode dirMode;
         bool bicubicSampling = true;
@@ -40,12 +40,20 @@ namespace Mochie {
         ColorChannel heightChannel = ColorChannel.Alpha;
         ToggleOnOff smoothnessToggle;
 
+        // Filtering settings
+        bool filteringToggle;
+        float filteringHue = 0f;
+        float filteringSat = 1f;
+        float filteringBright = 1f;
+        float filteringCont = 1f;
+        float filteringACES = 0f;
+
         [MenuItem("Mochie/Global Standard Settings")]
         static void Init(){
             GlobalStandardSettings window = (GlobalStandardSettings)EditorWindow.GetWindow(typeof(GlobalStandardSettings));
             window.titleContent = new GUIContent("Standard Shader Settings");
-            window.minSize = new Vector2(300, 490);
-            window.maxSize = new Vector2(300, 490);
+            window.minSize = new Vector2(300, 670);
+            window.maxSize = new Vector2(300, 670);
             window.Show();
         }
 
@@ -112,6 +120,22 @@ namespace Mochie {
             });
             if (MGUI.SimpleButton("Apply", buttonWidth, 0f)){
                 ApplyBakerySettings();
+            }
+
+            MGUI.Space8();
+            MGUI.BoldLabel("Filtering Settings");
+            MGUI.PropertyGroup(()=>{
+                filteringToggle = EditorGUILayout.Toggle("Enable", filteringToggle);
+                MGUI.ToggleGroup(!filteringToggle);
+                filteringHue = EditorGUILayout.Slider("Hue", filteringHue, 0f, 1f);
+                filteringSat = EditorGUILayout.FloatField("Saturation", filteringSat);
+                filteringBright = EditorGUILayout.FloatField("Brightness", filteringBright);
+                filteringCont = EditorGUILayout.FloatField("Contrast", filteringCont);
+                filteringACES = EditorGUILayout.FloatField("ACES", filteringACES);
+                MGUI.ToggleGroupEnd();
+            });
+            if (MGUI.SimpleButton("Apply", buttonWidth, 0f)){
+                ApplyFilterSettings();
             }
         }
         
@@ -191,6 +215,19 @@ namespace Mochie {
                             m.SetTexture("_PackedMap", m.GetTexture("_ParallaxMap"));
                     }
                 }       
+            }
+        }
+
+        void ApplyFilterSettings(){
+            foreach(Material m in standardMaterials){
+                m.SetInt("_Filtering", filteringToggle ? 1 : 0);
+                if (filteringToggle){
+                    m.SetFloat("_HuePost", filteringHue);
+                    m.SetFloat("_SaturationPost", filteringSat);
+                    m.SetFloat("_BrightnessPost", filteringBright);
+                    m.SetFloat("_ContrastPost", filteringCont);
+                    m.SetFloat("_ACES", filteringACES);
+                }
             }
         }
 

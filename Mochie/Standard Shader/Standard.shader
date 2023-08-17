@@ -197,6 +197,8 @@ Shader "Mochie/Standard" {
 		_RippleScale("Ripple Scale", float) = 40
 		_RippleSpeed("Ripple Speed", float) = 10
 		_RippleStr("Ripple Strength", float) = 1
+		_RippleDensity("Ripple Density", float) = 1.57079632679
+		_RippleSize("Ripple Size", Range(2,10)) = 6
 		_RainMask("Rain Mask", 2D) = "white" {}
 
 		[Toggle(BAKERY_LMSPEC)] _BAKERY_LMSPEC ("Enable Lightmap Specular", Float) = 0

@@ -235,7 +235,7 @@ float3 PerPixelWorldNormal(float4 i_tex, float4 raincoords, float4 tangentToWorl
         float3 normalWorld = normalize(tangentToWorld[2].xyz);
         if (_RainToggle == 1){
             float mask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_RainMask, sampler_MainTex, raincoords.zw);
-            float3 rippleNormal = GetRipplesNormal(raincoords.xy, _RippleScale, _RippleStr*mask, _RippleSpeed);
+            float3 rippleNormal = GetRipplesNormal(raincoords.xy, _RippleScale, _RippleStr*mask, _RippleSpeed, _RippleSize, _RippleDensity);
             normalWorld = BlendNormals(normalWorld, rippleNormal);
             TangentNormal = BlendNormals(TangentNormal, rippleNormal);
         }
@@ -648,7 +648,13 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
         ai.occlusion = float4(occlusion, 1) * alOcclusion;
         ai.screenPos = i.pos.xy;
         half4 diffTerm, specTerm;
-        ShadeAreaLights(ai, diffTerm, specTerm, true, !IsSpecularOff(), IsStereo());
+        if (_AreaLitStrength > 0){
+            ShadeAreaLights(ai, diffTerm, specTerm, true, !IsSpecularOff(), IsStereo());
+        }
+        else {
+            diffTerm = 0;
+            specTerm = 0;
+        }
     #endif
 
     UnityLight mainLight = MainLight();

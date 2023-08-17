@@ -8,7 +8,7 @@ using Mochie;
 
 public class GlassEditor : ShaderGUI {
 
-	string versionLabel = "v1.3";
+	string versionLabel = "v1.4";
 
 	// Surface
 	MaterialProperty _GrabpassTint = null;
@@ -39,6 +39,8 @@ public class GlassEditor : ShaderGUI {
 	MaterialProperty _RippleScale = null;
 	MaterialProperty _RippleSpeed = null;
 	MaterialProperty _RippleStrength = null;
+	MaterialProperty _RippleSize = null;
+	MaterialProperty _RippleDensity = null;
 	MaterialProperty _DynamicDroplets = null;
 	MaterialProperty _RainBias = null;
 
@@ -114,6 +116,8 @@ public class GlassEditor : ShaderGUI {
 					me.ShaderProperty(_RippleStrength, "Strength");
 					me.ShaderProperty(_RippleSpeed, "Speed");
 					me.ShaderProperty(_RippleScale, "Scale");
+					me.ShaderProperty(_RippleDensity, "Density");
+					me.ShaderProperty(_RippleSize, "Size");
 				}
 				bool hasRainMask = _RainMask.textureValue;
 				MGUI.Space4();

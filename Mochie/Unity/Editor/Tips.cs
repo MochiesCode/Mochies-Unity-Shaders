@@ -171,7 +171,7 @@ namespace Mochie {
 		public static GUIContent matcapNormalMix = new GUIContent("Mix Normals", "Mixes the normal maps from the textures tab into the normal map slot in this tab.");
 		public static GUIContent clipEdge = new GUIContent("Clip Edge", "Clips a small border around the edge of the flipbook to remove lines from the edge fo the frame. Most obvious when the flipbook is scrolling.");
 		public static GUIContent aces = new GUIContent("ACES", "Cheap approximated ACES tonemapping.");
-		public static GUIContent mirrorMode = new GUIContent("Mirror Mode", "Enable if using this material as a VRChat mirror.");
+		public static GUIContent mirrorMode = new GUIContent("Mirror Mode", "Enable if using this material as a VRChat mirror. Doing so will replace cubemap reflections with the reflections from the mirror.");
 
 		// Water
 		public static GUIContent stochasticLabel = new GUIContent("Stochastic", "Uses uvs to generate pseudo-random positions for sampling to alleviate tiling artifacts. 3 samples per texture.");

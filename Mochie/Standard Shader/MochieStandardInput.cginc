@@ -142,6 +142,8 @@ float4			_RainMask_ST;
 float 			_RippleStr;
 float			_RippleScale;
 float			_RippleSpeed;
+float			_RippleSize;
+float			_RippleDensity;
 float			_UV5Rotate;
 float2			_UV5Scroll;
 int				_UVRainMask;
@@ -536,7 +538,7 @@ half3 NormalInTangentSpace(float4 texcoords, float4 raincoords, float2 detailMas
 	#endif
 	if (_RainToggle == 1){
 		float rainMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_RainMask, sampler_MainTex, raincoords.zw);
-		float3 rippleNormal = GetRipplesNormal(raincoords.xy, _RippleScale, _RippleStr*rainMask, _RippleSpeed);
+		float3 rippleNormal = GetRipplesNormal(raincoords.xy, _RippleScale, _RippleStr*rainMask, _RippleSpeed, _RippleSize, _RippleDensity);
 		normalTangent = BlendNormals(normalTangent, rippleNormal);
 	}
     return normalTangent;

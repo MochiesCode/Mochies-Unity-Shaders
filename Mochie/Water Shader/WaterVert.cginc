@@ -15,8 +15,19 @@ v2f vert (
 	UNITY_TRANSFER_INSTANCE_ID(v, o);
 	UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 
+	float2 uvs[] = {v.uv, v.uv1, v.uv2, v.uv3};
+	o.uvFlow = uvs[_FlowMapUV].xy;
+	o.uv = v.uv;
+	v.tangent.w = v.tangent.w * unity_WorldTransformParams.w;
+	#if !GERSTNER_ENABLED
+		o.normal = UnityObjectToWorldNormal(v.normal);
+		o.cNormal = o.normal;
+		o.tangent = normalize(mul(unity_ObjectToWorld, float4(v.tangent.xyz, 0)).xyz);
+		o.binormal = normalize(cross(o.normal, o.tangent) * v.tangent.w);
+	#endif
+
 	#ifdef TESSELLATION_VARIANT
-		#if NOISE_TEXTURE_ENABLED || GERSTNER_ENABLED || VORONOI_ENABLED
+		#if NOISE_TEXTURE_ENABLED || GERSTNER_ENABLED || VORONOI_ENABLED || VERT_FLIPBOOK_ENABLED
 			o.offsetMask = 1;
 			if (_TessellationOffsetMask == 1){
 				float3 p0 = mul(unity_ObjectToWorld, float4(v.vertex.xyz, 1)).xyz;
@@ -98,6 +109,34 @@ v2f vert (
 		#endif
 		v.vertex.xyz += o.wave;
 		o.wave.y = (o.wave.y + 1) * 0.5;
+	#elif VERT_FLIPBOOK_ENABLED
+		// Based on https://github.com/Error-mdl/ErrorWater/blob/master/shaders/cginc/water_vert.cginc#L36
+		float2 flipbookUV = v.uv * _VertOffsetFlipbookScale;
+		#if FLOW_ENABLED
+			float2 uvFlow = ScaleUV(o.uvFlow, _FlowMapScale, 0);
+			float4 flowMap = MOCHIE_SAMPLE_TEX2D_LOD(_FlowMap, uvFlow, 0);
+			float blendNoise = flowMap.a;
+			if (_BlendNoiseSource == 1){
+				float2 uvBlend = ScaleUV(o.uv, _BlendNoiseScale, 0);
+				blendNoise = MOCHIE_SAMPLE_TEX2D_SAMPLER_LOD(_BlendNoise, sampler_FlowMap, uvBlend, 0);
+			}
+			float2 flow = (flowMap.rg * 2 - 1) * _FlowStrength * 0.1;
+			float time = _Time.y * _FlowSpeed + blendNoise;
+			float3 flowUV0 = FlowUV(flipbookUV, flow, time, 0);
+			float3 flowUV1 = FlowUV(flipbookUV, flow, time, 0.5);
+			float3 flipbookSample0 = tex2DflipbookSmoothLOD(_VertOffsetFlipbook, sampler_VertOffsetFlipbook, flowUV0, _VertOffsetFlipbookSpeed, 0) * flowUV0.z;
+			float3 flipbookSample1 = tex2DflipbookSmoothLOD(_VertOffsetFlipbook, sampler_VertOffsetFlipbook, flowUV1, _VertOffsetFlipbookSpeed, 0) * flowUV1.z;
+			o.wave = flipbookSample0 + flipbookSample1;
+		#else
+			o.wave = tex2DflipbookSmoothLOD(_VertOffsetFlipbook, sampler_VertOffsetFlipbook, flipbookUV, _VertOffsetFlipbookSpeed, 0);
+		#endif
+		#ifdef TESSELLATION_VARIANT
+			o.wave *= o.offsetMask;
+		#endif
+		float3 bitangent = cross(v.normal, v.tangent.xyz) * v.tangent.w;
+		v.vertex.xyz += (o.wave.z - 0.5) * v.normal * _VertOffsetFlipbookStrength;
+		v.vertex.xyz -= (o.wave.x * normalize(v.tangent.xyz) / _VertOffsetFlipbookScale.x + o.wave.y * normalize(o.binormal) / _VertOffsetFlipbookScale.y) * _VertOffsetFlipbookStrength;
+		o.wave.y = 0;
 	#endif
 
 	o.pos = UnityObjectToClipPos(v.vertex);
@@ -108,18 +147,10 @@ v2f vert (
 			o.tangent = normalize(mul(unity_ObjectToWorld, float4(v.tangent.xyz, 0)).xyz);
 			o.binormal = normalize(cross(o.normal, o.tangent) * v.tangent.w);
 		}
-	#else
-		o.normal = UnityObjectToWorldNormal(v.normal);
-		o.cNormal = o.normal;
-		o.tangent = normalize(mul(unity_ObjectToWorld, float4(v.tangent.xyz, 0)).xyz);
-		o.binormal = normalize(cross(o.normal, o.tangent) * v.tangent.w);
 	#endif
 	o.worldPos = mul(unity_ObjectToWorld, v.vertex);
 	o.uvGrab = ComputeGrabScreenPos(o.pos);
 	o.localPos = v.vertex;
-	float2 uvs[] = {v.uv, v.uv1, v.uv2, v.uv3};
-	o.uvFlow = uvs[_FlowMapUV].xy;
-	o.uv = v.uv;
 
 	o.isInVRMirror = _VRChatMirrorMode == 1;
 

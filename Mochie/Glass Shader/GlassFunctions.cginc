@@ -63,38 +63,38 @@ void ApplyExtraDroplets(v2f i, inout float3 rainNormal, inout float flipbookBase
 
 #include "GlassKernels.cginc"
 
-float3 BlurredGrabpassSample(sampler2D tex, float2 uv, float str){
+float3 BlurredGrabpassSample(float2 uv, float str){
 	float3 blurCol = 0;
 	float2 blurStr = str;
 	blurStr.x *= 0.5625;
-	float4 uvBlur = float4(uv,0,0);
+	float2 uvBlur = uv;
 	
 	#if defined(BLURQUALITY_ULTRA)
 		[unroll(71)]
 		for (uint index = 0; index < 71; ++index){
 			uvBlur.xy = uv.xy + (kernel71[index] * blurStr);
-			blurCol += UNITY_SAMPLE_SCREENSPACE_TEXTURE(tex, uvBlur);
+			blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_GlassGrab, uvBlur);
 		}
 		blurCol /= 70;
 	#elif defined(BLURQUALITY_HIGH)
 		[unroll(43)]
 		for (uint index = 0; index < 43; ++index){
 			uvBlur.xy = uv.xy + (kernel43[index] * blurStr);
-			blurCol += UNITY_SAMPLE_SCREENSPACE_TEXTURE(tex, uvBlur);
+			blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_GlassGrab, uvBlur);
 		}
 		blurCol /= 42;
 	#elif defined(BLURQUALITY_MED)
 		[unroll(22)]
 		for (uint index = 0; index < 22; ++index){
 			uvBlur.xy = uv.xy + (kernel22[index] * blurStr);
-			blurCol += UNITY_SAMPLE_SCREENSPACE_TEXTURE(tex, uvBlur);
+			blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_GlassGrab, uvBlur);
 		}
 		blurCol /= 21;
 	#elif defined(BLURQUALITY_LOW)
 		[unroll(16)]
 		for (uint index = 0; index < 16; ++index){
 			uvBlur.xy = uv.xy + (kernel16[index] * blurStr);
-			blurCol += UNITY_SAMPLE_SCREENSPACE_TEXTURE(tex, uvBlur);
+			blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_GlassGrab, uvBlur);
 		}
 		blurCol /= 15;
 	#endif

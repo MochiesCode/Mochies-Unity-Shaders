@@ -30,6 +30,8 @@
 		_RippleScale("Ripple Scale", float) = 10
 		_RippleSpeed("Ripple Speed", float) = 10
 		_RippleStrength("Ripple Strength", float) = 1
+        _RippleSize("Ripple Size", Range(2,10)) = 6
+        _RippleDensity("Ripple Density", Float) = 1.57079632679
         [Enum(Droplets,0, Ripples,1)]_RainMode("Mode", Int) = 0
         _RainMask("Mask", 2D) = "white" {}
         [Enum(Red,0, Green,1, Blue,2, Alpha,0)]_RainMaskChannel("Channel", Int) = 0
@@ -126,7 +128,7 @@
                 #if defined(_RAIN_ON)
                     float rainMask = tex2D(_RainMask, TRANSFORM_TEX(i.uv, _RainMask));
                     #if defined(_RAINMODE_RIPPLE)
-                        float3 rainNormal = GetRipplesNormal(i.uv, _RippleScale, _RippleStrength*rainMask, _RippleSpeed);
+                        float3 rainNormal = GetRipplesNormal(i.uv, _RippleScale, _RippleStrength*rainMask, _RippleSpeed, _RippleSize, _RippleDensity);
                     #else
                         float3 rainNormal = GetFlipbookNormals(i, flipbookBase, rainMask);
                         ApplyExtraDroplets(i, rainNormal, flipbookBase, rainMask);
@@ -193,9 +195,9 @@
                         blurStr *= 0.25;
                     #endif
                     if (_Roughness > 0 && _Blur > 0)
-                        grabCol = BlurredGrabpassSample(_GlassGrab, screenUV, (roughness * blurStr));
+                        grabCol = BlurredGrabpassSample(screenUV, (roughness * blurStr));
                     else
-                        grabCol = UNITY_SAMPLE_SCREENSPACE_TEXTURE(_GlassGrab, screenUV);
+                        grabCol = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_GlassGrab, screenUV);
                     grabCol *= _GrabpassTint;
                     
                 #endif

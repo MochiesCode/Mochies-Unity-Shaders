@@ -1,11 +1,12 @@
 ﻿#include "UnityCG.cginc"
 #include "AutoLight.cginc"
 #include "UnityPBSLighting.cginc"
+#include "../Common/Sampling.cginc"
 
 #define EPSILON 1.192092896e-07
 
 // UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
-UNITY_DECLARE_SCREENSPACE_TEXTURE(_GlassGrab);
+MOCHIE_DECLARE_TEX2D_SCREENSPACE(_GlassGrab);
 sampler2D _RainSheet;
 sampler2D _BaseColor;
 sampler2D _RoughnessMap;
@@ -40,6 +41,8 @@ float _RippleScale;
 float _RippleSpeed;
 float _DynamicDroplets;
 float _RainBias;
+float _RippleSize;
+float _RippleDensity;
 
 float _Test;
 

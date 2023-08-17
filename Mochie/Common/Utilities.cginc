@@ -510,16 +510,17 @@ void ApplyPBRFiltering(inout float3 value, float contrast, float intensity, floa
 		previewValue = value;
 	}
 }
-float3 Get1RippleNormal(float2 uv, float2 center, float time, float scale, float strength){
+
+float3 Get1RippleNormal(float2 uv, float2 center, float time, float scale, float strength, float size, float density){
 	float2 ray = normalize(uv - center);
 	float x = scale * length(uv - center) / (0.5*UNITY_PI);
 	float dx = 0.01;
 	float x1 = x + dx;
-	float fx = min(x, 10);
-	float falloff = 0.5 * cos(UNITY_PI * fx / 10.0) + 0.5;
+	float fx = min(x, size);
+	float falloff = (0.5 * cos(UNITY_PI * fx / size) + 0.5);
 
-	x = clamp(x - time,-1.57079632679, 1.57079632679);
-	x1 = clamp(x1 - time,-1.57079632679, 1.57079632679);
+	x = clamp(x - time, -density, density);
+	x1 = clamp(x1 - time, -density, density);
 	float ripple = falloff*cos(5.0 * x) * cos(x);
 	float ripple1 = falloff*cos(5.0 * x1) * cos(x1);
 	
@@ -542,7 +543,7 @@ float2 N11(float2 p){
 	return frac((a.x * a.y * a.z));
 }
 
-float3 GetRipplesNormal(float2 uv, float scale, float strength, float speed){
+float3 GetRipplesNormal(float2 uv, float scale, float strength, float speed, float size, float density){
 	float3 normals = float3(0,0,1);
 	if (strength != 0){
 		float2 uv_scaled = uv * scale;
@@ -554,7 +555,7 @@ float3 GetRipplesNormal(float2 uv, float scale, float strength, float speed){
 				float2 cellx = cell0 + float2(x, y);
 				float noise = N11(0.713323*cellx.x + 5.139274*cellx.y);
 				float2 center = cellx + N22(cellx);
-				normals = Get1RippleNormal(uv_scaled, center, 13 * frac(speed * (_Time[0] + 2*noise)) - 4.0, 10.0, strength) + normals;
+				normals = Get1RippleNormal(uv_scaled, center, 13 * frac(speed * (_Time[0] + 2*noise)) - 4.0, 10.0, strength, size, density) + normals;
 			}
 		}
 	}
