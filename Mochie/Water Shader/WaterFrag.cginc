@@ -14,10 +14,6 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos);
 	atten = FadeShadows(i.worldPos, atten);
 
-	#if TRANSPARENCY_OPAQUE
-		_Opacity = 1;
-	#endif
-
 	#if GERSTNER_ENABLED
 		if (_RecalculateNormals == 1){
 			_NormalStr0 = -_NormalStr0;
@@ -57,19 +53,27 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	float3 uv10 = float3(baseUV1, 1);
 	#if FOAM_ENABLED
 		float2 uvFoam = ScaleUV(i.uv, _FoamTexScale, _FoamTexScroll * 0.1);
-		// ParallaxOffset(i, uvFoam, _FoamOffset, isFrontFace);
 		float3 uvF0 = float3(uvFoam, 1);
 		float3 uvF1 = uvF0;
+	#endif
+	#if NORMALMAP_FLIPBOOK_MODE
+		float2 normalFlipbookUV = i.uv * _NormalMapFlipbookScale;
+		float3 uvNF0 = float3(normalFlipbookUV, 1);
+		float3 uvNF1 = uvNF0;
+	#endif
+	#if EMISSION_ENABLED
+		float2 emissionUV = TRANSFORM_TEX(i.uv, _EmissionMap) + (_Time.y * _EmissionMapScroll);
+		float3 uvE0 = float3(emissionUV, 1);
+		float3 uvE1 = uvE0;
 	#endif
 
 	float2 uvFlow = ScaleUV(i.uvFlow, _FlowMapScale, 0);
 	float4 flowMap = MOCHIE_SAMPLE_TEX2D(_FlowMap, uvFlow);
-	flowMap = lerp(0, flowMap, _ZeroProp);
 	#if FLOW_ENABLED
 		float blendNoise = flowMap.a;
 		if (_BlendNoiseSource == 1){
 			float2 uvBlend = ScaleUV(i.uv, _BlendNoiseScale, 0);
-			blendNoise = MOCHIE_SAMPLE_TEX2D_SAMPLER(_BlendNoise, sampler_FlowMap, uvBlend);
+			blendNoise = MOCHIE_SAMPLE_TEX2D_SAMPLER_LOD(_BlendNoise, sampler_FlowMap, uvBlend, 0);
 		}
 		float2 flow = (flowMap.rg * 2 - 1) * _FlowStrength * 0.1;
 		float time = _Time.y * _FlowSpeed + blendNoise;
@@ -81,69 +85,90 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 			uvF0 = FlowUV(uvFoam, flow, time, 0);
 			uvF1 = FlowUV(uvFoam, flow, time, 0.5);
 		#endif
+		#if NORMALMAP_FLIPBOOK_MODE
+			uvNF0 = FlowUV(normalFlipbookUV, flow, time, 0);
+			uvNF1 = FlowUV(normalFlipbookUV, flow, time, 0.5);
+		#endif
+		#if EMISSION_ENABLED
+			uvE0 = FlowUV(emissionUV, flow, time, 0);
+			uvE1 = FlowUV(emissionUV, flow, time, 0.5);
+		#endif
 	#endif
 
-	#if NORMALMAP1_ENABLED
-		#if STOCHASTIC0_ENABLED
-			_NormalStr0 *= 1.5;
-			float4 normalMap0Sample = tex2Dstoch(_NormalMap0, sampler_FlowMap, uv00.xy);
-		#else
-			float4 normalMap0Sample = MOCHIE_SAMPLE_TEX2D_SAMPLER(_NormalMap0, sampler_FlowMap, uv00.xy);
-		#endif
-		float3 normalMap0 = UnpackScaleNormal(normalMap0Sample, _NormalStr0) * uv00.z;
-
+	#if NORMALMAP_FLIPBOOK_MODE
 		#if FLOW_ENABLED
-			#if STOCHASTIC0_ENABLED
-				float4 normalMap1Sample = tex2Dstoch(_NormalMap0, sampler_FlowMap, uv01.xy);
-			#else
-				float4 normalMap1Sample = MOCHIE_SAMPLE_TEX2D_SAMPLER(_NormalMap0, sampler_FlowMap, uv01.xy);
-			#endif
-			float3 normalMap1 = UnpackScaleNormal(normalMap1Sample, _NormalStr0) * uv01.z;
-		#endif
-		
-		#if STOCHASTIC1_ENABLED
-			_NormalStr1 *= 1.5;
-			float4 detailNormal0Sample = tex2Dstoch(_NormalMap1, sampler_FlowMap, uv10.xy);
-		#else
-			float4 detailNormal0Sample = MOCHIE_SAMPLE_TEX2D_SAMPLER(_NormalMap1, sampler_FlowMap, uv10.xy);
-		#endif
-		float3 detailNormal0 = UnpackScaleNormal(detailNormal0Sample, _NormalStr1) * uv10.z;
-
-		#if FLOW_ENABLED
-			#if STOCHASTIC1_ENABLED
-				float4 detailNormal1Sample = tex2Dstoch(_NormalMap1, sampler_FlowMap, uv11.xy);
-			#else
-				float4 detailNormal1Sample = MOCHIE_SAMPLE_TEX2D_SAMPLER(_NormalMap1, sampler_FlowMap, uv11.xy);
-			#endif
-			float3 detailNormal1 = UnpackScaleNormal(detailNormal1Sample, _NormalStr1) * uv11.z;
-			normalMap0 = normalize(normalMap0 + normalMap1);
-			detailNormal0 = normalize(detailNormal0 + detailNormal1);
-		#endif
-		normalMap = BlendNormals(normalMap0, detailNormal0);
-	#else
-		#if STOCHASTIC0_ENABLED
-			_NormalStr0 *= 1.5;
-			float4 normalMap0Sample = tex2Dstoch(_Normalmap0, sampler_flowMap, uv00.xy);
-		#else
-			float4 normalMap0Sample = MOCHIE_SAMPLE_TEX2D_SAMPLER(_NormalMap0, sampler_FlowMap, uv00.xy);
-		#endif
-		float3 normalMap0 = UnpackScaleNormal(normalMap0Sample, _NormalStr0) * uv00.z;
-
-		#if FLOW_ENABLED
-			#if STOCHASTIC0_ENABLED
-				float4 normalMap1Sample = tex2Dstoch(_NormalMap0, sampler_FlowMap, uv01.xy), _NormalStr0);
-			#else
-				float4 normalMap1Sample = MOCHIE_SAMPLE_TEX2D_SAMPLER(_NormalMap0, sampler_FlowMap, uv01.xy);
-			#endif
-			float3 normalMap1 = UnpackScaleNormal(normalMap1, _NormalStr0) * uv01.z;
+			float4 normalFlipbookSample0 = tex2DflipbookSmooth(_NormalMapFlipbook, sampler_FlowMap, uvNF0.xy, _NormalMapFlipbookSpeed);
+			float4 normalFlipbookSample1 = tex2DflipbookSmooth(_NormalMapFlipbook, sampler_FlowMap, uvNF1.xy, _NormalMapFlipbookSpeed);
+			float3 normalMap0 = UnpackScaleNormal(normalFlipbookSample0, _NormalMapFlipbookStrength) * uvNF0.z;
+			float3 normalMap1 = UnpackScaleNormal(normalFlipbookSample1, _NormalMapFlipbookStrength) * uvNF1.z;
 			normalMap = normalize(normalMap0 + normalMap1);
 		#else
-			normalMap = normalize(normalMap0);
+			float4 normalFlipbook = tex2DflipbookSmooth(_NormalMapFlipbook, sampler_FlowMap, normalFlipbookUV, _NormalMapFlipbookSpeed);
+			normalMap = normalize(UnpackScaleNormal(normalFlipbook, _NormalMapFlipbookStrength));
+		#endif
+	#else
+		#if NORMALMAP1_ENABLED
+			#if STOCHASTIC0_ENABLED
+				_NormalStr0 *= 1.5;
+				float4 normalMap0Sample = tex2Dstoch(_NormalMap0, sampler_FlowMap, uv00.xy);
+			#else
+				float4 normalMap0Sample = MOCHIE_SAMPLE_TEX2D_SAMPLER(_NormalMap0, sampler_FlowMap, uv00.xy);
+			#endif
+			float3 normalMap0 = UnpackScaleNormal(normalMap0Sample, _NormalStr0) * uv00.z;
+
+			#if FLOW_ENABLED
+				#if STOCHASTIC0_ENABLED
+					float4 normalMap1Sample = tex2Dstoch(_NormalMap0, sampler_FlowMap, uv01.xy);
+				#else
+					float4 normalMap1Sample = MOCHIE_SAMPLE_TEX2D_SAMPLER(_NormalMap0, sampler_FlowMap, uv01.xy);
+				#endif
+				float3 normalMap1 = UnpackScaleNormal(normalMap1Sample, _NormalStr0) * uv01.z;
+			#endif
+			
+			#if STOCHASTIC1_ENABLED
+				_NormalStr1 *= 1.5;
+				float4 detailNormal0Sample = tex2Dstoch(_NormalMap1, sampler_FlowMap, uv10.xy);
+			#else
+				float4 detailNormal0Sample = MOCHIE_SAMPLE_TEX2D_SAMPLER(_NormalMap1, sampler_FlowMap, uv10.xy);
+			#endif
+			float3 detailNormal0 = UnpackScaleNormal(detailNormal0Sample, _NormalStr1) * uv10.z;
+
+			#if FLOW_ENABLED
+				#if STOCHASTIC1_ENABLED
+					float4 detailNormal1Sample = tex2Dstoch(_NormalMap1, sampler_FlowMap, uv11.xy);
+				#else
+					float4 detailNormal1Sample = MOCHIE_SAMPLE_TEX2D_SAMPLER(_NormalMap1, sampler_FlowMap, uv11.xy);
+				#endif
+				float3 detailNormal1 = UnpackScaleNormal(detailNormal1Sample, _NormalStr1) * uv11.z;
+				normalMap0 = normalize(normalMap0 + normalMap1);
+				detailNormal0 = normalize(detailNormal0 + detailNormal1);
+			#endif
+			normalMap = BlendNormals(normalMap0, detailNormal0);
+		#else
+			#if STOCHASTIC0_ENABLED
+				_NormalStr0 *= 1.5;
+				float4 normalMap0Sample = tex2Dstoch(_Normalmap0, sampler_flowMap, uv00.xy);
+			#else
+				float4 normalMap0Sample = MOCHIE_SAMPLE_TEX2D_SAMPLER(_NormalMap0, sampler_FlowMap, uv00.xy);
+			#endif
+			float3 normalMap0 = UnpackScaleNormal(normalMap0Sample, _NormalStr0) * uv00.z;
+
+			#if FLOW_ENABLED
+				#if STOCHASTIC0_ENABLED
+					float4 normalMap1Sample = tex2Dstoch(_NormalMap0, sampler_FlowMap, uv01.xy), _NormalStr0);
+				#else
+					float4 normalMap1Sample = MOCHIE_SAMPLE_TEX2D_SAMPLER(_NormalMap0, sampler_FlowMap, uv01.xy);
+				#endif
+				float3 normalMap1 = UnpackScaleNormal(normalMap1, _NormalStr0) * uv01.z;
+				normalMap = normalize(normalMap0 + normalMap1);
+			#else
+				normalMap = normalize(normalMap0);
+			#endif
 		#endif
 	#endif
 
 	#if RAIN_ENABLED
-		float3 rainNormal = GetRipplesNormal(i.uv, _RippleScale, _RippleStr, _RippleSpeed);
+		float3 rainNormal = GetRipplesNormal(i.uv, _RippleScale, _RippleStr, _RippleSpeed, _RippleSize, _RippleDensity);
 		normalMap = BlendNormals(normalMap, rainNormal);
 	#endif
 
@@ -182,6 +207,9 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	float2 mainTexUV = TRANSFORM_TEX(i.uv, _MainTex) + _Time.y * 0.1 * _MainTexScroll;
 	mainTexUV += normalMap.xy * _BaseColorDistortionStrength;
 	float4 surfaceTint = _Color;
+	#if TRANSPARENCY_OPAQUE || TRANSPARENCY_PREMUL
+		surfaceTint = _NonGrabColor;
+	#endif
 	if (!isFrontFace)
 		surfaceTint = _BackfaceTint;
 
@@ -202,38 +230,57 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	#endif
 
 	#if DEPTH_EFFECTS_ENABLED
-		if (isFrontFace && !i.isInVRMirror){
-			#if CAUSTICS_ENABLED
+		#if CAUSTICS_ENABLED
+			if (isFrontFace && !i.isInVRMirror){
 				float caustDepth = depth;
 				float caustFade = saturate(pow(caustDepth, _CausticsFade));
 				if (caustFade > 0){
 					float3 wPos = GetWorldSpacePixelPosSP(i.localPos, screenUV);
 					float2 depthUV = Rotate3D(wPos, _CausticsRotation).xz;
-					float3 causticsOffset = UnpackNormal(MOCHIE_SAMPLE_TEX2D_SAMPLER(_NormalMap0, sampler_FlowMap, (depthUV*_CausticsDistortionScale*0.1)+_Time.y*_CausticsDistortionSpeed*0.05));
-					float2 causticsUV = (depthUV + uvOffset + (causticsOffset.xy * _CausticsDistortion)) * _CausticsScale;
-					float voronoi0 = Voronoi2D(causticsUV, _Time.y*_CausticsSpeed);
-					float voronoi1 = Voronoi2D(causticsUV, (_Time.y*_CausticsSpeed)+_CausticsDisp);
-					float voronoi2 = Voronoi2D(causticsUV, (_Time.y*_CausticsSpeed)+_CausticsDisp*2.0);
-					// float3 tex0 = tex2D(_CausticsTex, causticsUV + _Time.y*0.05);
-					// float3 tex1 = tex2D(_CausticsTex, causticsUV - _Time.y*0.025);
-					// float3 voronoi = min(tex0, tex1);
-					// float3 voronoi = min(voronoi2, min(voronoi1, voronoi0));
-					float3 voronoi = float3(voronoi0, voronoi1, voronoi2);
-					voronoi = pow(voronoi, _CausticsPower);
+					float3 caustics = 0;
+					#if CAUSTICS_VORONOI
+						_CausticsDistortion *= 0.5;
+						float3 causticsOffset = UnpackNormal(tex2Dstoch(_NormalMap0, sampler_FlowMap, (depthUV*_CausticsDistortionScale*0.1)+_Time.y*_CausticsDistortionSpeed*0.05));
+						float2 causticsUV = (depthUV + uvOffset + (causticsOffset.xy * _CausticsDistortion)) * _CausticsScale;
+						causticsUV *= 7.5;
+						_CausticsSpeed *= 3;
+						float voronoi0 = Voronoi2D(causticsUV, _Time.y*_CausticsSpeed);
+						float voronoi1 = Voronoi2D(causticsUV, (_Time.y*_CausticsSpeed)+_CausticsDisp);
+						float voronoi2 = Voronoi2D(causticsUV, (_Time.y*_CausticsSpeed)+_CausticsDisp*2.0);
+						caustics = float3(voronoi0, voronoi1, voronoi2);
+						caustics = pow(caustics, _CausticsPower*1.5);
+						caustics = smootherstep(0, 1, caustics);
+					#elif CAUSTICS_TEXTURE
+						float3 causticsOffset = UnpackNormal(tex2Dstoch(_NormalMap0, sampler_FlowMap, (depthUV*_CausticsDistortionScale*0.1)+_Time.y*_CausticsDistortionSpeed*0.05));
+						float2 causticsUV = (depthUV + uvOffset + (causticsOffset.xy * _CausticsDistortion)) * _CausticsScale;
+						causticsUV *= 0.2;
+						_CausticsSpeed *= 0.05;
+						_CausticsOpacity *= 10;
+						float2 uvTex0 = causticsUV +_Time.y * _CausticsSpeed;
+						float2 uvTex1 = causticsUV * -1 + _Time.y * _CausticsSpeed * 0.5;
+						float3 tex0 = MOCHIE_SAMPLE_TEX2D_SAMPLER(_CausticsTex, sampler_FlowMap, uvTex0);
+						float3 tex1 = MOCHIE_SAMPLE_TEX2D_SAMPLER(_CausticsTex, sampler_FlowMap, uvTex1);
+						caustics = min(tex0, tex1);
+						caustics = clamp(caustics, 0, 0.1);
+					#elif CAUSTICS_FLIPBOOK
+						float2 causticsUV = (depthUV + uvOffset) * _CausticsScale;
+						caustics = tex2DflipbookSmooth(_CausticsTexArray, sampler_FlowMap, causticsUV * 0.35, _CausticsFlipbookSpeed);
+						caustics = smootherstep(0.15, 1, caustics);
+					#endif
 					// topFade = 1-saturate(pow(caustDepth, _CausticsSurfaceFade) * 2);
-					float3 caustics = smootherstep(0, 1, voronoi) * _CausticsOpacity * caustFade * _CausticsColor;
-					col.rgb += caustics;
+					col.rgb += saturate(caustics * _CausticsColor * caustFade * _CausticsOpacity * surfaceTint);
 				}
-			#endif
-
-			#if DEPTHFOG_ENABLED
+			}
+		#endif
+		#if DEPTHFOG_ENABLED
+			if (isFrontFace && !i.isInVRMirror){
 				float fogDepth = depth;
 				fogDepth = saturate(pow(fogDepth, _FogPower));
 				float fogDepth0 = saturate(pow(fogDepth, _FogPower/2));
 				col.rgb = lerp(col.rgb, lerp(_FogTint.rgb, col.rgb, fogDepth), _FogTint.a);
 				col.rgb = lerp(col.rgb, lerp(_FogTint.rgb*0.5, col.rgb, fogDepth0), _FogTint.a);
-			#endif
-		}
+			}
+		#endif
 	#endif
 
 
@@ -408,8 +455,13 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 			ai.occlusion = 1; // float4(occlusion, 1);
 			ai.screenPos = i.pos.xy;
 			half4 diffTerm, specTerm;
-			ShadeAreaLights(ai, diffTerm, specTerm, true, !IsSpecularOff(), IsStereo());
-
+			if (_AreaLitStrength > 0){
+				ShadeAreaLights(ai, diffTerm, specTerm, true, !IsSpecularOff(), IsStereo());
+			}
+			else {
+				diffTerm = 0;
+				specTerm = 0;
+			}
 			float3 areaLitColor = col.rgb * diffTerm + specularTint * specTerm;
 			col.rgb += areaLitColor * _AreaLitStrength * MOCHIE_SAMPLE_TEX2D_SAMPLER(_AreaLitMask, sampler_FlowMap, TRANSFORM_TEX(i.uv, _AreaLitMask)).r;
 		#endif
@@ -424,6 +476,11 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 				edgeFadeDepth = saturate(Remap(edgeFadeDepth, 0, 1, -_EdgeFadeOffset, 1));
 			}
 		#endif
+	#endif
+
+	#if !(TRANSPARENCY_OPAQUE)
+		float2 opacityUV = ScaleOffsetScrollUV(i.uv, _OpacityMask_ST.xy, _OpacityMask_ST.zw, _OpacityMaskScroll);
+		_Opacity *= MOCHIE_SAMPLE_TEX2D_SAMPLER(_OpacityMask, sampler_FlowMap, opacityUV);
 	#endif
 
 	#if defined(UNITY_PASS_FORWARDADD)
@@ -448,14 +505,32 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	#endif
 
 	#if EMISSION_ENABLED
-		float2 emissUV = TRANSFORM_TEX(i.uv, _EmissionMap) + (_Time.y * _EmissionMapScroll);
 		#if EMISS_STOCHASTIC_ENABLED
-			float3 emissCol = tex2Dstoch(_EmissionMap, sampler_FlowMap, emissUV);
+			#if FLOW_ENABLED
+				float3 emissCol0 = tex2Dstoch(_EmissionMap, sampler_FlowMap, uvE0.xy) * uvE0.z;
+				float3 emissCol1 = tex2Dstoch(_EmissionMap, sampler_FlowMap, uvE1.xy) * uvE1.z;
+				float3 emissCol = emissCol0 + emissCol1;
+			#else
+				float3 emissCol = tex2Dstoch(_EmissionMap, sampler_FlowMap, emisssionUV);
+			#endif
 		#else
-			float3 emissCol = MOCHIE_SAMPLE_TEX2D_SAMPLER(_EmissionMap, sampler_FlowMap, emissUV);
+			#if FLOW_ENABLED
+				float3 emissCol0 = MOCHIE_SAMPLE_TEX2D_SAMPLER(_EmissionMap, sampler_FlowMap, uvE0.xy) * uvE0.z;
+				float3 emissCol1 = MOCHIE_SAMPLE_TEX2D_SAMPLER(_EmissionMap, sampler_FlowMap, uvE1.xy) * uvE1.z;
+				float3 emissCol = emissCol0 + emissCol1;
+			#else	
+				float3 emissCol = MOCHIE_SAMPLE_TEX2D_SAMPLER(_EmissionMap, sampler_FlowMap, emissionUV);
+			#endif
 		#endif
 		col.rgb += (emissCol * _EmissionColor);
 	#endif
+
+	flowMap = lerp(0, flowMap, _ZeroProp);
+
+	#if TRANSPARENCY_OPAQUE
+		col.a = 1;
+	#endif
+	
 	UNITY_APPLY_FOG(i.fogCoord, col);
 	
 	return col + flowMap;

@@ -173,8 +173,8 @@ void ApplyBCDissolve(g2f i, audioLinkData al, inout float4 albedo, out float3 bc
 }
 
 float3 GetDetailAlbedo(g2f i, float3 albedo){
-	float3 detailAlbedo = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailAlbedoMap, sampler_MainTex, i.uv2.xy);
-	return BlendColors(albedo, detailAlbedo, _DetailAlbedoBlending);
+	float4 detailAlbedo = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailAlbedoMap, sampler_MainTex, i.uv2.xy);
+	return BlendColorsAlpha(albedo, detailAlbedo.rgb, _DetailAlbedoBlending, detailAlbedo.a);
 }
 
 float4 GetAlbedo(g2f i, lighting l, masks m, audioLinkData al){

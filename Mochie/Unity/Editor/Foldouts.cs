@@ -492,7 +492,8 @@ namespace Mochie {
 			formatting.contentOffset = new Vector2(20f, -2f);
 			formatting.fixedHeight = 22f;
 			formatting.fixedWidth = MGUI.GetInspectorWidth() - subFoldoutOffsets[buttonCount];
-			formatting.fontSize = 10;
+			formatting.fontSize = 11;
+			formatting.fontStyle = FontStyle.Bold;
 
 			Rect rect = GUILayoutUtility.GetRect(0f, 20f, formatting);
 			rect.x -= 4f;

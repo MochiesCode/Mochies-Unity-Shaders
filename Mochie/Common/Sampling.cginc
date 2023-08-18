@@ -31,6 +31,7 @@
 #define MOCHIE_SAMPLE_TEX2DARRAY_SAMPLER_BIAS(tex,texSampler,coord,bias)				tex.SampleBias(texSampler,coord,bias)
 #define MOCHIE_SAMPLE_TEX2DARRAY_SAMPLER_BIAS_OFFS(tex,texSampler,coord,bias,offset)	tex.SampleBias(texSampler,coord,bias,offset.xy)
 #define MOCHIE_SAMPLE_TEX2DARRAY_SAMPLER_GRAD(tex,texSampler,coord,dx,dy)				tex.SampleGrad(texSampler,coord,dx,dy)
+#define MOCHIE_SAMPLE_TEX2DARRAY_SAMPLER_GRAD_LOD(tex,texSampler,coord,dx,dy,lod)			tex.SampleGrad(texSampler,coord,dx,dy,lod)
 
 #if defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
 
@@ -138,6 +139,108 @@ float4 tex2Dstoch(Texture2D tex, SamplerState ss, float2 uv){
 	return sampleA * weightA + sampleB * weightB + sampleC * weightC;
 }
 
+float4 tex2DstochLOD(Texture2DArray tex, SamplerState ss, float3 uv, float lod){
+	//skew the uv to create triangular grid
+	float2 skewUV = mul(float2x2 (1.0, 0.0, -0.57735027, 1.15470054), uv * 3.464);
+
+	//vertices on the triangular grid
+	int2 vertID = int2(floor(skewUV));
+
+	//barycentric coordinates of uv position
+	float3 temp = float3(frac(skewUV), 0);
+	temp.z = 1.0 - temp.x - temp.y;
+	
+	//each vertex on the grid gets an according weight value
+	int2 vertA, vertB, vertC;
+	float weightA, weightB, weightC;
+
+	//determine which triangle we're in
+	if (temp.z > 0.0){
+		weightA = temp.z;
+		weightB = temp.y;
+		weightC = temp.x;
+		vertA = vertID;
+		vertB = vertID + int2(0, 1);
+		vertC = vertID + int2(1, 0);
+	}
+	else {
+		weightA = -temp.z;
+		weightB = 1.0 - temp.y;
+		weightC = 1.0 - temp.x;
+		vertA = vertID + int2(1, 1);
+		vertB = vertID + int2(1, 0);
+		vertC = vertID + int2(0, 1);
+	}	
+
+	//get derivatives to avoid triangular artifacts
+	float2 dx = ddx(uv.xy);
+	float2 dy = ddy(uv.xy);
+
+	//offset uvs using magic numbers
+	float2 randomA = uv + frac(sin(fmod(float2(dot(vertA, float2(127.1, 311.7)), dot(vertA, float2(269.5, 183.3))), 3.14159)) * 43758.5453);
+	float2 randomB = uv + frac(sin(fmod(float2(dot(vertB, float2(127.1, 311.7)), dot(vertB, float2(269.5, 183.3))), 3.14159)) * 43758.5453);
+	float2 randomC = uv + frac(sin(fmod(float2(dot(vertC, float2(127.1, 311.7)), dot(vertC, float2(269.5, 183.3))), 3.14159)) * 43758.5453);
+	
+	//get texture samples
+	float4 sampleA = MOCHIE_SAMPLE_TEX2DARRAY_SAMPLER_GRAD_LOD(tex, ss, float3(randomA, uv.z), dx, dy, lod);
+	float4 sampleB = MOCHIE_SAMPLE_TEX2DARRAY_SAMPLER_GRAD_LOD(tex, ss, float3(randomB, uv.z), dx, dy, lod);
+	float4 sampleC = MOCHIE_SAMPLE_TEX2DARRAY_SAMPLER_GRAD_LOD(tex, ss, float3(randomC, uv.z), dx, dy, lod);
+	
+	//blend samples with weights	
+	return sampleA * weightA + sampleB * weightB + sampleC * weightC;
+}
+
+float4 tex2Dstoch(Texture2DArray tex, SamplerState ss, float3 uv){
+	//skew the uv to create triangular grid
+	float2 skewUV = mul(float2x2 (1.0, 0.0, -0.57735027, 1.15470054), uv * 3.464);
+
+	//vertices on the triangular grid
+	int2 vertID = int2(floor(skewUV));
+
+	//barycentric coordinates of uv position
+	float3 temp = float3(frac(skewUV), 0);
+	temp.z = 1.0 - temp.x - temp.y;
+	
+	//each vertex on the grid gets an according weight value
+	int2 vertA, vertB, vertC;
+	float weightA, weightB, weightC;
+
+	//determine which triangle we're in
+	if (temp.z > 0.0){
+		weightA = temp.z;
+		weightB = temp.y;
+		weightC = temp.x;
+		vertA = vertID;
+		vertB = vertID + int2(0, 1);
+		vertC = vertID + int2(1, 0);
+	}
+	else {
+		weightA = -temp.z;
+		weightB = 1.0 - temp.y;
+		weightC = 1.0 - temp.x;
+		vertA = vertID + int2(1, 1);
+		vertB = vertID + int2(1, 0);
+		vertC = vertID + int2(0, 1);
+	}	
+
+	//get derivatives to avoid triangular artifacts
+	float2 dx = ddx(uv.xy);
+	float2 dy = ddy(uv.xy);
+
+	//offset uvs using magic numbers
+	float2 randomA = uv + frac(sin(fmod(float2(dot(vertA, float2(127.1, 311.7)), dot(vertA, float2(269.5, 183.3))), 3.14159)) * 43758.5453);
+	float2 randomB = uv + frac(sin(fmod(float2(dot(vertB, float2(127.1, 311.7)), dot(vertB, float2(269.5, 183.3))), 3.14159)) * 43758.5453);
+	float2 randomC = uv + frac(sin(fmod(float2(dot(vertC, float2(127.1, 311.7)), dot(vertC, float2(269.5, 183.3))), 3.14159)) * 43758.5453);
+	
+	//get texture samples
+	float4 sampleA = MOCHIE_SAMPLE_TEX2DARRAY_SAMPLER_GRAD(tex, ss, float3(randomA, uv.z), dx, dy);
+	float4 sampleB = MOCHIE_SAMPLE_TEX2DARRAY_SAMPLER_GRAD(tex, ss, float3(randomB, uv.z), dx, dy);
+	float4 sampleC = MOCHIE_SAMPLE_TEX2DARRAY_SAMPLER_GRAD(tex, ss, float3(randomC, uv.z), dx, dy);
+	
+	//blend samples with weights	
+	return sampleA * weightA + sampleB * weightB + sampleC * weightC;
+}
+
 float4 tex2Dstoch(sampler2D tex, float2 uv){
 	//skew the uv to create triangular grid
 	float2 skewUV = mul(float2x2 (1.0, 0.0, -0.57735027, 1.15470054), uv * 3.464);
@@ -208,6 +311,108 @@ float4 tex2Dsuper(Texture2D tex, SamplerState ss, float2 uv){
 	col *= 0.25;
 
 	return col;
+}
+
+float4 cubic(float v)
+{
+    float4 n = float4(1.0, 2.0, 3.0, 4.0) - v;
+    float4 s = n * n * n;
+    float x = s.x;
+    float y = s.y - 4.0 * s.x;
+    float z = s.z - 4.0 * s.y + 6.0 * s.x;
+    float w = 6.0 - x - y - z;
+    return float4(x, y, z, w);
+}
+
+float4 tex2Dbicubic(Texture2D tex, SamplerState ss, float2 coord, float4 texSize)
+{
+    coord = coord * texSize.xy - 0.5;
+    float fx = frac(coord.x);
+    float fy = frac(coord.y);
+    coord.x -= fx;
+    coord.y -= fy;
+
+    float4 xcubic = cubic(fx);
+    float4 ycubic = cubic(fy);
+
+    float4 c = float4(coord.x - 0.5, coord.x + 1.5, coord.y - 0.5, coord.y + 1.5);
+    float4 s = float4(xcubic.x + xcubic.y, xcubic.z + xcubic.w, ycubic.x + ycubic.y, ycubic.z + ycubic.w);
+    float4 offset = c + float4(xcubic.y, xcubic.w, ycubic.y, ycubic.w) / s;
+
+    float4 sample0 = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, ss, float2(offset.x, offset.z) * texSize.zw);
+    float4 sample1 = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, ss, float2(offset.y, offset.z) * texSize.zw);
+    float4 sample2 = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, ss, float2(offset.x, offset.w) * texSize.zw);
+    float4 sample3 = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, ss, float2(offset.y, offset.w) * texSize.zw);
+
+    float sx = s.x / (s.x + s.y);
+    float sy = s.z / (s.z + s.w);
+
+    return lerp(
+        lerp(sample3, sample2, sx),
+        lerp(sample1, sample0, sx), sy);
+}
+
+float4 tex2Dflipbook(Texture2DArray flipbook, SamplerState ss, float2 uv, float speed){
+	float width, height;
+	uint elements;
+	flipbook.GetDimensions(width, height, elements);
+	uint index = frac(_Time.y*speed*(1/elements))*elements;
+	float3 flipbookUV = float3(uv, index);
+	return MOCHIE_SAMPLE_TEX2DARRAY_SAMPLER(flipbook, ss, flipbookUV);
+}
+
+float4 tex2DflipbookLOD(Texture2DArray flipbook, SamplerState ss, float2 uv, float speed, float lod){
+	float width, height;
+	uint elements;
+	flipbook.GetDimensions(width, height, elements);
+	uint index = frac(_Time.y*speed*(1/elements))*elements;
+	float3 flipbookUV = float3(uv, index);
+	return MOCHIE_SAMPLE_TEX2DARRAY_SAMPLER_LOD(flipbook, ss, flipbookUV, lod);
+}
+
+// Smooth versions based on https://github.com/Error-mdl/ErrorWater/blob/master/shaders/cginc/water_samplers.cginc
+float4 tex2DflipbookSmooth(Texture2DArray flipbook, sampler ss, float2 uv, float speed){
+	float width, height;
+	uint elements;
+	flipbook.GetDimensions(width, height, elements);
+    uint frame = ((uint)floor(_Time[1] * speed)) % elements;
+    uint frame2 = frame == elements - 1 ? 0 : frame + 1;
+    float4 sample1 = flipbook.Sample(ss, float3(uv, frame));
+    float4 sample2 = flipbook.Sample(ss, float3(uv, frame2));
+    return lerp(sample1, sample2, frac(_Time[1] * speed));
+}
+
+float4 tex2DflipbookSmoothStoch(Texture2DArray flipbook, sampler ss, float2 uv, float speed){
+	float width, height;
+	uint elements;
+	flipbook.GetDimensions(width, height, elements);
+    uint frame = ((uint)floor(_Time[1] * speed)) % elements;
+    uint frame2 = frame == elements - 1 ? 0 : frame + 1;
+    float4 sample1 = tex2Dstoch(flipbook, ss, float3(uv, frame));
+    float4 sample2 = tex2Dstoch(flipbook, ss, float3(uv, frame2));
+    return lerp(sample1, sample2, frac(_Time[1] * speed));
+}
+
+float4 tex2DflipbookSmoothLOD(Texture2DArray flipbook, sampler ss, float2 uv, float speed, float lod){
+	float width, height;
+	uint elements;
+	flipbook.GetDimensions(width, height, elements);
+    uint frame = ((uint)floor(_Time[1] * speed)) % elements;
+    uint frame2 = frame == elements - 1 ? 0 : frame + 1;
+    float4 sample1 = flipbook.SampleLevel(ss, float3(uv, frame), lod);
+    float4 sample2 = flipbook.SampleLevel(ss, float3(uv, frame2), lod);
+    return lerp(sample1, sample2, frac(_Time[1] * speed));
+}
+
+float4 tex2DflipbookSmoothStochLOD(Texture2DArray flipbook, sampler ss, float2 uv, float speed, float lod){
+	float width, height;
+	uint elements;
+	flipbook.GetDimensions(width, height, elements);
+    uint frame = ((uint)floor(_Time[1] * speed)) % elements;
+    uint frame2 = frame == elements - 1 ? 0 : frame + 1;
+    float4 sample1 = tex2DstochLOD(flipbook, ss, float3(uv, frame), lod);
+    float4 sample2 = tex2DstochLOD(flipbook, ss, float3(uv, frame2), lod);
+    return lerp(sample1, sample2, frac(_Time[1] * speed));
 }
 
 static const float2 kernel[16] = {

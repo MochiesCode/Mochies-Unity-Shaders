@@ -27,7 +27,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		//End VRSL Stuff
 	}, 1);
 
-	string versionLabel = "v1.23.2";
+	string versionLabel = "v1.24";
 	public static string receiverText = "AreaLit Maps";
 	public static string emitterText = "AreaLit Light";
 	public static string projectorText = "AreaLit Projector";
@@ -191,6 +191,8 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty rippleScale = null;
 	MaterialProperty rippleSpeed = null;
 	MaterialProperty rippleStr = null;
+	MaterialProperty rippleSize = null;
+	MaterialProperty rippleDensity = null;
 
 	MaterialProperty rimTog = null;
 	MaterialProperty rimStr = null;
@@ -524,6 +526,8 @@ internal class MochieStandardGUI : ShaderGUI {
 		rippleScale = FindProperty("_RippleScale", props);
 		rippleSpeed = FindProperty("_RippleSpeed", props);
 		rippleStr = FindProperty("_RippleStr", props);
+		rippleSize = FindProperty("_RippleSize", props);
+		rippleDensity = FindProperty("_RippleDensity", props);
 		rainMask = FindProperty("_RainMask", props);
 		uv5Rot = FindProperty("_UV5Rotate", props);
 		uv5Scroll = FindProperty("_UV5Scroll", props);
@@ -905,6 +909,7 @@ internal class MochieStandardGUI : ShaderGUI {
 			if (detailWorkflow.floatValue == 1){
 				me.TexturePropertySingleLine(Tips.packedMapText, detailPackedMap);
 				me.TexturePropertySingleLine(Tips.normalMapText, detailNormalMap, hasDetailNormal ? detailNormalMapScale : null);
+				me.TexturePropertySingleLine(Tips.detailMaskText, detailMask, detailMask.textureValue ? detailMaskChannel : null);
 				MGUI.sRGBWarning(detailPackedMap);
 				if (detailPackedMap.textureValue){
 					MGUI.PropertyGroupLayer(()=>{
@@ -1051,7 +1056,11 @@ internal class MochieStandardGUI : ShaderGUI {
 					MGUI.TexPropLabel("Power", 94);
 				me.ShaderProperty(scatterCol, Tips.scatterCol);
 				me.ShaderProperty(scatterAlbedoTint, Tips.scatterAlbedoTint);
-				MGUI.Space8();
+				MGUI.SpaceN2();
+			});
+			MGUI.Space1();
+			MGUI.PropertyGroupLayer(()=>{
+				MGUI.SpaceN2();
 				me.ShaderProperty(scatterIntensity, Tips.scatterIntensity);
 				me.ShaderProperty(scatterAmbient, Tips.scatterAmbient);
 				me.ShaderProperty(scatterPow, Tips.scatterPow);
@@ -1079,6 +1088,8 @@ internal class MochieStandardGUI : ShaderGUI {
 				me.ShaderProperty(rippleStr, "Strength");
 				me.ShaderProperty(rippleScale, "Scale");
 				me.ShaderProperty(rippleSpeed, "Speed");
+				me.ShaderProperty(rippleDensity, "Density");
+				me.ShaderProperty(rippleSize, "Size");
 				MGUI.SpaceN2();
 			});
 			MGUI.ToggleGroupEnd();
@@ -1208,8 +1219,6 @@ internal class MochieStandardGUI : ShaderGUI {
 				me.ShaderProperty(queueOffset, Tips.queueOffset);
 				MGUI.SpaceN1();
 				MGUI.DummyProperty("Render Queue:", mat.renderQueue.ToString());
-				if (!isLite)
-					me.ShaderProperty(mirrorToggle, Tips.mirrorMode);
 				MGUI.SpaceN4();
 			});
 
@@ -1219,8 +1228,14 @@ internal class MochieStandardGUI : ShaderGUI {
 				me.ShaderProperty(_BakeryMode, Tips.bakeryMode);
 				me.ShaderProperty(_BAKERY_SHNONLINEAR, "Bakery Non-Linear SH");
 				me.ShaderProperty(_BAKERY_LMSPEC, "Bakery Lightmap Specular");
+				MGUI.SpaceN3();
+			});
+			MGUI.PropertyGroupLayer(()=>{
+				MGUI.SpaceN3();
 				me.ShaderProperty(bicubicLightmap, Tips.bicubicLightmap);
-				me.ShaderProperty(unityFogToggle, "Unity Fog");
+				me.ShaderProperty(unityFogToggle, "Unity Scene Fog");
+				if (!isLite)
+					me.ShaderProperty(mirrorToggle, Tips.mirrorMode);
 				me.EnableInstancingField();
 				MGUI.SpaceN2();
 				me.DoubleSidedGIField();

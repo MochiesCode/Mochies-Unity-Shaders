@@ -214,7 +214,7 @@ half3 WorldNormal(half4 tan2world[3])
     }
 #endif
 
-float3 PerPixelWorldNormal(float4 i_tex, float4 raincoords, float4 tangentToWorld[3], SampleData sd)
+float3 PerPixelWorldNormal(float4 i_tex, float4 raincoords, float4 tangentToWorld[3], float4 detailCoords, SampleData sd)
 {
     #ifdef _NORMALMAP
         half3 tangent = tangentToWorld[0].xyz;
@@ -231,14 +231,14 @@ float3 PerPixelWorldNormal(float4 i_tex, float4 raincoords, float4 tangentToWorl
             binormal = newB * sign (dot (newB, binormal));
         #endif
         
-        half3 normalTangent = NormalInTangentSpace(i_tex, raincoords, sd);
+        half3 normalTangent = NormalInTangentSpace(i_tex, raincoords, detailCoords.zw, sd);
         TangentNormal = normalTangent;
         float3 normalWorld = NormalizePerPixelNormal(tangent * normalTangent.x + binormal * normalTangent.y + normal * normalTangent.z);
     #else
         float3 normalWorld = normalize(tangentToWorld[2].xyz);
         if (_RainToggle == 1){
             float mask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_RainMask, sampler_MainTex, raincoords.zw);
-            float3 rippleNormal = GetRipplesNormal(raincoords.xy, _RippleScale, _RippleStr*mask, _RippleSpeed);
+            float3 rippleNormal = GetRipplesNormal(raincoords.xy, _RippleScale, _RippleStr*mask, _RippleSpeed, _RippleSize, _RippleDensity);
             normalWorld = BlendNormals(normalWorld, rippleNormal);
             TangentNormal = BlendNormals(TangentNormal, rippleNormal);
         }
@@ -291,7 +291,7 @@ struct FragmentCommonData
 
 inline FragmentCommonData RoughnessSetup(float4 i_tex, float2 detailMaskCoords, SampleData sd)
 {
-    half2 metallicGloss = MetallicRough(i_tex, sd);
+    half2 metallicGloss = MetallicRough(i_tex, detailMaskCoords, sd);
     half metallic = metallicGloss.x;
     half smoothness = metallicGloss.y; // this is 1 minus the square root of real roughness m.
 
@@ -331,7 +331,7 @@ inline FragmentCommonData FragmentSetup (inout float4 i_tex, float4 i_tex2, floa
     #endif
 
     FragmentCommonData o = UNITY_SETUP_BRDF_INPUT (i_tex, i_tex4.zw, sd);
-    o.normalWorld = PerPixelWorldNormal(i_tex, i_tex3, tangentToWorld, sd);
+    o.normalWorld = PerPixelWorldNormal(i_tex, i_tex3, tangentToWorld, i_tex4, sd);
     o.eyeVec = NormalizePerPixelNormal(i_eyeVec);
     o.posWorld = i_posWorld;
 
@@ -661,7 +661,7 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
     UNITY_SETUP_INSTANCE_ID(i);
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
 
-    half3 occlusion = Occlusion(i.tex, sd);
+    half3 occlusion = Occlusion(i.tex, i.tex4.zw, sd);
     float perceptualRoughness = SmoothnessToPerceptualRoughness(s.smoothness);
     if (_GSAA == 1)
         perceptualRoughness = GSAARoughness(s.normalWorld, perceptualRoughness);
@@ -678,7 +678,13 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
         ai.occlusion = float4(occlusion, 1) * alOcclusion;
         ai.screenPos = i.pos.xy;
         half4 diffTerm, specTerm;
-        ShadeAreaLights(ai, diffTerm, specTerm, true, !IsSpecularOff(), IsStereo());
+        if (_AreaLitStrength > 0){
+            ShadeAreaLights(ai, diffTerm, specTerm, true, !IsSpecularOff(), IsStereo());
+        }
+        else {
+            diffTerm = 0;
+            specTerm = 0;
+        }
     #endif
 
     UnityLight mainLight = MainLight();

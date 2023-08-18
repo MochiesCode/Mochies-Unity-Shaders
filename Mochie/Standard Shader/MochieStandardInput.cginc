@@ -148,6 +148,8 @@ float4			_RainMask_ST;
 float 			_RippleStr;
 float			_RippleScale;
 float			_RippleSpeed;
+float			_RippleSize;
+float			_RippleDensity;
 float			_UV5Rotate;
 float2			_UV5Scroll;
 int				_UVRainMask;
@@ -503,7 +505,7 @@ half Alpha(float2 uv, SampleData sd)
 }
 
 
-half Occlusion(float4 uv, SampleData sd)
+half Occlusion(float4 uv, float2 detailMaskCoords, SampleData sd)
 {
 	#if WORKFLOW_PACKED
 		half4 map = SampleTexture(_PackedMap, uv.xy, sd);
@@ -517,18 +519,18 @@ half Occlusion(float4 uv, SampleData sd)
 	#if DETAIL_WORKFLOW_PACKED
 		half4 detMap = SampleDetailTexture(_DetailPackedMap, uv.zw, sd);
 		half detOcc = ChannelCheck(detMap, _DetailOcclusionChannel);
-		half blendedOcc = BlendScalars(occ, detOcc, _DetailAOBlend, DetailMask(uv.xy));
+		half blendedOcc = BlendScalars(occ, detOcc, _DetailAOBlend, DetailMask(detailMaskCoords));
 		occ = lerp(occ, blendedOcc, lerp(1, _DetailOcclusionStrength, _DetailOcclusionMult));	
 	#elif DETAIL_AO
 		half4 detOcc = SampleDetailTexture(_DetailAOMap, sampler_DetailAOMap, uv.zw, sd);
-		half blendedOcc = BlendScalarsAlpha(occ, detOcc.g, _DetailAOBlend, DetailMask(uv.xy), detOcc.a);
+		half blendedOcc = BlendScalarsAlpha(occ, detOcc.g, _DetailAOBlend, DetailMask(detailMaskCoords), detOcc.a);
 		occ = lerp(occ, blendedOcc, _DetailOcclusionStrength);
 	#endif
 
 	return occ;
 }
 
-half2 MetallicRough(float4 uv, SampleData sd)
+half2 MetallicRough(float4 uv, float2 detailMaskCoords, SampleData sd)
 {
 	half2 metGloss;
 	float metal = _Metallic;
@@ -552,7 +554,7 @@ half2 MetallicRough(float4 uv, SampleData sd)
 	#endif
 
 	#if DETAIL_WORKFLOW_PACKED
-		float detMask = DetailMask(uv.xy);
+		float detMask = DetailMask(detailMaskCoords);
 		float4 detPackedMap = SampleDetailTexture(_DetailPackedMap, uv.zw, sd);
 		float detRough = ChannelCheck(detPackedMap, _DetailRoughnessChannel);
 		float detMetal = ChannelCheck(detPackedMap, _DetailMetallicChannel);
@@ -565,12 +567,12 @@ half2 MetallicRough(float4 uv, SampleData sd)
 		#if DETAIL_ROUGH
 			float4 detRough = SampleDetailTexture(_DetailRoughnessMap, sampler_DetailRoughnessMap, uv.zw, sd);
 			// detRough.r = lerp(1-detRough.r, detRough.r, _DetailUseSmoothness);
-			float blendedRough = BlendScalarsAlpha(gloss, detRough, _DetailRoughBlend, DetailMask(uv.xy), detRough.a);
+			float blendedRough = BlendScalarsAlpha(gloss, detRough, _DetailRoughBlend, DetailMask(detailMaskCoords), detRough.a);
 			gloss = lerp(gloss, blendedRough, _DetailRoughnessStrength);
 		#endif
 		#if DETAIL_METALLIC
 			float4 detMetal = SampleDetailTexture(_DetailMetallicMap, sampler_DetailMetallicMap, uv.zw, sd);
-			float blendedMetal = BlendScalarsAlpha(metal, detMetal, _DetailMetallicBlend, DetailMask(uv.xy), detMetal.a);
+			float blendedMetal = BlendScalarsAlpha(metal, detMetal, _DetailMetallicBlend, DetailMask(detailMaskCoords), detMetal.a);
 			metal = lerp(metal, blendedMetal, _DetailMetallicStrength);
 		#endif
 	#endif
@@ -685,18 +687,18 @@ void Rim(float3 worldPos, float3 normal, inout float3 col, float2 uv){
 
 
 #ifdef _NORMALMAP
-half3 NormalInTangentSpace(float4 texcoords, float4 raincoords, SampleData sd)
+half3 NormalInTangentSpace(float4 texcoords, float4 raincoords, float2 detailMaskCoords, SampleData sd)
 {
 	half3 normalTangent = SampleTexture(_BumpMap, texcoords.xy, sd, _BumpScale);
 	#if defined(UNITY_ENABLE_DETAIL_NORMALMAP)
 		sd.scaleTransform = _DetailAlbedoMap_ST;
-		half mask = DetailMask(texcoords.xy);
+		half mask = DetailMask(detailMaskCoords);
 		half3 detailNormalTangent = SampleDetailTexture(_DetailNormalMap, sampler_DetailNormalMap, texcoords.zw, sd, _DetailNormalMapScale);
 		normalTangent = lerp(normalTangent, BlendNormals(normalTangent, detailNormalTangent), mask);
 	#endif
 	if (_RainToggle == 1){
 		float rainMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_RainMask, sampler_MainTex, raincoords.zw);
-		float3 rippleNormal = GetRipplesNormal(raincoords.xy, _RippleScale, _RippleStr*rainMask, _RippleSpeed);
+		float3 rippleNormal = GetRipplesNormal(raincoords.xy, _RippleScale, _RippleStr*rainMask, _RippleSpeed, _RippleSize, _RippleDensity);
 		normalTangent = BlendNormals(normalTangent, rippleNormal);
 	}
     return normalTangent;

@@ -19,10 +19,9 @@
 #define SAMPLE_TEXTURE2D(textureName, samplerName, coord2) textureName.Sample(samplerName, coord2)
 #endif
 
-// Bicubic lightmap sampling from 
-// https://gitlab.com/s-ilent/filamented/-/blob/master/Filamented/SharedFilteringLib.hlsl
+// Bicubic lightmap sampling from bakery standard shader
 
-float4 cubic(float v)
+float4 standardCubic(float v)
 {
     float4 n = float4(1.0, 2.0, 3.0, 4.0) - v;
     float4 s = n * n * n;
@@ -33,10 +32,6 @@ float4 cubic(float v)
     return float4(x, y, z, w);
 }
 
-
-// Unity's SampleTexture2DBicubic doesn't exist in 2018, which is our target here.
-// So this is a similar function with tweaks to have similar semantics. 
-
 float4 SampleTexture2DBicubicFilter(TEXTURE2D_ARGS(tex, smp), float2 coord, float4 texSize)
 {
     coord = coord * texSize.xy - 0.5;
@@ -45,8 +40,8 @@ float4 SampleTexture2DBicubicFilter(TEXTURE2D_ARGS(tex, smp), float2 coord, floa
     coord.x -= fx;
     coord.y -= fy;
 
-    float4 xcubic = cubic(fx);
-    float4 ycubic = cubic(fy);
+    float4 xcubic = standardCubic(fx);
+    float4 ycubic = standardCubic(fy);
 
     float4 c = float4(coord.x - 0.5, coord.x + 1.5, coord.y - 0.5, coord.y + 1.5);
     float4 s = float4(xcubic.x + xcubic.y, xcubic.z + xcubic.w, ycubic.x + ycubic.y, ycubic.z + ycubic.w);
