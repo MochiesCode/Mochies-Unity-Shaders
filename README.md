@@ -2,7 +2,7 @@
 
 A collection of shaders including a highly customizable toon shader, a standard shader replacement, particle shader, water shader, glass shader, and screenspace effect shader. 
 
-There are also more feature rich versions of a several of these shaders, as well as exclusive patron-only shaders available on my [Patreon](https://www.patreon.com/mochieshaders)
+Available on my [Patreon](https://www.patreon.com/mochieshaders) are more feature rich versions of a several of these shaders, such as Uber with geometry and dissolve effects, a hugely enhanced Screen FX with loads of extra stuff, tessellated water, and exclusive patron-only shaders and packages!
 
 For more information, or help with any of my shaders, feel free to add me on discord! Mochie#8794
 
