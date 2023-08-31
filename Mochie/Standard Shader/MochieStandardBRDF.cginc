@@ -97,19 +97,21 @@ half4 BRDF1_Mochie_PBS (
 	}
 
 	#ifdef LTCGI
-        half3 diffLight = 0;
-        LTCGI_Contribution(
-            worldPos, 
-            normal, 
-            viewDir, 
-            perceptualRoughness,
-            (lightmapUV - unity_LightmapST.zw) / unity_LightmapST.xy,
-            diffLight
-            #ifndef GLOSSYREFLECTIONS_OFF
-                , reflCol
-            #endif
-        );
-        diffCol += (diffColor * diffLight) * _LTCGIStrength;
+		if (_LTCGIStrength > 0){
+			half3 diffLight = 0;
+			LTCGI_Contribution(
+				worldPos, 
+				normal, 
+				viewDir, 
+				perceptualRoughness,
+				(lightmapUV - unity_LightmapST.zw) / unity_LightmapST.xy,
+				diffLight
+				#ifndef _GLOSSYREFLECTIONS_OFF
+					, reflCol
+				#endif
+			);
+			diffCol += (diffColor * diffLight) * _LTCGIStrength;
+		}
     #endif
 
 	#if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)

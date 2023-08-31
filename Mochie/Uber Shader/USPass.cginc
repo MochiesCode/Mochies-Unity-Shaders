@@ -225,7 +225,7 @@ float4 frag (g2f i, bool frontFace : SV_IsFrontFace) : SV_Target {
 	#endif
 
 	#if AUDIOLINK_ENABLED
-		ApplyVisualizers(i, diffuse.rgb);
+		ApplyVisualizers(i.rawUV, diffuse.rgb);
 	#endif
 
 	#if BCDISSOLVE_ENABLED

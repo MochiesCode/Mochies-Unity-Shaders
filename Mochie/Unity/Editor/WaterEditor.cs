@@ -124,6 +124,7 @@ public class WaterEditor : ShaderGUI {
 	MaterialProperty _CausticsFade = null;
 	MaterialProperty _CausticsDisp = null;
 	MaterialProperty _CausticsDistortion = null;
+	MaterialProperty _CausticsDistortionTex = null;
 	MaterialProperty _CausticsDistortionScale = null;
 	MaterialProperty _CausticsDistortionSpeed = null;
 	MaterialProperty _CausticsRotation = null;
@@ -531,7 +532,6 @@ public class WaterEditor : ShaderGUI {
 							}
 							else if (_CausticsToggle.floatValue == 3){
 								me.TexturePropertySingleLine(new GUIContent("Caustics Flipbook"), _CausticsTexArray);
-								MGUI.TextureSO(me, _CausticsTexArray);
 							}
 							me.ShaderProperty(_CausticsColor, "Color");
 							me.ShaderProperty(_CausticsOpacity, "Strength");
@@ -549,11 +549,14 @@ public class WaterEditor : ShaderGUI {
 							// me.ShaderProperty(_CausticsSurfaceFade, Tips.causticsSurfaceFade);
 							MGUI.Vector3Field(_CausticsRotation, "Rotation", false);
 						});
-						MGUI.PropertyGroup( ()=>{
-							me.ShaderProperty(_CausticsDistortion, "Distortion Strength");
-							me.ShaderProperty(_CausticsDistortionScale, "Distortion Scale");
-							MGUI.Vector2Field(_CausticsDistortionSpeed, "Distortion Speed");
-						});
+						if (_CausticsToggle.floatValue != 3){
+							MGUI.PropertyGroup( ()=>{
+								me.TexturePropertySingleLine(new GUIContent("Distortion Texture"), _CausticsDistortionTex);
+								me.ShaderProperty(_CausticsDistortion, "Distortion Strength");
+								me.ShaderProperty(_CausticsDistortionScale, "Distortion Scale");
+								MGUI.Vector2Field(_CausticsDistortionSpeed, "Distortion Speed");
+							});
+						}
 					}
 				};
 				Foldouts.Foldout("CAUSTICS", foldouts, causticsTabButtons, mat, me, causticsTabAction);
@@ -738,6 +741,8 @@ public class WaterEditor : ShaderGUI {
 	public override void AssignNewShaderToMaterial(Material mat, Shader oldShader, Shader newShader) {
 		base.AssignNewShaderToMaterial(mat, oldShader, newShader);
 		MGUI.ClearKeywords(mat);
+		ApplyMaterialSettings(mat);
+		ApplyTransparencySettings(mat);
 	}
 
 	void ApplyTransparencySettings(Material mat){
@@ -869,7 +874,7 @@ public class WaterEditor : ShaderGUI {
 
 	void ResetPrimaryNormal(){
 		_NormalMapScale0.vectorValue = new Vector4(3f,3f,0,0);
-		_NormalStr0.floatValue = 0.2f;
+		_NormalStr0.floatValue = 0.3f;
 		_Rotation0.floatValue = 0f;
 		_NormalMapScroll0.vectorValue = new Vector4(0.1f,0.1f,0,0);
 		_Normal0StochasticToggle.floatValue = 0f;
@@ -956,7 +961,7 @@ public class WaterEditor : ShaderGUI {
 
 	void ResetFoam(){
 		_FoamTexScale.vectorValue = new Vector4(5,5,0,0);
-		_FoamRoughness.floatValue = 0.6f;
+		_FoamRoughness.floatValue = 0.2f;
 		_FoamColor.colorValue = Color.white;
 		_FoamPower.floatValue = 200f;
 		_FoamOpacity.floatValue = 3f;
@@ -970,7 +975,7 @@ public class WaterEditor : ShaderGUI {
 		_FoamNoiseTexScale.vectorValue = new Vector4(3f,3f,0,0);
 		_FoamDistortionStrength.floatValue = 0.1f;
 		_FoamNormalStrength.floatValue = 4f;
-		_FoamNormalToggle.floatValue = 1f;
+		_FoamNormalToggle.floatValue = 0f;
 	}
 
 	void ResetReflSpec(){

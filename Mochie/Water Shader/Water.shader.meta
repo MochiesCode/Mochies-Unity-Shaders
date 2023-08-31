@@ -8,8 +8,9 @@ ShaderImporter:
   - _DetailNormal: {instanceID: 0}
   - _RoughnessMap: {instanceID: 0}
   - _MetallicMap: {instanceID: 0}
+  - _OpacityMask: {instanceID: 0}
   - _EmissionMap: {instanceID: 0}
-  - _NormalMap0: {fileID: 2800000, guid: 6d095a40a0b25e746a709fedd6a9aae6, type: 3}
+  - _NormalMap0: {fileID: 2800000, guid: 4229641ad60880a4a8e7c5614adf58a3, type: 3}
   - _NormalMap1: {fileID: 2800000, guid: 8c0fe4ffb1eaa3748a17395d8c9bd71a, type: 3}
   - _NormalMapFlipbook: {fileID: 18700000, guid: a8c438561072d124da8228cedc01ac9d,
       type: 2}
@@ -22,6 +23,8 @@ ShaderImporter:
   - _CausticsTex: {fileID: 2800000, guid: 260d71fa929534a49aa9a5efb274f6d3, type: 3}
   - _CausticsTexArray: {fileID: 18700000, guid: c0fa48a763b58a64aa5dbafeb6a4c84a,
       type: 2}
+  - _CausticsDistortionTex: {fileID: 2800000, guid: 4229641ad60880a4a8e7c5614adf58a3,
+      type: 3}
   - _FoamTex: {fileID: 2800000, guid: 6c6c8f6678ed78e4eb543b06dcbc5b8a, type: 3}
   - _FoamNoiseTex: {fileID: 2800000, guid: dfbb7eeed695dc14d82b08d887041406, type: 3}
   - _AreaLitMask: {instanceID: 0}

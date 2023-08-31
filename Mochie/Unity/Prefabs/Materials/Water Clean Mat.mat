@@ -30,6 +30,10 @@ Material:
         m_Texture: {fileID: 2800000, guid: 352f401c145570f488487622cd5fdaa6, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _CausticsDistortionTex:
+        m_Texture: {fileID: 2800000, guid: 6d095a40a0b25e746a709fedd6a9aae6, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _CausticsTex:
         m_Texture: {fileID: 2800000, guid: 260d71fa929534a49aa9a5efb274f6d3, type: 3}
         m_Scale: {x: 1, y: 1}
@@ -169,7 +173,7 @@ Material:
     - _FoamNoiseTexCrestStrength: 1.1
     - _FoamNoiseTexStrength: 0
     - _FoamNormalStrength: 4
-    - _FoamNormalToggle: 1
+    - _FoamNormalToggle: 0
     - _FoamOffset: 0
     - _FoamOpacity: 3
     - _FoamPower: 200

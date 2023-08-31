@@ -37,7 +37,7 @@ Shader "Mochie/Water" {
 		[Enum(Texture,0, Flipbook,1)]_NormalMapMode("Normal Map Mode", Int) = 0
 
 		[NoScaleOffset]_NormalMap0 ("", 2D) = "bump" {}
-		_NormalStr0("Strength", Float) = 0.2
+		_NormalStr0("Strength", Float) = 0.3
 		_NormalMapScale0("Scale", Vector) = (3,3,0,0)
 		_Rotation0("Rotation", Float) = 0
 		_NormalMapScroll0("Scrolling", Vector) = (0.1,0.1,0,0)
@@ -127,6 +127,7 @@ Shader "Mochie/Water" {
 		_CausticsTexArray("Texture Array", 2DArray) = "black" {}
 		_CausticsDisp("Dispersion", Float) = 0.15
 		_CausticsDistortion("Distortion", Float) = 0.5
+		_CausticsDistortionTex("Distortion Texture", 2D) = "bump" {}
 		_CausticsDistortionScale("Distortion Scale", Float) = 0.2
 		_CausticsDistortionSpeed("Distortion Speed", Vector) = (0.2,-0.2,0,0)
 		_CausticsColor("Color", Color) = (1,1,1,1)
@@ -153,7 +154,7 @@ Shader "Mochie/Water" {
 		_FoamNoiseTexCrestStrength("Crest Strength", Float) = 1.1
 		_FoamTexScale("Scale", Vector) = (5,5,0,0)
 		_FoamTexScroll("Scroll", Vector) = (0.1,-0.1,0,0)
-		_FoamRoughness("Roughness", Range(0,1)) = 0.6
+		_FoamRoughness("Roughness", Range(0,1)) = 0.2
 		_FoamColor("Color", Color) = (1,1,1,1)
 		_FoamPower("Power", Float) = 200
 		_FoamOpacity("Opacity", Float) = 3
@@ -162,7 +163,7 @@ Shader "Mochie/Water" {
 		_FoamCrestStrength("Crest Strength", Float) = 0
 		[Toggle(_FOAM_STOCHASTIC_ON)]_FoamStochasticToggle("Stochastic Sampling", Int) = 0
 		_FoamDistortionStrength("Distortion Strength", Float) = 0.1
-		[ToggleUI]_FoamNormalToggle("Foam Normals", Int) = 1
+		[ToggleUI]_FoamNormalToggle("Foam Normals", Int) = 0
 		_FoamNormalStrength("Foam Normal Strength", Float) = 4
 
 		[Toggle(_EDGEFADE_ON)]_EdgeFadeToggle("Enable", Int) = 1

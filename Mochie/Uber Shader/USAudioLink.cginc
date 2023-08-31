@@ -342,15 +342,15 @@ void InitializeAudioLink(inout audioLinkData al, float time){
 	}
 }
 
-void ApplyVisualizers(g2f i, inout float3 col){
+void ApplyVisualizers(float2 uv, inout float3 col){
 	if (_OscilloscopeStrength > 0){
-        bool marginL = i.rawUV.x > _OscilloscopeMarginLR.x;
-        bool marginR = i.rawUV.x < _OscilloscopeMarginLR.y;
-        bool marginT = i.rawUV.y < _OscilloscopeMarginTB.x;
-        bool marginB = i.rawUV.y > _OscilloscopeMarginTB.y;
+        bool marginL = uv.x > _OscilloscopeMarginLR.x;
+        bool marginR = uv.x < _OscilloscopeMarginLR.y;
+        bool marginT = uv.y < _OscilloscopeMarginTB.x;
+        bool marginB = uv.y > _OscilloscopeMarginTB.y;
 
         if (marginL && marginR && marginT && marginB){
-            float2 ouv = ScaleOffsetRotateUV(i.rawUV, _OscilloscopeScale, _OscilloscopeOffset, _OscilloscopeRot);
+            float2 ouv = ScaleOffsetRotateUV(uv, _OscilloscopeScale, _OscilloscopeOffset, _OscilloscopeRot);
             float texSample = AudioLinkLerpMultiline(ALPASS_WAVEFORM + float2(200. * ouv.x, 0)).r;
             float3 oscilloscope = clamp(1 - 50 * abs(texSample - ouv.y* 2. + 1), 0, 1);
             oscilloscope *= _OscilloscopeCol.rgb * _OscilloscopeCol.a * _OscilloscopeStrength * _AudioLinkStrength;

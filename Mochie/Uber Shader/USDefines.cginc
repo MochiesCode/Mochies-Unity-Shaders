@@ -553,6 +553,8 @@ struct appdata {
 	UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
+#include "USAudioLink.cginc"
+
 #if X_FEATURES
 
 int _GeomFXToggle;
@@ -653,7 +655,6 @@ struct g2f {
 	UNITY_VERTEX_OUTPUT_STEREO
 };
 
-#include "USAudioLink.cginc"
 #include "USXFeatures.cginc"
 
 #else
@@ -691,7 +692,6 @@ struct v2f {
 };
 #endif
 
-#include "USAudioLink.cginc"
 #include "USSSR.cginc"
 #include "USBRDF.cginc"
 #include "USLighting.cginc"

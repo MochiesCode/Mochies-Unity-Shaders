@@ -20,8 +20,8 @@
 	#include "../../AreaLit/Shader/Lighting.hlsl"
 #endif
 
-#ifdef LTCGI
-	#include "Assets/_pi_/_LTCGI/Shaders/LTCGI.cginc"
+#if LTCGI_ENABLED
+	#include "Packages/at.pimaker.ltcgi/Shaders/LTCGI.cginc"
 #endif
 
 //---------------------------------------

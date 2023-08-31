@@ -223,10 +223,12 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		float4 baseCol = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MWGrab, baseUV);
 		float4 col = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MWGrab, screenUV) * mainTex;
 		float depth = saturate(1-GetDepth(i, screenUV));
+		float rawDepth = saturate(1-GetDepth(i, baseUV));
 	#else
 		float4 baseCol = mainTex;
 		float4 col = mainTex;
 		float depth = 1;
+		float rawDepth = 1;
 	#endif
 
 	#if DEPTH_EFFECTS_ENABLED
@@ -240,7 +242,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 					float3 caustics = 0;
 					#if CAUSTICS_VORONOI
 						_CausticsDistortion *= 0.5;
-						float3 causticsOffset = UnpackNormal(tex2Dstoch(_NormalMap0, sampler_FlowMap, (depthUV*_CausticsDistortionScale*0.1)+_Time.y*_CausticsDistortionSpeed*0.05));
+						float3 causticsOffset = UnpackNormal(tex2Dstoch(_CausticsDistortionTex, sampler_FlowMap, (depthUV*_CausticsDistortionScale*0.1)+_Time.y*_CausticsDistortionSpeed*0.05));
 						float2 causticsUV = (depthUV + uvOffset + (causticsOffset.xy * _CausticsDistortion)) * _CausticsScale;
 						causticsUV *= 7.5;
 						_CausticsSpeed *= 3;
@@ -251,7 +253,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 						caustics = pow(caustics, _CausticsPower*1.5);
 						caustics = smootherstep(0, 1, caustics);
 					#elif CAUSTICS_TEXTURE
-						float3 causticsOffset = UnpackNormal(tex2Dstoch(_NormalMap0, sampler_FlowMap, (depthUV*_CausticsDistortionScale*0.1)+_Time.y*_CausticsDistortionSpeed*0.05));
+						float3 causticsOffset = UnpackNormal(tex2Dstoch(_CausticsDistortionTex, sampler_FlowMap, (depthUV*_CausticsDistortionScale*0.1)+_Time.y*_CausticsDistortionSpeed*0.05));
 						float2 causticsUV = (depthUV + uvOffset + (causticsOffset.xy * _CausticsDistortion)) * _CausticsScale;
 						causticsUV *= 0.2;
 						_CausticsSpeed *= 0.05;
@@ -316,9 +318,13 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		float foamTexNoise = lerp(1, foamNoise, _FoamNoiseTexStrength);
 		float foamCrestNoise = lerp(1, foamNoise, _FoamNoiseTexCrestStrength);
 		float foam = 0;
+		float foamDepth = 1;
 		#if DEPTH_EFFECTS_ENABLED
 			if (!i.isInVRMirror){
-				float foamDepth = saturate(pow(depth,_FoamPower));
+				foamDepth = saturate(pow(rawDepth,_FoamPower));
+				#if EDGEFADE_ENABLED
+					foamDepth = 1-saturate(Remap(1-foamDepth, 0, 1, -_EdgeFadeOffset, 1));
+				#endif
 				foam = saturate(foamTex.a * foamDepth * _FoamOpacity * foamTexNoise * Average(foamTex.rgb));
 				col.rgb = lerp(col.rgb, foamTex.rgb, foam);
 			}
@@ -471,8 +477,8 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		#if EDGEFADE_ENABLED
 			float edgeFadeDepth = 1;
 			if (!i.isInVRMirror){
-				edgeFadeDepth = saturate(1-GetDepth(i, baseUV));
-				edgeFadeDepth = (1-saturate(pow(edgeFadeDepth, _EdgeFadePower)));
+				edgeFadeDepth = rawDepth;
+				edgeFadeDepth = 1-saturate(pow(edgeFadeDepth, _EdgeFadePower));
 				edgeFadeDepth = saturate(Remap(edgeFadeDepth, 0, 1, -_EdgeFadeOffset, 1));
 			}
 		#endif

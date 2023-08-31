@@ -5,7 +5,7 @@
 // https://github.com/MochiesCode/Mochies-Unity-Shaders
 
 // Does not support deferred rendering
-// Does not meet the same instruction count restrictions as normal standard, intended for modern PC use only
+// Does not meet the same instruction count restrictions for older hardware as normal standard
 
 Shader "Mochie/Standard" {
     Properties {
