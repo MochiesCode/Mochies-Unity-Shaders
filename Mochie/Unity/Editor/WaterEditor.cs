@@ -509,7 +509,7 @@ public class WaterEditor : ShaderGUI {
 				else if (_VertOffsetMode.floatValue == 4){
 					MGUI.PropertyGroup(()=>{
 						me.TexturePropertySingleLine(new GUIContent("Vertex Offset Flipbook"), _VertOffsetFlipbook);
-						MGUI.Vector2Field(_VertOffsetFlipbookScale, "Scale");
+						MGUI.Vector2Field(_NormalMapFlipbookScale, "Scale");
 						me.ShaderProperty(_VertOffsetFlipbookStrength, "Strength");
 						me.ShaderProperty(_VertOffsetFlipbookSpeed, "Speed");
 					});

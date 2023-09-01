@@ -111,7 +111,7 @@ v2f vert (
 		o.wave.y = (o.wave.y + 1) * 0.5;
 	#elif VERT_FLIPBOOK_ENABLED
 		// Based on https://github.com/Error-mdl/ErrorWater/blob/master/shaders/cginc/water_vert.cginc#L36
-		float2 flipbookUV = v.uv * _VertOffsetFlipbookScale;
+		float2 flipbookUV = v.uv * _NormalMapFlipbookScale;
 		#if FLOW_ENABLED
 			float2 uvFlow = ScaleUV(o.uvFlow, _FlowMapScale, 0);
 			float4 flowMap = MOCHIE_SAMPLE_TEX2D_LOD(_FlowMap, uvFlow, 0);
