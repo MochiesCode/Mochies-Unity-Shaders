@@ -313,6 +313,11 @@ internal class MochieStandardGUI : ShaderGUI {
     MaterialProperty _UseVRSLShadowMask3AStrength = null;
     MaterialProperty _ShadowMaskActiveChannels = null;
     MaterialProperty _VRSLSpecularFunction = null;
+	MaterialProperty _VRSLGIInvertSmoothness = null;
+	MaterialProperty _VRSLGISmoothnessMapBlend = null;
+	MaterialProperty _VRSLGISmoothnessBooster = null;
+	MaterialProperty _VRSLSmoothnessMultiplier = null;
+	MaterialProperty _AreaLitUseGIUvs = null;
 
     MaterialProperty _VRSLShadowMaskUVSet = null;
     //MaterialProperty _VRSLGIDiffuseMode = null;
@@ -367,6 +372,11 @@ internal class MochieStandardGUI : ShaderGUI {
 		_VRSLSpecularMultiplier = FindProperty("_VRSLSpecularMultiplier", props);  
 		_VRSLSpecularShine = FindProperty("_VRSLSpecularShine", props);
 		_VRSLSpecularFunction = FindProperty("_VRSLSpecularFunction", props); 
+		_VRSLGIInvertSmoothness = FindProperty("_VRSLGIInvertSmoothness", props); 
+		_VRSLGISmoothnessMapBlend = FindProperty("_VRSLGISmoothnessMapBlend", props);
+		_VRSLGISmoothnessBooster = FindProperty("_VRSLGISmoothnessBooster", props);
+		_VRSLSmoothnessMultiplier = FindProperty("_VRSLSmoothnessMultiplier", props);
+		_AreaLitUseGIUvs = FindProperty("_AreaLitUseGIUvs", props);
 		//_VRSLGIDiffuseMode = FindProperty("_VRSLGIDiffuseMode", props);
 		_VRSL_LightTexture = FindProperty("_VRSL_LightTexture", props);
 		_UseGlobalVRSLLightTexture = FindProperty("_UseGlobalVRSLLightTexture", props);
@@ -1350,6 +1360,7 @@ internal class MochieStandardGUI : ShaderGUI {
 				CheckTrilinear(lightTex3.textureValue);
 				me.TexturePropertySingleLine(new GUIContent("Occlusion"), areaLitOcclusion);
 				if (areaLitOcclusion.textureValue){
+					me.ShaderProperty(_AreaLitUseGIUvs, "Use Same UVS as VRSL GI");
 					me.ShaderProperty(occlusionUVSet, "UV Set");
 				}
 				MGUI.TextureSO(me, areaLitOcclusion, areaLitOcclusion.textureValue);
@@ -1605,6 +1616,10 @@ internal class MochieStandardGUI : ShaderGUI {
 			// _VRSLGlossiness.floatValue = Mathf.Lerp(1.0f, 0.1f, g);
 			// EditorGUILayout.Space(4);
 			// me.ShaderProperty(_VRSLSpecularStrength, "VRSL Metallic/Specular Mixture");
+			me.ShaderProperty(_VRSLGIInvertSmoothness,"Invert Smoothness/Roughness");
+			me.ShaderProperty(_VRSLGISmoothnessMapBlend, "Smoothness/Roughness Map Blend");
+			me.ShaderProperty(_VRSLGISmoothnessBooster,"Base Smoothness/Roughness Amount");
+			me.ShaderProperty(_VRSLSmoothnessMultiplier,"Smoothness/Roughness Multiplier");
 			me.ShaderProperty(_VRSLSpecularMultiplier,"VRSL Specular Multiplier");
 			me.ShaderProperty(_VRSLSpecularShine, "Specular Shine Power");
 			});});MGUI.ToggleGroupEnd();

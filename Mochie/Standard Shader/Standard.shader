@@ -243,6 +243,7 @@ Shader "Mochie/Standard" {
 		[ToggleUI] _VRSLToggle ("Enable VRSL", Int) = 0
 		[ToggleUI] _DMXEmissionMapMix ("Mixture", Int) = 0
 		[ToggleUI] _UseLegacyDMXTextures ("Legacy DMX Textures", Int) = 0
+		[Toggle(_AREALIT_USE_GI_UVS)] _AreaLitUseGIUvs ("Area Lit Use GI UVs", Int) = 0
 
 		[NoScaleOffset] _OSCGridRenderTextureRAW("OSC Grid Render Texture (RAW Unsmoothed)", 2D) = "white" {}
 		[NoScaleOffset] _OSCGridRenderTexture("OSC Grid Render Texture (To Control Lights)", 2D) = "white" {}
@@ -287,6 +288,11 @@ Shader "Mochie/Standard" {
         _VRSLSpecularStrength("VRSL Specular Strength", Range(0.0, 1.0)) = 0.5
         _VRSLGIStrength("GI Strength", Range(0.1, 500)) = 1.0
         _VRSLSpecularMultiplier("Specular Multiplier", Range(1, 10)) = 1.0
+		_VRSLSmoothnessMultiplier("Smoothness Multiplier", Range(1, 10)) = 1.0
+
+		[ToggleUI] _VRSLGIInvertSmoothness ("Invert VRSL GI Smoothness", Int) = 0
+		_VRSLGISmoothnessBooster("VRSL GI General Smoothness", Range(0.0, 1.0)) = 0
+		_VRSLGISmoothnessMapBlend("VRSL GI Smoothness Map Blend", Range(0.0, 1.0)) = 0
 
 		[ToggleUI] _UseVRSLShadowMask1 ("Use VRSL Shadow Mask 1", Int) = 0
         [NoScaleOffset] _VRSLShadowMask1("VRSL GI ShadowMask 1", 2D) = "white" {}
@@ -318,6 +324,8 @@ Shader "Mochie/Standard" {
         [NoScaleOffset] _VRSL_LightCounter("VRSL Light Counter Texture", 2D) = "white" {}
 		[Enum(R,0,G,1,B,2,A,3)] _VRSLMetallicChannel ("Metallic texture channel", Float) = 0
 		[Enum(R,0,G,1,B,2,A,3)] _VRSLSmoothnessChannel ("Smoothness texture channel", Float) = 3
+
+		
 
 		
 		// [HideInInspector] BAKERY_META_ALPHA_ENABLE ("Enable Bakery alpha meta pass", Float) = 1.0
@@ -361,10 +369,10 @@ Shader "Mochie/Standard" {
             #pragma shader_feature_local _VRSL_GI
             #pragma shader_feature_local _VRSL_GI_SPECULARHIGHLIGHTS
             #pragma shader_feature_local _VRSL_SPECFUNC_GGX _VRSL_SPECFUNC_BECKMAN _VRSL_SPECFUNC_PHONG
-            #pragma shader_feature_local _VRSL_SHADOWMASK_UV0 _VRSL_SHADOWMASK_UV1
+            #pragma shader_feature_local _VRSL_SHADOWMASK_UV0 _VRSL_SHADOWMASK_UV1 _VRSL_SHADOWMASK_UV2 _VRSL_SHADOWMASK_UV3 _VRSL_SHADOWMASK_UV4
             #pragma shader_feature_local _VRSL_SHADOWMASK1
 			#pragma shader_feature_local _VRSL_SHADOWMASK2
-            #pragma shader_feature_local _VRSL_SHADOWMASK3
+            //#pragma shader_feature_local _VRSL_SHADOWMASK3
 			#pragma shader_feature_local _ _VRSL_SHADOWMASK_RG _VRSL_SHADOWMASK_RGB _VRSL_SHADOWMASK_RGBA
 
 
@@ -398,6 +406,7 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local BAKERY_SHNONLINEAR
 			#pragma shader_feature_local _OPAQUELIGHTS_OFF
 			#pragma shader_feature_local _AREALIT_ON
+			#pragma shader_feature_local _AREALIT_USE_GI_UVS
 			#pragma shader_feature_local _MIRROR_ON
 			#pragma shader_feature_local LOD_FADE_CROSSFADE
 			#pragma multi_compile_fog

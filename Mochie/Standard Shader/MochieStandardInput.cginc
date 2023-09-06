@@ -161,9 +161,10 @@ int				_RainToggle;
 		Texture2D   _Udon_VRSL_GI_LightTexture;
 	#else
 		Texture2D   _VRSL_LightTexture;
+		uniform float4  _VRSL_LightTexture_TexelSize;
 	#endif
 
-		uniform float4  _VRSL_LightTexture_TexelSize;
+		
 		SamplerState    VRSL_BilinearClampSampler, VRSLGI_PointClampSampler;
 		int     _Udon_VRSL_GI_LightCount;
 		sampler2D   _VRSLMetallicGlossMap;
@@ -213,6 +214,11 @@ int				_RainToggle;
 
 	//float4      _ProjectorColor;
 	half        _VRSLProjectorStrength;
+
+	int			_VRSLGIInvertSmoothness;
+	half		_VRSLGISmoothnessBooster;
+	half		_VRSLGISmoothnessMapBlend;
+	half		_VRSLSmoothnessMultiplier;
 
  #endif
 
@@ -392,15 +398,15 @@ float2 SelectUVSet(VertexInput v, int selection){
         
         float2 texcoord;
         #if _VRSL_SHADOWMASK_UV0
-            texcoord = TRANSFORM_TEX(v.uv0, _MainTex); // Always source from uv0
+            texcoord = v.uv0; // Always source from uv0
         #elif _VRSL_SHADOWMASK_UV1
-            texcoord = TRANSFORM_TEX(v.uv1, _MainTex); // Always source from uv0
+            texcoord = v.uv1;// Always source from uv0
         #elif _VRSL_SHADOWMASK_UV2
-            texcoord = TRANSFORM_TEX(v.uv2, _MainTex); // Always source from uv0
+            texcoord = v.uv2; // Always source from uv0
         #elif _VRSL_SHADOWMASK_UV3
-            texcoord = TRANSFORM_TEX(v.uv3, _MainTex); // Always source from uv0
+            texcoord = v.uv3; // Always source from uv0
         #elif _VRSL_SHADOWMASK_UV4
-            texcoord = TRANSFORM_TEX(v.uv4, _MainTex); // Always source from uv0
+            texcoord = v.uv4; // Always source from uv0
         #endif
         return texcoord;
     }
