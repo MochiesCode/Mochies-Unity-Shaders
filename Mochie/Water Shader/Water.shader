@@ -260,6 +260,7 @@ Shader "Mochie/Water" {
 			#pragma shader_feature_local _FOAM_NORMALS_ON
 			#pragma shader_feature_local _DEPTH_EFFECTS_ON
 			#pragma shader_feature_local _EMISSION_ON
+			#pragma shader_feature_local _EMISSIONMAP_STOCHASTIC_ON
 			#pragma shader_feature_local _OPAQUELIGHTS_OFF
 			#pragma shader_feature_local _AREALIT_ON
 			#pragma shader_feature_local _ _OPAQUE_MODE_ON _PREMUL_MODE_ON

@@ -43,11 +43,6 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	float2 uvNormal1 = ScaleUV(i.uv, _NormalMapScale1, _NormalMapScroll1);
 	float2 baseUV0 = Rotate2D(uvNormal0, _Rotation0);
 
-	// Literally the stupidest thing I've ever had to do (part 2)
-	float dummy = bla[unity_StereoEyeIndex];
-    if (_ScreenParams.x == 0)
-        baseUV0.x += dummy;
-
 	float2 baseUV1 = Rotate2D(uvNormal1, _Rotation1);
 	float3 uv00 = float3(baseUV0, 1);
 	float3 uv10 = float3(baseUV1, 1);
@@ -69,6 +64,12 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 
 	float2 uvFlow = ScaleUV(i.uvFlow, _FlowMapScale, 0);
 	float4 flowMap = MOCHIE_SAMPLE_TEX2D(_FlowMap, uvFlow);
+
+	// Literally the stupidest thing I've ever had to do (part 2)
+	float dummy = bla[unity_StereoEyeIndex];
+    if (_ScreenParams.x == 0)
+        flowMap.x += dummy;
+
 	#if FLOW_ENABLED
 		float blendNoise = flowMap.a;
 		if (_BlendNoiseSource == 1){
@@ -159,7 +160,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 				#else
 					float4 normalMap1Sample = MOCHIE_SAMPLE_TEX2D_SAMPLER(_NormalMap0, sampler_FlowMap, uv01.xy);
 				#endif
-				float3 normalMap1 = UnpackScaleNormal(normalMap1, _NormalStr0) * uv01.z;
+				float3 normalMap1 = UnpackScaleNormal(normalMap1Sample, _NormalStr0) * uv01.z;
 				normalMap = normalize(normalMap0 + normalMap1);
 			#else
 				normalMap = normalize(normalMap0);
@@ -174,7 +175,11 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 
 	#if DETAIL_NORMAL_ENABLED
 		float3 detNorm = UnpackScaleNormal(MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailNormal, sampler_FlowMap, detailUV), _DetailNormalStrength);
-		normalMap = lerp(normalMap, detNorm, detailBC.a);
+		#if DETAIL_BASECOLOR_ENABLED
+			normalMap = lerp(normalMap, detNorm, detailBC.a);
+		#else
+			normalMap = BlendNormals(detNorm, normalMap);
+		#endif
 	#endif
 
 	float2 refractionDir = normalMap.xy;
@@ -517,7 +522,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 				float3 emissCol1 = tex2Dstoch(_EmissionMap, sampler_FlowMap, uvE1.xy) * uvE1.z;
 				float3 emissCol = emissCol0 + emissCol1;
 			#else
-				float3 emissCol = tex2Dstoch(_EmissionMap, sampler_FlowMap, emisssionUV);
+				float3 emissCol = tex2Dstoch(_EmissionMap, sampler_FlowMap, emissionUV);
 			#endif
 		#else
 			#if FLOW_ENABLED
