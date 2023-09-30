@@ -23,7 +23,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		"LTCGI"
 	}, 1);
 
-	string versionLabel = "v1.24";
+	string versionLabel = "v1.25";
 	public static string receiverText = "AreaLit Maps";
 	public static string emitterText = "AreaLit Light";
 	public static string projectorText = "AreaLit Projector";
@@ -232,6 +232,7 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty areaLitOcclusion = null;
 	MaterialProperty ssrHeight = null;
 	MaterialProperty unityFogToggle = null;
+	MaterialProperty vertexBaseColor = null;
 
 	MaterialEditor me;
 
@@ -423,6 +424,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		detailRotate = FindProperty("_DetailRotate", props);
 		ssrHeight = FindProperty("_SSRHeight", props);
 		unityFogToggle = FindProperty("_UnityFogToggle", props);
+		vertexBaseColor = FindProperty("_VertexBaseColor", props);
 	}
 
 	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props){
@@ -1004,7 +1006,8 @@ internal class MochieStandardGUI : ShaderGUI {
 			MGUI.PropertyGroupLayer(()=>{
 				MGUI.SpaceN3();
 				me.ShaderProperty(bicubicLightmap, Tips.bicubicLightmap);
-				me.ShaderProperty(unityFogToggle, "Unity Scene Fog");
+				me.ShaderProperty(unityFogToggle, Tips.unityFogToggleText);
+				me.ShaderProperty(vertexBaseColor, Tips.vertexBaseColorText);
 				if (!isLite)
 					me.ShaderProperty(mirrorToggle, Tips.mirrorMode);
 				me.EnableInstancingField();

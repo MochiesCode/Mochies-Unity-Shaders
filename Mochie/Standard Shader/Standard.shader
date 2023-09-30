@@ -187,6 +187,7 @@ Shader "Mochie/Standard" {
 		_GSAAStrength("GSAA Strength", Float) = 1
 		_ReflShadowStrength("Shadowed Reflection Strength", Float) = 1
 		_ReflVertexColorStrength("Vertex Color Reflection Strength", Float) = 1
+		[ToggleUI]_VertexBaseColor("Vertex Base Color", Int) = 0
 
 		_ContrastReflShad("Contrast", Float) = 1
 		_BrightnessReflShad("Brightness", Float) = 100

@@ -8,7 +8,7 @@ using Mochie;
 
 public class GlassEditor : ShaderGUI {
 
-	string versionLabel = "v1.4";
+	string versionLabel = "v1.4.1";
 
 	// Surface
 	MaterialProperty _GrabpassTint = null;

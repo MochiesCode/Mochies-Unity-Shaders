@@ -10,8 +10,8 @@ Material:
   m_Name: Water Mat
   m_Shader: {fileID: 4800000, guid: 7e018b47cc1d059439656129107b3445, type: 3}
   m_ShaderKeywords: _CAUSTICS_VORONOI_ON _DEPTHFOG_ON _DEPTH_EFFECTS_ON _EDGEFADE_ON
-    _FLOW_ON _FOAM_ON _NORMALMAP_1_ON _NORMALMAP_FLIPBOOK_ON _NORMAL_FLIPBOOK_STOCHASTIC_ON
-    _REFLECTIONS_ON _SPECULAR_ON
+    _FLOW_ON _FOAM_ON _NORMALMAP_1_ON _NORMAL_FLIPBOOK_STOCHASTIC_ON _REFLECTIONS_ON
+    _SPECULAR_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -129,6 +129,10 @@ Material:
         m_Texture: {fileID: 18700000, guid: f9e27b340e9c5194199078a54772ec10, type: 2}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _VertexOffsetMask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Floats:
     - _AreaLitRoughnessMult: 1
     - _AreaLitStrength: 1
@@ -160,6 +164,7 @@ Material:
     - _EdgeFadePower: 300
     - _EdgeFadeSSR: 0.1
     - _EdgeFadeToggle: 1
+    - _EmissionDistortionStrength: 0
     - _EmissionMapStochasticToggle: 0
     - _EmissionToggle: 0
     - _FlowMapUV: 0
@@ -179,6 +184,7 @@ Material:
     - _FoamRoughness: 0.2
     - _FoamStochasticToggle: 0
     - _FoamToggle: 1
+    - _FogBrightness: 1
     - _FogPower: 10
     - _FogToggle: 1
     - _Metallic: 0
@@ -186,10 +192,9 @@ Material:
     - _Normal0StochasticToggle: 0
     - _Normal1StochasticToggle: 0
     - _Normal1Toggle: 1
-    - _NormalFlipbookStochasticToggle: 0
     - _NormalMapFlipbookSpeed: 8
     - _NormalMapFlipbookStrength: 0.2
-    - _NormalMapMode: 1
+    - _NormalMapMode: 0
     - _NormalMapOffset0: 0
     - _NormalMapOffset1: 0
     - _NormalStr0: 0.3
@@ -231,6 +236,8 @@ Material:
     - _VertOffsetMode: 0
     - _VertRemapMax: 1
     - _VertRemapMin: -1
+    - _VertexOffsetMaskChannel: 0
+    - _VertexOffsetMaskStrength: 1
     - _VoronoiSpeed: 1.5
     - _VoronoiWaveHeight: 1
     - _WaveDirection0: 0
@@ -274,6 +281,7 @@ Material:
     - _MainTexScroll: {r: 0, g: 0.1, b: 0, a: 0}
     - _NoiseTexScale: {r: 3, g: 3, b: 0, a: 0}
     - _NoiseTexScroll: {r: 0, g: 0.1, b: 0, a: 0}
+    - _NonGrabBackfaceTint: {r: 0, g: 0, b: 0, a: 0}
     - _NonGrabColor: {r: 0, g: 0, b: 0, a: 0}
     - _NormalMapFlipbookScale: {r: 3, g: 3, b: 0, a: 0}
     - _NormalMapScale0: {r: 3, g: 3, b: 0, a: 0}

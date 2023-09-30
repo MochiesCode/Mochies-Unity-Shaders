@@ -24,6 +24,7 @@ struct v2f_meta
 	#endif
 	float4 localPos : TEXCOORD6;
 	float3 normal 	: NORMAL;
+	float4 color	: COLOR;
 };
 
 v2f_meta vert_meta (VertexInput v)
@@ -34,6 +35,7 @@ v2f_meta vert_meta (VertexInput v)
     TexCoords(v, o.uv0, o.uv1, o.uv2, dummyUV0, o.uv3);
 	o.localPos = v.vertex;
 	o.normal = UnityObjectToWorldNormal(v.normal);
+	o.color = v.color;
 	#ifdef EDITOR_VISUALIZATION
 		o.vizUV = 0;
 		o.lightCoord = 0;
@@ -73,7 +75,7 @@ float4 frag_meta (v2f_meta i) : SV_Target
     // and surface roughness to produce final albedo.
 	i.normal = normalize(i.normal);
 	SampleData sd = SampleDataSetup(i);
-    FragmentCommonData s = UNITY_SETUP_BRDF_INPUT(i.uv0, i.uv3, sd);
+    FragmentCommonData s = UNITY_SETUP_BRDF_INPUT(i.uv0, i.uv3, i.color.rgb, sd);
 
 	#if AREALIT_ENABLED
 	    float perceptualRoughness = SmoothnessToPerceptualRoughness(s.smoothness);

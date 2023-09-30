@@ -148,7 +148,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		#else
 			#if STOCHASTIC0_ENABLED
 				_NormalStr0 *= 1.5;
-				float4 normalMap0Sample = tex2Dstoch(_Normalmap0, sampler_flowMap, uv00.xy);
+				float4 normalMap0Sample = tex2Dstoch(_NormalMap0, sampler_FlowMap, uv00.xy);
 			#else
 				float4 normalMap0Sample = MOCHIE_SAMPLE_TEX2D_SAMPLER(_NormalMap0, sampler_FlowMap, uv00.xy);
 			#endif
@@ -156,7 +156,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 
 			#if FLOW_ENABLED
 				#if STOCHASTIC0_ENABLED
-					float4 normalMap1Sample = tex2Dstoch(_NormalMap0, sampler_FlowMap, uv01.xy), _NormalStr0);
+					float4 normalMap1Sample = tex2Dstoch(_NormalMap0, sampler_FlowMap, uv01.xy);
 				#else
 					float4 normalMap1Sample = MOCHIE_SAMPLE_TEX2D_SAMPLER(_NormalMap0, sampler_FlowMap, uv01.xy);
 				#endif
@@ -211,12 +211,16 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	float2 baseUV = i.uvGrab.xy/proj;
 	float2 mainTexUV = TRANSFORM_TEX(i.uv, _MainTex) + _Time.y * 0.1 * _MainTexScroll;
 	mainTexUV += normalMap.xy * _BaseColorDistortionStrength;
-	float4 surfaceTint = _Color;
+	float4 surfaceTint = 0;
 	#if TRANSPARENCY_OPAQUE || TRANSPARENCY_PREMUL
 		surfaceTint = _NonGrabColor;
+		if (!isFrontFace)
+			surfaceTint = _NonGrabBackfaceTint;
+	#else
+		surfaceTint = _Color;
+		if (!isFrontFace)
+			surfaceTint = _BackfaceTint;
 	#endif
-	if (!isFrontFace)
-		surfaceTint = _BackfaceTint;
 
 	#if BASECOLOR_STOCHASTIC_ENABLED
 		float4 mainTex = tex2Dstoch(_MainTex, sampler_FlowMap, mainTexUV) * surfaceTint;
@@ -284,6 +288,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 				float fogDepth = depth;
 				fogDepth = saturate(pow(fogDepth, _FogPower));
 				float fogDepth0 = saturate(pow(fogDepth, _FogPower/2));
+				_FogTint.rgb *= _FogBrightness;
 				col.rgb = lerp(col.rgb, lerp(_FogTint.rgb, col.rgb, fogDepth), _FogTint.a);
 				col.rgb = lerp(col.rgb, lerp(_FogTint.rgb*0.5, col.rgb, fogDepth0), _FogTint.a);
 			}
@@ -439,7 +444,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 				#if DEPTH_EFFECTS_ENABLED
 					#if SSR_ENABLED
 						half4 ssrCol = GetSSR(i.worldPos, viewDir, reflDir, normalDir, 1-rough, col.rgb, _Metallic, screenUV, i.uvGrab);
-						ssrCol.rgb *= _SSRStrength * lerp(10, 7, linearstep(0,1,_Metallic));
+						ssrCol.rgb *= _SSRStrength * 5;
 						#if FOAM_ENABLED
 							foamLerp = 1-foamLerp;
 							foamLerp = smoothstep(0.7, 1, foamLerp);
@@ -516,6 +521,10 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	#endif
 
 	#if EMISSION_ENABLED
+		float2 emissUVOffset = normalMap.xy * _EmissionDistortionStrength;
+		uvE0.xy += emissUVOffset;
+		uvE1.xy += emissUVOffset;
+		emissionUV += emissUVOffset;
 		#if EMISS_STOCHASTIC_ENABLED
 			#if FLOW_ENABLED
 				float3 emissCol0 = tex2Dstoch(_EmissionMap, sampler_FlowMap, uvE0.xy) * uvE0.z;

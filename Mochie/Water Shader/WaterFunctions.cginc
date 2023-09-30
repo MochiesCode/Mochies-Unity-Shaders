@@ -77,6 +77,17 @@ float FadeShadows (float3 worldPos, float atten) {
 	return atten;
 }
 
+// Unused
+float SampleDepthCorrected(float2 screenUV){
+	float2 texSize = _CameraDepthTexture_TexelSize.xy;
+	float d0 = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, screenUV);
+	float d1 = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, screenUV + float2(1.0, 0.0) * texSize);
+	float d2 = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, screenUV + float2(-1.0, 0.0) * texSize);
+	float d3 = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, screenUV + float2(0.0, 1.0) * texSize);
+	float d4 = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, screenUV + float2(0.0, -1.0) * texSize);
+	return min(d0, min(d1, min(d2, min(d3, d4))));
+}
+
 float GetDepth(v2f i, float2 screenUV){
 	#if UNITY_UV_STARTS_AT_TOP
 		if (_CameraDepthTexture_TexelSize.y < 0) {

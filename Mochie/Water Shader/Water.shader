@@ -7,6 +7,7 @@ Shader "Mochie/Water" {
 		_NonGrabColor("Non Grabpass Color", Color) = (0,0,0,0)
 		_AngleTint("Angle Tint", Color) = (1,1,1,1)
 		_BackfaceTint("Backface Tint", Color) = (1,1,1,1)
+		_NonGrabBackfaceTint("Non Grabpass Backface Tint", Color) = (0,0,0,0)
 		_MainTex("Base Color", 2D) = "white" {}
 		_MainTexScroll("Scrolling", Vector) = (0,0.1,0,0)
 		_BaseColorOffset("Parallax Offset", Float) = 0
@@ -33,6 +34,7 @@ Shader "Mochie/Water" {
 		_EmissionMap("Emission Map", 2D) = "white" {}
 		[HDR]_EmissionColor("Emission Color", Color) = (1,1,1,1)
 		_EmissionMapScroll("Emission Map Scroll", Vector) = (0,0,0,0)
+		_EmissionDistortionStrength("Emission Distortion Strength", Float) = 0
 		
 		[Enum(Texture,0, Flipbook,1)]_NormalMapMode("Normal Map Mode", Int) = 0
 
@@ -42,7 +44,7 @@ Shader "Mochie/Water" {
 		_Rotation0("Rotation", Float) = 0
 		_NormalMapScroll0("Scrolling", Vector) = (0.1,0.1,0,0)
 		_NormalMapOffset0("Parallax Offset", Float) = 0
-		[ToggleUI]_Normal0StochasticToggle("Stochastic Sampling", Int) = 0
+		[Toggle(_NORMALMAP_0_STOCHASTIC_ON)]_Normal0StochasticToggle("Stochastic Sampling", Int) = 0
 
 		[Toggle(_NORMALMAP_1_ON)]_Normal1Toggle("Enable", Int) = 1
 		[NoScaleOffset]_NormalMap1("", 2D) = "bump" {}
@@ -51,13 +53,12 @@ Shader "Mochie/Water" {
 		_Rotation1("Rotation", Float) = 0
 		_NormalMapScroll1("Scrolling", Vector) = (-0.1,0.1,0,0)
 		_NormalMapOffset1("Parallax Offset", Float) = 0
-		[ToggleUI]_Normal1StochasticToggle("Stochastic Sampling", Int) = 0
+		[Toggle(_NORMALMAP_1_STOCHASTIC_ON)]_Normal1StochasticToggle("Stochastic Sampling", Int) = 0
 
 		_NormalMapFlipbook("Normal Map Flipbook", 2DArray) = "black" {}
 		_NormalMapFlipbookSpeed("Normal Map Flipbook Speed", Float) = 8
 		_NormalMapFlipbookStrength("Normal Map Flipbook Strength", Float) = 0.2
 		_NormalMapFlipbookScale("Flipbook Scale", Vector) = (3,3,0,0)
-		[ToggleUI]_NormalFlipbookStochasticToggle("Stochastic", Int) = 0
 
 		[Enum(Off,0, Environment,1, Manual,2)]_Reflections("Probe Reflections", Int) = 1
 		_ReflStrength("Reflection Strength", Float) = 1
@@ -121,7 +122,10 @@ Shader "Mochie/Water" {
 		_VertOffsetFlipbookStrength("Flipbook Strength", Float) = 0.2
 		_VertOffsetFlipbookSpeed("Flipbook Speed", Float) = 8
 		_VertOffsetFlipbookScale("Flipbook Scale", Vector) = (3,3,0,0)
-
+		_VertexOffsetMask("Vertex Offset Mask", 2D) = "white" {}
+		[Enum(Red,0, Green,1, Blue,2, Alpha,3)]_VertexOffsetMaskChannel("Vertex Offset Mask Channel", Int) = 0
+		_VertexOffsetMaskStrength("Vertex Offset Mask Strength", Range(0,1)) = 1
+		
 		[Enum(Off,0, Voronoi,1, Texture,2, Flipbook,3)]_CausticsToggle("Caustics Toggle", Int) = 1
 		_CausticsTex("Caustics Texture", 2D) = "black" {}
 		_CausticsTexArray("Texture Array", 2DArray) = "black" {}
@@ -144,6 +148,7 @@ Shader "Mochie/Water" {
 		[Toggle(_DEPTHFOG_ON)]_FogToggle("Enable", Int) = 1
 		_FogTint("Color", Color) = (0.11,0.26,0.26,1)
 		_FogPower("Power", Float) = 10
+		_FogBrightness("Brightness", Float) = 1
 
 		[Toggle(_FOAM_ON)]_FoamToggle("Enable", Int) = 1
 		[NoScaleOffset]_FoamTex("Foam Texture", 2D) = "white" {}
@@ -163,7 +168,7 @@ Shader "Mochie/Water" {
 		_FoamCrestStrength("Crest Strength", Float) = 0
 		[Toggle(_FOAM_STOCHASTIC_ON)]_FoamStochasticToggle("Stochastic Sampling", Int) = 0
 		_FoamDistortionStrength("Distortion Strength", Float) = 0.1
-		[ToggleUI]_FoamNormalToggle("Foam Normals", Int) = 0
+		[Toggle(_FOAM_NORMALS_ON)]_FoamNormalToggle("Foam Normals", Int) = 0
 		_FoamNormalStrength("Foam Normal Strength", Float) = 4
 
 		[Toggle(_EDGEFADE_ON)]_EdgeFadeToggle("Enable", Int) = 1
@@ -177,7 +182,7 @@ Shader "Mochie/Water" {
 		_RippleSize("Ripple Size", Range(2,10)) = 6
 		_RippleDensity("Ripple Density", Float) = 1.57079632679
 
-		[ToggleUI]_AreaLitToggle("Enable", Int) = 0
+		[Toggle(_AREALIT_ON)]_AreaLitToggle("Enable", Int) = 0
 		_AreaLitMask("Mask", 2D) = "white" {}
 		_AreaLitStrength("Strength", Float) = 1
 		_AreaLitRoughnessMult("Roughness Multiplier", Float) = 1
