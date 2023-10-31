@@ -51,7 +51,7 @@ public class WaterEditor : ShaderGUI {
 	}, 0);
 
     string header = "WaterHeader_Pro";
-	string versionLabel = "v1.14.2";
+	string versionLabel = "v1.16";
 
 	MaterialProperty _Color = null;
 	MaterialProperty _NonGrabColor = null;
@@ -236,6 +236,13 @@ public class WaterEditor : ShaderGUI {
 	MaterialProperty _VertexOffsetMask = null;
 	MaterialProperty _VertexOffsetMaskStrength = null;
 	MaterialProperty _VertexOffsetMaskChannel = null;
+	MaterialProperty _SubsurfaceTint = null;
+	MaterialProperty _SubsurfaceThreshold = null;
+	MaterialProperty _SubsurfaceBrightness = null;
+	MaterialProperty _SubsurfaceStrength = null;
+	// MaterialProperty _FogTint2 = null;
+	// MaterialProperty _FogPower2 = null;
+	// MaterialProperty _FogBrightness2 = null;
 
 	// MaterialProperty _NormalFlipbookStochasticToggle = null;
 	
@@ -533,7 +540,15 @@ public class WaterEditor : ShaderGUI {
 						MGUI.TextureSO(me, _VertexOffsetMask);
 					});
 				}
-
+				if (_VertOffsetMode.floatValue > 0){
+					MGUI.BoldLabel("Subsurface Scattering");
+					MGUI.PropertyGroup(()=>{
+						me.ShaderProperty(_SubsurfaceTint, "Tint");
+						me.ShaderProperty(_SubsurfaceStrength, "Strength");
+						me.ShaderProperty(_SubsurfaceBrightness, "Brightness");
+						me.ShaderProperty(_SubsurfaceThreshold, "Threshold");
+					});
+				}
 				MGUI.ToggleGroupEnd();
 			};
 			Foldouts.Foldout("VERTEX OFFSET", foldouts, vertTabButtons, mat, me, vertTabAction);
@@ -621,13 +636,20 @@ public class WaterEditor : ShaderGUI {
 				Action fogTabAction = ()=>{
 					me.ShaderProperty(_FogToggle, "Enable");
 					MGUI.Space4();
+					MGUI.ToggleGroup(_FogToggle.floatValue == 0);
+					// MGUI.BoldLabel("Layer 1");
 					MGUI.PropertyGroup(()=>{
-						MGUI.ToggleGroup(_FogToggle.floatValue == 0);
 						me.ShaderProperty(_FogTint, "Color");
 						me.ShaderProperty(_FogBrightness, "Brightness");
 						me.ShaderProperty(_FogPower, "Power");
-						MGUI.ToggleGroupEnd();
 					});
+					// MGUI.BoldLabel("Layer 2");
+					// MGUI.PropertyGroup(()=>{
+					// 	me.ShaderProperty(_FogTint2, "Color");
+					// 	me.ShaderProperty(_FogBrightness2, "Brightness");
+					// 	me.ShaderProperty(_FogPower2, "Power");
+					// });
+					MGUI.ToggleGroupEnd();
 				};
 				Foldouts.Foldout("DEPTH FOG", foldouts, fogTabButtons, mat, me, fogTabAction);
 			}
@@ -945,6 +967,10 @@ public class WaterEditor : ShaderGUI {
 		_VertOffsetFlipbookScale.vectorValue = new Vector4(3f,3f,0f,0f);
 		_VertexOffsetMaskStrength.floatValue = 1f;
 		_VertexOffsetMaskChannel.floatValue = 0f;
+		_SubsurfaceTint.colorValue = Color.white;
+		_SubsurfaceThreshold.floatValue = 0.5f;
+		_SubsurfaceBrightness.floatValue = 10f;
+		_SubsurfaceStrength.floatValue = 0f;
 	}
 
 	void ResetCaustics(){
@@ -975,8 +1001,8 @@ public class WaterEditor : ShaderGUI {
 		_FoamPower.floatValue = 200f;
 		_FoamOpacity.floatValue = 3f;
 		_FoamTexScroll.vectorValue = new Vector4(0.1f,-0.1f,0,0);
-		_FoamCrestStrength.floatValue = 0f;
-		_FoamCrestThreshold.floatValue = 0.5f;
+		_FoamCrestStrength.floatValue = 0.5f;
+		_FoamCrestThreshold.floatValue = 0f;
 		_FoamNoiseTexScroll.vectorValue = new Vector4(0f,0.1f,0f,0f);
 		_FoamNoiseTexStrength.floatValue = 0f;
 		_FoamNoiseTexCrestStrength.floatValue = 1.1f;
@@ -1002,6 +1028,7 @@ public class WaterEditor : ShaderGUI {
 		_LightDir.vectorValue = new Vector4(0f,0.75f,1f,0f);
 		_ReflCubeRotation.vectorValue = Vector4.zero;
 		_DetailTextureMode.floatValue = 0f;
+		_SSRHeight.floatValue = 0.2f;
 	}
 
 	void ResetRain(){

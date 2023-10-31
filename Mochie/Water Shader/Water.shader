@@ -67,7 +67,7 @@ Shader "Mochie/Water" {
 		[ToggleUI]_SSR("Screenspace Reflections", Int) = 0
 		_SSRStrength("SSR Strength", Float) = 1
 		_EdgeFadeSSR("Edge Fade", Range(0,1)) = 0.1
-		_SSRHeight("SSR Height", Range(0.1, 0.5)) = 0.1
+		_SSRHeight("SSR Height", Range(0.1, 0.5)) = 0.2
 		_ReflCube("Cubemap", CUBE) = "gray" {}
 		_ReflCubeRotation("Rotation", Vector) = (0,0,0,0)
 		[Enum(Off,0, Directional Light,1, Manual,2)]_Specular("Specular", Int) = 1
@@ -125,6 +125,10 @@ Shader "Mochie/Water" {
 		_VertexOffsetMask("Vertex Offset Mask", 2D) = "white" {}
 		[Enum(Red,0, Green,1, Blue,2, Alpha,3)]_VertexOffsetMaskChannel("Vertex Offset Mask Channel", Int) = 0
 		_VertexOffsetMaskStrength("Vertex Offset Mask Strength", Range(0,1)) = 1
+		_SubsurfaceTint("Subsurface Tint", Color) = (1,1,1,1)
+		_SubsurfaceThreshold("Subsurface Threshold", Range(0,1)) = 0.5
+		_SubsurfaceBrightness("Subsurface Brightness", Float) = 10
+		_SubsurfaceStrength("Subsurface Strength", Range(0,1)) = 0
 		
 		[Enum(Off,0, Voronoi,1, Texture,2, Flipbook,3)]_CausticsToggle("Caustics Toggle", Int) = 1
 		_CausticsTex("Caustics Texture", 2D) = "black" {}
@@ -149,6 +153,9 @@ Shader "Mochie/Water" {
 		_FogTint("Color", Color) = (0.11,0.26,0.26,1)
 		_FogPower("Power", Float) = 10
 		_FogBrightness("Brightness", Float) = 1
+		_FogTint2("Color", Color) = (0.055,0.13,0.13,1)
+		_FogPower2("Power", Float) = 5
+		_FogBrightness2("Brightness", Float) = 1
 
 		[Toggle(_FOAM_ON)]_FoamToggle("Enable", Int) = 1
 		[NoScaleOffset]_FoamTex("Foam Texture", 2D) = "white" {}
@@ -160,11 +167,11 @@ Shader "Mochie/Water" {
 		_FoamTexScale("Scale", Vector) = (5,5,0,0)
 		_FoamTexScroll("Scroll", Vector) = (0.1,-0.1,0,0)
 		_FoamRoughness("Roughness", Range(0,1)) = 0.2
-		_FoamColor("Color", Color) = (1,1,1,1)
+		[HDR]_FoamColor("Color", Color) = (1,1,1,1)
 		_FoamPower("Power", Float) = 200
 		_FoamOpacity("Opacity", Float) = 3
 		_FoamOffset("Parallax Offset", Float) = 0
-		_FoamCrestThreshold("Crest Threshold", Float) = 0.5
+		_FoamCrestThreshold("Crest Threshold", Range(0,1)) = 0.5
 		_FoamCrestStrength("Crest Strength", Float) = 0
 		[Toggle(_FOAM_STOCHASTIC_ON)]_FoamStochasticToggle("Stochastic Sampling", Int) = 0
 		_FoamDistortionStrength("Distortion Strength", Float) = 0.1

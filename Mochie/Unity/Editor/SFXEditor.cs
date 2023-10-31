@@ -55,7 +55,7 @@ public class SFXEditor : ShaderGUI {
 
     // Texture file names
 	string header = "SFXHeader_Pro";
-	string versionLabel = "v1.15";
+	string versionLabel = "v1.16";
 	
     // Commonly used strings
     string modeLabel = "Mode";
@@ -264,6 +264,14 @@ public class SFXEditor : ShaderGUI {
 	MaterialProperty _AudioLinkOutlineBand = null;
 	MaterialProperty _AudioLinkOutlineMin = null;
 	MaterialProperty _AudioLinkOutlineMax = null;
+	MaterialProperty _AudioLinkOutlineColBand = null;
+	MaterialProperty _AudioLinkOutlineColStrength = null;
+	MaterialProperty _AudioLinkOutlineColMin = null;
+	MaterialProperty _AudioLinkOutlineColMax = null;
+	MaterialProperty _AudioLinkOutlineMixBand = null;
+	MaterialProperty _AudioLinkOutlineMixStrength = null;
+	MaterialProperty _AudioLinkOutlineMixMin = null;
+	MaterialProperty _AudioLinkOutlineMixMax = null;
 	MaterialProperty _AudioLinkMiscStrength = null;
 	MaterialProperty _AudioLinkMiscBand = null;
 	MaterialProperty _AudioLinkMiscMin = null;
@@ -284,12 +292,18 @@ public class SFXEditor : ShaderGUI {
     MaterialProperty _ShiftY = null;
     MaterialProperty _OutlineCol = null;
     MaterialProperty _OutlineThresh = null;
+	MaterialProperty _OutlineAltEnable = null;
+	MaterialProperty _OutlineThreshAlt = null;
+	MaterialProperty _OutlineColAlt = null;
     MaterialProperty _BackgroundCol = null;
     MaterialProperty _OutlineType = null;
     MaterialProperty _OutlineThiccS = null;
 	MaterialProperty _OLUseGlobal = null;
 	MaterialProperty _OLMinRange = null;
 	MaterialProperty _OLMaxRange = null;
+	MaterialProperty _OutlineHueShift = null;
+	MaterialProperty _OutlineHueShiftAuto = null;
+	MaterialProperty _OutlineHueShiftSpeed = null;
 	MaterialProperty _SobelClearInner = null;
 	MaterialProperty _RoundingToggle = null;
 	MaterialProperty _Rounding = null;
@@ -497,7 +511,7 @@ public class SFXEditor : ShaderGUI {
 							me.ShaderProperty(_Hue, "Hue");
 						else
 							me.ShaderProperty(_AutoShiftSpeed, "Shift Speed");
-						me.ShaderProperty(_AutoShift, "Auto Shift");
+						me.ShaderProperty(_AutoShift, "Auto Hue Shift");
 					});
 					MGUI.PropertyGroup(()=>{
 						MGUI.Vector3FieldRGB(_RGB, "RGB Multiplier");
@@ -850,11 +864,27 @@ public class SFXEditor : ShaderGUI {
 							MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
 							if (_OutlineType.floatValue == 2)
 								me.ShaderProperty(_AuraSampleCount, "Sample Count");
-							me.ShaderProperty(_OutlineCol, "Line Tint");
+							me.ShaderProperty(_OutlineHueShiftAuto, "Auto Hue Shift");
+							if (_OutlineHueShiftAuto.floatValue == 1){
+								me.ShaderProperty(_OutlineHueShiftSpeed, "Shift Speed");
+							}
+							else {
+								me.ShaderProperty(_OutlineHueShift, "Hue");
+							}
+							me.ShaderProperty(_OutlineCol, "Base Line Tint");
+							if (_OutlineType.floatValue == 1 && _OutlineAltEnable.floatValue == 1){
+								me.ShaderProperty(_OutlineColAlt, "Mix Line Tint");
+							}
 							me.ShaderProperty(_BackgroundCol, "Background Tint");
 							if (_OutlineType.floatValue == 1){
+								me.ShaderProperty(_OutlineAltEnable, "Enable Mix Tint");
+							}
+							if (_OutlineType.floatValue == 1){
 								me.ShaderProperty(_OutlineThiccS, "Thickness");
-								me.ShaderProperty(_OutlineThresh, strengthLabel);
+								me.ShaderProperty(_OutlineThresh, "Base Strength");
+								if (_OutlineAltEnable.floatValue == 1){
+									me.ShaderProperty(_OutlineThreshAlt, "Mix Strength");
+								}
 								me.ShaderProperty(_SobelClearInner, "Remove Inner Shading");
 							}
 							else if (_OutlineType.floatValue == 2){
@@ -1065,10 +1095,23 @@ public class SFXEditor : ShaderGUI {
 					Dictionary<Action, GUIContent> alOutlineTabButtons = new Dictionary<Action, GUIContent>();
 					alOutlineTabButtons.Add(()=>{ResetALOutline();}, MGUI.resetLabel);
 					Action alOutlineTabAction = ()=>{
+						MGUI.BoldLabel("Thickness");
 						MGUI.PropertyGroup(()=>{
 							me.ShaderProperty(_AudioLinkOutlineBand, "Band");
 							me.ShaderProperty(_AudioLinkOutlineStrength, "Strength");
 							MGUI.SliderMinMax(_AudioLinkOutlineMin, _AudioLinkOutlineMax, 0f, 2f, "Remap", 1);
+						});
+						MGUI.BoldLabel("Base Line Opacity");
+						MGUI.PropertyGroup(()=>{
+							me.ShaderProperty(_AudioLinkOutlineColBand, "Band");
+							me.ShaderProperty(_AudioLinkOutlineColStrength, "Strength");
+							MGUI.SliderMinMax(_AudioLinkOutlineColMin, _AudioLinkOutlineColMax, 0f, 2f, "Remap", 1);
+						});
+						MGUI.BoldLabel("Mix Line Opacity");
+						MGUI.PropertyGroup(()=>{
+							me.ShaderProperty(_AudioLinkOutlineMixBand, "Band");
+							me.ShaderProperty(_AudioLinkOutlineMixStrength, "Strength");
+							MGUI.SliderMinMax(_AudioLinkOutlineMixMin, _AudioLinkOutlineMixMax, 0f, 2f, "Remap", 1);
 						});
 					};
 					Foldouts.SubFoldout("Outline 1", foldouts, alOutlineTabButtons, mat, me, alOutlineTabAction);
@@ -1208,7 +1251,6 @@ public class SFXEditor : ShaderGUI {
 	}
 
 	void ResetColor(){
-		_FilterModel.floatValue = 0f;
 		_ColorUseGlobal.floatValue = 1f;
 		_ColorMinRange.floatValue = 8f;
 		_ColorMaxRange.floatValue = 15f;
@@ -1231,7 +1273,6 @@ public class SFXEditor : ShaderGUI {
 	}
 
 	void ResetShake(){
-		_ShakeModel.floatValue = 0f;
 		_ShakeUseGlobal.floatValue = 1f;
 		_ShakeMinRange.floatValue = 8f;
 		_ShakeMaxRange.floatValue = 15f;
@@ -1242,7 +1283,6 @@ public class SFXEditor : ShaderGUI {
 	}
 	
 	void ResetDistortion(){
-		_DistortionModel.floatValue = 0f;
 		_DistortionUseGlobal.floatValue = 1f;
 		_DistortionMinRange.floatValue = 8f;
 		_DistortionMaxRange.floatValue = 15f;
@@ -1254,7 +1294,6 @@ public class SFXEditor : ShaderGUI {
 	}
 
 	void ResetBlur(){
-		_BlurModel.floatValue = 0f;
 		_PixelBlurSamples.floatValue = 43f;
 		_BlurUseGlobal.floatValue = 1f;
 		_BlurMinRange.floatValue = 8f;
@@ -1286,7 +1325,6 @@ public class SFXEditor : ShaderGUI {
 		_NoiseMaxRange.floatValue = 15f;
 	}
 	void ResetFog(){
-		_Fog.floatValue = 0f;
 		_FogUseGlobal.floatValue = 0f;
 		_FogMinRange.floatValue = 15f;
 		_FogMaxRange.floatValue = 20f;
@@ -1301,7 +1339,6 @@ public class SFXEditor : ShaderGUI {
 	}
 
 	void ResetZoom(){
-		_Zoom.floatValue = 0f;
 		_ZoomStr.floatValue = 0f;
 		_ZoomStrR.floatValue = 0f;
 		_ZoomStrG.floatValue = 0f;
@@ -1312,7 +1349,6 @@ public class SFXEditor : ShaderGUI {
 	}
 
 	void ResetSST(){
-		_SST.floatValue = 0f;
 		_SSTBlend.floatValue = 0f;
 		_SSTUseGlobal.floatValue = 1f;
 		_SSTMinRange.floatValue = 8f;
@@ -1332,7 +1368,6 @@ public class SFXEditor : ShaderGUI {
 	}
 
 	void ResetTriplanar(){
-		_Triplanar.floatValue = 0f;
 		_TPUseGlobal.floatValue = 1f;
 		_TPColor.colorValue = Color.white;
 		_TPMinRange.floatValue = 8f;
@@ -1348,11 +1383,10 @@ public class SFXEditor : ShaderGUI {
 	}
 
 	void ResetOutline(){
-		_OutlineType.floatValue = 0f;
 		_AuraSampleCount.floatValue = 43f;
 		_OutlineCol.colorValue = new Color(0,0,0,1);
 		_BackgroundCol.colorValue = new Color(1,1,1,0);
-		_OutlineThresh.floatValue = 1000f;
+		_OutlineThresh.floatValue = 100f;
 		_OutlineThiccS.floatValue = 0.49f;
 		_AuraFade.floatValue = 0.5f;
 		_AuraStr.floatValue = 0.25f;
@@ -1360,6 +1394,12 @@ public class SFXEditor : ShaderGUI {
 		_OLMinRange.floatValue = 8f;
 		_OLMaxRange.floatValue = 15f;
 		_SobelClearInner.floatValue = 1f;
+		_OutlineHueShift.floatValue = 0f;
+		_OutlineHueShiftAuto.floatValue = 0f;
+		_OutlineHueShiftSpeed.floatValue = 1f;
+		_OutlineColAlt.colorValue = Color.white;
+		_OutlineThreshAlt.floatValue = 100f;
+		_OutlineAltEnable.floatValue = 0f;
 	}
 
 	void ResetAudioLink(){

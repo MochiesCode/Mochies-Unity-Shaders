@@ -102,6 +102,14 @@ float depth;
 	int _AudioLinkOutlineBand;
 	float _AudioLinkOutlineStrength;
 	float _AudioLinkOutlineMin, _AudioLinkOutlineMax;
+	int _AudioLinkOutlineColBand;
+	float _AudioLinkOutlineColStrength;
+	float _AudioLinkOutlineColMin;
+	float _AudioLinkOutlineColMax;
+	int _AudioLinkOutlineMixBand;
+	float _AudioLinkOutlineMixStrength;
+	float _AudioLinkOutlineMixMin;
+	float _AudioLinkOutlineMixMax;
 
 	int _AudioLinkMiscBand;
 	float _AudioLinkMiscStrength;
@@ -159,6 +167,12 @@ float depth;
 	float _PulseSpeed, _NormalMapFilter, _NMFToggle, _NMFOpacity, _DBOpacity;
 	float _SobelFilterOpacity;
 	float4 _SobelFilterColor, _SobelFilterBackgroundColor;
+	float _OutlineHueShiftAuto;
+	float _OutlineHueShiftSpeed;
+	float _OutlineHueShift;
+	float4 _OutlineColAlt;
+	float _OutlineThreshAlt;
+	int _OutlineAltEnable;
 #endif
 
 struct audioLinkData {

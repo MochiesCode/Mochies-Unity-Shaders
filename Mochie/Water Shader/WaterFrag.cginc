@@ -22,6 +22,9 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 			_FoamNormalStrength = -_FoamNormalStrength;
 		}
 	#endif
+	#if VERT_OFFSET_ENABLED
+		i.wave.y = saturate(i.wave.y);
+	#endif
 
 	float4 detailBC = 0;
 	float2 detailUV = i.uv;
@@ -221,6 +224,12 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		if (!isFrontFace)
 			surfaceTint = _BackfaceTint;
 	#endif
+	
+	#if VERT_OFFSET_ENABLED
+		float3 waveTint = _SubsurfaceTint.rgb * _SubsurfaceBrightness;
+		float subsurfaceThreshold = smoothstep(_SubsurfaceThreshold, 1, i.wave.y);
+		surfaceTint.rgb = lerp(surfaceTint.rgb, waveTint, subsurfaceThreshold * _SubsurfaceStrength);
+	#endif
 
 	#if BASECOLOR_STOCHASTIC_ENABLED
 		float4 mainTex = tex2Dstoch(_MainTex, sampler_FlowMap, mainTexUV) * surfaceTint;
@@ -287,10 +296,20 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 			if (isFrontFace && !i.isInVRMirror){
 				float fogDepth = depth;
 				fogDepth = saturate(pow(fogDepth, _FogPower));
-				float fogDepth0 = saturate(pow(fogDepth, _FogPower/2));
+				float fogDepth0 = saturate(pow(fogDepth, _FogPower*0.5));
 				_FogTint.rgb *= _FogBrightness;
+				_FogTint.rgb *= surfaceTint.rgb;
 				col.rgb = lerp(col.rgb, lerp(_FogTint.rgb, col.rgb, fogDepth), _FogTint.a);
 				col.rgb = lerp(col.rgb, lerp(_FogTint.rgb*0.5, col.rgb, fogDepth0), _FogTint.a);
+
+				// float fogDepth0 = saturate(pow(depth, _FogPower));
+				// float fogDepth1 = saturate(pow(depth, _FogPower2));
+				// _FogTint.rgb *= _FogBrightness;
+				// _FogTint2.rgb *= _FogBrightness2;
+				// _FogTint.rgb *= surfaceTint.rgb;
+				// _FogTint2.rgb *= surfaceTint.rgb;
+				// col.rgb = lerp(col.rgb, lerp(_FogTint.rgb, col.rgb, fogDepth0), _FogTint.a);
+				// col.rgb = lerp(col.rgb, lerp(_FogTint2.rgb, col.rgb, fogDepth1), _FogTint2.a);
 			}
 		#endif
 	#endif
@@ -339,10 +358,13 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 				col.rgb = lerp(col.rgb, foamTex.rgb, foam);
 			}
 		#endif
-		float crestThreshold = smoothstep(_FoamCrestThreshold, 1, i.wave.y);
-		float crestFoam = saturate(foamTex.a * _FoamOpacity * _FoamCrestStrength * crestThreshold * foamCrestNoise * 10);
-		col.rgb = lerp(col.rgb, foamTex.rgb, crestFoam);
-		crestFoam *= 1.5; // Increase roughness strength of crest foam
+		float crestFoam = 0;
+		#if VERT_OFFSET_ENABLED
+			float crestThreshold = smoothstep(_FoamCrestThreshold, 1, i.wave.y);
+			crestFoam = saturate(foamTex.a * _FoamOpacity * _FoamCrestStrength * crestThreshold * foamCrestNoise * 10);
+			col.rgb = lerp(col.rgb, foamTex.rgb, crestFoam);
+			crestFoam *= 1.5; // Increase roughness strength of crest foam
+		#endif
 		#if FOAM_NORMALS_ENABLED
 			float foamNormalStr = lerp(0,_FoamNormalStrength,foam+crestFoam);
 			#if FLOW_ENABLED
@@ -441,6 +463,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 				#else
 					reflCol = GetWorldReflections(reflDir, i.worldPos, rough);
 				#endif
+				reflCol *= _ReflStrength;
 				#if DEPTH_EFFECTS_ENABLED
 					#if SSR_ENABLED
 						half4 ssrCol = GetSSR(i.worldPos, viewDir, reflDir, normalDir, 1-rough, col.rgb, _Metallic, screenUV, i.uvGrab);
@@ -456,7 +479,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 						#endif
 					#endif
 				#endif
-				reflCol = reflCol * fresnel * surfaceReduction * _ReflStrength * _ReflTint;
+				reflCol = reflCol * fresnel * surfaceReduction * _ReflTint;
 			}
 		#endif
 		col.rgb += specCol;
@@ -554,6 +577,8 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	UNITY_APPLY_FOG(i.fogCoord, col);
 	
 	return col + flowMap;
+	// return float4(i.wave.yyy, 1);
+	// return float4(subsurfaceThreshold.xxx, 1);
 }
 
 #include "WaterTess.cginc"

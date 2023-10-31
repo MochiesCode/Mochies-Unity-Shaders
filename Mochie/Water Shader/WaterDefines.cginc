@@ -198,6 +198,15 @@ float4 _NonGrabBackfaceTint;
 float _FogBrightness;
 float _VertexOffsetMaskStrength;
 
+float4 _SubsurfaceTint;
+float _SubsurfaceThreshold;
+float _SubsurfaceBrightness;
+float _SubsurfaceStrength;
+
+float4 _FogTint2;
+float _FogPower2;
+float _FogBrightness2;
+
 int _VertexOffsetMaskChannel;
 int _BlendNoiseSource;
 int _FlowMapUV;
