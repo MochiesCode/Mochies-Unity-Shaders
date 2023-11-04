@@ -20,8 +20,8 @@
 	#include "Assets/AreaLit/Shader/Lighting.hlsl"
 #endif
 
-#ifdef LTCGI
-	#include "Assets/_pi_/_LTCGI/Shaders/LTCGI.cginc"
+#if LTCGI_ENABLED
+	#include "Packages/at.pimaker.ltcgi/Shaders/LTCGI.cginc"
 #endif
 
 //VRSL Stuff
@@ -231,6 +231,7 @@ half			_UV0ShiftY;
 
 int _Filtering;
 int _UnityFogToggle;
+int _VertexBaseColor;
 
 float _ReflectionStrength, _SpecularStrength;
 float _ReflShadowStrength;
@@ -486,7 +487,7 @@ half DetailMask(float2 uv)
     return detailMask[_DetailMaskChannel];
 }
 
-half3 Albedo(float4 texcoords, float2 detailTexCoords, SampleData sd)
+half3 Albedo(float4 texcoords, float2 detailTexCoords, float3 vertexColor, SampleData sd)
 {
 	half3 albedo = _Color.rgb * SampleTexture(_MainTex, texcoords.xy, sd).rgb;
 	albedo = Filtering(albedo, _Hue, _Saturation, _Brightness, _Contrast, 0);
@@ -497,6 +498,8 @@ half3 Albedo(float4 texcoords, float2 detailTexCoords, SampleData sd)
 		detailAlbedo.rgb = _DetailColor.rgb * Filtering(detailAlbedo.rgb, _HueDet, _SaturationDet, _BrightnessDet, _ContrastDet, 0);
 		albedo = BlendColorsAlpha(albedo, detailAlbedo.rgb, _DetailAlbedoBlend, mask, detailAlbedo.a);
 	#endif
+	if (_VertexBaseColor == 1)
+		albedo *= vertexColor;
     return albedo;
 }
 

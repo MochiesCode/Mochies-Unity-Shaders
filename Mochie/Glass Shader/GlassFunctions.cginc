@@ -14,32 +14,38 @@ float3 ShadeSH9(float3 normal){
 	return max(0, ShadeSH9(float4(normal,1)));
 }
 
-float3 tex2DnormalGlass(sampler2D tex, float2 uv, float strength){
-	float offset = 0.15;
-	offset = pow(offset, 3) * 0.1;
-	float2 offsetU = float2(uv.x + offset, uv.y);
-	float2 offsetV = float2(uv.x, uv.y + offset);
-	float normalSample = smoothstep(0.15, 1, tex2Dbias(tex, float4(uv, 0, _RainBias)));
-	float uSample = smoothstep(0.15, 1, tex2Dbias(tex, float4(offsetU, 0, _RainBias)));
-	float vSample = smoothstep(0.15, 1, tex2Dbias(tex, float4(offsetV, 0, _RainBias)));
-	float3 va = float3(1, 0, (uSample - normalSample) * strength);
-	float3 vb = float3(0, 1, (vSample - normalSample) * strength);
-	return normalize(cross(va, vb));
+float3 tex2DnormalGlass(sampler2D tex, float2 uv, float4 uvdd, float strength){
+    float offset = 0.15;
+    offset = pow(offset, 3) * 0.1;
+    float2 offsetU = float2(uv.x + offset, uv.y);
+    float2 offsetV = float2(uv.x, uv.y + offset);
+
+    float normalSample = smoothstep(0.15, 1, tex2Dgrad(_RainSheet, uv, uvdd.xy, uvdd.zw));
+    float uSample = smoothstep(0.15, 1, tex2Dgrad(_RainSheet, offsetU, uvdd.xy, uvdd.zw));
+    float vSample = smoothstep(0.15, 1, tex2Dgrad(_RainSheet, offsetV, uvdd.xy, uvdd.zw));
+
+    float3 va = float3(1, 0, (uSample - normalSample) * strength);
+    float3 vb = float3(0, 1, (vSample - normalSample) * strength);
+    return normalize(cross(va, vb));
 }
 
 float2 GetFlipbookUV(float2 uv, float width, float height, float speed, float2 invertAxis){
-	float tile = fmod(trunc(_Time.y * speed), width*height);
-	float2 tileCount = float2(1.0, 1.0) / float2(width, height);
-	float tileY = abs(invertAxis.y * height - (floor(tile * tileCount.x) + invertAxis.y * 1));
-	float tileX = abs(invertAxis.x * width - ((tile - width * floor(tile * tileCount.x)) + invertAxis.x * 1));
-	return (uv + float2(tileX, tileY)) * tileCount;
+    float tile = fmod(trunc(_Time.y * speed), width*height);
+    float2 tileCount = float2(1.0, 1.0) / float2(width, height);
+    float tileY = abs(invertAxis.y * height - (floor(tile * tileCount.x) + invertAxis.y * 1));
+    float tileX = abs(invertAxis.x * width - ((tile - width * floor(tile * tileCount.x)) + invertAxis.x * 1));
+    return (uv + float2(tileX, tileY)) * tileCount;
 }
 
 float3 GetFlipbookNormals(v2f i, inout float flipbookBase, float mask){
-	float2 uv = frac(ScaleOffsetUV(i.uv, float2(_XScale, _YScale), 0));
-	float2 flipUV = GetFlipbookUV(uv, _Columns, _Rows, _Speed, float2(0,1));
-	flipbookBase = tex2D(_RainSheet, flipUV) * mask;
-	return tex2DnormalGlass(_RainSheet, flipUV, _Strength*mask);
+    float2 uv = frac(ScaleOffsetUV(i.uv, float2(_XScale, _YScale), 0));
+    float2 flipUV = GetFlipbookUV(uv, _Columns, _Rows, _Speed, float2(0,1));
+
+    float2 origUV = i.uv / float2(_Columns, _Rows) * float2(_XScale, _YScale);
+    float4 uvdd = float4(ddx(origUV), ddy(origUV));
+
+    flipbookBase = tex2Dgrad(_RainSheet, flipUV, uvdd.xw, uvdd.zw) * mask;
+    return tex2DnormalGlass(_RainSheet, flipUV, uvdd, _Strength*mask);
 }
 
 // based on https://www.toadstorm.com/blog/?p=742

@@ -78,6 +78,8 @@ namespace Mochie {
 		public static GUIContent opaqueLightsText = new GUIContent("Opaque Lights");
 		public static GUIContent occlusionALText = new GUIContent("Occlusion", "ShadowMask (RGBA) and Occlusion (G)");
 		public static GUIContent occlusionUVSetText = new GUIContent("UV Set");
+		public static GUIContent vertexBaseColorText = new GUIContent("Vertex Base Color", "Multiplies base color with vertex color.");
+		public static GUIContent unityFogToggleText = new GUIContent("Unity Scene Fog", "Enables or disables unity scene fog on this material.");
 
 		// Uber
 		public static GUIContent renderModeLabel = new GUIContent("Shading", "Enables or disables shading. If you aren't using any shading features, disabling this can provide a huge performance boost");

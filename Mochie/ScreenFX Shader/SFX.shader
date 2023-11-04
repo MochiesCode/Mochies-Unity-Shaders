@@ -164,12 +164,18 @@ Shader "Mochie/Screen FX" {
 		_OLMaxRange("", Float) = 15
 		[HDR]_OutlineCol("", Color) = (0,0,0,1)
 		_BackgroundCol("", Color) = (1,1,1,0)
-		_OutlineThresh("", Float) = 1000
+		_OutlineThresh("", Float) = 100
 		_OutlineThiccS("", Float) = 0.49
 		_OutlineThiccN("", Float) = 0.5
 		_AuraFade("", Range(0,1)) = 0.5
 		_AuraStr("", Range(0,1)) = 0.25
 		[ToggleUI]_SobelClearInner("", Int) = 1
+		_OutlineHueShift("", Range(0,1)) = 0
+		[ToggleUI]_OutlineHueShiftAuto("", Int) = 0
+		_OutlineHueShiftSpeed("", Float) = 1
+		[ToggleUI]_OutlineAltEnable("", Int) = 0
+		[HDR]_OutlineColAlt("", Color) = (1,1,1,1)
+		_OutlineThreshAlt("", Float) = 100
 		
 		// Audio Link
 		[ToggleUI]_AudioLinkToggle("", Int) = 0
@@ -218,6 +224,14 @@ Shader "Mochie/Screen FX" {
 		_AudioLinkOutlineStrength("", Range(0,1)) = 0
 		_AudioLinkOutlineMin("", Float) = 0
 		_AudioLinkOutlineMax("", Float) = 1
+		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Treble,3)]_AudioLinkOutlineColBand("", Int) = 0
+		_AudioLinkOutlineColStrength("", Range(0,1)) = 0
+		_AudioLinkOutlineColMin("", Float) = 0
+		_AudioLinkOutlineColMax("", Float) = 1
+		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Treble,3)]_AudioLinkOutlineMixBand("", Int) = 0
+		_AudioLinkOutlineMixStrength("", Range(0,1)) = 0
+		_AudioLinkOutlineMixMin("", Float) = 0
+		_AudioLinkOutlineMixMax("", Float) = 1
 		[Enum(Bass,0, Low Mids,1, Upper Mids,2, Treble,3)]_AudioLinkMiscBand("", Int) = 0
 		_AudioLinkMiscStrength("", Range(0,1)) = 0
 		_AudioLinkMiscMin("", Float) = 0

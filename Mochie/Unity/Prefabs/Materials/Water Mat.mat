@@ -10,8 +10,8 @@ Material:
   m_Name: Water Mat
   m_Shader: {fileID: 4800000, guid: 7e018b47cc1d059439656129107b3445, type: 3}
   m_ShaderKeywords: _CAUSTICS_VORONOI_ON _DEPTHFOG_ON _DEPTH_EFFECTS_ON _EDGEFADE_ON
-    _FLOW_ON _FOAM_NORMALS_ON _FOAM_ON _NORMALMAP_1_ON _NORMAL_FLIPBOOK_STOCHASTIC_ON
-    _REFLECTIONS_ON _SPECULAR_ON
+    _FLOW_ON _FOAM_ON _NORMALMAP_1_ON _NORMAL_FLIPBOOK_STOCHASTIC_ON _REFLECTIONS_ON
+    _SPECULAR_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -27,6 +27,10 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _BlendNoise:
         m_Texture: {fileID: 2800000, guid: 352f401c145570f488487622cd5fdaa6, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _CausticsDistortionTex:
+        m_Texture: {fileID: 2800000, guid: 4229641ad60880a4a8e7c5614adf58a3, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _CausticsTex:
@@ -98,7 +102,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _NormalMap0:
-        m_Texture: {fileID: 2800000, guid: 6d095a40a0b25e746a709fedd6a9aae6, type: 3}
+        m_Texture: {fileID: 2800000, guid: 4229641ad60880a4a8e7c5614adf58a3, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _NormalMap1:
@@ -123,6 +127,10 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _VertOffsetFlipbook:
         m_Texture: {fileID: 18700000, guid: f9e27b340e9c5194199078a54772ec10, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _VertexOffsetMask:
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
@@ -156,6 +164,7 @@ Material:
     - _EdgeFadePower: 300
     - _EdgeFadeSSR: 0.1
     - _EdgeFadeToggle: 1
+    - _EmissionDistortionStrength: 0
     - _EmissionMapStochasticToggle: 0
     - _EmissionToggle: 0
     - _FlowMapUV: 0
@@ -168,27 +177,29 @@ Material:
     - _FoamNoiseTexCrestStrength: 1.1
     - _FoamNoiseTexStrength: 0
     - _FoamNormalStrength: 4
-    - _FoamNormalToggle: 1
+    - _FoamNormalToggle: 0
     - _FoamOffset: 0
     - _FoamOpacity: 3
     - _FoamPower: 200
-    - _FoamRoughness: 0.6
+    - _FoamRoughness: 0.2
     - _FoamStochasticToggle: 0
     - _FoamToggle: 1
+    - _FogBrightness: 1
+    - _FogBrightness2: 1
     - _FogPower: 10
+    - _FogPower2: 5
     - _FogToggle: 1
     - _Metallic: 0
     - _NoiseTexBlur: 0.8
     - _Normal0StochasticToggle: 0
     - _Normal1StochasticToggle: 0
     - _Normal1Toggle: 1
-    - _NormalFlipbookStochasticToggle: 0
     - _NormalMapFlipbookSpeed: 8
     - _NormalMapFlipbookStrength: 0.2
     - _NormalMapMode: 0
     - _NormalMapOffset0: 0
     - _NormalMapOffset1: 0
-    - _NormalStr0: 0.2
+    - _NormalStr0: 0.3
     - _NormalStr1: 0.3
     - _Opacity: 1
     - _OpaqueLights: 1
@@ -205,13 +216,16 @@ Material:
     - _Rotation1: 0
     - _Roughness: 0
     - _SSR: 0
-    - _SSRHeight: 0.1
+    - _SSRHeight: 0.2
     - _SSRStrength: 1
     - _ShadowStrength: 0
     - _SpecStrength: 1
     - _Specular: 1
     - _SrcBlend: 1
     - _StencilRef: 65
+    - _SubsurfaceBrightness: 10
+    - _SubsurfaceStrength: 0
+    - _SubsurfaceThreshold: 0.5
     - _TessDistMax: 50
     - _TessDistMin: 25
     - _TessMax: 9
@@ -227,6 +241,8 @@ Material:
     - _VertOffsetMode: 0
     - _VertRemapMax: 1
     - _VertRemapMin: -1
+    - _VertexOffsetMaskChannel: 0
+    - _VertexOffsetMaskStrength: 1
     - _VoronoiSpeed: 1.5
     - _VoronoiWaveHeight: 1
     - _WaveDirection0: 0
@@ -266,10 +282,12 @@ Material:
     - _FoamTexScale: {r: 5, g: 5, b: 0, a: 0}
     - _FoamTexScroll: {r: 0.1, g: -0.1, b: 0, a: 0}
     - _FogTint: {r: 0.10999996, g: 0.25999996, b: 0.25999996, a: 1}
+    - _FogTint2: {r: 0.054999977, g: 0.12999997, b: 0.12999997, a: 1}
     - _LightDir: {r: 0, g: 0.75, b: 1, a: 0}
     - _MainTexScroll: {r: 0, g: 0.1, b: 0, a: 0}
     - _NoiseTexScale: {r: 3, g: 3, b: 0, a: 0}
     - _NoiseTexScroll: {r: 0, g: 0.1, b: 0, a: 0}
+    - _NonGrabBackfaceTint: {r: 0, g: 0, b: 0, a: 0}
     - _NonGrabColor: {r: 0, g: 0, b: 0, a: 0}
     - _NormalMapFlipbookScale: {r: 3, g: 3, b: 0, a: 0}
     - _NormalMapScale0: {r: 3, g: 3, b: 0, a: 0}
@@ -281,6 +299,7 @@ Material:
     - _ReflCubeRotation: {r: 0, g: 0, b: 0, a: 0}
     - _ReflTint: {r: 1, g: 1, b: 1, a: 1}
     - _SpecTint: {r: 1, g: 1, b: 1, a: 1}
+    - _SubsurfaceTint: {r: 1, g: 1, b: 1, a: 1}
     - _VertOffsetFlipbookScale: {r: 3, g: 3, b: 0, a: 0}
     - _VoronoiOffset: {r: 0, g: 1, b: 0, a: 0}
     - _VoronoiScale: {r: 2, g: 2, b: 0, a: 0}

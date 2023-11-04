@@ -289,7 +289,7 @@ struct FragmentCommonData
 	#endif
 };
 
-inline FragmentCommonData RoughnessSetup(float4 i_tex, float2 detailMaskCoords, SampleData sd)
+inline FragmentCommonData RoughnessSetup(float4 i_tex, float2 detailMaskCoords, float3 vertexColor, SampleData sd)
 {
     half2 metallicGloss = MetallicRough(i_tex, detailMaskCoords, sd);
     half metallic = metallicGloss.x;
@@ -297,7 +297,7 @@ inline FragmentCommonData RoughnessSetup(float4 i_tex, float2 detailMaskCoords, 
 
     half oneMinusReflectivity;
     half3 specColor;
-    half3 diffColor = DiffuseAndSpecularFromMetallic(Albedo(i_tex, detailMaskCoords, sd), metallic, /*out*/ specColor, /*out*/ oneMinusReflectivity);
+    half3 diffColor = DiffuseAndSpecularFromMetallic(Albedo(i_tex, detailMaskCoords, vertexColor, sd), metallic, /*out*/ specColor, /*out*/ oneMinusReflectivity);
 
     FragmentCommonData o = (FragmentCommonData)0;
     o.diffColor = diffColor;
@@ -316,7 +316,7 @@ float3 CalculateTangentViewDir(inout float3 tangentViewDir){
 }
 
 // parallax transformed texcoord is used to sample occlusion
-inline FragmentCommonData FragmentSetup (inout float4 i_tex, float4 i_tex2, float4 i_tex3, float4 i_tex4, float3 i_eyeVec, half3 i_viewDirForParallax, float4 tangentToWorld[3], float3 i_posWorld, bool isFrontFace, SampleData sd)
+inline FragmentCommonData FragmentSetup (inout float4 i_tex, float4 i_tex2, float4 i_tex3, float4 i_tex4, float3 i_eyeVec, half3 i_viewDirForParallax, float4 tangentToWorld[3], float3 i_posWorld, float3 vertexColor, bool isFrontFace, SampleData sd)
 {
 	
     i_tex = Parallax(i_tex, CalculateTangentViewDir(i_viewDirForParallax), uvOffset, isFrontFace);
@@ -330,7 +330,7 @@ inline FragmentCommonData FragmentSetup (inout float4 i_tex, float4 i_tex2, floa
         clip (alpha - _Cutoff);
     #endif
 
-    FragmentCommonData o = UNITY_SETUP_BRDF_INPUT (i_tex, i_tex4.zw, sd);
+    FragmentCommonData o = UNITY_SETUP_BRDF_INPUT (i_tex, i_tex4.zw, vertexColor, sd);
     o.normalWorld = PerPixelWorldNormal(i_tex, i_tex3, tangentToWorld, i_tex4, sd);
     o.eyeVec = NormalizePerPixelNormal(i_eyeVec);
     o.posWorld = i_posWorld;
@@ -656,7 +656,7 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
 	#endif
 
 	SampleData sd = SampleDataSetup(i);
-    FragmentCommonData s = FragmentSetup(i.tex, i.tex2, i.tex3, i.tex4, i.eyeVec.xyz, IN_VIEWDIR4PARALLAX(i), i.tangentToWorldAndPackedData, IN_WORLDPOS(i), frontFace, sd);
+    FragmentCommonData s = FragmentSetup(i.tex, i.tex2, i.tex3, i.tex4, i.eyeVec.xyz, IN_VIEWDIR4PARALLAX(i), i.tangentToWorldAndPackedData, IN_WORLDPOS(i), i.color.rgb, frontFace, sd);
     #if AREALIT_ENABLED
         i.tangentToWorldAndPackedData[2].xyz *= frontFace ? +1 : -1;
     #endif
@@ -934,7 +934,7 @@ half4 fragForwardAddInternal (VertexOutputForwardAdd i, bool frontFace)
 	float4 screenPos = 0;
 
 	SampleData sd = SampleDataSetup(i);
-    FragmentCommonData s = FragmentSetup(i.tex, i.tex2, i.tex3, i.tex4, i.eyeVec.xyz, IN_VIEWDIR4PARALLAX_FWDADD(i), i.tangentToWorldAndLightDir, IN_WORLDPOS_FWDADD(i), frontFace, sd);
+    FragmentCommonData s = FragmentSetup(i.tex, i.tex2, i.tex3, i.tex4, i.eyeVec.xyz, IN_VIEWDIR4PARALLAX_FWDADD(i), i.tangentToWorldAndLightDir, IN_WORLDPOS_FWDADD(i), i.color.rgb, frontFace, sd);
 
     UNITY_LIGHT_ATTENUATION(atten, i, s.posWorld)
     UnityLight light = AdditiveLight (IN_LIGHTDIR_FWDADD(i), atten);

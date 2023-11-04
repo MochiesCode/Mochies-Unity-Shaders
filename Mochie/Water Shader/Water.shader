@@ -7,6 +7,7 @@ Shader "Mochie/Water" {
 		_NonGrabColor("Non Grabpass Color", Color) = (0,0,0,0)
 		_AngleTint("Angle Tint", Color) = (1,1,1,1)
 		_BackfaceTint("Backface Tint", Color) = (1,1,1,1)
+		_NonGrabBackfaceTint("Non Grabpass Backface Tint", Color) = (0,0,0,0)
 		_MainTex("Base Color", 2D) = "white" {}
 		_MainTexScroll("Scrolling", Vector) = (0,0.1,0,0)
 		_BaseColorOffset("Parallax Offset", Float) = 0
@@ -33,16 +34,17 @@ Shader "Mochie/Water" {
 		_EmissionMap("Emission Map", 2D) = "white" {}
 		[HDR]_EmissionColor("Emission Color", Color) = (1,1,1,1)
 		_EmissionMapScroll("Emission Map Scroll", Vector) = (0,0,0,0)
+		_EmissionDistortionStrength("Emission Distortion Strength", Float) = 0
 		
 		[Enum(Texture,0, Flipbook,1)]_NormalMapMode("Normal Map Mode", Int) = 0
 
 		[NoScaleOffset]_NormalMap0 ("", 2D) = "bump" {}
-		_NormalStr0("Strength", Float) = 0.2
+		_NormalStr0("Strength", Float) = 0.3
 		_NormalMapScale0("Scale", Vector) = (3,3,0,0)
 		_Rotation0("Rotation", Float) = 0
 		_NormalMapScroll0("Scrolling", Vector) = (0.1,0.1,0,0)
 		_NormalMapOffset0("Parallax Offset", Float) = 0
-		[ToggleUI]_Normal0StochasticToggle("Stochastic Sampling", Int) = 0
+		[Toggle(_NORMALMAP_0_STOCHASTIC_ON)]_Normal0StochasticToggle("Stochastic Sampling", Int) = 0
 
 		[Toggle(_NORMALMAP_1_ON)]_Normal1Toggle("Enable", Int) = 1
 		[NoScaleOffset]_NormalMap1("", 2D) = "bump" {}
@@ -51,13 +53,12 @@ Shader "Mochie/Water" {
 		_Rotation1("Rotation", Float) = 0
 		_NormalMapScroll1("Scrolling", Vector) = (-0.1,0.1,0,0)
 		_NormalMapOffset1("Parallax Offset", Float) = 0
-		[ToggleUI]_Normal1StochasticToggle("Stochastic Sampling", Int) = 0
+		[Toggle(_NORMALMAP_1_STOCHASTIC_ON)]_Normal1StochasticToggle("Stochastic Sampling", Int) = 0
 
 		_NormalMapFlipbook("Normal Map Flipbook", 2DArray) = "black" {}
 		_NormalMapFlipbookSpeed("Normal Map Flipbook Speed", Float) = 8
 		_NormalMapFlipbookStrength("Normal Map Flipbook Strength", Float) = 0.2
 		_NormalMapFlipbookScale("Flipbook Scale", Vector) = (3,3,0,0)
-		[ToggleUI]_NormalFlipbookStochasticToggle("Stochastic", Int) = 0
 
 		[Enum(Off,0, Environment,1, Manual,2)]_Reflections("Probe Reflections", Int) = 1
 		_ReflStrength("Reflection Strength", Float) = 1
@@ -66,7 +67,7 @@ Shader "Mochie/Water" {
 		[ToggleUI]_SSR("Screenspace Reflections", Int) = 0
 		_SSRStrength("SSR Strength", Float) = 1
 		_EdgeFadeSSR("Edge Fade", Range(0,1)) = 0.1
-		_SSRHeight("SSR Height", Range(0.1, 0.5)) = 0.1
+		_SSRHeight("SSR Height", Range(0.1, 0.5)) = 0.2
 		_ReflCube("Cubemap", CUBE) = "gray" {}
 		_ReflCubeRotation("Rotation", Vector) = (0,0,0,0)
 		[Enum(Off,0, Directional Light,1, Manual,2)]_Specular("Specular", Int) = 1
@@ -121,12 +122,20 @@ Shader "Mochie/Water" {
 		_VertOffsetFlipbookStrength("Flipbook Strength", Float) = 0.2
 		_VertOffsetFlipbookSpeed("Flipbook Speed", Float) = 8
 		_VertOffsetFlipbookScale("Flipbook Scale", Vector) = (3,3,0,0)
-
+		_VertexOffsetMask("Vertex Offset Mask", 2D) = "white" {}
+		[Enum(Red,0, Green,1, Blue,2, Alpha,3)]_VertexOffsetMaskChannel("Vertex Offset Mask Channel", Int) = 0
+		_VertexOffsetMaskStrength("Vertex Offset Mask Strength", Range(0,1)) = 1
+		_SubsurfaceTint("Subsurface Tint", Color) = (1,1,1,1)
+		_SubsurfaceThreshold("Subsurface Threshold", Range(0,1)) = 0.5
+		_SubsurfaceBrightness("Subsurface Brightness", Float) = 10
+		_SubsurfaceStrength("Subsurface Strength", Range(0,1)) = 0
+		
 		[Enum(Off,0, Voronoi,1, Texture,2, Flipbook,3)]_CausticsToggle("Caustics Toggle", Int) = 1
 		_CausticsTex("Caustics Texture", 2D) = "black" {}
 		_CausticsTexArray("Texture Array", 2DArray) = "black" {}
 		_CausticsDisp("Dispersion", Float) = 0.15
 		_CausticsDistortion("Distortion", Float) = 0.5
+		_CausticsDistortionTex("Distortion Texture", 2D) = "bump" {}
 		_CausticsDistortionScale("Distortion Scale", Float) = 0.2
 		_CausticsDistortionSpeed("Distortion Speed", Vector) = (0.2,-0.2,0,0)
 		_CausticsColor("Color", Color) = (1,1,1,1)
@@ -143,6 +152,10 @@ Shader "Mochie/Water" {
 		[Toggle(_DEPTHFOG_ON)]_FogToggle("Enable", Int) = 1
 		_FogTint("Color", Color) = (0.11,0.26,0.26,1)
 		_FogPower("Power", Float) = 10
+		_FogBrightness("Brightness", Float) = 1
+		_FogTint2("Color", Color) = (0.055,0.13,0.13,1)
+		_FogPower2("Power", Float) = 5
+		_FogBrightness2("Brightness", Float) = 1
 
 		[Toggle(_FOAM_ON)]_FoamToggle("Enable", Int) = 1
 		[NoScaleOffset]_FoamTex("Foam Texture", 2D) = "white" {}
@@ -153,16 +166,16 @@ Shader "Mochie/Water" {
 		_FoamNoiseTexCrestStrength("Crest Strength", Float) = 1.1
 		_FoamTexScale("Scale", Vector) = (5,5,0,0)
 		_FoamTexScroll("Scroll", Vector) = (0.1,-0.1,0,0)
-		_FoamRoughness("Roughness", Range(0,1)) = 0.6
-		_FoamColor("Color", Color) = (1,1,1,1)
+		_FoamRoughness("Roughness", Range(0,1)) = 0.2
+		[HDR]_FoamColor("Color", Color) = (1,1,1,1)
 		_FoamPower("Power", Float) = 200
 		_FoamOpacity("Opacity", Float) = 3
 		_FoamOffset("Parallax Offset", Float) = 0
-		_FoamCrestThreshold("Crest Threshold", Float) = 0.5
+		_FoamCrestThreshold("Crest Threshold", Range(0,1)) = 0.5
 		_FoamCrestStrength("Crest Strength", Float) = 0
 		[Toggle(_FOAM_STOCHASTIC_ON)]_FoamStochasticToggle("Stochastic Sampling", Int) = 0
 		_FoamDistortionStrength("Distortion Strength", Float) = 0.1
-		[ToggleUI]_FoamNormalToggle("Foam Normals", Int) = 1
+		[Toggle(_FOAM_NORMALS_ON)]_FoamNormalToggle("Foam Normals", Int) = 0
 		_FoamNormalStrength("Foam Normal Strength", Float) = 4
 
 		[Toggle(_EDGEFADE_ON)]_EdgeFadeToggle("Enable", Int) = 1
@@ -176,7 +189,7 @@ Shader "Mochie/Water" {
 		_RippleSize("Ripple Size", Range(2,10)) = 6
 		_RippleDensity("Ripple Density", Float) = 1.57079632679
 
-		[ToggleUI]_AreaLitToggle("Enable", Int) = 0
+		[Toggle(_AREALIT_ON)]_AreaLitToggle("Enable", Int) = 0
 		_AreaLitMask("Mask", 2D) = "white" {}
 		_AreaLitStrength("Strength", Float) = 1
 		_AreaLitRoughnessMult("Roughness Multiplier", Float) = 1
@@ -259,6 +272,7 @@ Shader "Mochie/Water" {
 			#pragma shader_feature_local _FOAM_NORMALS_ON
 			#pragma shader_feature_local _DEPTH_EFFECTS_ON
 			#pragma shader_feature_local _EMISSION_ON
+			#pragma shader_feature_local _EMISSIONMAP_STOCHASTIC_ON
 			#pragma shader_feature_local _OPAQUELIGHTS_OFF
 			#pragma shader_feature_local _AREALIT_ON
 			#pragma shader_feature_local _ _OPAQUE_MODE_ON _PREMUL_MODE_ON

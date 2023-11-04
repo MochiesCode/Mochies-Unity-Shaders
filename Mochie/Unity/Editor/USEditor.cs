@@ -705,7 +705,6 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _AlphaStrength = null;
 	MaterialProperty _WireframeTransparency = null;
 	MaterialProperty _DetailMetallicBlending = null;
-	MaterialProperty _UsingDetailMetallic = null;
 	MaterialProperty _DetailMetallic = null;
 	MaterialProperty _DetailMetallicStrength = null;
 

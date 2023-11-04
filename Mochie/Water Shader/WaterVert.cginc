@@ -37,12 +37,18 @@ v2f vert (
 		#endif
 	#endif
 
+	#if VERT_OFFSET_ENABLED
+		float4 vertOffsetMaskUV = float4(TRANSFORM_TEX(v.uv, _VertexOffsetMask).xy, 0, 0);
+		float vertOffsetMask = ChannelCheck(tex2Dlod(_VertexOffsetMask, vertOffsetMaskUV), _VertexOffsetMaskChannel);
+		vertOffsetMask = lerp(1, vertOffsetMask, _VertexOffsetMaskStrength);
+	#endif
+
 	#if NOISE_TEXTURE_ENABLED
 		float2 noiseUV = ScaleUV(v.uv, _NoiseTexScale, _NoiseTexScroll*10);
 		float noiseWaveTex = tex2Dlod(_NoiseTex, float4(noiseUV,0,lerp(0,8,_NoiseTexBlur)));
 		float noiseWave = Remap(noiseWaveTex, 0, 1, _VertRemapMin, _VertRemapMax);
 		float offsetWave = noiseWave * _WaveHeight * 0.1;
-		o.wave = _Offset * offsetWave;
+		o.wave = _Offset * offsetWave * vertOffsetMask;
 		#ifdef TESSELLATION_VARIANT
 			o.wave *= o.offsetMask;
 		#endif
@@ -57,6 +63,8 @@ v2f vert (
 		#ifdef TESSELLATION_VARIANT
 			offsetMask = o.offsetMask;
 		#endif
+		offsetMask *= vertOffsetMask;
+		
 		if (_RecalculateNormals == 1){
 			o.tangent = float3(1,0,0);
 			o.binormal = float3(0,0,1);
@@ -90,6 +98,7 @@ v2f vert (
 			wave2 = GerstnerWave(waveProperties2, v.vertex.xyz, _WaveSpeed2, _WaveDirection2, o.tangent, o.binormal, offsetMask);
 		}
 		o.wave = wave0 + wave1 + wave2;
+		o.wave *= vertOffsetMask;
 		#ifdef TESSELLATION_VARIANT
 			o.wave *= o.offsetMask;
 		#endif
@@ -111,7 +120,7 @@ v2f vert (
 		o.wave.y = (o.wave.y + 1) * 0.5;
 	#elif VERT_FLIPBOOK_ENABLED
 		// Based on https://github.com/Error-mdl/ErrorWater/blob/master/shaders/cginc/water_vert.cginc#L36
-		float2 flipbookUV = v.uv * _VertOffsetFlipbookScale;
+		float2 flipbookUV = v.uv * _NormalMapFlipbookScale;
 		#if FLOW_ENABLED
 			float2 uvFlow = ScaleUV(o.uvFlow, _FlowMapScale, 0);
 			float4 flowMap = MOCHIE_SAMPLE_TEX2D_LOD(_FlowMap, uvFlow, 0);
@@ -130,6 +139,7 @@ v2f vert (
 		#else
 			o.wave = tex2DflipbookSmoothLOD(_VertOffsetFlipbook, sampler_VertOffsetFlipbook, flipbookUV, _VertOffsetFlipbookSpeed, 0);
 		#endif
+		o.wave *= vertOffsetMask;
 		#ifdef TESSELLATION_VARIANT
 			o.wave *= o.offsetMask;
 		#endif
@@ -138,7 +148,7 @@ v2f vert (
 		v.vertex.xyz -= (o.wave.x * normalize(v.tangent.xyz) / _VertOffsetFlipbookScale.x + o.wave.y * normalize(o.binormal) / _VertOffsetFlipbookScale.y) * _VertOffsetFlipbookStrength;
 		o.wave.y = 0;
 	#endif
-
+	
 	o.pos = UnityObjectToClipPos(v.vertex);
 	#if GERSTNER_ENABLED
 		if (_RecalculateNormals != 1){

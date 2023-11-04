@@ -28,6 +28,7 @@ float4 _CameraDepthTexture_TexelSize;
 #define GERSTNER_ENABLED 				defined(_GERSTNER_WAVES_ON)
 #define VORONOI_ENABLED					defined(_VORONOI_ON)
 #define VERT_FLIPBOOK_ENABLED			defined(_VERT_FLIPBOOK_ON)
+#define VERT_OFFSET_ENABLED				defined(_NOISE_TEXTURE_ON) || defined(_GERSTNER_WAVES_ON) || defined(_VORONOI_ON) || defined(_VERT_FLIPBOOK_ON)
 #define DEPTHFOG_ENABLED 				defined(_DEPTHFOG_ON)
 #define FOAM_ENABLED 					defined(_FOAM_ON)
 #define EDGEFADE_ENABLED 				defined(_EDGEFADE_ON)
@@ -70,13 +71,17 @@ MOCHIE_DECLARE_TEX2D_NOSAMPLER(_AreaLitMask);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_DetailBaseColor);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_DetailNormal);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_OpacityMask);
+MOCHIE_DECLARE_TEX2D_NOSAMPLER(_CausticsDistortionTex);
 
 MOCHIE_DECLARE_TEX2DARRAY(_VertOffsetFlipbook);
 MOCHIE_DECLARE_TEX2DARRAY_NOSAMPLER(_NormalMapFlipbook);
 MOCHIE_DECLARE_TEX2DARRAY_NOSAMPLER(_CausticsTexArray);
 
 sampler2D _NoiseTex;
+sampler2D _VertexOffsetMask;
 samplerCUBE _ReflCube;
+
+float4 _VertexOffsetMask_ST;
 
 float4 _CausticsTex_TexelSize;
 float4 _OpacityMask_ST;
@@ -116,6 +121,7 @@ float2 _DetailScroll;
 float4 _EmissionMap_ST;
 float3 _EmissionColor;
 float2 _EmissionMapScroll;
+float _EmissionDistortionStrength;
 
 float2 _VoronoiScale;
 float2 _VoronoiScroll;
@@ -188,6 +194,20 @@ float _TessellationOffsetMask;
 float _DetailNormalStrength;
 float2 _BlendNoiseScale;
 float _ShadowStrength;
+float4 _NonGrabBackfaceTint;
+float _FogBrightness;
+float _VertexOffsetMaskStrength;
+
+float4 _SubsurfaceTint;
+float _SubsurfaceThreshold;
+float _SubsurfaceBrightness;
+float _SubsurfaceStrength;
+
+float4 _FogTint2;
+float _FogPower2;
+float _FogBrightness2;
+
+int _VertexOffsetMaskChannel;
 int _BlendNoiseSource;
 int _FlowMapUV;
 int _BackfaceReflections;

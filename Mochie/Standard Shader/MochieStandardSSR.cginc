@@ -12,15 +12,16 @@
 
 float3 GetBlurredGP(const sampler2D ssrg, const float2 texelSize, const float2 uvs, const float dim){
 	float2 pixSize = 2/texelSize;
+	float dimFloored = floor(dim);
 	float center = floor(dim*0.5);
 	float3 refTotal = float3(0,0,0);
-	for (int i = 0; i < floor(dim); i++){
-		for (int j = 0; j < floor(dim); j++){
+	for (int i = 0; i < dimFloored; i++){
+		for (int j = 0; j < dimFloored; j++){
 			float4 refl = tex2Dlod(ssrg, float4(uvs.x + pixSize.x*(i-center), uvs.y + pixSize.y*(j-center),0,0));
 			refTotal += refl.rgb;
 		}
 	}
-	return refTotal/(floor(dim)*floor(dim));
+	return refTotal/(dimFloored*dimFloored);
 }
 
 float4 ReflectRay(float3 reflectedRay, float3 rayDir, float _LRad, float _SRad, float _Step, float noise, const int maxIterations){
@@ -86,9 +87,10 @@ float4 ReflectRay(float3 reflectedRay, float3 rayDir, float _LRad, float _SRad, 
 float4 GetSSR(const float3 wPos, const float3 viewDir, float3 rayDir, const half3 faceNormal, float smoothness, float3 albedo, float metallic, float2 screenUVs, float4 screenPos){
 	
 	float FdotR = dot(faceNormal, rayDir.xyz);
+	float roughness = 1-smoothness;
 
 	UNITY_BRANCH
-	if (IsInMirror() || FdotR < 0){
+	if (IsInMirror() || FdotR < 0 || roughness > 0.65){
 		return 0;
 	}
 	else {
@@ -116,14 +118,22 @@ float4 GetSSR(const float3 wPos, const float3 viewDir, float3 rayDir, const half
 		#endif
 		float yfade = smoothstep(0, _EdgeFade, uvs.y)*smoothstep(1, 1-_EdgeFade, uvs.y); //Same for y
 		float lengthFade = smoothstep(1, 0, 2*(totalSteps / 50)-1);
+		float smoothFade = smoothstep(0.65, 0.5, 1-smoothness);
+		float reflectionAlpha = FdotR * xfade * yfade * lengthFade * smoothFade;
 
-		float blurFac = max(1,min(12, 12 * (-2)*(smoothness-1)));
-		float4 reflection = float4(GetBlurredGP(_GrabTexture, _GrabTexture_TexelSize.zw, uvs.xy, blurFac*1.5),1);
-		// float4 reflection = float4(tex2Dlod(_GrabTexture, float4(uvs.xy,0,0)).rgb,1);
+		float4 reflection = 0;
+		if (reflectionAlpha > 0){
+			float blurFac = max(1,min(12, 12 * (-2)*(smoothness-1)));
+			// if (blurFac > 1){
+				reflection.rgb = GetBlurredGP(_GrabTexture, _GrabTexture_TexelSize.zw, uvs.xy, blurFac);
+			// }
+			// else {
+			// 	reflection.rgb = tex2Dlod(_GrabTexture, float4(uvs.xy,0,0)).rgb;
+			// }
+			reflection.rgb = lerp(reflection.rgb, reflection.rgb*albedo.rgb,smoothstep(0, 1.75, metallic));
+			reflection.a = reflectionAlpha;
+		}
 
-		reflection.rgb = lerp(reflection.rgb, reflection.rgb*albedo.rgb,smoothstep(0, 1.75, metallic));
-
-		reflection.a = FdotR * xfade * yfade * lengthFade;
 		return max(0,reflection);
 	}	
 }

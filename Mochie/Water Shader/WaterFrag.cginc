@@ -22,6 +22,9 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 			_FoamNormalStrength = -_FoamNormalStrength;
 		}
 	#endif
+	#if VERT_OFFSET_ENABLED
+		i.wave.y = saturate(i.wave.y);
+	#endif
 
 	float4 detailBC = 0;
 	float2 detailUV = i.uv;
@@ -42,11 +45,6 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	float2 uvNormal0 = ScaleUV(i.uv, _NormalMapScale0, _NormalMapScroll0);
 	float2 uvNormal1 = ScaleUV(i.uv, _NormalMapScale1, _NormalMapScroll1);
 	float2 baseUV0 = Rotate2D(uvNormal0, _Rotation0);
-
-	// Literally the stupidest thing I've ever had to do (part 2)
-	float dummy = bla[unity_StereoEyeIndex];
-    if (_ScreenParams.x == 0)
-        baseUV0.x += dummy;
 
 	float2 baseUV1 = Rotate2D(uvNormal1, _Rotation1);
 	float3 uv00 = float3(baseUV0, 1);
@@ -69,6 +67,12 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 
 	float2 uvFlow = ScaleUV(i.uvFlow, _FlowMapScale, 0);
 	float4 flowMap = MOCHIE_SAMPLE_TEX2D(_FlowMap, uvFlow);
+
+	// Literally the stupidest thing I've ever had to do (part 2)
+	float dummy = bla[unity_StereoEyeIndex];
+    if (_ScreenParams.x == 0)
+        flowMap.x += dummy;
+
 	#if FLOW_ENABLED
 		float blendNoise = flowMap.a;
 		if (_BlendNoiseSource == 1){
@@ -147,7 +151,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		#else
 			#if STOCHASTIC0_ENABLED
 				_NormalStr0 *= 1.5;
-				float4 normalMap0Sample = tex2Dstoch(_Normalmap0, sampler_flowMap, uv00.xy);
+				float4 normalMap0Sample = tex2Dstoch(_NormalMap0, sampler_FlowMap, uv00.xy);
 			#else
 				float4 normalMap0Sample = MOCHIE_SAMPLE_TEX2D_SAMPLER(_NormalMap0, sampler_FlowMap, uv00.xy);
 			#endif
@@ -155,11 +159,11 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 
 			#if FLOW_ENABLED
 				#if STOCHASTIC0_ENABLED
-					float4 normalMap1Sample = tex2Dstoch(_NormalMap0, sampler_FlowMap, uv01.xy), _NormalStr0);
+					float4 normalMap1Sample = tex2Dstoch(_NormalMap0, sampler_FlowMap, uv01.xy);
 				#else
 					float4 normalMap1Sample = MOCHIE_SAMPLE_TEX2D_SAMPLER(_NormalMap0, sampler_FlowMap, uv01.xy);
 				#endif
-				float3 normalMap1 = UnpackScaleNormal(normalMap1, _NormalStr0) * uv01.z;
+				float3 normalMap1 = UnpackScaleNormal(normalMap1Sample, _NormalStr0) * uv01.z;
 				normalMap = normalize(normalMap0 + normalMap1);
 			#else
 				normalMap = normalize(normalMap0);
@@ -174,7 +178,11 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 
 	#if DETAIL_NORMAL_ENABLED
 		float3 detNorm = UnpackScaleNormal(MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailNormal, sampler_FlowMap, detailUV), _DetailNormalStrength);
-		normalMap = lerp(normalMap, detNorm, detailBC.a);
+		#if DETAIL_BASECOLOR_ENABLED
+			normalMap = lerp(normalMap, detNorm, detailBC.a);
+		#else
+			normalMap = BlendNormals(detNorm, normalMap);
+		#endif
 	#endif
 
 	float2 refractionDir = normalMap.xy;
@@ -206,12 +214,22 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	float2 baseUV = i.uvGrab.xy/proj;
 	float2 mainTexUV = TRANSFORM_TEX(i.uv, _MainTex) + _Time.y * 0.1 * _MainTexScroll;
 	mainTexUV += normalMap.xy * _BaseColorDistortionStrength;
-	float4 surfaceTint = _Color;
+	float4 surfaceTint = 0;
 	#if TRANSPARENCY_OPAQUE || TRANSPARENCY_PREMUL
 		surfaceTint = _NonGrabColor;
+		if (!isFrontFace)
+			surfaceTint = _NonGrabBackfaceTint;
+	#else
+		surfaceTint = _Color;
+		if (!isFrontFace)
+			surfaceTint = _BackfaceTint;
 	#endif
-	if (!isFrontFace)
-		surfaceTint = _BackfaceTint;
+	
+	#if VERT_OFFSET_ENABLED
+		float3 waveTint = _SubsurfaceTint.rgb * _SubsurfaceBrightness;
+		float subsurfaceThreshold = smoothstep(_SubsurfaceThreshold, 1, i.wave.y);
+		surfaceTint.rgb = lerp(surfaceTint.rgb, waveTint, subsurfaceThreshold * _SubsurfaceStrength);
+	#endif
 
 	#if BASECOLOR_STOCHASTIC_ENABLED
 		float4 mainTex = tex2Dstoch(_MainTex, sampler_FlowMap, mainTexUV) * surfaceTint;
@@ -223,10 +241,12 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		float4 baseCol = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MWGrab, baseUV);
 		float4 col = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MWGrab, screenUV) * mainTex;
 		float depth = saturate(1-GetDepth(i, screenUV));
+		float rawDepth = saturate(1-GetDepth(i, baseUV));
 	#else
 		float4 baseCol = mainTex;
 		float4 col = mainTex;
 		float depth = 1;
+		float rawDepth = 1;
 	#endif
 
 	#if DEPTH_EFFECTS_ENABLED
@@ -240,7 +260,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 					float3 caustics = 0;
 					#if CAUSTICS_VORONOI
 						_CausticsDistortion *= 0.5;
-						float3 causticsOffset = UnpackNormal(tex2Dstoch(_NormalMap0, sampler_FlowMap, (depthUV*_CausticsDistortionScale*0.1)+_Time.y*_CausticsDistortionSpeed*0.05));
+						float3 causticsOffset = UnpackNormal(tex2Dstoch(_CausticsDistortionTex, sampler_FlowMap, (depthUV*_CausticsDistortionScale*0.1)+_Time.y*_CausticsDistortionSpeed*0.05));
 						float2 causticsUV = (depthUV + uvOffset + (causticsOffset.xy * _CausticsDistortion)) * _CausticsScale;
 						causticsUV *= 7.5;
 						_CausticsSpeed *= 3;
@@ -251,7 +271,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 						caustics = pow(caustics, _CausticsPower*1.5);
 						caustics = smootherstep(0, 1, caustics);
 					#elif CAUSTICS_TEXTURE
-						float3 causticsOffset = UnpackNormal(tex2Dstoch(_NormalMap0, sampler_FlowMap, (depthUV*_CausticsDistortionScale*0.1)+_Time.y*_CausticsDistortionSpeed*0.05));
+						float3 causticsOffset = UnpackNormal(tex2Dstoch(_CausticsDistortionTex, sampler_FlowMap, (depthUV*_CausticsDistortionScale*0.1)+_Time.y*_CausticsDistortionSpeed*0.05));
 						float2 causticsUV = (depthUV + uvOffset + (causticsOffset.xy * _CausticsDistortion)) * _CausticsScale;
 						causticsUV *= 0.2;
 						_CausticsSpeed *= 0.05;
@@ -276,9 +296,20 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 			if (isFrontFace && !i.isInVRMirror){
 				float fogDepth = depth;
 				fogDepth = saturate(pow(fogDepth, _FogPower));
-				float fogDepth0 = saturate(pow(fogDepth, _FogPower/2));
+				float fogDepth0 = saturate(pow(fogDepth, _FogPower*0.5));
+				_FogTint.rgb *= _FogBrightness;
+				_FogTint.rgb *= surfaceTint.rgb;
 				col.rgb = lerp(col.rgb, lerp(_FogTint.rgb, col.rgb, fogDepth), _FogTint.a);
 				col.rgb = lerp(col.rgb, lerp(_FogTint.rgb*0.5, col.rgb, fogDepth0), _FogTint.a);
+
+				// float fogDepth0 = saturate(pow(depth, _FogPower));
+				// float fogDepth1 = saturate(pow(depth, _FogPower2));
+				// _FogTint.rgb *= _FogBrightness;
+				// _FogTint2.rgb *= _FogBrightness2;
+				// _FogTint.rgb *= surfaceTint.rgb;
+				// _FogTint2.rgb *= surfaceTint.rgb;
+				// col.rgb = lerp(col.rgb, lerp(_FogTint.rgb, col.rgb, fogDepth0), _FogTint.a);
+				// col.rgb = lerp(col.rgb, lerp(_FogTint2.rgb, col.rgb, fogDepth1), _FogTint2.a);
 			}
 		#endif
 	#endif
@@ -316,17 +347,24 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		float foamTexNoise = lerp(1, foamNoise, _FoamNoiseTexStrength);
 		float foamCrestNoise = lerp(1, foamNoise, _FoamNoiseTexCrestStrength);
 		float foam = 0;
+		float foamDepth = 1;
 		#if DEPTH_EFFECTS_ENABLED
 			if (!i.isInVRMirror){
-				float foamDepth = saturate(pow(depth,_FoamPower));
+				foamDepth = saturate(pow(rawDepth,_FoamPower));
+				#if EDGEFADE_ENABLED
+					foamDepth = 1-saturate(Remap(1-foamDepth, 0, 1, -_EdgeFadeOffset, 1));
+				#endif
 				foam = saturate(foamTex.a * foamDepth * _FoamOpacity * foamTexNoise * Average(foamTex.rgb));
 				col.rgb = lerp(col.rgb, foamTex.rgb, foam);
 			}
 		#endif
-		float crestThreshold = smoothstep(_FoamCrestThreshold, 1, i.wave.y);
-		float crestFoam = saturate(foamTex.a * _FoamOpacity * _FoamCrestStrength * crestThreshold * foamCrestNoise * 10);
-		col.rgb = lerp(col.rgb, foamTex.rgb, crestFoam);
-		crestFoam *= 1.5; // Increase roughness strength of crest foam
+		float crestFoam = 0;
+		#if VERT_OFFSET_ENABLED
+			float crestThreshold = smoothstep(_FoamCrestThreshold, 1, i.wave.y);
+			crestFoam = saturate(foamTex.a * _FoamOpacity * _FoamCrestStrength * crestThreshold * foamCrestNoise * 10);
+			col.rgb = lerp(col.rgb, foamTex.rgb, crestFoam);
+			crestFoam *= 1.5; // Increase roughness strength of crest foam
+		#endif
 		#if FOAM_NORMALS_ENABLED
 			float foamNormalStr = lerp(0,_FoamNormalStrength,foam+crestFoam);
 			#if FLOW_ENABLED
@@ -425,10 +463,11 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 				#else
 					reflCol = GetWorldReflections(reflDir, i.worldPos, rough);
 				#endif
+				reflCol *= _ReflStrength;
 				#if DEPTH_EFFECTS_ENABLED
 					#if SSR_ENABLED
 						half4 ssrCol = GetSSR(i.worldPos, viewDir, reflDir, normalDir, 1-rough, col.rgb, _Metallic, screenUV, i.uvGrab);
-						ssrCol.rgb *= _SSRStrength * lerp(10, 7, linearstep(0,1,_Metallic));
+						ssrCol.rgb *= _SSRStrength * 5;
 						#if FOAM_ENABLED
 							foamLerp = 1-foamLerp;
 							foamLerp = smoothstep(0.7, 1, foamLerp);
@@ -440,7 +479,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 						#endif
 					#endif
 				#endif
-				reflCol = reflCol * fresnel * surfaceReduction * _ReflStrength * _ReflTint;
+				reflCol = reflCol * fresnel * surfaceReduction * _ReflTint;
 			}
 		#endif
 		col.rgb += specCol;
@@ -471,8 +510,8 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		#if EDGEFADE_ENABLED
 			float edgeFadeDepth = 1;
 			if (!i.isInVRMirror){
-				edgeFadeDepth = saturate(1-GetDepth(i, baseUV));
-				edgeFadeDepth = (1-saturate(pow(edgeFadeDepth, _EdgeFadePower)));
+				edgeFadeDepth = rawDepth;
+				edgeFadeDepth = 1-saturate(pow(edgeFadeDepth, _EdgeFadePower));
 				edgeFadeDepth = saturate(Remap(edgeFadeDepth, 0, 1, -_EdgeFadeOffset, 1));
 			}
 		#endif
@@ -505,13 +544,17 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	#endif
 
 	#if EMISSION_ENABLED
+		float2 emissUVOffset = normalMap.xy * _EmissionDistortionStrength;
+		uvE0.xy += emissUVOffset;
+		uvE1.xy += emissUVOffset;
+		emissionUV += emissUVOffset;
 		#if EMISS_STOCHASTIC_ENABLED
 			#if FLOW_ENABLED
 				float3 emissCol0 = tex2Dstoch(_EmissionMap, sampler_FlowMap, uvE0.xy) * uvE0.z;
 				float3 emissCol1 = tex2Dstoch(_EmissionMap, sampler_FlowMap, uvE1.xy) * uvE1.z;
 				float3 emissCol = emissCol0 + emissCol1;
 			#else
-				float3 emissCol = tex2Dstoch(_EmissionMap, sampler_FlowMap, emisssionUV);
+				float3 emissCol = tex2Dstoch(_EmissionMap, sampler_FlowMap, emissionUV);
 			#endif
 		#else
 			#if FLOW_ENABLED
@@ -534,6 +577,8 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	UNITY_APPLY_FOG(i.fogCoord, col);
 	
 	return col + flowMap;
+	// return float4(i.wave.yyy, 1);
+	// return float4(subsurfaceThreshold.xxx, 1);
 }
 
 #include "WaterTess.cginc"
