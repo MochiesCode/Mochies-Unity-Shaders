@@ -17,13 +17,13 @@ internal class MochieStandardGUI : ShaderGUI {
 		"Subsurface Scattering",
 		"Filtering",
 		"Render Settings",
-		"Reflections & Specular Highlights",
+		"Specularity",
 		"Rain",
 		"AreaLit",
 		"LTCGI"
 	}, 1);
 
-	string versionLabel = "v1.25";
+	string versionLabel = "v1.27";
 	public static string receiverText = "AreaLit Maps";
 	public static string emitterText = "AreaLit Light";
 	public static string projectorText = "AreaLit Projector";
@@ -234,6 +234,16 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty unityFogToggle = null;
 	MaterialProperty vertexBaseColor = null;
 
+	MaterialProperty uvPriSwizzle = null;
+	MaterialProperty uvSecSwizzle = null;
+	MaterialProperty uvEmissMaskSwizzle = null;
+	MaterialProperty uvHeightMaskSwizzle = null;
+	MaterialProperty uvAlphaMaskSwizzle = null;
+	MaterialProperty uvRainMaskSwizzle = null;
+	MaterialProperty uvRimMaskSwizzle = null;
+	MaterialProperty uvDetailMaskSwizzle = null;
+	MaterialProperty mirrorNormalOffsetSwizzle = null;
+
 	MaterialEditor me;
 
 	bool m_FirstTimeApply = true;
@@ -425,6 +435,15 @@ internal class MochieStandardGUI : ShaderGUI {
 		ssrHeight = FindProperty("_SSRHeight", props);
 		unityFogToggle = FindProperty("_UnityFogToggle", props);
 		vertexBaseColor = FindProperty("_VertexBaseColor", props);
+		uvPriSwizzle = FindProperty("_UVPriSwizzle", props);
+		uvSecSwizzle = FindProperty("_UVSecSwizzle", props);
+		uvEmissMaskSwizzle = FindProperty("_UVEmissMaskSwizzle", props);
+		uvHeightMaskSwizzle = FindProperty("_UVHeightMaskSwizzle", props);
+		uvAlphaMaskSwizzle = FindProperty("_UVAlphaMaskSwizzle", props);
+		uvRainMaskSwizzle = FindProperty("_UVRainMaskSwizzle", props);
+		uvRimMaskSwizzle = FindProperty("_UVRimMaskSwizzle", props);
+		uvDetailMaskSwizzle = FindProperty("_UVDetailMaskSwizzle", props);
+		mirrorNormalOffsetSwizzle = FindProperty("_MirrorNormalOffsetSwizzle", props);
 	}
 
 	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props){
@@ -474,7 +493,7 @@ internal class MochieStandardGUI : ShaderGUI {
 			// }
 			
 			// Reflections & Specular Highlights
-			bool reflSpecFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "Reflections & Specular Highlights");
+			bool reflSpecFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "Specularity");
 			if (reflSpecFoldout){
 				DoReflSpecArea(isLite);
 			}
@@ -782,7 +801,7 @@ internal class MochieStandardGUI : ShaderGUI {
 				if (!isLite){
 					MGUI.ToggleFloat(me, Tips.ssrText, ssr, ssrStrength);
 					if (ssr.floatValue == 1){
-						me.ShaderProperty(edgeFade, Tips.edgeFadeText);
+						me.ShaderProperty(edgeFade, "Edge Fade");
 						me.ShaderProperty(ssrHeight, "Depth");
 					}
 					MGUI.ToggleFloat(me, Tips.reflVertexColor, reflVertexColor, reflVertexColorStrength);
@@ -809,6 +828,9 @@ internal class MochieStandardGUI : ShaderGUI {
 					me.TexturePropertySingleLine(Tips.reflCubeText, reflCube, reflCube.textureValue ? cubeThreshold : null);
 					MGUI.SpaceN4();
 				});
+			}
+			if (ssr.floatValue == 1 && !isLite){
+				MGUI.DisplayWarning("Screenspace reflections in VRChat require the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs\n\nThey are also VERY expensive, please use them sparingly!");
 			}
 		});
 	}
@@ -891,6 +913,8 @@ internal class MochieStandardGUI : ShaderGUI {
 				MGUI.SpaceN2();
 				if (samplingMode.floatValue < 3){
 					me.ShaderProperty(uvPri, Tips.uvSetLabel.text);
+					if (uvPri.floatValue >= 5)
+						me.ShaderProperty(uvPriSwizzle, "Swizzle");
 					MGUI.TextureSOScroll(me, albedoMap, uv0Scroll);
 				}
 				else {
@@ -907,6 +931,8 @@ internal class MochieStandardGUI : ShaderGUI {
 				MGUI.SpaceN2();
 				if (detailSamplingMode.floatValue < 3){
 					me.ShaderProperty(uvSetSecondary, Tips.uvSetLabel.text);
+					if (uvSetSecondary.floatValue >= 5)
+						me.ShaderProperty(uvSecSwizzle, "Swizzle");
 					MGUI.TextureSOScroll(me, detailAlbedoMap, uv1Scroll);
 				}
 				else {
@@ -921,6 +947,8 @@ internal class MochieStandardGUI : ShaderGUI {
 				MGUI.PropertyGroupLayer(()=>{
 					MGUI.SpaceN2();
 					me.ShaderProperty(uvDetailMask, Tips.uvSetLabel.text);
+					if (uvDetailMask.floatValue >= 5)
+						me.ShaderProperty(uvDetailMaskSwizzle, "Swizzle");
 					MGUI.TextureSOScroll(me, detailMask, detailScroll);
 					me.ShaderProperty(detailRotate, "Rotation");
 					MGUI.SpaceN2();
@@ -932,6 +960,8 @@ internal class MochieStandardGUI : ShaderGUI {
 				MGUI.PropertyGroupLayer(()=>{
 					MGUI.SpaceN2();
 					me.ShaderProperty(uvHeightMask, Tips.uvSetLabel.text);
+					if (uvHeightMask.floatValue >= 5)
+						me.ShaderProperty(uvHeightMaskSwizzle, "Swizzle");
 					MGUI.TextureSOScroll(me, parallaxMask, uv2Scroll);
 					MGUI.SpaceN2();
 				});
@@ -942,6 +972,8 @@ internal class MochieStandardGUI : ShaderGUI {
 				MGUI.PropertyGroupLayer(()=>{
 					MGUI.SpaceN2();
 					me.ShaderProperty(uvEmissMask, Tips.uvSetLabel.text);
+					if (uvEmissMask.floatValue >= 5)
+						me.ShaderProperty(uvEmissMaskSwizzle, "Swizzle");
 					MGUI.TextureSOScroll(me, emissionMask, uv3Scroll);
 					me.ShaderProperty(uv3Rot, "Rotation");
 					MGUI.SpaceN2();
@@ -953,6 +985,8 @@ internal class MochieStandardGUI : ShaderGUI {
 				MGUI.PropertyGroupLayer(()=>{
 					MGUI.SpaceN2();
 					me.ShaderProperty(uvAlphaMask, Tips.uvSetLabel.text);
+					if (uvAlphaMask.floatValue >= 5)
+						me.ShaderProperty(uvAlphaMaskSwizzle, "Swizzle");
 					MGUI.TextureSOScroll(me, alphaMask, uv4Scroll);
 					me.ShaderProperty(uv4Rot, "Rotation");
 					MGUI.SpaceN2();
@@ -964,6 +998,8 @@ internal class MochieStandardGUI : ShaderGUI {
 				MGUI.PropertyGroupLayer(()=>{
 					MGUI.SpaceN2();
 					me.ShaderProperty(uvRainMask, Tips.uvSetLabel.text);
+					if (uvRainMask.floatValue >= 5)
+						me.ShaderProperty(uvRainMaskSwizzle, "Swizzle");
 					MGUI.TextureSOScroll(me, rainMask, uv5Scroll);
 					me.ShaderProperty(uv5Rot, "Rotation");
 					MGUI.SpaceN2();
@@ -975,6 +1011,8 @@ internal class MochieStandardGUI : ShaderGUI {
 				MGUI.PropertyGroupLayer(()=>{
 					MGUI.SpaceN2();
 					me.ShaderProperty(uvRimMask, Tips.uvSetLabel.text);
+					if (uvRimMask.floatValue >= 5)
+						me.ShaderProperty(uvRimMaskSwizzle, "Swizzle");
 					MGUI.TextureSOScroll(me, rimMask, uvRimMaskScroll);
 					me.ShaderProperty(uvRimMaskRot, "Rotation");
 					MGUI.SpaceN2();
@@ -1008,16 +1046,17 @@ internal class MochieStandardGUI : ShaderGUI {
 				me.ShaderProperty(bicubicLightmap, Tips.bicubicLightmap);
 				me.ShaderProperty(unityFogToggle, Tips.unityFogToggleText);
 				me.ShaderProperty(vertexBaseColor, Tips.vertexBaseColorText);
-				if (!isLite)
-					me.ShaderProperty(mirrorToggle, Tips.mirrorMode);
+				me.ShaderProperty(mirrorToggle, Tips.mirrorMode);
+				if (mirrorToggle.floatValue == 1){
+					me.ShaderProperty(mirrorNormalOffsetSwizzle, Tips.mirrorNormalSwizzleText);
+				}
 				me.EnableInstancingField();
 				MGUI.SpaceN2();
 				me.DoubleSidedGIField();
 				MGUI.SpaceN3();
 			});
-
-			if (ssr.floatValue == 1 && !isLite){
-				MGUI.DisplayInfo("\nScreenspace reflections in VRChat requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs\n\nIt is also is VERY expensive, please use it sparingly!\n");
+			if (mirrorToggle.floatValue == 1){
+				MGUI.DisplayWarning("Mirror mode requires a VRChat mirror component with this shader selected in the custom shader field. It also requires the mesh be facing forwards on the local Z axis (see default unity quad for example). Lastly, this incurs the same performance cost as any other VRChat mirror, use it very sparingly.");
 			}
 			MGUI.Space1();
 			// me.TexturePropertySingleLine(new GUIContent("RNM0"), _RNM0);

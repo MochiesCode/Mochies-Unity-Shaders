@@ -8,8 +8,8 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Screen FX Mat
-  m_Shader: {fileID: 4800000, guid: 0d1d977ca72938b4bb8f3ed06b9a8645, type: 3}
-  m_ShaderKeywords: 
+  m_Shader: {fileID: 4800000, guid: 59e95fd81cd9e734f838e83e6faf1482, type: 3}
+  m_ShaderKeywords: _COLOR_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -24,6 +24,18 @@ Material:
         m_Texture: {fileID: 2800000, guid: 89819f8cb0b9e5d418f6e90ca96ac9c3, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _OutlineBackgroundCube:
+        m_Texture: {fileID: 8900000, guid: 016367b21e8160549abd1b73712c7b50, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OutlineCube:
+        m_Texture: {fileID: 8900000, guid: 97af38ab77e27714c8ece25f21df4405, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OutlineCubeAlt:
+        m_Texture: {fileID: 8900000, guid: d8ba709409dfb494081cd347fb16ced2, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _ScreenTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -33,7 +45,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _TPNoiseTex:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: dfbb7eeed695dc14d82b08d887041406, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _TPTexture:
@@ -103,6 +115,9 @@ Material:
     - _AuraFade: 0.5
     - _AuraSampleCount: 43
     - _AuraStr: 0.25
+    - _AutoRotate: 0
+    - _AutoRotateAlt: 0
+    - _AutoRotateBG: 0
     - _AutoShift: 0
     - _AutoShiftSpeed: 0.25
     - _BlendMode: 0
@@ -116,6 +131,8 @@ Material:
     - _BlurUseGlobal: 1
     - _BlurY: 0
     - _Brightness: 1
+    - _ClampMax: 1
+    - _ClampToggle: 0
     - _ColorMaxRange: 15
     - _ColorMinRange: 8
     - _ColorUseGlobal: 1
@@ -139,7 +156,7 @@ Material:
     - _DoFP2O: 1
     - _DoFRadius: 2
     - _DstBlend: 0
-    - _FilterModel: 0
+    - _FilterModel: 1
     - _FilterStrength: 1
     - _Flavor: 0
     - _Fog: 0
@@ -181,6 +198,7 @@ Material:
     - _OLUseGlobal: 1
     - _Opacity: 1
     - _OutlineAltEnable: 0
+    - _OutlineCubeToggle: 0
     - _OutlineHueShift: 0
     - _OutlineHueShiftAuto: 0
     - _OutlineHueShiftSpeed: 1
@@ -264,6 +282,9 @@ Material:
     m_Colors:
     - _BackgroundCol: {r: 1, g: 1, b: 1, a: 0}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _CubeRotate: {r: 180, g: 0, b: 0, a: 0}
+    - _CubeRotateAlt: {r: 180, g: 0, b: 0, a: 0}
+    - _CubeRotateBG: {r: 180, g: 0, b: 0, a: 0}
     - _DBColor: {r: 1, g: 1, b: 1, a: 1}
     - _FogColor: {r: 0.75, g: 0.75, b: 0.75, a: 1}
     - _NoiseRGB: {r: 0, g: 0, b: 0, a: 0}

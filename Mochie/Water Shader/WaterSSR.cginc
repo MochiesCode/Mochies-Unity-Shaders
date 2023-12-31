@@ -122,9 +122,9 @@ float4 GetSSR(const float3 wPos, const float3 viewDir, float3 rayDir, const half
 			float xfade = smoothstep(0, _EdgeFadeSSR, uvs.x) * smoothstep(1, 1-_EdgeFadeSSR, uvs.x); //Fade x uvs out towards the edges
 		#endif
 		float yfade = smoothstep(0, _EdgeFadeSSR, uvs.y)*smoothstep(1, 1-_EdgeFadeSSR, uvs.y); //Same for y
-		float lengthFade = smoothstep(1, 0, 2*(totalSteps / 50)-1);
+		// float lengthFade = smoothstep(1, 0, 2*(totalSteps / 50)-1);
 		float smoothFade = smoothstep(0.65, 0.5, 1-smoothness);
-		float reflectionAlpha = FdotR * xfade * yfade * lengthFade * smoothFade;
+		float reflectionAlpha = xfade * yfade * smoothFade; // * lengthFade;
 
 		float4 reflection = 0;
 		if (reflectionAlpha > 0){
@@ -136,7 +136,7 @@ float4 GetSSR(const float3 wPos, const float3 viewDir, float3 rayDir, const half
 			// 	reflection.rgb = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MWGrab, uvs.xy).rgb;
 			// }
 			reflection.rgb = lerp(reflection.rgb, reflection.rgb*albedo.rgb,smoothstep(0, 1.75, metallic));
-			reflection.a = reflectionAlpha;
+			reflection.a = reflectionAlpha; // saturate(reflectionAlpha * 10);
 		}
 
 		return max(0,reflection);

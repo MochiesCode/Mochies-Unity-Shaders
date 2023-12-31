@@ -30,9 +30,10 @@ struct v2f_meta
 v2f_meta vert_meta (VertexInput v)
 {
     v2f_meta o;
+	float4 posWorld = mul(unity_ObjectToWorld, v.vertex);
     o.pos = UnityMetaVertexPosition(v.vertex, v.uv1.xy, v.uv2.xy, unity_LightmapST, unity_DynamicLightmapST);
 	float4 dummyUV0 = 0;
-    TexCoords(v, o.uv0, o.uv1, o.uv2, dummyUV0, o.uv3);
+    TexCoords(v, o.uv0, o.uv1, o.uv2, dummyUV0, o.uv3, posWorld);
 	o.localPos = v.vertex;
 	o.normal = UnityObjectToWorldNormal(v.normal);
 	o.color = v.color;

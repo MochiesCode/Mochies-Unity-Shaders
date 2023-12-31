@@ -9,9 +9,9 @@ Material:
   m_PrefabAsset: {fileID: 0}
   m_Name: Water Mat
   m_Shader: {fileID: 4800000, guid: 7e018b47cc1d059439656129107b3445, type: 3}
-  m_ShaderKeywords: _CAUSTICS_VORONOI_ON _DEPTHFOG_ON _DEPTH_EFFECTS_ON _EDGEFADE_ON
-    _FLOW_ON _FOAM_ON _NORMALMAP_1_ON _NORMAL_FLIPBOOK_STOCHASTIC_ON _REFLECTIONS_ON
-    _SPECULAR_ON
+  m_ShaderKeywords: _BICUBIC_LIGHTMAPPING_ON _CAUSTICS_VORONOI_ON _DEPTHFOG_ON _DEPTH_EFFECTS_ON
+    _EDGEFADE_ON _FLOW_ON _FOAM_ON _NORMALMAP_1_ON _NORMAL_FLIPBOOK_STOCHASTIC_ON
+    _REFLECTIONS_ON _SPECULAR_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -141,6 +141,7 @@ Material:
     - _BaseColorDistortionStrength: 0.1
     - _BaseColorOffset: 0
     - _BaseColorStochasticToggle: 0
+    - _BicubicLightmapping: 1
     - _BlendNoiseSource: 0
     - _CausticsDisp: 0.15
     - _CausticsDistortion: 0.5
@@ -171,15 +172,15 @@ Material:
     - _FlowSpeed: 0.25
     - _FlowStrength: 0.3
     - _FlowToggle: 1
-    - _FoamCrestStrength: 0
+    - _FoamCrestStrength: 1.5
     - _FoamCrestThreshold: 0.5
     - _FoamDistortionStrength: 0.1
+    - _FoamEdgeStrength: 1.5
     - _FoamNoiseTexCrestStrength: 1.1
     - _FoamNoiseTexStrength: 0
     - _FoamNormalStrength: 4
     - _FoamNormalToggle: 0
     - _FoamOffset: 0
-    - _FoamOpacity: 3
     - _FoamPower: 200
     - _FoamRoughness: 0.2
     - _FoamStochasticToggle: 0
@@ -189,7 +190,11 @@ Material:
     - _FogPower: 10
     - _FogPower2: 5
     - _FogToggle: 1
+    - _GlobalTexCoordScaleUV: 1
+    - _GlobalTexCoordScaleWorld: 0.1
+    - _InvertNormals: 0
     - _Metallic: 0
+    - _MirrorNormalOffsetSwizzle: 1
     - _NoiseTexBlur: 0.8
     - _Normal0StochasticToggle: 0
     - _Normal1StochasticToggle: 0
@@ -232,6 +237,8 @@ Material:
     - _TessMin: 1
     - _TessellationOffsetMask: 1
     - _Test: 10
+    - _TexCoordSpace: 0
+    - _TexCoordSpaceSwizzle: 1
     - _TransparencyMode: 2
     - _Turbulence: 1
     - _TurbulenceScale: 3
@@ -279,7 +286,7 @@ Material:
     - _FoamColor: {r: 1, g: 1, b: 1, a: 1}
     - _FoamNoiseTexScale: {r: 3, g: 3, b: 0, a: 0}
     - _FoamNoiseTexScroll: {r: 0, g: 0.1, b: 0, a: 0}
-    - _FoamTexScale: {r: 5, g: 5, b: 0, a: 0}
+    - _FoamTexScale: {r: 6, g: 6, b: 0, a: 0}
     - _FoamTexScroll: {r: 0.1, g: -0.1, b: 0, a: 0}
     - _FogTint: {r: 0.10999996, g: 0.25999996, b: 0.25999996, a: 1}
     - _FogTint2: {r: 0.054999977, g: 0.12999997, b: 0.12999997, a: 1}

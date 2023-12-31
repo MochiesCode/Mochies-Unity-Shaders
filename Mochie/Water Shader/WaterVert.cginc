@@ -64,7 +64,8 @@ v2f vert (
 			offsetMask = o.offsetMask;
 		#endif
 		offsetMask *= vertOffsetMask;
-		
+		float3 wpos = v.vertex; // mul(unity_ObjectToWorld, v.vertex);
+		// wpos.y = v.vertex.y;
 		if (_RecalculateNormals == 1){
 			o.tangent = float3(1,0,0);
 			o.binormal = float3(0,0,1);
@@ -81,21 +82,21 @@ v2f vert (
 			_WaveSpeed0 *= _WaveSpeedGlobal;
 			_WaveScale0 *= _WaveScaleGlobal;
 			float4 waveProperties0 = float4(0,1, _WaveStrength0 + turb, _WaveScale0);
-			wave0 = GerstnerWave(waveProperties0, v.vertex.xyz, _WaveSpeed0, _WaveDirection0, o.tangent, o.binormal, offsetMask);
+			wave0 = GerstnerWave(waveProperties0, wpos, _WaveSpeed0, _WaveDirection0, o.tangent, o.binormal, offsetMask);
 		}
 		if (_WaveStrength1 > 0){
 			_WaveStrength1 *= _WaveStrengthGlobal;
 			_WaveSpeed1 *= _WaveSpeedGlobal;
 			_WaveScale1 *= _WaveScaleGlobal;
 			float4 waveProperties1 = float4(0,1, _WaveStrength1 + turb, _WaveScale1);
-			wave1 = GerstnerWave(waveProperties1, v.vertex.xyz, _WaveSpeed1, _WaveDirection1, o.tangent, o.binormal, offsetMask);
+			wave1 = GerstnerWave(waveProperties1, wpos, _WaveSpeed1, _WaveDirection1, o.tangent, o.binormal, offsetMask);
 		}
 		if (_WaveStrength2 > 0){
 			_WaveStrength2 *= _WaveStrengthGlobal;
 			_WaveSpeed2 *= _WaveSpeedGlobal;
 			_WaveScale2 *= _WaveScaleGlobal;
 			float4 waveProperties2 = float4(0,1, _WaveStrength2 + turb, _WaveScale2);
-			wave2 = GerstnerWave(waveProperties2, v.vertex.xyz, _WaveSpeed2, _WaveDirection2, o.tangent, o.binormal, offsetMask);
+			wave2 = GerstnerWave(waveProperties2, wpos, _WaveSpeed2, _WaveDirection2, o.tangent, o.binormal, offsetMask);
 		}
 		o.wave = wave0 + wave1 + wave2;
 		o.wave *= vertOffsetMask;
@@ -160,6 +161,10 @@ v2f vert (
 	#endif
 	o.worldPos = mul(unity_ObjectToWorld, v.vertex);
 	o.uvGrab = ComputeGrabScreenPos(o.pos);
+	o.reflUV = ComputeNonStereoScreenPos(o.pos);
+	#if defined(LIGHTMAP_ON)
+		o.lightmapUV = v.uv1 * unity_LightmapST.xy + unity_LightmapST.zw;
+	#endif
 	o.localPos = v.vertex;
 
 	o.isInVRMirror = _VRChatMirrorMode == 1;

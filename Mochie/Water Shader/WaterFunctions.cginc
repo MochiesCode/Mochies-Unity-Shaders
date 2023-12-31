@@ -28,6 +28,18 @@ float3 BoxProjection(float3 dir, float3 pos, float4 cubePos, float3 boxMin, floa
 	return dir;
 }
 
+float3 GetMirrorReflections(float4 reflUV, float3 normal, float roughness){
+    float perceptualRoughness = roughness;
+    perceptualRoughness = perceptualRoughness*(1.7 - 0.7*perceptualRoughness);
+    float mip = perceptualRoughnessToMipmapLevel(perceptualRoughness);
+	float2 normalSwizzle[3] = {normal.xy, normal.xz, normal.yz}; 
+	reflUV.xy -= normalSwizzle[_MirrorNormalOffsetSwizzle];
+    float2 uv = reflUV.xy / (reflUV.w + 0.00000001);
+    float4 uvMip = float4(uv, 0, mip * 6);
+    float3 refl = unity_StereoEyeIndex == 0 ? tex2Dlod(_ReflectionTex0, uvMip) : tex2Dlod(_ReflectionTex1, uvMip);
+    return refl;
+}
+
 float3 GetWorldReflections(float3 reflDir, float3 worldPos, float roughness){
 	float3 baseReflDir = reflDir;
 	roughness *= 1.7-0.7*roughness;
@@ -142,7 +154,102 @@ float3 GerstnerWave(float4 wave, float3 vertex, float speed, float rotation, ino
 		) * offsetMask;
 	}
 	
-	return float3(0, a * sin(f), dir.y * (a*cos(f)));
+	return float3(dir.x * (a*cos(f)), a * sin(f), dir.y * (a*cos(f)));
+}
+#ifndef TEXTURE2D_ARGS
+#define TEXTURE2D_ARGS(textureName, samplerName) Texture2D textureName, SamplerState samplerName
+#define TEXTURE2D_PARAM(textureName, samplerName) textureName, samplerName
+#define SAMPLE_TEXTURE2D(textureName, samplerName, coord2) textureName.Sample(samplerName, coord2)
+#endif
+
+// Bicubic lightmap sampling from bakery standard shader
+
+float4 standardCubic(float v)
+{
+    float4 n = float4(1.0, 2.0, 3.0, 4.0) - v;
+    float4 s = n * n * n;
+    float x = s.x;
+    float y = s.y - 4.0 * s.x;
+    float z = s.z - 4.0 * s.y + 6.0 * s.x;
+    float w = 6.0 - x - y - z;
+    return float4(x, y, z, w);
+}
+
+float4 SampleTexture2DBicubicFilter(TEXTURE2D_ARGS(tex, smp), float2 coord, float4 texSize)
+{
+    coord = coord * texSize.xy - 0.5;
+    float fx = frac(coord.x);
+    float fy = frac(coord.y);
+    coord.x -= fx;
+    coord.y -= fy;
+
+    float4 xcubic = standardCubic(fx);
+    float4 ycubic = standardCubic(fy);
+
+    float4 c = float4(coord.x - 0.5, coord.x + 1.5, coord.y - 0.5, coord.y + 1.5);
+    float4 s = float4(xcubic.x + xcubic.y, xcubic.z + xcubic.w, ycubic.x + ycubic.y, ycubic.z + ycubic.w);
+    float4 offset = c + float4(xcubic.y, xcubic.w, ycubic.y, ycubic.w) / s;
+
+    float4 sample0 = SAMPLE_TEXTURE2D(tex, smp, float2(offset.x, offset.z) * texSize.zw);
+    float4 sample1 = SAMPLE_TEXTURE2D(tex, smp, float2(offset.y, offset.z) * texSize.zw);
+    float4 sample2 = SAMPLE_TEXTURE2D(tex, smp, float2(offset.x, offset.w) * texSize.zw);
+    float4 sample3 = SAMPLE_TEXTURE2D(tex, smp, float2(offset.y, offset.w) * texSize.zw);
+
+    float sx = s.x / (s.x + s.y);
+    float sy = s.z / (s.z + s.w);
+
+    return lerp(
+        lerp(sample3, sample2, sx),
+        lerp(sample1, sample0, sx), sy);
+}
+
+float4 SampleLightmapBicubic(float2 uv)
+{
+    #ifdef SHADER_API_D3D11
+        float width, height;
+        unity_Lightmap.GetDimensions(width, height);
+
+        float4 unity_Lightmap_TexelSize = float4(width, height, 1.0/width, 1.0/height);
+
+        return SampleTexture2DBicubicFilter(TEXTURE2D_PARAM(unity_Lightmap, samplerunity_Lightmap),
+            uv, unity_Lightmap_TexelSize);
+    #else
+        return SAMPLE_TEXTURE2D(unity_Lightmap, samplerunity_Lightmap, uv);
+    #endif
+}
+
+float4 SampleLightmapDirBicubic(float2 uv)
+{
+    #ifdef SHADER_API_D3D11
+        float width, height;
+        unity_LightmapInd.GetDimensions(width, height);
+
+        float4 unity_LightmapInd_TexelSize = float4(width, height, 1.0/width, 1.0/height);
+
+        return SampleTexture2DBicubicFilter(TEXTURE2D_PARAM(unity_LightmapInd, samplerunity_Lightmap),
+            uv, unity_LightmapInd_TexelSize);
+    #else
+        return SAMPLE_TEXTURE2D(unity_LightmapInd, samplerunity_Lightmap, uv);
+    #endif
+}
+
+void ApplyIndirectLighting(float2 uv, float3 vNormal, float3 normal, inout float3 col){
+	float3 indirectCol = 1;
+	#if BASE_PASS
+		#ifdef LIGHTMAP_ON
+			#if BICUBIC_LIGHTMAPPING_ENABLED
+				indirectCol = DecodeLightmap(SampleLightmapBicubic(uv));
+				float4 lightmapDir = SampleLightmapDirBicubic(uv);
+			#else
+				indirectCol = DecodeLightmap(UNITY_SAMPLE_TEX2D(unity_Lightmap, uv));
+				float4 lightmapDir = UNITY_SAMPLE_TEX2D_SAMPLER(unity_LightmapInd, unity_Lightmap, uv);
+			#endif
+			indirectCol = DecodeDirectionalLightmap(indirectCol, lightmapDir, vNormal);
+		#else
+			// indirectCol = ShadeSH9(float4(normal, 1));
+		#endif
+	#endif
+	col *= indirectCol;
 }
 
 #endif // WATER_FUNCTIONS_INCLUDED

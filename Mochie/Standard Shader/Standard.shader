@@ -98,15 +98,23 @@ Shader "Mochie/Standard" {
 		_DetailMetallicMap("Detail Metallic Map", 2D) = "white" {}
 		[Enum(Add,0, Alpha,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailMetallicBlend("Detail Metallic Blend", Int) = 2
 
-		[Enum(UV0,0,UV1,1, UV2,2, UV3,3, UV4,4)]_UVPri("UV Set for primary textures", Float) = 0
-        [Enum(UV0,0,UV1,1, UV2,2, UV3,3, UV4,4)]_UVSec("UV Set for secondary textures", Float) = 0
-		[Enum(UV0,0,UV1,1, UV2,2, UV3,3, UV4,4)]_UVEmissMask("UV Set for Emission Mask", Float) = 0
-		[Enum(UV0,0,UV1,1, UV2,2, UV3,3, UV4,4)]_UVHeightMask("UV Set for height mask", Float) = 0
-		[Enum(UV0,0,UV1,1, UV2,2, UV3,3, UV4,4)]_UVAlphaMask("UV Set for alpha mask", Float) = 0
+		[Enum(UV0,0, UV1,1, UV2,2, UV3,3, UV4,4, World,5)]_UVPri("UV Set for primary textures", Float) = 0
+		[Enum(XY,0, XZ,1, YZ,2)]_UVPriSwizzle("Swizzle", Int) = 0
+        [Enum(UV0,0, UV1,1, UV2,2, UV3,3, UV4,4, World,5)]_UVSec("UV Set for secondary textures", Float) = 0
+		[Enum(XY,0, XZ,1, YZ,2)]_UVSecSwizzle("Swizzle", Int) = 0
+		[Enum(UV0,0, UV1,1, UV2,2, UV3,3, UV4,4, World,5)]_UVEmissMask("UV Set for Emission Mask", Float) = 0
+		[Enum(XY,0, XZ,1, YZ,2)]_UVEmissMaskSwizzle("Swizzle", Int) = 0
+		[Enum(UV0,0, UV1,1, UV2,2, UV3,3, UV4,4, World,5)]_UVHeightMask("UV Set for height mask", Float) = 0
+		[Enum(XY,0, XZ,1, YZ,2)]_UVHeightMaskSwizzle("Swizzle", Int) = 0
+		[Enum(UV0,0, UV1,1, UV2,2, UV3,3, UV4,4, World,5)]_UVAlphaMask("UV Set for alpha mask", Float) = 0
+		[Enum(XY,0, XZ,1, YZ,2)]_UVAlphaMaskSwizzle("Swizzle", Int) = 0
 		[Enum(Red,0, Green,1, Blue,2, Alpha,3)]_AlphaMaskChannel("Alpha Mask Channel", Int) = 3
-		[Enum(UV0,0,UV1,1, UV2,2, UV3,3, UV4,4)]_UVRainMask("UV Set for rain mask", Float) = 0
-		[Enum(UV0,0,UV1,1, UV2,2, UV3,3, UV4,4)]_UVRimMask("UV Set for rim mask", Float) = 0
-		[Enum(UV0,0,UV1,1, UV2,2, UV3,3, UV4,4)]_UVDetailMask("UV Set for detail mask", Float) = 0
+		[Enum(UV0,0, UV1,1, UV2,2, UV3,3, UV4,4, World,5)]_UVRainMask("UV Set for rain mask", Float) = 0
+		[Enum(XY,0, XZ,1, YZ,2)]_UVRainMaskSwizzle("Swizzle", Int) = 0
+		[Enum(UV0,0, UV1,1, UV2,2, UV3,3, UV4,4, World,5)]_UVRimMask("UV Set for rim mask", Float) = 0
+		[Enum(XY,0, XZ,1, YZ,2)]_UVRimMaskSwizzle("Swizzle", Int) = 0
+		[Enum(UV0,0, UV1,1, UV2,2, UV3,3, UV4,4, World,5)]_UVDetailMask("UV Set for detail mask", Float) = 0
+		[Enum(XY,0, XZ,1, YZ,2)]_UVDetailMaskSwizzle("Swizzle", Int) = 0
 
 		[ToggleUI]_Filtering("Filtering", Int) = 0
 		_Hue("Hue", Range(0,1)) = 0
@@ -136,6 +144,7 @@ Shader "Mochie/Standard" {
 		_ReflCubeOverride("Reflection Override", CUBE) = "" {}
 		_CubeThreshold("Threshold", Range(0.0001,1)) = 0.45
 		_EdgeFade("Edge Fade", Range(0,1)) = 0.1
+		[ToggleUI]_EdgeFadeToggle("Edge Fade Toggle", Int) = 1
 		
 		[ToggleUI]_Subsurface("Subsurface Scattering", Int) = 0
 		[ToggleUI]_ScatterAlbedoTint("Scatter Albedo Tint", Int) = 0
@@ -231,6 +240,7 @@ Shader "Mochie/Standard" {
 		[HideInInspector]_NaNLmao("lol", Float) = 0
 
 		[ToggleUI]_MirrorToggle("Mirror Mode", Int) = 0
+		[Enum(XY,0, XZ,1, YZ,2)]_MirrorNormalOffsetSwizzle("Swizzle", Int) = 0
 		[ToggleUI]_UnityFogToggle("Unity Fog", Int) = 1
 		[HideInInspector] _ReflectionTex0("", 2D) = "white" {}
         [HideInInspector] _ReflectionTex1("", 2D) = "white" {}

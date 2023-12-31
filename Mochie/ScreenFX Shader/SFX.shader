@@ -35,6 +35,8 @@ Shader "Mochie/Screen FX" {
 		_InvertR("", Range(0,1)) = 0
 		_InvertG("", Range(0,1)) = 0
 		_InvertB("", Range(0,1)) = 0
+		_ClampMax("", Float) = 1
+		[ToggleUI]_ClampToggle("", Int) = 0
 		
 		// Shake
 		[Enum(Off,0, Smooth,1, Coarse,2, Noise,3)]_ShakeModel("", Int) = 0
@@ -176,6 +178,16 @@ Shader "Mochie/Screen FX" {
 		[ToggleUI]_OutlineAltEnable("", Int) = 0
 		[HDR]_OutlineColAlt("", Color) = (1,1,1,1)
 		_OutlineThreshAlt("", Float) = 100
+		_OutlineCube("", CUBE) = "black" {}
+		_OutlineCubeAlt("", CUBE) = "white" {}
+		_OutlineBackgroundCube("", CUBE) = "white" {}
+		[Enum(Solid Color,0, Cubemap,1)]_OutlineCubeToggle("", Int) = 0
+		_CubeRotate("vec", Vector) = (180,0,0,0)
+		[ToggleUI]_AutoRotate("tog", Int) = 0
+		_CubeRotateAlt("vec", Vector) = (180,0,0,0)
+		[ToggleUI]_AutoRotateAlt("tog", Int) = 0
+		_CubeRotateBG("vec", Vector) = (180,0,0,0)
+		[ToggleUI]_AutoRotateBG("tog", Int) = 0
 		
 		// Audio Link
 		[ToggleUI]_AudioLinkToggle("", Int) = 0

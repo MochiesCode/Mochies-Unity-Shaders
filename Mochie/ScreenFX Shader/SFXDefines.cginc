@@ -19,7 +19,7 @@ float _MinRange, _MaxRange;
 float _Opacity;
 
 // Color Filtering
-int _FilterModel, _AutoShift, _ColorUseGlobal, _NoiseUseGlobal, _RoundingToggle;
+int _FilterModel, _AutoShift, _ColorUseGlobal, _NoiseUseGlobal, _RoundingToggle, _ClampToggle;
 float4 _Color;
 float3 _RGB, _NoiseRGB;
 float _FilterStrength, _Noise, _NoiseStrength;
@@ -30,6 +30,7 @@ float _Hue, _AutoShiftSpeed, _Brightness;
 float _SaturationR, _SaturationG, _SaturationB;
 float _ScanLine, _ScanLineThick, _ScanLineSpeed;
 float _NoiseMinRange, _NoiseMaxRange;
+float _ClampMax;
 
 // Shake
 int _ShakeModel, _ShakeUseGlobal;
@@ -156,11 +157,16 @@ float depth;
 	float _ZoomStr, _ZoomStrR, _ZoomStrG, _ZoomStrB;
 
 	// Extras
-	int _OLUseGlobal, _OutlineType, _Shift, _InvertX, _InvertY, _Sobel, _DepthBufferToggle, _SobelClearInner;
+	samplerCUBE _OutlineCube;
+	samplerCUBE _OutlineCubeAlt;
+	samplerCUBE _OutlineBackgroundCube;
+	int _OLUseGlobal, _OutlineType, _Shift, _InvertX, _InvertY, _Sobel, _DepthBufferToggle, _SobelClearInner, _OutlineCubeToggle;
+	int _AutoRotate, _AutoRotateAlt, _AutoRotateBG;
 	int _AuraSampleCount;
 	float _OLMinRange, _OLMaxRange, _AuraFade, _AuraStr;
 	float4 _OutlineCol, _BackgroundCol;
 	float3 _DBColor;
+	float3 _CubeRotate, _CubeRotateAlt, _CubeRotateBG;
 	float _OutlineThiccS, _OutlineThiccN, _OutlineThresh, _SobelStr;
 	float _ShiftX, _ShiftY, _Rotate;
 	int _Pulse, _WaveForm, _PulseColor;
@@ -215,6 +221,8 @@ struct v2f {
 	float letterbF : TEXCOORD21;
 	float olF : TEXCOORD22;
 	float noiseF : TEXCOORD23;
+	float3 viewDir : TEXCOORD24;
+	float3 worldPos : TEXCOORD25;
 	UNITY_VERTEX_INPUT_INSTANCE_ID 
 	UNITY_VERTEX_OUTPUT_STEREO
 };

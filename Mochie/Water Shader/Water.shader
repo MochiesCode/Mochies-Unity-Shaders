@@ -37,7 +37,7 @@ Shader "Mochie/Water" {
 		_EmissionDistortionStrength("Emission Distortion Strength", Float) = 0
 		
 		[Enum(Texture,0, Flipbook,1)]_NormalMapMode("Normal Map Mode", Int) = 0
-
+		[ToggleUI]_InvertNormals("Invert", Int) = 0
 		[NoScaleOffset]_NormalMap0 ("", 2D) = "bump" {}
 		_NormalStr0("Strength", Float) = 0.3
 		_NormalMapScale0("Scale", Vector) = (3,3,0,0)
@@ -45,7 +45,6 @@ Shader "Mochie/Water" {
 		_NormalMapScroll0("Scrolling", Vector) = (0.1,0.1,0,0)
 		_NormalMapOffset0("Parallax Offset", Float) = 0
 		[Toggle(_NORMALMAP_0_STOCHASTIC_ON)]_Normal0StochasticToggle("Stochastic Sampling", Int) = 0
-
 		[Toggle(_NORMALMAP_1_ON)]_Normal1Toggle("Enable", Int) = 1
 		[NoScaleOffset]_NormalMap1("", 2D) = "bump" {}
 		_NormalStr1("Strength", Float) = 0.3
@@ -54,13 +53,12 @@ Shader "Mochie/Water" {
 		_NormalMapScroll1("Scrolling", Vector) = (-0.1,0.1,0,0)
 		_NormalMapOffset1("Parallax Offset", Float) = 0
 		[Toggle(_NORMALMAP_1_STOCHASTIC_ON)]_Normal1StochasticToggle("Stochastic Sampling", Int) = 0
-
 		_NormalMapFlipbook("Normal Map Flipbook", 2DArray) = "black" {}
 		_NormalMapFlipbookSpeed("Normal Map Flipbook Speed", Float) = 8
 		_NormalMapFlipbookStrength("Normal Map Flipbook Strength", Float) = 0.2
 		_NormalMapFlipbookScale("Flipbook Scale", Vector) = (3,3,0,0)
 
-		[Enum(Off,0, Environment,1, Manual,2)]_Reflections("Probe Reflections", Int) = 1
+		[Enum(Off,0, Environment,1, Manual,2, Mirror,3)]_Reflections("Probe Reflections", Int) = 1 // Add "Mirror,3" for vrchat mirror reflections
 		_ReflStrength("Reflection Strength", Float) = 1
 		_ReflTint("Reflection Tint", Color) = (1,1,1,1)
 		[ToggleUI]_BackfaceReflections("Backface Reflections", Int) = 1
@@ -74,7 +72,8 @@ Shader "Mochie/Water" {
 		_SpecStrength("Specular Strength", Float) = 1
 		_SpecTint("Specular Tint", Color) = (1,1,1,1)
 		_LightDir("LightDir", Vector) = (0,0.75,1,0)
-
+		[Enum(XY,0, XZ,1, YZ,2)]_MirrorNormalOffsetSwizzle("Swizzle", Int) = 1
+		
 		[Toggle(_FLOW_ON)]_FlowToggle("Enable", Int) = 1
 		[NoScaleOffset]_FlowMap("Flow Map", 2D) = "black" {}
 		[Enum(UV0,0, UV1,1, UV2,2, UV3,3)]_FlowMapUV("Flow Map UV Set", Int) = 0
@@ -164,15 +163,15 @@ Shader "Mochie/Water" {
 		_FoamNoiseTexScroll("Scroll", Vector) = (0,0.1,0,0)
 		_FoamNoiseTexStrength("Strength", Float) = 0
 		_FoamNoiseTexCrestStrength("Crest Strength", Float) = 1.1
-		_FoamTexScale("Scale", Vector) = (5,5,0,0)
+		_FoamTexScale("Scale", Vector) = (6,6,0,0)
 		_FoamTexScroll("Scroll", Vector) = (0.1,-0.1,0,0)
 		_FoamRoughness("Roughness", Range(0,1)) = 0.2
 		[HDR]_FoamColor("Color", Color) = (1,1,1,1)
 		_FoamPower("Power", Float) = 200
-		_FoamOpacity("Opacity", Float) = 3
+		_FoamEdgeStrength("Edge Strength", Float) = 1.5
 		_FoamOffset("Parallax Offset", Float) = 0
 		_FoamCrestThreshold("Crest Threshold", Range(0,1)) = 0.5
-		_FoamCrestStrength("Crest Strength", Float) = 0
+		_FoamCrestStrength("Crest Strength", Float) = 1.5
 		[Toggle(_FOAM_STOCHASTIC_ON)]_FoamStochasticToggle("Stochastic Sampling", Int) = 0
 		_FoamDistortionStrength("Distortion Strength", Float) = 0.1
 		[Toggle(_FOAM_NORMALS_ON)]_FoamNormalToggle("Foam Normals", Int) = 0
@@ -211,6 +210,11 @@ Shader "Mochie/Water" {
 		[Enum(UnityEngine.Rendering.CullMode)]_CullMode("Cull", Int) = 2
 		[Enum(Off,0, On,1)]_ZWrite("ZWrite", Int) = 0
 		[Enum(Off,0, On,1)]_DepthEffects("Depth Effects", Int) = 1
+		[Enum(UV,0, World,1)]_TexCoordSpace("Texture Coordinate Space", Int) = 0
+		[Enum(XY,0, XZ,1, YZ,2)]_TexCoordSpaceSwizzle("Swizzle", Int) = 1
+		_GlobalTexCoordScaleUV("Global Scale", Float) = 1
+		_GlobalTexCoordScaleWorld("Global Scale", Float) = 0.1
+		[Enum(Off,0, On,1)]_BicubicLightmapping("Bicubic Lightmap Sampling", Int) = 1
 
         [HideInInspector]_SrcBlend("__src", Float) = 1.0
         [HideInInspector]_DstBlend("__dst", Float) = 0.0
@@ -253,7 +257,7 @@ Shader "Mochie/Water" {
 			#pragma shader_feature_local _SPECULAR_ON
 			#pragma shader_feature_local _SPECULAR_MANUAL_ON
 			#pragma shader_feature_local _REFLECTIONS_ON
-			#pragma shader_feature_local _REFLECTIONS_MANUAL_ON
+			#pragma shader_feature_local _ _REFLECTIONS_MANUAL_ON _REFLECTIONS_MIRROR_ON
 			#pragma shader_feature_local _SCREENSPACE_REFLECTIONS_ON
 			#pragma shader_feature_local _NORMALMAP_1_ON
 			#pragma shader_feature_local _DETAIL_NORMAL_ON
@@ -277,6 +281,7 @@ Shader "Mochie/Water" {
 			#pragma shader_feature_local _AREALIT_ON
 			#pragma shader_feature_local _ _OPAQUE_MODE_ON _PREMUL_MODE_ON
 			#pragma shader_feature_local _NORMALMAP_FLIPBOOK_ON
+			#pragma shader_feature_local _BICUBIC_LIGHTMAPPING_ON
 			#pragma multi_compile_instancing
             #pragma target 5.0
 

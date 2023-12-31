@@ -55,7 +55,7 @@ public class SFXEditor : ShaderGUI {
 
     // Texture file names
 	string header = "SFXHeader_Pro";
-	string versionLabel = "v1.16";
+	string versionLabel = "v1.17";
 	
     // Commonly used strings
     string modeLabel = "Mode";
@@ -102,6 +102,8 @@ public class SFXEditor : ShaderGUI {
 	MaterialProperty _SaturationR = null;
 	MaterialProperty _SaturationB = null;
 	MaterialProperty _SaturationG = null;
+	MaterialProperty _ClampToggle = null;
+	MaterialProperty _ClampMax = null;
 
     // Shake
     MaterialProperty _ShakeModel = null;
@@ -301,9 +303,19 @@ public class SFXEditor : ShaderGUI {
 	MaterialProperty _OLUseGlobal = null;
 	MaterialProperty _OLMinRange = null;
 	MaterialProperty _OLMaxRange = null;
+	MaterialProperty _OutlineCube = null;
+	MaterialProperty _OutlineCubeAlt = null;
+	MaterialProperty _OutlineBackgroundCube = null;
+	MaterialProperty _OutlineCubeToggle = null;
 	MaterialProperty _OutlineHueShift = null;
 	MaterialProperty _OutlineHueShiftAuto = null;
 	MaterialProperty _OutlineHueShiftSpeed = null;
+	MaterialProperty _CubeRotate = null;
+	MaterialProperty _CubeRotateAlt = null;
+	MaterialProperty _CubeRotateBG = null;
+	MaterialProperty _AutoRotate = null;
+	MaterialProperty _AutoRotateAlt = null;
+	MaterialProperty _AutoRotateBG = null;
 	MaterialProperty _SobelClearInner = null;
 	MaterialProperty _RoundingToggle = null;
 	MaterialProperty _Rounding = null;
@@ -518,22 +530,19 @@ public class SFXEditor : ShaderGUI {
 						me.ShaderProperty(_Brightness, "Brightness");
 						me.ShaderProperty(_Contrast, "Contrast");
 						me.ShaderProperty(_HDR, "HDR");
+						MGUI.ToggleFloat(me, "Image Clamp", _ClampToggle, _ClampMax);
 					});
 					MGUI.PropertyGroup(()=>{
 						me.ShaderProperty(_Saturation, "Saturation");
-						MGUI.PropertyGroupLayer(()=>{
-							me.ShaderProperty(_SaturationR, "Red Saturation");
-							me.ShaderProperty(_SaturationG, "Green Saturation");
-							me.ShaderProperty(_SaturationB, "Blue Saturation");
-						});
+						me.ShaderProperty(_SaturationR, "Red Saturation");
+						me.ShaderProperty(_SaturationG, "Green Saturation");
+						me.ShaderProperty(_SaturationB, "Blue Saturation");
 					});
 					MGUI.PropertyGroup(()=>{
 						me.ShaderProperty(_Invert, "Invert");
-						MGUI.PropertyGroupLayer(()=>{
-							me.ShaderProperty(_InvertR, "Red Inversion");
-							me.ShaderProperty(_InvertG, "Green Inversion");
-							me.ShaderProperty(_InvertB, "Blue Inversion");
-						});
+						me.ShaderProperty(_InvertR, "Red Inversion");
+						me.ShaderProperty(_InvertG, "Green Inversion");
+						me.ShaderProperty(_InvertB, "Blue Inversion");
 					});
 				}
 			};
@@ -851,6 +860,7 @@ public class SFXEditor : ShaderGUI {
 				Action outlineTabAction = ()=>{
 					me.ShaderProperty(_OutlineType, modeLabel);
 					if (_OutlineType.floatValue > 0){
+						me.ShaderProperty(_OutlineCubeToggle, "Color Source");
 						MGUI.Space6();
 						me.ShaderProperty(_OLUseGlobal, ugfLabel);
 						if (_OLUseGlobal.floatValue == 0){
@@ -860,8 +870,8 @@ public class SFXEditor : ShaderGUI {
 							});
 						}
 						else MGUI.Space6();
+						MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
 						MGUI.PropertyGroup(()=>{
-							MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
 							if (_OutlineType.floatValue == 2)
 								me.ShaderProperty(_AuraSampleCount, "Sample Count");
 							me.ShaderProperty(_OutlineHueShiftAuto, "Auto Hue Shift");
@@ -871,11 +881,53 @@ public class SFXEditor : ShaderGUI {
 							else {
 								me.ShaderProperty(_OutlineHueShift, "Hue");
 							}
-							me.ShaderProperty(_OutlineCol, "Base Line Tint");
-							if (_OutlineType.floatValue == 1 && _OutlineAltEnable.floatValue == 1){
-								me.ShaderProperty(_OutlineColAlt, "Mix Line Tint");
+							if (_OutlineCubeToggle.floatValue == 0){
+								me.ShaderProperty(_OutlineCol, "Base Line Tint");
 							}
-							me.ShaderProperty(_BackgroundCol, "Background Tint");
+							else {
+								me.TexturePropertySingleLine(new GUIContent("Base Cubemap"), _OutlineCube, _OutlineCol);
+								if (_OutlineCube.textureValue){
+									MGUI.PropertyGroupLayer(()=>{
+										MGUI.SpaceN2();
+										MGUI.Vector3Field(_CubeRotate, "Rotation", false);
+										me.ShaderProperty(_AutoRotate, "Auto Rotate");
+										MGUI.SpaceN2();
+									});
+									MGUI.Space6();
+								}
+							}
+							if (_OutlineType.floatValue == 1 && _OutlineAltEnable.floatValue == 1){
+								if (_OutlineCubeToggle.floatValue == 0){
+									me.ShaderProperty(_OutlineColAlt, "Mix Line Tint");
+								}
+								else {
+									me.TexturePropertySingleLine(new GUIContent("Mix Cubemap"), _OutlineCubeAlt, _OutlineColAlt);
+									if (_OutlineCubeAlt.textureValue){
+										MGUI.PropertyGroupLayer(()=>{
+											MGUI.SpaceN2();
+											MGUI.Vector3Field(_CubeRotateAlt, "Rotation", false);
+											me.ShaderProperty(_AutoRotateAlt, "Auto Rotate");
+											MGUI.SpaceN2();
+										});
+										MGUI.Space6();
+									}
+								}
+							}
+							if (_OutlineCubeToggle.floatValue == 0){
+								me.ShaderProperty(_BackgroundCol, "Background Tint");
+							}
+							else {
+								me.TexturePropertySingleLine(new GUIContent("Background Cubemap"), _OutlineBackgroundCube, _BackgroundCol);
+								if (_OutlineBackgroundCube.textureValue){
+									MGUI.PropertyGroupLayer(()=>{
+										MGUI.SpaceN2();
+										MGUI.Vector3Field(_CubeRotateBG, "Rotation", false);
+										me.ShaderProperty(_AutoRotateBG, "Auto Rotate");
+										MGUI.SpaceN2();
+									});
+									MGUI.Space6();
+								}
+							}
 							if (_OutlineType.floatValue == 1){
 								me.ShaderProperty(_OutlineAltEnable, "Enable Mix Tint");
 							}
@@ -1270,6 +1322,8 @@ public class SFXEditor : ShaderGUI {
 		_SaturationR.floatValue = 1f;
 		_SaturationG.floatValue = 1f;
 		_SaturationB.floatValue = 1f;
+		_ClampToggle.floatValue = 0f;
+		_ClampMax.floatValue = 1f;
 	}
 
 	void ResetShake(){
@@ -1400,6 +1454,13 @@ public class SFXEditor : ShaderGUI {
 		_OutlineColAlt.colorValue = Color.white;
 		_OutlineThreshAlt.floatValue = 100f;
 		_OutlineAltEnable.floatValue = 0f;
+		_OutlineCubeToggle.floatValue = 0f;
+		_CubeRotate.vectorValue = new Vector4(180f,0f,0f,0f);
+		_CubeRotateAlt.vectorValue = new Vector4(180f,0f,0f,0f);
+		_CubeRotateBG.vectorValue = new Vector4(180f,0f,0f,0f);
+		_AutoRotate.floatValue = 0f;
+		_AutoRotateAlt.floatValue = 0f;
+		_AutoRotateBG.floatValue = 0f;
 	}
 
 	void ResetAudioLink(){

@@ -54,6 +54,10 @@ float3 HSVShift(float3 col, float hue, float saturation, float value){
     return HSVtoRGB(hsvCol + hsv);
 }
 
+float3 HueShift(float3 col, float hue){
+	return HSVShift(col, hue, 0, 0);
+}
+
 // sRGB luminance(Y) values
 const float rY = 0.212655;
 const float gY = 0.715158;

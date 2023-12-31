@@ -117,9 +117,10 @@ float4 GetSSR(const float3 wPos, const float3 viewDir, float3 rayDir, const half
 			float xfade = smoothstep(0, _EdgeFade, uvs.x) * smoothstep(1, 1-_EdgeFade, uvs.x); //Fade x uvs out towards the edges
 		#endif
 		float yfade = smoothstep(0, _EdgeFade, uvs.y)*smoothstep(1, 1-_EdgeFade, uvs.y); //Same for y
-		float lengthFade = smoothstep(1, 0, 2*(totalSteps / 50)-1);
+		// float lengthFade = smoothstep(1, 0, 2*(totalSteps / 50)-1);
 		float smoothFade = smoothstep(0.65, 0.5, 1-smoothness);
-		float reflectionAlpha = FdotR * xfade * yfade * lengthFade * smoothFade;
+		float reflectionAlpha = xfade * yfade * smoothFade; // * lengthFade;
+
 
 		float4 reflection = 0;
 		if (reflectionAlpha > 0){

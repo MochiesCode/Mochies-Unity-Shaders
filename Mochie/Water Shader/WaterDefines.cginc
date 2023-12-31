@@ -15,12 +15,12 @@ float4 _CameraDepthTexture_TexelSize;
 #include "../Common/Utilities.cginc"
 #include "../Common/Noise.cginc"
 
-
 #define BASE_PASS 						defined(UNITY_PASS_FORWARDBASE)
 #define ADD_PASS 						defined(UNITY_PASS_FORWARDADD)
 #define NORMALMAP1_ENABLED 				defined(_NORMALMAP_1_ON)
 #define REFLECTIONS_ENABLED 			defined(_REFLECTIONS_ON)
 #define REFLECTIONS_MANUAL_ENABLED 		defined(_REFLECTIONS_MANUAL_ON)
+#define REFLECTIONS_MIRROR_ENABLED		defined(_REFLECTIONS_MIRROR_ON)
 #define SPECULAR_ENABLED 				defined(_SPECULAR_ON)
 #define PBR_ENABLED 					defined(_REFLECTIONS_ON) || defined(_SPECULAR_ON)
 #define FLOW_ENABLED 					defined(_FLOW_ON)
@@ -54,6 +54,7 @@ float4 _CameraDepthTexture_TexelSize;
 #define CAUSTICS_ENABLED				defined(_CAUSTICS_VORONOI_ON) || defined(_CAUSTICS_TEXTURE_ON) || defined(_CAUSTICS_FLIPBOOK_ON)
 #define NORMALMAP_FLIPBOOK_MODE			defined(_NORMALMAP_FLIPBOOK_ON)
 #define NORMALMAP_FLIPBOOK_STOCH		defined(_NORMALMAP_FLIPBOOK_STOCHASTIC_ON)
+#define BICUBIC_LIGHTMAPPING_ENABLED	defined(_BICUBIC_LIGHTMAPPING_ON)
 
 MOCHIE_DECLARE_TEX2D_SCREENSPACE(_MWGrab);
 MOCHIE_DECLARE_TEX2D(_FlowMap);
@@ -81,26 +82,23 @@ sampler2D _NoiseTex;
 sampler2D _VertexOffsetMask;
 samplerCUBE _ReflCube;
 
-float4 _VertexOffsetMask_ST;
+sampler2D _ReflectionTex0;
+sampler2D _ReflectionTex1;
 
+float4 _VertexOffsetMask_ST;
 float4 _CausticsTex_TexelSize;
 float4 _OpacityMask_ST;
 float2 _OpacityMaskScroll;
-
 float _AreaLitStrength;
 float _AreaLitRoughnessMult;
 float4 _AreaLitMask_ST;
-
 float2 _NormalMapFlipbookScale;
 float _NormalMapFlipbookStrength;
 float _NormalMapFlipbookSpeed;
-
 float2 _VertOffsetFlipbookScale;
 float _VertOffsetFlipbookStrength;
 float _VertOffsetFlipbookSpeed;
-
 float _CausticsFlipbookSpeed;
-
 float4 _FogTint, _Color, _FoamColor, _ReflTint, _SpecTint, _NonGrabColor;
 float4 _ReflCube_HDR;
 float4 _MainTex_ST;
@@ -110,25 +108,21 @@ float3 _ReflCubeRotation;
 float2 _NormalMapScale0, _NormalMapScale1;
 float2 _NormalMapScroll0, _NormalMapScroll1;
 float2 _FlowMapScale;
-
 float4 _RoughnessMap_ST;
 float4 _MetallicMap_ST;
 float4 _DetailBaseColor_ST;
 float4 _DetailNormal_ST;
 float4 _DetailBaseColorTint;
 float2 _DetailScroll;
-
 float4 _EmissionMap_ST;
 float3 _EmissionColor;
 float2 _EmissionMapScroll;
 float _EmissionDistortionStrength;
-
 float2 _VoronoiScale;
 float2 _VoronoiScroll;
 float _VoronoiSpeed;
 float _VoronoiWaveHeight;
 float3 _VoronoiOffset;
-
 float4 _BackfaceTint;
 float2 _NoiseTexScale;
 float2 _NoiseTexScroll;
@@ -151,7 +145,7 @@ float _CausticsPower;
 float _CausticsOpacity;
 float _CausticsFade;
 float _EdgeFadePower, _EdgeFadeOffset;
-float _FoamOpacity;
+float _FoamEdgeStrength;
 float _NoiseTexBlur;
 float _SpecStrength;
 float _ReflStrength;
@@ -197,16 +191,13 @@ float _ShadowStrength;
 float4 _NonGrabBackfaceTint;
 float _FogBrightness;
 float _VertexOffsetMaskStrength;
-
 float4 _SubsurfaceTint;
 float _SubsurfaceThreshold;
 float _SubsurfaceBrightness;
 float _SubsurfaceStrength;
-
 float4 _FogTint2;
 float _FogPower2;
 float _FogBrightness2;
-
 int _VertexOffsetMaskChannel;
 int _BlendNoiseSource;
 int _FlowMapUV;
@@ -216,9 +207,14 @@ int _DetailNormalBlend;
 int _DetailTextureMode;
 int _RecalculateNormals;
 int _TransparencyMode;
+int _TexCoordSpace;
+int _TexCoordSpaceSwizzle;
+int _MirrorNormalOffsetSwizzle;
+int _InvertNormals;
+float _GlobalTexCoordScaleUV;
+float _GlobalTexCoordScaleWorld;
 
 float _Test;
-
 float _ZeroProp;
 const static float2 jump = float2(0.1, 0.25);
 
@@ -261,11 +257,13 @@ struct v2f {
 	float3 tangentViewDir : TEXCOORD11;
 	bool isInVRMirror : TEXCOORD12;
 	float2 uvFlow : TEXCOORD13;
+	float4 reflUV : TEXCOORD14;
+	float2 lightmapUV : TEXCOORD15;
 	#ifdef TESSELLATION_VARIANT
-		float offsetMask : TEXCOORD14;
+		float offsetMask : TEXCOORD16;
 	#endif
-	UNITY_FOG_COORDS(15)
-	UNITY_SHADOW_COORDS(16)
+	UNITY_FOG_COORDS(17)
+	UNITY_SHADOW_COORDS(18)
 	UNITY_VERTEX_INPUT_INSTANCE_ID 
 	UNITY_VERTEX_OUTPUT_STEREO
 };

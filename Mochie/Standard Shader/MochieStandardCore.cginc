@@ -64,8 +64,10 @@ half3 Mirror_GlossyEnvironment(Unity_GlossyEnvironmentData glossIn, float4 reflU
     half perceptualRoughness = glossIn.roughness /* perceptualRoughness */ ;
     perceptualRoughness = perceptualRoughness*(1.7 - 0.7*perceptualRoughness);
     half mip = perceptualRoughnessToMipmapLevel(perceptualRoughness);
+    float3 normal = TangentNormal;
+	float2 normalSwizzle[3] = {normal.xy, normal.xz, normal.yz}; 
+	reflUV.xy -= normalSwizzle[_MirrorNormalOffsetSwizzle];
     float2 uv = reflUV.xy / (reflUV.w + 0.00000001);
-    uv += TangentNormal;
     float4 uvMip = float4(uv, 0, mip * 6);
     half3 refl = unity_StereoEyeIndex == 0 ? tex2Dlod(_ReflectionTex0, uvMip) : tex2Dlod(_ReflectionTex1, uvMip);
     return refl;
@@ -444,8 +446,10 @@ struct VertexOutputForwardBase
 	float4 localPos                       : TEXCOORD7;
     UNITY_LIGHTING_COORDS(8,9)
 
+    float3 posWorld                   : TEXCOORD10;
+
 	#if UNITY_REQUIRE_FRAG_WORLDPOS && !UNITY_PACK_WORLDPOS_WITH_TANGENT
-		float3 posWorld                   : TEXCOORD10;
+		
 	#endif
 	#if SSR_ENABLED
 		float4 screenPos                  : TEXCOORD11;
@@ -485,7 +489,7 @@ VertexOutputForwardBase vertForwardBase (VertexInput v)
 	o.color = v.color;
     o.rawUV.xy = v.uv0;
     o.rawUV.zw = v.uv1;
-    TexCoords(v, o.tex, o.tex1, o.tex2, o.tex3, o.tex4);
+    TexCoords(v, o.tex, o.tex1, o.tex2, o.tex3, o.tex4, posWorld);
     o.eyeVec.xyz = NormalizePerVertexNormal(posWorld.xyz - _WorldSpaceCameraPos);
     float3 normalWorld = UnityObjectToWorldNormal(v.normal);
     #ifdef _TANGENT_TO_WORLD
@@ -808,7 +812,7 @@ VertexOutputForwardAdd vertForwardAdd (VertexInput v)
 
     o.rawUV.xy = v.uv0;
     o.rawUV.zw = v.uv1;
-    TexCoords(v, o.tex, o.tex1, o.tex2, o.tex3, o.tex4);
+    TexCoords(v, o.tex, o.tex1, o.tex2, o.tex3, o.tex4, posWorld);
     o.eyeVec.xyz = NormalizePerVertexNormal(posWorld.xyz - _WorldSpaceCameraPos);
     o.posWorld = posWorld.xyz;
     float3 normalWorld = UnityObjectToWorldNormal(v.normal);

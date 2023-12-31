@@ -14,14 +14,37 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos);
 	atten = FadeShadows(i.worldPos, atten);
 
+	if (_TexCoordSpace == 1){
+		_GlobalTexCoordScaleWorld = abs(_GlobalTexCoordScaleWorld);
+		float2 worldCoordSelect[3] = {-i.worldPos.xy, -i.worldPos.xz, -i.worldPos.yz}; 
+		float2 worldCoords = worldCoordSelect[_TexCoordSpaceSwizzle] * _GlobalTexCoordScaleWorld;
+		i.uv.xy = worldCoords;
+		i.uvFlow.xy = worldCoords;
+	}
+	else {
+		_GlobalTexCoordScaleUV = abs(_GlobalTexCoordScaleUV);
+		i.uv.xy *= _GlobalTexCoordScaleUV;
+		i.uvFlow.xy *= _GlobalTexCoordScaleUV;
+	}
+	
 	#if GERSTNER_ENABLED
 		if (_RecalculateNormals == 1){
 			_NormalStr0 = -_NormalStr0;
 			_NormalStr1 = -_NormalStr1;
 			_DetailNormalStrength = -_DetailNormalStrength;
 			_FoamNormalStrength = -_FoamNormalStrength;
+			_NormalMapFlipbookStrength = -_NormalMapFlipbookStrength;
 		}
 	#endif
+
+	if (_InvertNormals == 1){
+		_NormalStr0 = -_NormalStr0;
+		_NormalStr1 = -_NormalStr1;
+		_DetailNormalStrength = -_DetailNormalStrength;
+		_FoamNormalStrength = -_FoamNormalStrength;
+		_NormalMapFlipbookStrength = -_NormalMapFlipbookStrength;
+	}
+
 	#if VERT_OFFSET_ENABLED
 		i.wave.y = saturate(i.wave.y);
 	#endif
@@ -37,8 +60,6 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	#if DETAIL_BASECOLOR_ENABLED
 		detailBC = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailBaseColor, sampler_FlowMap, detailUV) * _DetailBaseColorTint;
 	#endif
-
-	// CalculateTangentViewDir(i);
 
 	float3 normalMap;
 	float3 detailNormal;
@@ -185,11 +206,12 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		#endif
 	#endif
 
+	i.normal = normalize(dot(i.normal, i.normal) >= 1.01 ? i.cNormal : i.normal);
+	float3 earlyNormal = normalize(normalMap.x * i.tangent + normalMap.y * i.binormal + normalMap.z * i.normal);
 	float2 refractionDir = normalMap.xy;
 	#if GERSTNER_ENABLED
 		if (_RecalculateNormals == 1){
-			i.normal = normalize(dot(i.normal, i.normal) >= 1.01 ? i.cNormal : i.normal);
-			refractionDir = normalize(normalMap.x * i.tangent + normalMap.y * i.binormal + normalMap.z * i.normal).xz;
+			refractionDir = earlyNormal.xz;
 		}
 	#endif
 	float2 uvOffset = refractionDir * _DistortionStrength;
@@ -224,7 +246,12 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		if (!isFrontFace)
 			surfaceTint = _BackfaceTint;
 	#endif
-	
+	float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPos);
+	if (isFrontFace){
+		float NdotVert = abs(dot(earlyNormal, viewDir));
+		surfaceTint *= lerp(_AngleTint, 1, NdotVert);
+	}
+
 	#if VERT_OFFSET_ENABLED
 		float3 waveTint = _SubsurfaceTint.rgb * _SubsurfaceBrightness;
 		float subsurfaceThreshold = smoothstep(_SubsurfaceThreshold, 1, i.wave.y);
@@ -354,14 +381,14 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 				#if EDGEFADE_ENABLED
 					foamDepth = 1-saturate(Remap(1-foamDepth, 0, 1, -_EdgeFadeOffset, 1));
 				#endif
-				foam = saturate(foamTex.a * foamDepth * _FoamOpacity * foamTexNoise * Average(foamTex.rgb));
+				foam = saturate(foamTex.a * foamDepth * _FoamEdgeStrength * foamTexNoise * Average(foamTex.rgb));
 				col.rgb = lerp(col.rgb, foamTex.rgb, foam);
 			}
 		#endif
 		float crestFoam = 0;
 		#if VERT_OFFSET_ENABLED
 			float crestThreshold = smoothstep(_FoamCrestThreshold, 1, i.wave.y);
-			crestFoam = saturate(foamTex.a * _FoamOpacity * _FoamCrestStrength * crestThreshold * foamCrestNoise * 10);
+			crestFoam = saturate(foamTex.a * _FoamCrestStrength * crestThreshold * foamCrestNoise * 10);
 			col.rgb = lerp(col.rgb, foamTex.rgb, crestFoam);
 			crestFoam *= 1.5; // Increase roughness strength of crest foam
 		#endif
@@ -374,7 +401,6 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 			#else
 				float3 foamNormal = tex2Dnormal(_FoamTex, sampler_FlowMap, uvFoam, 0.15,foamNormalStr);
 			#endif
-			// normalMap = lerp(normalMap, foamNormal, saturate((foam+crestFoam)*10)); 
 			normalMap = BlendNormals(foamNormal, normalMap);
 		#endif
 	#endif
@@ -383,15 +409,13 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		col = lerp(col, detailBC, detailBC.a);
 	#endif
 
+	float3 normalDir = i.normal;
+
 	#if PBR_ENABLED
-		float3 normalDir = normalize(normalMap.x * i.tangent + normalMap.y * i.binormal + normalMap.z * i.normal);
+		normalDir = normalize(normalMap.x * i.tangent + normalMap.y * i.binormal + normalMap.z * i.normal);
 		if (!isFrontFace)
 			normalDir = -normalDir;
-		float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPos);
 		float NdotV = abs(dot(normalDir, viewDir));
-		if (!isFrontFace)
-			col *= lerp(_AngleTint, 1, NdotV);
-
 		float2 roughnessMapUV = detailUV;
 		if (_DetailTextureMode != 1)
 			roughnessMapUV = TRANSFORM_TEX(i.uv, _RoughnessMap);
@@ -458,8 +482,10 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 				float surfaceReduction = 1.0 / (roughBRDF*roughBRDF + 1.0);
 				float grazingTerm = saturate((1-rough) + (1-omr));
 				float fresnel = FresnelLerp(specularTint, grazingTerm, NdotV);
-				#if REFLECTIONS_MANUAL_ENABLED
+				#if defined(_REFLECTIONS_MANUAL_ON)
 					reflCol = GetManualReflections(reflDir, rough);
+				#elif defined(_REFLECTIONS_MIRROR_ON)
+					reflCol = GetMirrorReflections(i.reflUV, normalDir, rough);
 				#else
 					reflCol = GetWorldReflections(reflDir, i.worldPos, rough);
 				#endif
@@ -467,15 +493,17 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 				#if DEPTH_EFFECTS_ENABLED
 					#if SSR_ENABLED
 						half4 ssrCol = GetSSR(i.worldPos, viewDir, reflDir, normalDir, 1-rough, col.rgb, _Metallic, screenUV, i.uvGrab);
-						ssrCol.rgb *= _SSRStrength * 5;
+						ssrCol.rgb *= _SSRStrength;
 						#if FOAM_ENABLED
 							foamLerp = 1-foamLerp;
 							foamLerp = smoothstep(0.7, 1, foamLerp);
 							ssrCol.a *= foamLerp;
 						#endif
-						reflCol = lerp(reflCol, ssrCol.rgb, ssrCol.a);
+						if (_EdgeFadeSSR == 0)
+							ssrCol.a = ssrCol.a > 0 ? 1 : 0;
+						reflCol = lerp(reflCol, ssrCol.rgb, ssrCol.a * saturate(_SSRStrength));
 						#if SPECULAR_ENABLED
-							specCol *= (1-smoothstep(0, 0.1, ssrCol.a));
+							specCol *= 1-ssrCol.a;
 						#endif
 					#endif
 				#endif
@@ -485,7 +513,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		col.rgb += specCol;
 		col.rgb += reflCol;
 
-		#if AREALIT_ENABLED && (REFLECTIONS_ENABLED || REFLECTIONS_MANUAL_ENABLED) 
+		#if AREALIT_ENABLED && (REFLECTIONS_ENABLED)
 			AreaLightFragInput ai;
 			ai.pos = i.worldPos;
 			ai.normal = normalDir;
@@ -567,6 +595,8 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		#endif
 		col.rgb += (emissCol * _EmissionColor);
 	#endif
+
+	ApplyIndirectLighting(i.lightmapUV, i.normal, normalDir, col.rgb);
 
 	flowMap = lerp(0, flowMap, _ZeroProp);
 
