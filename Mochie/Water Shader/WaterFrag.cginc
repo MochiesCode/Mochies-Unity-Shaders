@@ -593,10 +593,20 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 				float3 emissCol = MOCHIE_SAMPLE_TEX2D_SAMPLER(_EmissionMap, sampler_FlowMap, emissionUV);
 			#endif
 		#endif
+		emissCol *= _EmissionColor;
+		#if AUDIOLINK_ENABLED
+			audioLinkData al = (audioLinkData)0;
+			InitializeAudioLink(al);
+			float audiolink = GetAudioLinkBand(al, _AudioLinkBand);
+			emissCol *= audiolink;
+		#endif
 		col.rgb += (emissCol * _EmissionColor);
 	#endif
 
 	ApplyIndirectLighting(i.lightmapUV, i.normal, normalDir, col.rgb);
+
+	if (_VisualizeFlowmap)
+		col = flowMap;
 
 	flowMap = lerp(0, flowMap, _ZeroProp);
 

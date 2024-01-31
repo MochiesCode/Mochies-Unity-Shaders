@@ -125,6 +125,7 @@ half4 BRDF1_Mochie_PBS (
 			lightmap *= _TintReflShad;
 			shadowedReflections = saturate(lerp(1, lightmap, _ReflShadowStrength));
 			reflCol *= shadowedReflections;
+			specCol *= shadowedReflections;
 		}
 	#else
 		shadowedReflections = lerp(1, lerp(1, atten, 0.9), _ReflShadows*_ReflShadowStrength);

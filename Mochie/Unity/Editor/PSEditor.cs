@@ -204,9 +204,9 @@ public class PSEditor : ShaderGUI {
 				});
 				MGUI.PropertyGroup( () => {
 					me.TexturePropertySingleLine(texLabel, _MainTex, _Color);
-					me.TexturePropertySingleLine(tex2Label, _SecondTex, _SecondColor, _SecondTex.textureValue ? _TexBlendMode : null);
+					me.TexturePropertySingleLine(tex2Label, _SecondTex, _SecondColor, _TexBlendMode);
+					MGUI.TexPropLabel("Blending", 113, true);
 					if (_SecondTex.textureValue){
-						MGUI.TexPropLabel("Blending", 113);
 						MGUI.TextureSOScroll(me, _SecondTex, _SecondTexScroll);
 					}
 				});
@@ -242,7 +242,7 @@ public class PSEditor : ShaderGUI {
 				MGUI.ToggleGroup(_Distortion.floatValue == 0);
 				MGUI.PropertyGroup( () => {
 					me.TexturePropertySingleLine(normalLabel, _NormalMap, _DistortMainTex);
-					MGUI.TexPropLabel("Distort UVs", 124);
+					MGUI.TexPropLabel("Distort UVs", 124, false);
 					MGUI.Vector2Field(_NormalMapScale, "Scale");
 					MGUI.SpaceN3();
 					MGUI.Vector2Field(_DistortionSpeed, "Scrolling");

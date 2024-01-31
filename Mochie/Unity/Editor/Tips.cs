@@ -33,7 +33,7 @@ namespace Mochie {
 		public static GUIContent reflOverrideText = new GUIContent("Reflection Override", "Override the primary reflection probe sample with this cubemap");
 		public static GUIContent ssrText = new GUIContent("Screen Space Reflections", "Screen Space Reflections create reflections on surfaces based on what's visible on screen.");
 		public static GUIContent edgeFadeText = new GUIContent("Edge Fade", "Fades SSR around the edges of the screen to avoid a hard cutoff visual.");
-		public static GUIContent stepsText = new GUIContent("Parallax Steps", "Number of steps/samples used to calculate parallax height. More samples is more expensive, but looks smoother.");
+		public static GUIContent stepsText = new GUIContent("Parallax Samples", "Number of steps/samples used to calculate parallax height. More samples is more expensive, but looks smoother.");
 		public static GUIContent maskText = new GUIContent("Mask");
 		public static GUIContent heightMaskText = new GUIContent("Height Mask");
 		public static GUIContent parallaxOfsText = new GUIContent("Parallax Offset", "Offsets the parallax height value up or down to hide artifacts.");

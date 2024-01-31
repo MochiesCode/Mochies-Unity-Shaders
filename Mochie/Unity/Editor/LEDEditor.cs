@@ -43,7 +43,7 @@ public class LEDEditor : ShaderGUI {
 			MGUI.Space2();
 			if (_FlipbookMode.floatValue == 0){
 				me.TexturePropertySingleLine(mainTex, _MainTex, _FlipbookMode);
-				MGUI.TexPropLabel("Flipbook", 105);
+				MGUI.TexPropLabel("Flipbook", 105, false);
 				me.ShaderProperty(_Color, "Color");
 				if (_MainTex.textureValue){
 					MGUI.TextureSOScroll(me, _MainTex, _UVScroll);
@@ -52,7 +52,7 @@ public class LEDEditor : ShaderGUI {
 			}
 			else {
 				me.TexturePropertySingleLine(flipbookTex, _Flipbook, _FlipbookMode);
-				MGUI.TexPropLabel("Flipbook", 105);
+				MGUI.TexPropLabel("Flipbook", 105, false);
 				if (_Flipbook.textureValue){
 					MGUI.TextureSO(me, _MainTex);
 					MGUI.SpaceN2();

@@ -55,6 +55,7 @@ float4 _CameraDepthTexture_TexelSize;
 #define NORMALMAP_FLIPBOOK_MODE			defined(_NORMALMAP_FLIPBOOK_ON)
 #define NORMALMAP_FLIPBOOK_STOCH		defined(_NORMALMAP_FLIPBOOK_STOCHASTIC_ON)
 #define BICUBIC_LIGHTMAPPING_ENABLED	defined(_BICUBIC_LIGHTMAPPING_ON)
+#define AUDIOLINK_ENABLED				defined(_AUDIOLINK_ON)
 
 MOCHIE_DECLARE_TEX2D_SCREENSPACE(_MWGrab);
 MOCHIE_DECLARE_TEX2D(_FlowMap);
@@ -213,6 +214,10 @@ int _MirrorNormalOffsetSwizzle;
 int _InvertNormals;
 float _GlobalTexCoordScaleUV;
 float _GlobalTexCoordScaleWorld;
+int _VisualizeFlowmap;
+int _AudioLink;
+int _AudioLinkBand;
+float _AudioLinkStrength;
 
 float _Test;
 float _ZeroProp;
@@ -270,7 +275,7 @@ struct v2f {
 
 #include "WaterSSR.cginc"
 #include "WaterFunctions.cginc"
-
+#include "WaterAudioLink.cginc"
 #if AREALIT_ENABLED
 	#include "../../AreaLit/Shader/Lighting.hlsl"
 #endif

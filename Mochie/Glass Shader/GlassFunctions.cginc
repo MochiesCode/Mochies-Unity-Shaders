@@ -10,6 +10,16 @@ float4 SampleTexture(sampler2D tex, float2 uv){
 	return 0;
 }
 
+float FadeShadows (float3 worldPos, float atten) {
+	#if HANDLE_SHADOWS_BLENDING_IN_GI
+		float viewZ = dot(_WorldSpaceCameraPos - worldPos, UNITY_MATRIX_V[2].xyz);
+		float shadowFadeDistance = UnityComputeShadowFadeDistance(worldPos, viewZ);
+		float shadowFade = UnityComputeShadowFade(shadowFadeDistance);
+		atten = saturate(atten + shadowFade);
+	#endif
+	return atten;
+}
+
 float3 ShadeSH9(float3 normal){
 	return max(0, ShadeSH9(float4(normal,1)));
 }

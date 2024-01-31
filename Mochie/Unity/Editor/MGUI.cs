@@ -737,17 +737,24 @@ namespace Mochie {
 		}
 
 		// Label for the third property in TexturePropertySingleLine
-		public static void TexPropLabel(string text, int offset){
+
+		public static void TexPropLabel(string text, int offset, bool isThirdProp){
 			GUILayout.Space(-22);
 			Rect rm = EditorGUILayout.GetControlRect();
-			rm.x += GetInspectorWidth()-offset;
+			if (!isThirdProp)
+				rm.x += GetInspectorWidth()-GetPropertyWidth()+20;
+			else
+				rm.x += GetInspectorWidth()-offset;
 			EditorGUI.LabelField(rm, text);
 		}
 
-		public static void TexPropLabel(GUIContent text, int offset){
+		public static void TexPropLabel(GUIContent text, int offset, bool isThirdProp){
 			GUILayout.Space(-22);
 			Rect rm = EditorGUILayout.GetControlRect();
-			rm.x += GetInspectorWidth()-offset;
+			if (!isThirdProp)
+				rm.x += GetInspectorWidth()-GetPropertyWidth()+20;
+			else
+				rm.x += GetInspectorWidth()-offset;
 			EditorGUI.LabelField(rm, text);
 		}
 

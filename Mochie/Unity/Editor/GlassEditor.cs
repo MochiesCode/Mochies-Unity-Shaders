@@ -8,7 +8,7 @@ using Mochie;
 
 public class GlassEditor : ShaderGUI {
 
-	string versionLabel = "v1.4.1";
+	string versionLabel = "v1.5";
 
 	// Surface
 	MaterialProperty _GrabpassTint = null;
@@ -121,9 +121,8 @@ public class GlassEditor : ShaderGUI {
 				}
 				bool hasRainMask = _RainMask.textureValue;
 				MGUI.Space4();
-				me.TexturePropertySingleLine(Tips.maskText, _RainMask, hasRainMask ? _RainMaskChannel : null);
+				me.TexturePropertySingleLine(Tips.maskText, _RainMask, _RainMaskChannel);
 				if (hasRainMask){
-					MGUI.TexPropLabel("Channel", 105);
 					MGUI.TextureSO(me, _RainMask);
 				}
 			});

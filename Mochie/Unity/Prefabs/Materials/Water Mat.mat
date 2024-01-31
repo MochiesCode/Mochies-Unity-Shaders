@@ -2,22 +2,35 @@
 %TAG !u! tag:unity3d.com,2011:
 --- !u!21 &2100000
 Material:
-  serializedVersion: 6
+  serializedVersion: 8
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Water Mat
   m_Shader: {fileID: 4800000, guid: 7e018b47cc1d059439656129107b3445, type: 3}
-  m_ShaderKeywords: _BICUBIC_LIGHTMAPPING_ON _CAUSTICS_VORONOI_ON _DEPTHFOG_ON _DEPTH_EFFECTS_ON
-    _EDGEFADE_ON _FLOW_ON _FOAM_ON _NORMALMAP_1_ON _NORMAL_FLIPBOOK_STOCHASTIC_ON
-    _REFLECTIONS_ON _SPECULAR_ON
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - _BICUBIC_LIGHTMAPPING_ON
+  - _CAUSTICS_VORONOI_ON
+  - _DEPTHFOG_ON
+  - _DEPTH_EFFECTS_ON
+  - _EDGEFADE_ON
+  - _FLOW_ON
+  - _FOAM_ON
+  - _NORMALMAP_1_ON
+  - _REFLECTIONS_ON
+  - _SPECULAR_ON
+  m_InvalidKeywords:
+  - _NORMAL_FLIPBOOK_STOCHASTIC_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -133,10 +146,14 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    m_Ints: []
     m_Floats:
     - _AreaLitRoughnessMult: 1
     - _AreaLitStrength: 1
     - _AreaLitToggle: 0
+    - _AudioLink: 0
+    - _AudioLinkBand: 0
+    - _AudioLinkStrength: 1
     - _BackfaceReflections: 1
     - _BaseColorDistortionStrength: 0.1
     - _BaseColorOffset: 0
@@ -250,6 +267,7 @@ Material:
     - _VertRemapMin: -1
     - _VertexOffsetMaskChannel: 0
     - _VertexOffsetMaskStrength: 1
+    - _VisualizeFlowmap: 0
     - _VoronoiSpeed: 1.5
     - _VoronoiWaveHeight: 1
     - _WaveDirection0: 0
@@ -311,3 +329,4 @@ Material:
     - _VoronoiOffset: {r: 0, g: 1, b: 0, a: 0}
     - _VoronoiScale: {r: 2, g: 2, b: 0, a: 0}
     - _VoronoiScroll: {r: 0, g: -0.25, b: 0, a: 0}
+  m_BuildTextureStacks: []

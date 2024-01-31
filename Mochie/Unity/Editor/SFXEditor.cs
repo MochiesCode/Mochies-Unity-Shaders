@@ -889,7 +889,7 @@ public class SFXEditor : ShaderGUI {
 								if (_OutlineCube.textureValue){
 									MGUI.PropertyGroupLayer(()=>{
 										MGUI.SpaceN2();
-										MGUI.Vector3Field(_CubeRotate, "Rotation", false);
+										MGUI.Vector3Field(_CubeRotate, _AutoRotate.floatValue == 1 ? "Speed" : "Rotation", false);
 										me.ShaderProperty(_AutoRotate, "Auto Rotate");
 										MGUI.SpaceN2();
 									});
@@ -905,7 +905,7 @@ public class SFXEditor : ShaderGUI {
 									if (_OutlineCubeAlt.textureValue){
 										MGUI.PropertyGroupLayer(()=>{
 											MGUI.SpaceN2();
-											MGUI.Vector3Field(_CubeRotateAlt, "Rotation", false);
+											MGUI.Vector3Field(_CubeRotateAlt, _AutoRotateAlt.floatValue == 1 ? "Speed" : "Rotation", false);
 											me.ShaderProperty(_AutoRotateAlt, "Auto Rotate");
 											MGUI.SpaceN2();
 										});
@@ -921,7 +921,7 @@ public class SFXEditor : ShaderGUI {
 								if (_OutlineBackgroundCube.textureValue){
 									MGUI.PropertyGroupLayer(()=>{
 										MGUI.SpaceN2();
-										MGUI.Vector3Field(_CubeRotateBG, "Rotation", false);
+										MGUI.Vector3Field(_CubeRotateBG, _AutoRotateBG.floatValue == 1 ? "Speed" : "Rotation", false);
 										me.ShaderProperty(_AutoRotateBG, "Auto Rotate");
 										MGUI.SpaceN2();
 									});

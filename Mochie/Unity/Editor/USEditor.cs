@@ -815,7 +815,7 @@ internal class USEditor : ShaderGUI {
 				// Tex Only
 				case 0: 
 					me.TexturePropertySingleLine(Tips.baseColorLabel, _MainTex, _Color, renderMode == 1 ? _ColorPreservation : null);
-					if (renderMode == 1) MGUI.TexPropLabel(Tips.colorPreservation, 123);
+					if (renderMode == 1) MGUI.TexPropLabel(Tips.colorPreservation, 123, true);
 					if (_MirrorBehavior.floatValue == 2)
 						me.TexturePropertySingleLine(Tips.mirrorTexLabel, _MirrorTex);
 					MGUI.TextureSOScroll(me, _MainTex, _MainTexScroll);
@@ -826,7 +826,7 @@ internal class USEditor : ShaderGUI {
 				case 1: 
 					me.TexturePropertySingleLine(Tips.reflCubeLabel, _MainTexCube0, _CubeColor0, renderMode == 1 ? _ColorPreservation : null);
 					if (renderMode == 1) 
-						MGUI.TexPropLabel(Tips.colorPreservation, 123);
+						MGUI.TexPropLabel(Tips.colorPreservation, 123, true);
 					MGUI.Vector3Field(_CubeRotate0, "Rotation", false);
 					me.ShaderProperty(_AutoRotate0, "Auto Rotate");
 					break;
@@ -835,7 +835,7 @@ internal class USEditor : ShaderGUI {
 				case 2: 
 					me.TexturePropertySingleLine(Tips.baseColorLabel, _MainTex, _Color, renderMode == 1 ? _ColorPreservation : null);
 					if (renderMode == 1) 
-						MGUI.TexPropLabel(Tips.colorPreservation, 123);
+						MGUI.TexPropLabel(Tips.colorPreservation, 123, true);
 					if (_MirrorBehavior.floatValue == 2)
 						me.TexturePropertySingleLine(Tips.mirrorTexLabel, _MirrorTex);
 					MGUI.TextureSOScroll(me, _MainTex, _MainTexScroll);
@@ -844,7 +844,7 @@ internal class USEditor : ShaderGUI {
 					me.TexturePropertySingleLine(new GUIContent("Blend"), _CubeBlendMask, _CubeBlendMask.textureValue ? null : _CubeBlend);
 
 					me.TexturePropertySingleLine(Tips.reflCubeLabel, _MainTexCube0, _CubeColor0, _CubeBlendMode);
-					MGUI.TexPropLabel("Blending", blendingLabelPos);
+					MGUI.TexPropLabel("Blending", blendingLabelPos, true);
 					MGUI.Vector3Field(_CubeRotate0, "Rotation", false);
 					me.ShaderProperty(_AutoRotate0, "Auto Rotate");
 					break;
@@ -852,7 +852,6 @@ internal class USEditor : ShaderGUI {
 			}
 			if (_UseAlphaMask.floatValue == 1 && (isCutout || isTransparent)){
 				me.TexturePropertySingleLine(Tips.alphaMaskLabel, _AlphaMask, _AlphaMaskChannel);
-				MGUI.TexPropLabel("Channel", 109);
 				MGUI.TextureSO(me, _AlphaMask);
 			}
 			me.ShaderProperty(_VertexColor, "Vertex Color");
@@ -1358,9 +1357,9 @@ internal class USEditor : ShaderGUI {
 						bool matcap1Tab = Foldouts.DoSmallFoldout(foldouts, mat, me, "Primary Matcap");
 						if (matcap1Tab){
 							MGUI.PropertyGroupLayer(() => {
-								me.TexturePropertySingleLine(new GUIContent("Matcap"), _Matcap, _MatcapColor, _Matcap.textureValue ? _MatcapBlending : null);
+								me.TexturePropertySingleLine(new GUIContent("Matcap"), _Matcap, _MatcapColor, _MatcapBlending);
+								MGUI.TexPropLabel("Blending", blendingLabelPos, true);
 								if (_Matcap.textureValue){
-									MGUI.TexPropLabel("Blending", blendingLabelPos);
 									MGUI.TextureSO(me, _Matcap);
 								};
 								me.TexturePropertySingleLine(Tips.matcapNormal, _MatcapNormal0, _MatcapNormal0Str);
@@ -1386,9 +1385,9 @@ internal class USEditor : ShaderGUI {
 						bool matcap2Tab = Foldouts.DoSmallFoldout(foldouts, mat, me, "Secondary Matcap");
 						if (matcap2Tab){
 							MGUI.PropertyGroupLayer(() => {
-								me.TexturePropertySingleLine(new GUIContent("Matcap"), _Matcap1, _MatcapColor1, _Matcap1.textureValue ? _MatcapBlending1 : null);
+								me.TexturePropertySingleLine(new GUIContent("Matcap"), _Matcap1, _MatcapColor1, _MatcapBlending1);
+								MGUI.TexPropLabel("Blending", blendingLabelPos, true);
 								if (_Matcap1.textureValue){
-									MGUI.TexPropLabel("Blending", blendingLabelPos);
 									MGUI.TextureSO(me, _Matcap1);
 								}
 								me.TexturePropertySingleLine(Tips.matcapNormal, _MatcapNormal1, _MatcapNormal1Str);
@@ -1420,11 +1419,9 @@ internal class USEditor : ShaderGUI {
 				Action sssTabAction = ()=>{
 					MGUI.PropertyGroup(() => {
 						MGUI.ToggleGroup(_Subsurface.floatValue == 0);
-						me.TexturePropertySingleLine(Tips.thicknessTexLabel, _ThicknessMap, _ThicknessMap.textureValue ? _ThicknessMapPower : null);
-						if (_ThicknessMap.textureValue)
-							MGUI.TexPropLabel("Power", 96);
+						me.TexturePropertySingleLine(Tips.thicknessTexLabel, _ThicknessMap, _ThicknessMapPower);
 						me.TexturePropertySingleLine(Tips.colorLabel, _ScatterTex, _ScatterCol, _ScatterBaseColorTint);
-						MGUI.TexPropLabel("Base Color Tint", 150);
+						MGUI.TexPropLabel("Base Color Tint", 150, true);
 						me.ShaderProperty(_ScatterIntensity, "Direct Strength");
 						me.ShaderProperty(_ScatterAmbient, "Indirect Strength");
 						me.ShaderProperty(_ScatterPow, "Power");
@@ -1441,7 +1438,7 @@ internal class USEditor : ShaderGUI {
 					MGUI.PropertyGroup(() => {
 						MGUI.ToggleGroup(_RimLighting.floatValue == 0);
 						me.TexturePropertySingleLine(Tips.colorLabel, _RimTex, _RimCol, _RimBlending);
-						MGUI.TexPropLabel("Blending", blendingLabelPos);
+						MGUI.TexPropLabel("Blending", blendingLabelPos, true);
 						MGUI.TextureSOScroll(me, _RimTex, _RimScroll, _RimTex.textureValue);
 						me.ShaderProperty(_RimStr, "Strength");
 						me.ShaderProperty(_RimWidth, "Width");
@@ -1555,12 +1552,12 @@ internal class USEditor : ShaderGUI {
 			MGUI.ToggleGroup(_EmissionToggle.floatValue == 0);
 			MGUI.PropertyGroup(() => {
 				me.TexturePropertySingleLine(Tips.emissTexLabel, _EmissionMap, _EmissionColor, _EmissIntensity);
-				MGUI.TexPropLabel("Intensity", 111);
+				MGUI.TexPropLabel("Intensity", 111, true);
 				MGUI.TextureSOScroll(me, _EmissionMap, _EmissScroll);
 			});
 			MGUI.PropertyGroup(() => {
 				me.TexturePropertySingleLine(Tips.emissTexLabel, _EmissionMap2, _EmissionColor2, _EmissIntensity2);
-				MGUI.TexPropLabel("Intensity", 111);
+				MGUI.TexPropLabel("Intensity", 111, true);
 				MGUI.TextureSOScroll(me, _EmissionMap2, _EmissScroll2);
 			});
 			lrTabButtons.Add(()=>{DoLRReset();}, MGUI.resetLabel);
@@ -1645,7 +1642,7 @@ internal class USEditor : ShaderGUI {
 						me.TexturePropertySingleLine(new GUIContent("Sprite Sheet"), _Spritesheet, _SpritesheetCol, _SpritesheetBlending);
 					else
 						me.TexturePropertySingleLine(new GUIContent("Flipbook Asset"), _Flipbook0, _SpritesheetCol, _SpritesheetBlending);
-					MGUI.TexPropLabel("Blending", blendingLabelPos);
+					MGUI.TexPropLabel("Blending", blendingLabelPos, true);
 					me.ShaderProperty(_SpritesheetBrightness, "Brightness");
 					me.ShaderProperty(_UnlitSpritesheet, "Unlit");
 					me.ShaderProperty(_UseSpritesheetAlpha, "Use Alpha");
@@ -1686,7 +1683,7 @@ internal class USEditor : ShaderGUI {
 						me.TexturePropertySingleLine(new GUIContent("Sprite Sheet"), _Spritesheet1, _SpritesheetCol1, _SpritesheetBlending1);
 					else
 						me.TexturePropertySingleLine(new GUIContent("Flipbook Asset"), _Flipbook1, _SpritesheetCol1, _SpritesheetBlending1);
-					MGUI.TexPropLabel("Blending", blendingLabelPos);
+					MGUI.TexPropLabel("Blending", blendingLabelPos, true);
 					me.ShaderProperty(_SpritesheetBrightness1, "Brightness");
 					me.ShaderProperty(_UnlitSpritesheet1, "Unlit");
 					me.ShaderProperty(_UseSpritesheetAlpha, "Use Alpha");
@@ -1752,7 +1749,7 @@ internal class USEditor : ShaderGUI {
 				MGUI.PropertyGroup(() => {
 					me.TexturePropertySingleLine(Tips.colorLabel, _OutlineTex, _OutlineCol, (blendMode == 1 || blendMode == 2) && _OutlineTex.textureValue ? _UseOutlineTexAlpha : null);
 					if ((blendMode == 1 || blendMode == 2) && _OutlineTex.textureValue){
-						MGUI.TexPropLabel("Use Alpha", 115);
+						MGUI.TexPropLabel("Use Alpha", 115, true);
 					}
 					MGUI.TextureSOScroll(me, _OutlineTex, _OutlineScroll, _OutlineTex.textureValue);
 					me.ShaderProperty(_OutlineMult, "Thickness");
@@ -1784,7 +1781,7 @@ internal class USEditor : ShaderGUI {
 						me.TexturePropertySingleLine(Tips.maskLabel, _DistortUVMask);
 						me.TexturePropertySingleLine(Tips.normalTexLabel, _DistortUVMap, _DistortUVMap.textureValue ? _DistortUVStr : null);
 						if (_DistortUVMap.textureValue)
-							MGUI.TexPropLabel("Strength", 110);
+							MGUI.TexPropLabel("Strength", 110, true);
 						MGUI.TextureSOScroll(me, _DistortUVMap, _DistortUVScroll);
 					});	
 				}

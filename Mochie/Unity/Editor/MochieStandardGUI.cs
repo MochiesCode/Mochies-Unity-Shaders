@@ -23,7 +23,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		"LTCGI"
 	}, 1);
 
-	string versionLabel = "v1.27";
+	string versionLabel = "v1.28";
 	public static string receiverText = "AreaLit Maps";
 	public static string emitterText = "AreaLit Light";
 	public static string projectorText = "AreaLit Projector";
@@ -777,7 +777,6 @@ internal class MochieStandardGUI : ShaderGUI {
 				
 				me.TexturePropertySingleLine(Tips.emissionText, emissionMap, emissionColorForRendering, emissIntensity);
 				// me.TexturePropertyWithHDRColor(Tips.emissionText, emissionMap, emissionColorForRendering, false);
-				MGUI.TexPropLabel("Intensity", 105);
 				MGUI.SpaceN2();
 				me.TexturePropertySingleLine(Tips.maskText, emissionMask);
 				MGUI.SpaceN4();
@@ -859,9 +858,7 @@ internal class MochieStandardGUI : ShaderGUI {
 			MGUI.ToggleGroup(subsurface.floatValue == 0);
 			MGUI.PropertyGroupLayer(() => {
 				MGUI.SpaceN1();
-				me.TexturePropertySingleLine(Tips.thicknessMapText, thicknessMap, thicknessMap.textureValue ? thicknessMapPower : null);
-				if (thicknessMap.textureValue)
-					MGUI.TexPropLabel("Power", 94);
+				me.TexturePropertySingleLine(Tips.thicknessMapText, thicknessMap, thicknessMapPower);
 				me.ShaderProperty(scatterCol, Tips.scatterCol);
 				me.ShaderProperty(scatterAlbedoTint, Tips.scatterAlbedoTint);
 				MGUI.SpaceN2();

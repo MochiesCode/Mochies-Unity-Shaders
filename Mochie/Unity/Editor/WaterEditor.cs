@@ -51,7 +51,7 @@ public class WaterEditor : ShaderGUI {
 	}, 0);
 
     string header = "WaterHeader_Pro";
-	string versionLabel = "v1.18";
+	string versionLabel = "v1.19";
 
 	MaterialProperty _Color = null;
 	MaterialProperty _NonGrabColor = null;
@@ -247,6 +247,10 @@ public class WaterEditor : ShaderGUI {
 	MaterialProperty _BicubicLightmapping = null;
 	MaterialProperty _MirrorNormalOffsetSwizzle = null;
 	MaterialProperty _InvertNormals = null;
+	MaterialProperty _VisualizeFlowmap = null;
+	MaterialProperty _AudioLink = null;
+	MaterialProperty _AudioLinkStrength = null;
+	MaterialProperty _AudioLinkBand = null;
 	// MaterialProperty _FogTint2 = null;
 	// MaterialProperty _FogPower2 = null;
 	// MaterialProperty _FogBrightness2 = null;
@@ -301,7 +305,7 @@ public class WaterEditor : ShaderGUI {
 			Action surfaceTabAction = ()=>{
 				MGUI.PropertyGroup(()=>{
 					me.TexturePropertySingleLine(texLabel, _MainTex, _BaseColorStochasticToggle);
-					MGUI.TexPropLabel(Tips.stochasticLabel, 117);
+					MGUI.TexPropLabel(Tips.stochasticLabel, 117, false);
 					if (_MainTex.textureValue){
 						MGUI.TextureSOScroll(me, _MainTex, _MainTexScroll);
 						// me.ShaderProperty(_BaseColorOffset, Tips.parallaxOffsetLabel);
@@ -350,7 +354,7 @@ public class WaterEditor : ShaderGUI {
 					MGUI.BoldLabel("Primary");
 					MGUI.PropertyGroup(() => {
 						me.TexturePropertySingleLine(Tips.waterNormalMap, _NormalMap0, _Normal0StochasticToggle);
-						MGUI.TexPropLabel(Tips.stochasticLabel, 117);
+						MGUI.TexPropLabel(Tips.stochasticLabel, 117, false);
 						me.ShaderProperty(_NormalStr0, "Strength");
 						MGUI.Vector2Field(_NormalMapScale0, "Scale");
 						MGUI.Vector2Field(_NormalMapScroll0, "Scrolling");
@@ -362,7 +366,7 @@ public class WaterEditor : ShaderGUI {
 					MGUI.PropertyGroup(() => {
 						MGUI.ToggleGroup(_Normal1Toggle.floatValue == 0);
 						me.TexturePropertySingleLine(Tips.waterNormalMap, _NormalMap1, _Normal1StochasticToggle);
-						MGUI.TexPropLabel(Tips.stochasticLabel, 117);
+						MGUI.TexPropLabel(Tips.stochasticLabel, 117, false);
 						me.ShaderProperty(_NormalStr1, "Strength");
 						MGUI.Vector2Field(_NormalMapScale1, "Scale");
 						MGUI.Vector2Field(_NormalMapScroll1, "Scrolling");
@@ -440,12 +444,22 @@ public class WaterEditor : ShaderGUI {
 				MGUI.PropertyGroup(()=>{
 					MGUI.ToggleGroup(_EmissionToggle.floatValue == 0);
 					me.TexturePropertySingleLine(emissLabel, _EmissionMap, _EmissionMapStochasticToggle);
-					MGUI.TexPropLabel(Tips.stochasticLabel, 117);
+					MGUI.TexPropLabel(Tips.stochasticLabel, 117, false);
 					me.ShaderProperty(_EmissionColor, "Tint");
 					MGUI.TextureSOScroll(me, _EmissionMap, _EmissionMapScroll);
 					me.ShaderProperty(_EmissionDistortionStrength, "Distortion Strength");
+					me.ShaderProperty(_AudioLink, "Audio Link");
+					if (_AudioLink.floatValue == 1){
+						MGUI.PropertyGroupLayer(()=>{
+							MGUI.SpaceN1();
+							me.ShaderProperty(_AudioLinkBand, "Band");
+							me.ShaderProperty(_AudioLinkStrength, "Strength");
+							MGUI.SpaceN1();
+						});
+					}
 					MGUI.ToggleGroupEnd();
 				});
+
 			};
 			Foldouts.Foldout("EMISSION", foldouts, emissTabButtons, mat, me, emissTabAction);
 
@@ -457,7 +471,6 @@ public class WaterEditor : ShaderGUI {
 				MGUI.PropertyGroup(()=>{
 					MGUI.ToggleGroup(_FlowToggle.floatValue == 0);
 					me.TexturePropertySingleLine(flowLabel, _FlowMap, _FlowMapUV);
-					MGUI.TexPropLabel("UV Set", 95);
 					if (_BlendNoiseSource.floatValue == 1)
 						me.TexturePropertySingleLine(Tips.blendNoise, _BlendNoise);
 					MGUI.Vector2Field(_FlowMapScale, "Flow Map Scale");
@@ -466,6 +479,7 @@ public class WaterEditor : ShaderGUI {
 					me.ShaderProperty(_FlowSpeed, "Speed");
 					me.ShaderProperty(_FlowStrength, "Strength");
 					me.ShaderProperty(_BlendNoiseSource, "Blend Noise Source");
+					me.ShaderProperty(_VisualizeFlowmap, "Visualize");
 					MGUI.ToggleGroupEnd();
 				});
 			};
@@ -617,7 +631,7 @@ public class WaterEditor : ShaderGUI {
 				MGUI.ToggleGroup(_FoamToggle.floatValue == 0);
 				MGUI.PropertyGroup(()=>{
 					me.TexturePropertySingleLine(foamLabel, _FoamTex, _FoamColor, _FoamStochasticToggle);
-					MGUI.TexPropLabel(Tips.stochasticLabel, 117);
+					MGUI.TexPropLabel(Tips.stochasticLabel, 117, true);
 					MGUI.Space2();
 					MGUI.Vector2Field(_FoamTexScale, "Scale");
 					MGUI.Vector2Field(_FoamTexScroll, "Scrolling");
@@ -1086,6 +1100,9 @@ public class WaterEditor : ShaderGUI {
 		_EmissionColor.colorValue = Color.white;
 		_EmissionMapScroll.vectorValue = Vector4.zero;
 		_EmissionDistortionStrength.floatValue = 0f;
+		_AudioLink.floatValue = 0f;
+		_AudioLinkBand.floatValue = 0f;
+		_AudioLinkStrength.floatValue = 1f;
 	}
 
 	void ResetAreaLit(){
