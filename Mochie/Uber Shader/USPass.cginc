@@ -203,7 +203,7 @@ float4 frag (g2f i, bool frontFace : SV_IsFrontFace) : SV_Target {
 	#endif
 
 	#if EMISSION_ENABLED
-    	ApplyLREmission(l, diffuse.rgb, emiss);
+    	ApplyLREmission(l, diffuse.rgb, emiss, shadowCol);
 	#endif
 
 	#if SPRITESHEETS_ENABLED

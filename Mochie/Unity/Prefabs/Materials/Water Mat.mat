@@ -172,7 +172,7 @@ Material:
     - _CausticsSurfaceFade: 100
     - _CausticsThreshold: 0
     - _CausticsToggle: 1
-    - _CullMode: 2
+    - _CullMode: 0
     - _DepthEffects: 1
     - _DetailNormalStrength: 1
     - _DetailTextureMode: 0

@@ -11,12 +11,12 @@ float FadeShadows (g2f i, float atten) {
 	return atten;
 }
 
-void ApplyLREmission(lighting l, inout float3 diffuse, float3 emiss){
+void ApplyLREmission(lighting l, inout float3 diffuse, float3 emiss, float3 shadowCol){
 	float interpolator = 0;
 	if (_ReactToggle == 1){
 		float2 threshold = saturate(float2(_ReactThresh-_Crossfade, _ReactThresh+_Crossfade));
-		float2 interps = float2(l.worldBrightness, smootherstep(threshold.x, threshold.y, l.worldBrightness));
-		interpolator = interps[_CrossMode];
+		float3 interp = lerp(l.worldBrightness, l.worldBrightness * shadowCol, _UseShadowsForLREmiss);
+		interpolator = lerp(interp, smootherstep(threshold.x, threshold.y, interp), _CrossMode);
 	}
 	diffuse = lerp(diffuse+emiss, diffuse, interpolator*_ReactToggle);
 }

@@ -169,6 +169,7 @@ float _AreaLitRoughnessMult;
 sampler2D _AreaLitOcclusion;
 float4 _AreaLitOcclusion_ST;
 int _OcclusionUVSet;
+int _ReflShadowAreaLit;
 
 sampler2D _RimMask;
 float4 _RimMask_ST;
@@ -320,15 +321,15 @@ float2 SelectUVSet(VertexInput v, int selection, int swizzle, float3 worldPos){
 
 void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1, inout float4 texcoord2, inout float4 texcoord3, inout float4 texcoord4, float3 worldPos)
 {
-	texcoord.xy = Rotate2D(SelectUVSet(v, _UVPri, _UVPriSwizzle, worldPos), _UV0Rotate);
+	texcoord.xy = Rotate2DStandard(SelectUVSet(v, _UVPri, _UVPriSwizzle, worldPos), _UV0Rotate);
 	texcoord.xy = TRANSFORM_TEX(texcoord.xy, _MainTex);
 	texcoord.xy += _Time.y * _UV0Scroll;
 
-	texcoord.zw = Rotate2D((SelectUVSet(v, _UVSec, _UVSecSwizzle, worldPos)), _UV1Rotate);
+	texcoord.zw = Rotate2DStandard((SelectUVSet(v, _UVSec, _UVSecSwizzle, worldPos)), _UV1Rotate);
 	texcoord.zw = TRANSFORM_TEX(texcoord.zw, _DetailAlbedoMap);
 	texcoord.zw += _Time.y * _UV1Scroll;
 
-	texcoord4.zw = Rotate2D((SelectUVSet(v, _UVDetailMask, _UVDetailMaskSwizzle, worldPos)), _DetailRotate);
+	texcoord4.zw = Rotate2DStandard((SelectUVSet(v, _UVDetailMask, _UVDetailMaskSwizzle, worldPos)), _DetailRotate);
 	texcoord4.zw = TRANSFORM_TEX(texcoord4.zw, _DetailMask);
 	texcoord4.zw += _Time.y * _DetailScroll;
 
@@ -343,26 +344,26 @@ void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1, ino
 	#endif
 
 	#ifdef _EMISSION
-		texcoord1.zw = Rotate2D(SelectUVSet(v, _UVEmissMask, _UVEmissMaskSwizzle, worldPos), _UV3Rotate);
+		texcoord1.zw = Rotate2DStandard(SelectUVSet(v, _UVEmissMask, _UVEmissMaskSwizzle, worldPos), _UV3Rotate);
 		texcoord1.zw = TRANSFORM_TEX(texcoord1.zw, _EmissionMask);
 		texcoord1.zw += _Time.y * _UV3Scroll;
 	#endif
 
 	#ifdef _ALPHAMASK_ON
-		texcoord2.xy = Rotate2D(SelectUVSet(v, _UVAlphaMask, _UVAlphaMaskSwizzle, worldPos), _UV4Rotate);
+		texcoord2.xy = Rotate2DStandard(SelectUVSet(v, _UVAlphaMask, _UVAlphaMaskSwizzle, worldPos), _UV4Rotate);
 		texcoord2.xy = TRANSFORM_TEX(texcoord2.xy, _AlphaMask);
 		texcoord2.xy += _Time.y * _UV4Scroll;
 	#endif
 
 	if (_RimToggle == 1){
-		texcoord2.zw = Rotate2D(SelectUVSet(v, _UVRimMask, _UVRimMaskSwizzle, worldPos), _UVRimMaskRotate);
+		texcoord2.zw = Rotate2DStandard(SelectUVSet(v, _UVRimMask, _UVRimMaskSwizzle, worldPos), _UVRimMaskRotate);
 		texcoord2.zw = TRANSFORM_TEX(texcoord2.zw, _RimMask);
 		texcoord2.zw += _Time.y * _UVRimMaskScroll;
 	}
 
 	if (_RainToggle == 1){
 		texcoord3.xy = v.uv0;
-		texcoord3.zw = Rotate2D(SelectUVSet(v, _UVRainMask, _UVRainMaskSwizzle, worldPos), _UV5Rotate);
+		texcoord3.zw = Rotate2DStandard(SelectUVSet(v, _UVRainMask, _UVRainMaskSwizzle, worldPos), _UV5Rotate);
 		texcoord3.zw = TRANSFORM_TEX(texcoord3.zw, _RainMask);
 		texcoord3.zw += _Time.y * _UV5Scroll;
 	}

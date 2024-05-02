@@ -175,6 +175,7 @@ Shader "Mochie/Standard" {
 		[ToggleUI]_SSR("Screenspace Reflections", Int) = 0
 		[Enum(Off,0, On,1)]_UseHeight("Use Heightmap", Int) = 0
 		[ToggleUI]_ReflShadows("Shadowed Reflections", Int) = 0
+		[ToggleUI]_ReflShadowAreaLit("Shadowed Reflections AreaLit", Int) = 1
 		[ToggleUI]_ReflVertexColor("Vertex Color Reflections", Int) = 0
 		[ToggleUI]_GSAA("GSAA", Int) = 0
 		[Enum(Off,0, On,1)]_UseSmoothness("Use Smoothness", Int) = 0

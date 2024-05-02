@@ -30,7 +30,14 @@ v2f vert (appdata v){
 		o.olF = GetFalloff(_OLUseGlobal, gf, _OLMinRange, _OLMaxRange, o.objDist);
 	#endif
 
-    v.vertex.x *= 1.4;
+	if (unity_OrthoParams.w == 1){
+		v.vertex.y *= 10;
+		v.vertex.x *= 20;
+	}
+	else {
+		v.vertex.x *= 1.4;
+	}
+
     float4 wPos = mul(unity_CameraToWorld, v.vertex);
     float4 oPos = mul(unity_WorldToObject, wPos);
     o.raycast = UnityObjectToViewPos(oPos).xyz * float3(-1,-1,1);

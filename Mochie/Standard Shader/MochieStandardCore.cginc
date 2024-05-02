@@ -756,7 +756,7 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
 
     #if AREALIT_ENABLED
         float3 areaLitColor = s.diffColor * diffTerm + s.specColor * specTerm;
-        if (_ReflShadows == 1)
+        if (_ReflShadows == 1 && _ReflShadowAreaLit == 1)
             areaLitColor *= shadowedReflections;
         c.rgb += areaLitColor * _AreaLitStrength;
     #endif

@@ -161,7 +161,7 @@ internal class USEditor : ShaderGUI {
 
 	static readonly string unityFolderPath = "Assets/Mochie/Unity";
 	string header = "Header_Pro";
-	string versionLabel = "v1.30.1";
+	string versionLabel = "v1.30.2";
 	// β
 	
 	MaterialProperty _RenderMode = null; 
@@ -707,6 +707,7 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _DetailMetallicBlending = null;
 	MaterialProperty _DetailMetallic = null;
 	MaterialProperty _DetailMetallicStrength = null;
+	MaterialProperty _UseShadowsForLREmiss = null;
 
 	MaterialProperty _VRCFallback = null;
 	MaterialProperty _NaNLmao = null;
@@ -1563,6 +1564,7 @@ internal class USEditor : ShaderGUI {
 			lrTabButtons.Add(()=>{DoLRReset();}, MGUI.resetLabel);
 			Action lrTabAction = ()=>{
 				MGUI.ToggleGroup(_ReactToggle.floatValue == 0);
+				me.ShaderProperty(_UseShadowsForLREmiss, "Include Shadows");
 				me.ShaderProperty(_CrossMode, Tips.crossMode);
 				MGUI.PropertyGroup(() => {
 					MGUI.ToggleGroup(_CrossMode.floatValue == 0);
@@ -3185,6 +3187,7 @@ internal class USEditor : ShaderGUI {
 		_CrossMode.floatValue = 0f;
 		_Crossfade.floatValue = 0.1f;
 		_ReactThresh.floatValue = 0.5f;
+		_UseShadowsForLREmiss.floatValue = 0f;
 	}
 
 	void DoPulseReset(){

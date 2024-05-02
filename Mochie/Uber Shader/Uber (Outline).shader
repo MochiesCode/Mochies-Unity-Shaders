@@ -376,6 +376,7 @@ Shader "Mochie/Uber (Outline)" {
 		// LIGHT REACTIVITY
 		[ToggleUI]_ReactToggle("tog", Int) = 0
 		[ToggleUI]_CrossMode("tog", Int) = 0
+		[ToggleUI]_UseShadowsForLREmiss("tog", Int) = 0
 		_Crossfade("ra", Range(0,0.2)) = 0.1
 		_ReactThresh("ra", Range(0,1)) = 0.5
 

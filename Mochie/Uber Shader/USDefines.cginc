@@ -171,6 +171,7 @@ float4 _MatcapNormal0_ST;
 float4 _MatcapNormal1_ST;
 
 int _Hide;
+int _UseShadowsForLREmiss;
 int _IsCubeBlendMask;
 int _MaskingMode;
 int _RenderMode, _BlendMode, _ZWrite, _ATM, _ColorPreservation, _UseAlphaMask;
