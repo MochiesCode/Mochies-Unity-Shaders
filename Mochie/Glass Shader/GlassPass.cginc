@@ -30,9 +30,22 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
 	UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos);
 	atten = FadeShadows(i.worldPos, atten);
 
+	#if defined(_RAIN_ON)
+		float2 maskUV = TRANSFORM_TEX(i.uv, _RainMask);
+	#endif
+
+	if (_TexCoordSpace == 1){
+		float2 worldYZ = Rotate2D(i.worldPos.yz, -90);
+		float2 worldCoordSelect[3] = {i.worldPos.xy, -i.worldPos.xz, worldYZ}; 
+		float2 worldCoords = worldCoordSelect[_TexCoordSpaceSwizzle];
+		i.uv.xy = worldCoords;
+	}
+	i.uv.xy *= abs(_GlobalTexCoordScale);
+
 	float3 specCol = 0;
 	float3 reflCol = 0;
 	float flipbookBase = 0;
+	float rainThreshold = 0;
 
 	float3 normalDir = normalize(i.normal);
 	float3 normalMap = 0;
@@ -40,11 +53,20 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
 		normalMap = UnpackScaleNormal(SampleTexture(_NormalMap, TRANSFORM_TEX(i.uv, _NormalMap)), _NormalStrength);
 	#endif
 	#if defined(_RAIN_ON)
-		float rainMask = tex2D(_RainMask, TRANSFORM_TEX(i.uv, _RainMask));
+		float rainMask = tex2D(_RainMask, maskUV);
+		float3 rainNormal = normalDir;
 		#if defined(_RAINMODE_RIPPLE)
-			float3 rainNormal = GetRipplesNormal(i.uv, _RippleScale, _RippleStrength*rainMask, _RippleSpeed, _RippleSize, _RippleDensity);
+			rainNormal = GetRipplesNormal(i.uv, _RippleScale, _RippleStrength*rainMask, _RippleSpeed, _RippleSize, _RippleDensity);
+		#elif defined(_RAINMODE_AUTO)
+			float facingAngle = 1-abs(dot(normalDir, float3(0,1,0)));
+			float threshAngle = _RainThresholdSize * 0.5;
+			rainThreshold = smoothstep(_RainThreshold - threshAngle, _RainThreshold + threshAngle, facingAngle);
+			float3 rainNormal0 = GetRipplesNormal(i.uv, _RippleScale, _RippleStrength*rainMask, _RippleSpeed, _RippleSize, _RippleDensity);
+			float3 rainNormal1 = GetFlipbookNormals(i, flipbookBase, rainMask);
+			ApplyExtraDroplets(i, rainNormal1, flipbookBase, rainMask);
+			rainNormal = lerp(rainNormal0, rainNormal1, rainThreshold);
 		#else
-			float3 rainNormal = GetFlipbookNormals(i, flipbookBase, rainMask);
+			rainNormal = GetFlipbookNormals(i, flipbookBase, rainMask);
 			ApplyExtraDroplets(i, rainNormal, flipbookBase, rainMask);
 		#endif
 		#if defined(_NORMALMAP_ON)
@@ -65,6 +87,10 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
 	float3 reflDir = reflect(-viewDir, normalDir);
 
 	float roughnessMap = SampleTexture(_RoughnessMap, TRANSFORM_TEX(i.uv, _RoughnessMap)) * _Roughness;
+	float flipbookRoughness = flipbookBase;
+	#if defined(_RAINMODE_AUTO)
+		flipbookBase *= rainThreshold;
+	#endif
 	float roughness = saturate(roughnessMap-flipbookBase);
 
 	#if defined(_SPECULAR_HIGHLIGHTS_ON) || defined(_REFLECTIONS_ON)

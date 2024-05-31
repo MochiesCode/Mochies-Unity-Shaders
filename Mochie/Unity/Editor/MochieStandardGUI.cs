@@ -23,7 +23,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		"LTCGI"
 	}, 1);
 
-	string versionLabel = "v1.29";
+	string versionLabel = "v1.30";
 	public static string receiverText = "AreaLit Maps";
 	public static string emitterText = "AreaLit Light";
 	public static string projectorText = "AreaLit Projector";
@@ -70,6 +70,7 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty saturation = null;
 	MaterialProperty contrast = null;
 	MaterialProperty brightness = null;
+	MaterialProperty hueMode = null;
 	MaterialProperty hue = null;
 	MaterialProperty saturationDet = null;
 	MaterialProperty contrastDet = null;
@@ -244,6 +245,7 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty uvDetailMaskSwizzle = null;
 	MaterialProperty mirrorNormalOffsetSwizzle = null;
 	MaterialProperty reflShadowAreaLit = null;
+	MaterialProperty triplanarSpace = null;
 
 	MaterialEditor me;
 
@@ -446,6 +448,8 @@ internal class MochieStandardGUI : ShaderGUI {
 		uvDetailMaskSwizzle = FindProperty("_UVDetailMaskSwizzle", props);
 		mirrorNormalOffsetSwizzle = FindProperty("_MirrorNormalOffsetSwizzle", props);
 		reflShadowAreaLit = FindProperty("_ReflShadowAreaLit", props);
+		triplanarSpace = FindProperty("_TriplanarSpace", props);
+		hueMode = FindProperty("_HueMode", props);
 	}
 
 	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props){
@@ -611,6 +615,9 @@ internal class MochieStandardGUI : ShaderGUI {
 			// if (MGUI.PropertyButton("Unity Standard Packing Format")){
 			// 	ApplyStandardPackingFormat(mat);
 			// }
+			if (samplingMode.floatValue == 3 || detailSamplingMode.floatValue == 3)
+				me.ShaderProperty(triplanarSpace, "Triplanar Space");
+
 		});
 	}
 
@@ -706,6 +713,7 @@ internal class MochieStandardGUI : ShaderGUI {
 				emissionMap.textureScaleAndOffset = albedoMap.textureScaleAndOffset; 
 			me.ShaderProperty(uv0Rot, "Rotation");
 		});
+		MGUI.SpaceN2();
 	}
 
 	void DoDetailArea(){
@@ -794,6 +802,7 @@ internal class MochieStandardGUI : ShaderGUI {
 			}
 			me.ShaderProperty(uv1Rot, "Rotation");
 		});
+		MGUI.SpaceN2();
 	}
 
 	void DoEmissionArea(Material material){
@@ -870,6 +879,7 @@ internal class MochieStandardGUI : ShaderGUI {
 			if (ssr.floatValue == 1 && !isLite){
 				MGUI.DisplayWarning("Screenspace reflections in VRChat require the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs\n\nThey are also VERY expensive, please use them sparingly!");
 			}
+			MGUI.SpaceN2();
 		});
 	}
 
@@ -886,6 +896,7 @@ internal class MochieStandardGUI : ShaderGUI {
 				me.ShaderProperty(rimEdge, Tips.rimEdge);
 			});
 			MGUI.ToggleGroupEnd();
+			MGUI.SpaceN2();
 		});
 	}
 
@@ -1073,6 +1084,9 @@ internal class MochieStandardGUI : ShaderGUI {
 		MGUI.PropertyGroup( () => {
 			me.ShaderProperty(filtering, "Enable");
 			MGUI.ToggleGroup(filtering.floatValue == 0);
+			MGUI.Space2();
+			me.ShaderProperty(hueMode, "Hue Mode");
+			MGUI.Space2();
 			MGUI.BoldLabel("Global Color");
 			MGUI.PropertyGroupLayer(()=>{
 				MGUI.SpaceN1();

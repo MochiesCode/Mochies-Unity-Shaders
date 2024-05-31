@@ -43,7 +43,11 @@ float _DynamicDroplets;
 float _RainBias;
 float _RippleSize;
 float _RippleDensity;
-
+float _RainThreshold;
+float _RainThresholdSize;
+float _TexCoordSpace;
+float _TexCoordSpaceSwizzle;
+float _GlobalTexCoordScale;
 float _Test;
 
 struct appdata {

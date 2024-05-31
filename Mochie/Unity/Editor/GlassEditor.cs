@@ -8,7 +8,7 @@ using Mochie;
 
 public class GlassEditor : ShaderGUI {
 
-	string versionLabel = "v1.5";
+	string versionLabel = "v1.6";
 
 	// Surface
 	MaterialProperty _GrabpassTint = null;
@@ -43,6 +43,8 @@ public class GlassEditor : ShaderGUI {
 	MaterialProperty _RippleDensity = null;
 	MaterialProperty _DynamicDroplets = null;
 	MaterialProperty _RainBias = null;
+	MaterialProperty _RainThreshold = null;
+	MaterialProperty _RainThresholdSize = null;
 
 	// Render Settings
 	MaterialProperty _ReflectionsToggle = null;
@@ -52,6 +54,9 @@ public class GlassEditor : ShaderGUI {
 	MaterialProperty _BlendMode = null;
 	MaterialProperty _LitBaseColor = null;
 	MaterialProperty _QueueOffset = null;
+	MaterialProperty _TexCoordSpace = null;
+	MaterialProperty _TexCoordSpaceSwizzle = null;
+	MaterialProperty _GlobalTexCoordScale = null;
 
     BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 	bool m_FirstTimeApply = true;
@@ -73,30 +78,32 @@ public class GlassEditor : ShaderGUI {
 			
 			MGUI.BoldLabel("SURFACE");
 			MGUI.PropertyGroup(()=>{
-				if (_BlendMode.floatValue == 0)
-					me.ShaderProperty(_GrabpassTint, "Grabpass Tint");
-				me.ShaderProperty(_SpecularityTint, "Specularity Tint");
-				me.ShaderProperty(_BaseColorTint, "Base Color Tint");
-			});
-			MGUI.PropertyGroup(()=>{
-				me.TexturePropertySingleLine(Tips.baseColorLabel, _BaseColor);
-				MGUI.TextureSO(me, _BaseColor, _BaseColor.textureValue);
-				me.TexturePropertySingleLine(Tips.metallicMapText, _MetallicMap, _Metallic);
-				MGUI.TextureSO(me, _MetallicMap, _MetallicMap.textureValue);
-				me.TexturePropertySingleLine(Tips.roughnessTexLabel, _RoughnessMap, _Roughness);
-				MGUI.TextureSO(me, _RoughnessMap, _RoughnessMap.textureValue);
-				me.TexturePropertySingleLine(Tips.occlusionTexLabel, _OcclusionMap, _OcclusionMap.textureValue ? _Occlusion : null);
-				MGUI.TextureSO(me, _OcclusionMap, _OcclusionMap.textureValue);
-				me.TexturePropertySingleLine(Tips.normalMapText, _NormalMap, _NormalMap.textureValue ? _NormalStrength : null);
-				MGUI.TextureSO(me, _NormalMap, _NormalMap.textureValue);
-			});
-			if (_BlendMode.floatValue == 0){
 				MGUI.PropertyGroup(()=>{
-					me.ShaderProperty(BlurQuality, "Blur Quality");
-					me.ShaderProperty(_Blur, "Blur Strength");
-					me.ShaderProperty(_Refraction, "Refraction");
+					if (_BlendMode.floatValue == 0)
+						me.ShaderProperty(_GrabpassTint, "Grabpass Tint");
+					me.ShaderProperty(_SpecularityTint, "Specularity Tint");
+					me.ShaderProperty(_BaseColorTint, "Base Color Tint");
 				});
-			}
+				MGUI.PropertyGroup(()=>{
+					me.TexturePropertySingleLine(Tips.baseColorLabel, _BaseColor);
+					MGUI.TextureSO(me, _BaseColor, _BaseColor.textureValue);
+					me.TexturePropertySingleLine(Tips.metallicMapText, _MetallicMap, _Metallic);
+					MGUI.TextureSO(me, _MetallicMap, _MetallicMap.textureValue);
+					me.TexturePropertySingleLine(Tips.roughnessTexLabel, _RoughnessMap, _Roughness);
+					MGUI.TextureSO(me, _RoughnessMap, _RoughnessMap.textureValue);
+					me.TexturePropertySingleLine(Tips.occlusionTexLabel, _OcclusionMap, _OcclusionMap.textureValue ? _Occlusion : null);
+					MGUI.TextureSO(me, _OcclusionMap, _OcclusionMap.textureValue);
+					me.TexturePropertySingleLine(Tips.normalMapText, _NormalMap, _NormalMap.textureValue ? _NormalStrength : null);
+					MGUI.TextureSO(me, _NormalMap, _NormalMap.textureValue);
+				});
+				if (_BlendMode.floatValue == 0){
+					MGUI.PropertyGroup(()=>{
+						me.ShaderProperty(BlurQuality, "Blur Quality");
+						me.ShaderProperty(_Blur, "Blur Strength");
+						me.ShaderProperty(_Refraction, "Refraction");
+					});
+				}
+			});
 			MGUI.Space10();
 
 			MGUI.BoldLabel("RAIN");
@@ -105,47 +112,51 @@ public class GlassEditor : ShaderGUI {
 			MGUI.PropertyGroup(()=>{
 				me.ShaderProperty(_RainMode, "Mode");
 				if (_RainMode.floatValue == 0){
-					me.ShaderProperty(_Strength, "Strength");
-					me.ShaderProperty(_Speed, "Speed");
-					me.ShaderProperty(_XScale, "X Scale");
-					me.ShaderProperty(_YScale, "Y Scale");
-					me.ShaderProperty(_RainBias, "Mip Bias");
-					me.ShaderProperty(_DynamicDroplets, "Dynamic Droplets");
+					RainDroplets(me);
 				}
-				else {
-					me.ShaderProperty(_RippleStrength, "Strength");
-					me.ShaderProperty(_RippleSpeed, "Speed");
-					me.ShaderProperty(_RippleScale, "Scale");
-					me.ShaderProperty(_RippleDensity, "Density");
-					me.ShaderProperty(_RippleSize, "Size");
+				else if (_RainMode.floatValue == 1){
+					RainRipples(me);
 				}
-				bool hasRainMask = _RainMask.textureValue;
-				MGUI.Space4();
-				me.TexturePropertySingleLine(Tips.maskText, _RainMask, _RainMaskChannel);
-				if (hasRainMask){
-					MGUI.TextureSO(me, _RainMask);
+				else if (_RainMode.floatValue == 2){
+					MGUI.BoldLabel("Droplets");
+					RainDroplets(me);
+					MGUI.BoldLabel("Ripples");
+					RainRipples(me);
+					MGUI.BoldLabel("Both");
+					RainBoth(me);
 				}
+				MGUI.SpaceN2();
 			});
 			MGUI.ToggleGroupEnd();
 			MGUI.Space10();
 
 			MGUI.BoldLabel("RENDER SETTINGS");
 			MGUI.PropertyGroup(()=>{
-				me.ShaderProperty(_ReflectionsToggle, "Reflections");
-				me.ShaderProperty(_SpecularToggle, "Specular Highlights");
-				me.ShaderProperty(_LitBaseColor, "Lit Base Color");
-			});
-			MGUI.PropertyGroup(()=>{
-				MGUI.SpaceN1();
-				_QueueOffset.floatValue = (int)_QueueOffset.floatValue;
-				MGUI.DummyProperty("Render Queue:", mat.renderQueue.ToString());
-				me.ShaderProperty(_QueueOffset, Tips.queueOffset);
-				me.ShaderProperty(_Culling, "Culling Mode");
-				me.ShaderProperty(_SamplingMode, "Sampling Mode");
-				/// EditorGUI.BeginChangeCheck();
-				me.ShaderProperty(_BlendMode, "Transparency");
-				// if (EditorGUI.EndChangeCheck())
-				// 	SetBlendMode(mat);
+				MGUI.PropertyGroup(()=>{
+					me.ShaderProperty(_ReflectionsToggle, "Reflections");
+					me.ShaderProperty(_SpecularToggle, "Specular Highlights");
+					me.ShaderProperty(_LitBaseColor, "Lit Base Color");
+				});
+				MGUI.PropertyGroup(()=>{
+					MGUI.SpaceN1();
+					_QueueOffset.floatValue = (int)_QueueOffset.floatValue;
+					MGUI.DummyProperty("Render Queue:", mat.renderQueue.ToString());
+					me.ShaderProperty(_QueueOffset, Tips.queueOffset);
+					me.ShaderProperty(_Culling, "Culling Mode");
+					me.ShaderProperty(_SamplingMode, "Sampling Mode");
+					/// EditorGUI.BeginChangeCheck();
+					me.ShaderProperty(_BlendMode, "Transparency");
+					// if (EditorGUI.EndChangeCheck())
+					// 	SetBlendMode(mat);
+				});
+				MGUI.PropertyGroup(()=>{
+					me.ShaderProperty(_TexCoordSpace, "Texture Coordinate Space");
+					if (_TexCoordSpace.floatValue == 1f){
+						me.ShaderProperty(_TexCoordSpaceSwizzle, "Swizzle");
+					}
+					me.ShaderProperty(_GlobalTexCoordScale, "Texture Coordinate Scale");
+				});
+				MGUI.SpaceN2();
 			});
 			MGUI.ToggleGroupEnd();
 		}
@@ -157,10 +168,50 @@ public class GlassEditor : ShaderGUI {
 		MGUI.DoFooter(versionLabel);
     }
 
+	void RainDroplets(MaterialEditor me){
+		
+		MGUI.PropertyGroup(()=>{
+			if (_RainMode.floatValue != 2){
+				me.TexturePropertySingleLine(Tips.maskText, _RainMask, _RainMaskChannel);
+				MGUI.TextureSO(me, _RainMask, _RainMask.textureValue);
+			}
+			me.ShaderProperty(_Strength, "Strength");
+			me.ShaderProperty(_Speed, "Speed");
+			me.ShaderProperty(_XScale, "X Scale");
+			me.ShaderProperty(_YScale, "Y Scale");
+			me.ShaderProperty(_RainBias, "Mip Bias");
+			me.ShaderProperty(_DynamicDroplets, "Dynamic Droplets");
+		});
+	}
+
+	void RainRipples(MaterialEditor me){
+		MGUI.PropertyGroup(()=>{
+			if (_RainMode.floatValue != 2){
+				me.TexturePropertySingleLine(Tips.maskText, _RainMask, _RainMaskChannel);
+				MGUI.TextureSO(me, _RainMask, _RainMask.textureValue);
+			}
+			me.ShaderProperty(_RippleStrength, "Strength");
+			me.ShaderProperty(_RippleSpeed, "Speed");
+			me.ShaderProperty(_RippleScale, "Scale");
+			me.ShaderProperty(_RippleDensity, "Density");
+			me.ShaderProperty(_RippleSize, "Size");
+		});
+	}
+
+	void RainBoth(MaterialEditor me){
+		MGUI.PropertyGroup(()=>{
+			me.TexturePropertySingleLine(Tips.maskText, _RainMask, _RainMaskChannel);
+			MGUI.TextureSO(me, _RainMask, _RainMask.textureValue);
+			me.ShaderProperty(_RainThreshold, "Angle Threshold");
+			me.ShaderProperty(_RainThresholdSize, "Threshold Blend");
+		});
+	}
+
 	void SetKeywords(Material mat){
 		MGUI.SetKeyword(mat, "_STOCHASTIC_SAMPLING_ON", mat.GetInt("_SamplingMode") == 1);
 		MGUI.SetKeyword(mat, "_NORMALMAP_ON", mat.GetTexture("_NormalMap"));
 		MGUI.SetKeyword(mat, "_RAINMODE_RIPPLE", mat.GetInt("_RainMode") == 1);
+		MGUI.SetKeyword(mat, "_RAINMODE_AUTO", mat.GetInt("_RainMode") == 2);
 	}
 
 	void SetBlendMode(Material mat){

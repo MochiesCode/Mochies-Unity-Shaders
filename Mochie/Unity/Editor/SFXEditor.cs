@@ -55,7 +55,7 @@ public class SFXEditor : ShaderGUI {
 
     // Texture file names
 	string header = "SFXHeader_Pro";
-	string versionLabel = "v1.17";
+	string versionLabel = "v1.18";
 	
     // Commonly used strings
     string modeLabel = "Mode";
@@ -104,6 +104,7 @@ public class SFXEditor : ShaderGUI {
 	MaterialProperty _SaturationG = null;
 	MaterialProperty _ClampToggle = null;
 	MaterialProperty _ClampMax = null;
+	MaterialProperty _HueMode = null;
 
     // Shake
     MaterialProperty _ShakeModel = null;
@@ -171,6 +172,9 @@ public class SFXEditor : ShaderGUI {
     MaterialProperty _FogP2O = null;
     MaterialProperty _FogFade = null; 
     MaterialProperty _FogSafeOpacity = null;
+	// MaterialProperty _FogHeightMin = null;
+	// MaterialProperty _FogHeightMax = null;
+	// MaterialProperty _HeightFalloff = null;
 
     // Zoom
     MaterialProperty _Zoom = null;
@@ -523,6 +527,7 @@ public class SFXEditor : ShaderGUI {
 							me.ShaderProperty(_Hue, "Hue");
 						else
 							me.ShaderProperty(_AutoShiftSpeed, "Shift Speed");
+						me.ShaderProperty(_HueMode, "Hue Mode");
 						me.ShaderProperty(_AutoShift, "Auto Hue Shift");
 					});
 					MGUI.PropertyGroup(()=>{
@@ -804,6 +809,13 @@ public class SFXEditor : ShaderGUI {
 									me.ShaderProperty(_FogSafeOpacity, "Opacity");
 								});
 							}
+							// me.ShaderProperty(_HeightFalloff, "Height Falloff");
+							// if (_HeightFalloff.floatValue == 1){
+							// 	MGUI.PropertyGroupLayer(()=>{
+							// 		me.ShaderProperty(_FogHeightMin, "Min Height");
+							// 		me.ShaderProperty(_FogHeightMax, "Max Height");
+							// 	});
+							// }
 						});
 					}
 				};

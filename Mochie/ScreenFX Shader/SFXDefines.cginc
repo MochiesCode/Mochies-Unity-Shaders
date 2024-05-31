@@ -19,7 +19,7 @@ float _MinRange, _MaxRange;
 float _Opacity;
 
 // Color Filtering
-int _FilterModel, _AutoShift, _ColorUseGlobal, _NoiseUseGlobal, _RoundingToggle, _ClampToggle;
+int _FilterModel, _AutoShift, _ColorUseGlobal, _NoiseUseGlobal, _RoundingToggle, _ClampToggle, _HueMode;
 float4 _Color;
 float3 _RGB, _NoiseRGB;
 float _FilterStrength, _Noise, _NoiseStrength;
@@ -121,12 +121,13 @@ float depth;
 	float _AudioLinkSSTMin, _AudioLinkSSTMax;
 
 	// Fog
-	int _Fog, _FogSafeZone, _FogUseGlobal;
+	int _Fog, _FogSafeZone, _FogUseGlobal, _HeightFalloff;
 	float4 _FogColor;
 	float _FogMinRange, _FogMaxRange;
 	float _FogRadius, _FogFade;
 	float _FogSafeRadius, _FogSafeMaxRange;
 	float _FogP2O, _FogSafeOpacity;
+	float _FogHeightMin, _FogHeightMax;
 
 	// Screenspace Texture
 	int _SST, _SSTBlend, _SSTUseGlobal, _ManualScrub, _ScrubPos;

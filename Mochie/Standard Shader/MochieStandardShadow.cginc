@@ -81,6 +81,8 @@ int _UVAlphaMaskSwizzle;
 int _UVRainMaskSwizzle;
 int _UVRimMaskSwizzle;
 int _UVDetailMaskSwizzle;
+int _TriplanarSpace;
+int _TriplanarSpaceDetail;
 
 Texture2D _PackedMap;
 int _RoughnessMult, _MetallicMult, _OcclusionMult, _HeightMult;
@@ -230,7 +232,10 @@ SampleData SampleDataSetup(UNITY_POSITION(vpos)
 		i.localPos = vpos;
 	#endif
 
-	sd.localPos = i.localPos;
+    if (_TriplanarSpace == 1)
+	    sd.localPos = mul(unity_ObjectToWorld, i.localPos);
+	else
+        sd.localPos = i.localPos;
 	sd.normal = i.normal;
 	sd.scaleTransform = _MainTex_ST;
 	return sd;

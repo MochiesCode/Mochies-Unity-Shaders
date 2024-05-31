@@ -32,12 +32,15 @@ namespace Mochie {
         enum SampleMode {Default, Stochastic, Supersampled, Triplanar}
         enum ColorChannel {Red, Green, Blue, Alpha}
         enum ToggleOnOff {Off, On}
+        enum HueMode {HSV, Oklab}
+
         Workflow workflowMode;
         SampleMode sampleMode;
         ColorChannel metallicChannel = ColorChannel.Blue;
         ColorChannel roughnessChannel = ColorChannel.Green;
         ColorChannel occlusionChannel = ColorChannel.Red;
         ColorChannel heightChannel = ColorChannel.Alpha;
+        HueMode hueMode = HueMode.HSV;
         ToggleOnOff smoothnessToggle;
 
         // Filtering settings
@@ -52,8 +55,8 @@ namespace Mochie {
         static void Init(){
             GlobalStandardSettings window = (GlobalStandardSettings)EditorWindow.GetWindow(typeof(GlobalStandardSettings));
             window.titleContent = new GUIContent("Standard Shader Settings");
-            window.minSize = new Vector2(300, 670);
-            window.maxSize = new Vector2(300, 670);
+            window.minSize = new Vector2(300, 692);
+            window.maxSize = new Vector2(300, 692);
             window.Show();
         }
 
@@ -128,6 +131,7 @@ namespace Mochie {
                 filteringToggle = EditorGUILayout.Toggle("Enable", filteringToggle);
                 MGUI.ToggleGroup(!filteringToggle);
                 filteringHue = EditorGUILayout.Slider("Hue", filteringHue, 0f, 1f);
+                hueMode = (HueMode)EditorGUILayout.EnumPopup("Hue Mode", hueMode);
                 filteringSat = EditorGUILayout.FloatField("Saturation", filteringSat);
                 filteringBright = EditorGUILayout.FloatField("Brightness", filteringBright);
                 filteringCont = EditorGUILayout.FloatField("Contrast", filteringCont);
@@ -223,6 +227,7 @@ namespace Mochie {
                 m.SetInt("_Filtering", filteringToggle ? 1 : 0);
                 if (filteringToggle){
                     m.SetFloat("_HuePost", filteringHue);
+                    m.SetFloat("_HueMode", (int)hueMode);
                     m.SetFloat("_SaturationPost", filteringSat);
                     m.SetFloat("_BrightnessPost", filteringBright);
                     m.SetFloat("_ContrastPost", filteringCont);

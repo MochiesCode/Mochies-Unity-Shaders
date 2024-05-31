@@ -18,11 +18,12 @@ SamplerState 	sampler_DetailMetallicMap;
 
 float4      	_MainTex_ST;
 float4      	_DetailAlbedoMap_ST;
+float3			worldSpacePos;
 
 #include "../Standard Shader/MochieStandardKeyDefines.cginc"
 
 struct SampleData {
-	float4 localPos;
+	float3 localPos;
 	float3 objPos;
 	float3 depthNormal;
 	float3 worldPixelPos;

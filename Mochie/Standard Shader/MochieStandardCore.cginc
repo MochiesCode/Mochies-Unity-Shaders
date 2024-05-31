@@ -530,7 +530,10 @@ VertexOutputForwardBase vertForwardBase (VertexInput v)
 
 SampleData SampleDataSetup(VertexOutputForwardBase i){
 	SampleData sd = (SampleData)0;
-	sd.localPos = i.localPos;
+    if (_TriplanarSpace == 1)
+	    sd.localPos = mul(unity_ObjectToWorld, i.localPos);
+	else
+        sd.localPos = i.localPos;
 	sd.normal = i.tangentToWorldAndPackedData[2].xyz;
 	sd.scaleTransform = _MainTex_ST;
 	return sd;
@@ -809,7 +812,7 @@ VertexOutputForwardAdd vertForwardAdd (VertexInput v)
     float4 posWorld = mul(unity_ObjectToWorld, v.vertex);
     o.pos = UnityObjectToClipPos(v.vertex);
 	o.localPos = v.vertex;
-
+    o.localPos = posWorld;
     o.rawUV.xy = v.uv0;
     o.rawUV.zw = v.uv1;
     TexCoords(v, o.tex, o.tex1, o.tex2, o.tex3, o.tex4, posWorld);
@@ -850,8 +853,11 @@ VertexOutputForwardAdd vertForwardAdd (VertexInput v)
 
 SampleData SampleDataSetup(VertexOutputForwardAdd i){
 	SampleData sd = (SampleData)0;
-	sd.localPos = i.localPos;
-	sd.normal = i.tangentToWorldAndLightDir[2].xyz;
+    if (_TriplanarSpace == 1)
+	    sd.localPos = mul(unity_ObjectToWorld, i.localPos);
+	else
+        sd.localPos = i.localPos;
+    sd.normal = i.tangentToWorldAndLightDir[2].xyz;
 	sd.scaleTransform = _MainTex_ST;
 	return sd;
 }

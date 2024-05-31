@@ -21,6 +21,8 @@ Shader "Mochie/Standard" {
 
 		[Enum(Standard,0, Packed,1)]_Workflow("Workflow", Int) = 0
 		[Enum(Default,0, Stochastic,1, Supersampled,2, Triplanar,3)]_SamplingMode("Sampling Mode", Int) = 0
+		[Enum(Local,0, World,1)]_TriplanarSpace("Triplanar Space", Int) = 0
+		[Enum(Local,0, World,1)]_TriplanarSpaceDetail("Triplanar Space Detail", Int) = 0
 		_TriplanarFalloff("Triplanar Falloff", Float) = 1
 		_PackedMap("Packed Texture", 2D) = "white" {}
 		[ToggleUI]_RoughnessMult("Roughness Multiplier", Int) = 0
@@ -117,6 +119,7 @@ Shader "Mochie/Standard" {
 		[Enum(XY,0, XZ,1, YZ,2)]_UVDetailMaskSwizzle("Swizzle", Int) = 0
 
 		[ToggleUI]_Filtering("Filtering", Int) = 0
+		[Enum(HSV,0, Oklab,1)]_HueMode("Hue Mode", Int) = 0
 		_Hue("Hue", Range(0,1)) = 0
 		_Contrast("Contrast", Float) = 1
 		_Saturation("Saturation", Float) = 1

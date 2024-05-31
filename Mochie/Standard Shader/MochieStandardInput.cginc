@@ -162,6 +162,7 @@ int _UseSmoothness;
 int _DetailUseSmoothness;
 int _ReflVertexColor;
 int _GSAA;
+int _HueMode;
 
 float _LTCGIStrength;
 float _AreaLitStrength;
@@ -182,6 +183,8 @@ float _RimStr;
 int _RimBlending;
 int _RimToggle;
 int _UVRimMask;
+int _TriplanarSpace;
+int _TriplanarSpaceDetail;
 
 Texture2D _RNM0, _RNM1, _RNM2;
 SamplerState sampler_RNM0, sampler_RNM1, sampler_RNM2;
@@ -376,8 +379,12 @@ void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1, ino
 
 half3 Filtering(float3 col, float hue, float saturation, float brightness, float contrast, float aces){
 	if (_Filtering == 1){
-		if (hue > 0 && hue < 1)
-			col = HSVShift(col, hue, 0, 0);
+		if (hue > 0 && hue < 1){
+			if (_HueMode == 0)
+				col = HueShift(col, hue);
+			else
+				col = HueShiftOklab(col, hue);
+		}
 		col = lerp(dot(col, float3(0.3,0.59,0.11)), col, saturation);
 		col = GetContrast(col, contrast);
 		col = lerp(col, ACES(col), aces);

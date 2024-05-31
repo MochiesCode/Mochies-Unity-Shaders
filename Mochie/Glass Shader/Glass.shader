@@ -27,12 +27,14 @@
 		_XScale("X Scale", Float) = 1.5
         _YScale("Y Scale", Float) = 1.5
 		_Strength("Normal Strength", Float) = 0.3
-		_RippleScale("Ripple Scale", float) = 10
-		_RippleSpeed("Ripple Speed", float) = 10
-		_RippleStrength("Ripple Strength", float) = 1
+		_RippleScale("Ripple Scale", Float) = 10
+		_RippleSpeed("Ripple Speed", Float) = 10
+		_RippleStrength("Ripple Strength", Float) = 1
         _RippleSize("Ripple Size", Range(2,10)) = 6
         _RippleDensity("Ripple Density", Float) = 1.57079632679
-        [Enum(Droplets,0, Ripples,1)]_RainMode("Mode", Int) = 0
+        _RainThreshold("Threshold", Range(0,1)) = 0.01
+        _RainThresholdSize("Threshold Size", Range(0,1)) = 0.01
+        [Enum(Droplets,0, Ripples,1, Automatic,2)]_RainMode("Mode", Int) = 0
         _RainMask("Mask", 2D) = "white" {}
         [Enum(Red,0, Green,1, Blue,2, Alpha,0)]_RainMaskChannel("Channel", Int) = 0
         _DropletMask("Rain Droplet Mask", 2D) = "white" {}
@@ -46,6 +48,9 @@
         [Enum(Default,0, Stochastic,1)]_SamplingMode("Sampling Mode", Int) = 0
 		[Enum(UnityEngine.Rendering.CullMode)]_Culling("Culling", Int) = 2
         [Enum(Grabpass,0, Premultiplied,1, Opaque,2)]_BlendMode("Transparency", Int) = 0
+        [Enum(UV,0, World,1)]_TexCoordSpace("Texture Coordinate Space", Int) = 0
+		[Enum(XY,0, XZ,1, YZ,2)]_TexCoordSpaceSwizzle("Swizzle", Int) = 0
+        _GlobalTexCoordScale("Global Scale", Float) = 1
         [HideInInspector]_SrcBlend("Src Blend", Int) = 1
         [HideInInspector]_DstBlend("Dst Blend", Int) = 0
         [HideInInspector]_ZWrite("Z Write", Int) = 0
@@ -83,7 +88,7 @@
             #pragma shader_feature_local _LIT_BASECOLOR_ON
             #pragma shader_feature_local _STOCHASTIC_SAMPLING_ON
             #pragma shader_feature_local _NORMALMAP_ON
-            #pragma shader_feature_local _RAINMODE_RIPPLE
+            #pragma shader_feature_local _ _RAINMODE_RIPPLE _RAINMODE_AUTO 
             #pragma target 5.0
 
             #include "GlassDefines.cginc"
@@ -93,7 +98,7 @@
         }
 
         Pass {
-            Name "ForwardBase"
+            Name "ForwardAdd"
             Tags {"LightMode"="ForwardAdd"}
             Blend One One
             CGPROGRAM
@@ -106,7 +111,7 @@
             #pragma shader_feature_local _LIT_BASECOLOR_ON
             #pragma shader_feature_local _STOCHASTIC_SAMPLING_ON
             #pragma shader_feature_local _NORMALMAP_ON
-            #pragma shader_feature_local _RAINMODE_RIPPLE
+            #pragma shader_feature_local _ _RAINMODE_RIPPLE _RAINMODE_AUTO 
             #pragma target 5.0
 
             #include "GlassDefines.cginc"

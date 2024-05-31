@@ -166,6 +166,8 @@ Material:
     - _Flavor: 0
     - _Fog: 0
     - _FogFade: 1
+    - _FogHeightMax: 4
+    - _FogHeightMin: 2
     - _FogMaxRange: 20
     - _FogMinRange: 15
     - _FogP2O: 0
@@ -177,7 +179,9 @@ Material:
     - _FogUseGlobal: 0
     - _HDR: 0
     - _Heat: 0
+    - _HeightFalloff: 0
     - _Hue: 0
+    - _HueMode: 0
     - _Invert: 0
     - _InvertB: 0
     - _InvertG: 0

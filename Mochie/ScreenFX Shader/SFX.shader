@@ -23,6 +23,7 @@ Shader "Mochie/Screen FX" {
 		_RGB("", Vector) = (1,1,1,0)
 		_AutoShiftSpeed("", Float) = 0.25
 		_Hue("", Range(0,1)) = 0
+		[Enum(HSV,0, Oklab,1)]_HueMode("", Int) = 0
 		_Saturation("", Float) = 1
 		_SaturationR("", Float) = 1
 		_SaturationG("", Float) = 1
@@ -106,7 +107,10 @@ Shader "Mochie/Screen FX" {
 		_FogSafeRadius("", Float) = 4
 		_FogSafeMaxRange("", Float) = 6
 		_FogSafeOpacity("", Range(0,1)) = 1
-
+		[ToggleUI]_HeightFalloff("", Int) = 0
+		_FogHeightMin("", Float) = 2
+		_FogHeightMax("", Float) = 4
+		
 		// Zoom
 		[Enum(Off,0, Basic,1, RGB,2)]_Zoom("", Int) = 0
 		_ZoomStr("", Range(0,1)) = 0
