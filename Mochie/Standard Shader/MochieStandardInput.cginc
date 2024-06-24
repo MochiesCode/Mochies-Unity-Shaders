@@ -312,7 +312,7 @@ void InitializeAudioLink(inout audioLinkData al, float time){
 
 float2 SelectUVSet(VertexInput v, int selection, int swizzle, float3 worldPos){
 	if (selection < 5){
-		float2 uvs[] = {v.uv0, v.uv1, v.uv2, v.uv3, v.uv4};
+		float2 uvs[] = {v.uv0, v.uv1, v.uv2, v.uv3, v.uv4, v.uv1 * unity_LightmapST.xy + unity_LightmapST.zw};
 		return uvs[selection];
 	}
 	else {

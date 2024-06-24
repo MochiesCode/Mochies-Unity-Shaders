@@ -234,7 +234,7 @@ Shader "Mochie/Standard" {
 		[ToggleOff]_OpaqueLights("Opaque Lights", Float) = 1.0
 
 		_AreaLitOcclusion("Occlusion", 2D) = "white" {}
-		[Enum(UV0,0,UV1,1, UV2,2, UV3,3, UV4,4)]_OcclusionUVSet("UV Set for occlusion map", Float) = 0
+		[Enum(UV0,0,UV1,1, UV2,2, UV3,3, UV4,4, UV1_LightmapST,5)]_OcclusionUVSet("UV Set for occlusion map", Float) = 0
 
         [HideInInspector]_SrcBlend("__src", Float) = 1.0
         [HideInInspector]_DstBlend("__dst", Float) = 0.0
