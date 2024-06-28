@@ -148,6 +148,8 @@ internal class USEditor : ShaderGUI {
 			"Outline 1",
 			// "Visualizers",
 			"Oscilloscope",
+			"Primary Matcap 0",
+			"Secondary Matcap 0",
 			"DEBUG"
 	}, 0);
 
@@ -161,7 +163,7 @@ internal class USEditor : ShaderGUI {
 
 	static readonly string unityFolderPath = "Assets/Mochie/Unity";
 	string header = "Header_Pro";
-	string versionLabel = "v1.30.2";
+	string versionLabel = "v1.30.3";
 	// β
 	
 	MaterialProperty _RenderMode = null; 
@@ -977,9 +979,9 @@ internal class USEditor : ShaderGUI {
 								MGUI.MaskProperty(mat, me, specMask, _SpecularMask, _SpecularMaskScroll);
 								bool interpMask = Foldouts.DoMaskFoldout(foldouts, mat, me, Tips.anisoBlendLabel, "Specular Blend Mask");
 								MGUI.MaskProperty(mat, me, interpMask, _InterpMask, _InterpMaskScroll);
-								bool matcapMask = Foldouts.DoMaskFoldout(foldouts, mat, me, Tips.matcapPrimaryMask, "Primary Matcap Mask");
+								bool matcapMask = Foldouts.DoMaskFoldout(foldouts, mat, me, Tips.matcapPrimaryMask, "Primary Matcap 0");
 								MGUI.MaskProperty(mat, me, matcapMask, _MatcapMask, _MatcapMaskScroll);
-								bool matcapBlendMask = Foldouts.DoMaskFoldout(foldouts, mat, me, Tips.matcapSecondaryMask, "Secondary Matcap Mask");
+								bool matcapBlendMask = Foldouts.DoMaskFoldout(foldouts, mat, me, Tips.matcapSecondaryMask, "Secondary Matcap 0");
 								MGUI.MaskProperty(mat, me, matcapBlendMask, _MatcapBlendMask, _MatcapBlendMaskScroll);
 								bool shadowMask = Foldouts.DoMaskFoldout(foldouts, mat, me, Tips.shadowLabel, "Shadow Mask");
 								MGUI.MaskProperty(mat, me, shadowMask, _ShadowMask, _ShadowMaskScroll);

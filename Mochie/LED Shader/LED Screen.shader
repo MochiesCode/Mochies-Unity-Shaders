@@ -70,9 +70,11 @@ Shader "Mochie/LED Screen" {
 		}
 		
 		void surf (Input IN, inout SurfaceOutputStandard o) {
-			if (_IsAVProInput == 1){
-				IN.uv_MainTex.y = 1-IN.uv_MainTex.y;
-			}
+			#if !defined(SHADER_API_MOBILE)
+				if (_IsAVProInput == 1){
+					IN.uv_MainTex.y = 1-IN.uv_MainTex.y;
+				}
+			#endif
 			float3 worldNormal = WorldNormalVector(IN, IN.worldNormal);
 			float3 viewDir = IN.viewDir;
 			float2 uv = IN.uv_MainTex + (_Time.y * _UVScroll * 0.1);

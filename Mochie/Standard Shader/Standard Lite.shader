@@ -7,7 +7,7 @@
 // Does not support deferred rendering
 // Does not meet the same instruction count restrictions for older hardware as normal standard
 
-Shader "Mochie/Standard" {
+Shader "Mochie/Standard Lite" {
     Properties {
 
 		[Enum(Opaque,0, Cutout,1, Fade,2, Transparent,3)]_BlendMode("Blending Mode", Int) = 0
@@ -287,24 +287,17 @@ Shader "Mochie/Standard" {
             #pragma fragment fragBase
 			#define MOCHIE_STANDARD
 			#pragma shader_feature_local _WORKFLOW_PACKED_ON
-			#pragma shader_feature_local _DETAIL_WORKFLOW_PACKED_ON
             #pragma shader_feature_local _NORMALMAP
             #pragma shader_feature_local _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
+			#pragma shader_feature_local ___ _DETAIL_MULX2
             #pragma shader_feature_local _EMISSION
             #pragma shader_feature_local _METALLICGLOSSMAP
             #pragma shader_feature_local _SPECGLOSSMAP
-            #pragma shader_feature_local ___ _DETAIL_MULX2
             #pragma shader_feature_local _ _SPECULARHIGHLIGHTS_OFF
             #pragma shader_feature_local _ _GLOSSYREFLECTIONS_OFF
             #pragma shader_feature_local _PARALLAXMAP
-			#pragma shader_feature_local _SCREENSPACE_REFLECTIONS_ON
 			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON
-			#pragma shader_feature_local _ _DETAIL_STOCHASTIC_ON _DETAIL_TSS_ON _DETAIL_TRIPLANAR_ON
-			#pragma shader_feature_local _DETAIL_ROUGH_ON
-			#pragma shader_feature_local _DETAIL_AO_ON
-			#pragma shader_feature_local _DETAIL_METALLIC_ON
 			#pragma shader_feature_local _AUDIOLINK_ON
-			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
 			#pragma shader_feature_local _ALPHAMASK_ON
 			#pragma shader_feature_local _BICUBIC_SAMPLING_ON
 			#pragma shader_feature_local LTCGI
@@ -315,7 +308,6 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local BAKERY_SHNONLINEAR
 			#pragma shader_feature_local _OPAQUELIGHTS_OFF
 			#pragma shader_feature_local _AREALIT_ON
-			#pragma shader_feature_local _MIRROR_ON
 			// #pragma multi_compile _ LOD_FADE_CROSSFADE
 			#pragma multi_compile_fog
             #pragma multi_compile_fwdbase
@@ -337,20 +329,14 @@ Shader "Mochie/Standard" {
             #pragma fragment fragAdd
 			#define MOCHIE_STANDARD
 			#pragma shader_feature_local _WORKFLOW_PACKED_ON
-			#pragma shader_feature_local _DETAIL_WORKFLOW_PACKED_ON
             #pragma shader_feature_local _NORMALMAP
             #pragma shader_feature_local _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
+			#pragma shader_feature_local ___ _DETAIL_MULX2
             #pragma shader_feature_local _METALLICGLOSSMAP
             #pragma shader_feature_local _SPECGLOSSMAP
             #pragma shader_feature_local _ _SPECULARHIGHLIGHTS_OFF
-            #pragma shader_feature_local ___ _DETAIL_MULX2
             #pragma shader_feature_local _PARALLAXMAP
 			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON
-			#pragma shader_feature_local _ _DETAIL_STOCHASTIC_ON _DETAIL_TSS_ON _DETAIL_TRIPLANAR_ON
-			#pragma shader_feature_local _DETAIL_ROUGH_ON
-			#pragma shader_feature_local _DETAIL_AO_ON
-			#pragma shader_feature_local _DETAIL_METALLIC_ON
-			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
 			#pragma shader_feature_local _ALPHAMASK_ON
 			// #pragma multi_compile _ LOD_FADE_CROSSFADE
 			#pragma multi_compile_fog
@@ -371,13 +357,10 @@ Shader "Mochie/Standard" {
             #pragma fragment fragShadowCaster
 			#define MOCHIE_STANDARD
 			#pragma shader_feature_local _WORKFLOW_PACKED_ON
-			#pragma shader_feature_local _DETAIL_WORKFLOW_PACKED_ON
             #pragma shader_feature_local _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
             #pragma shader_feature_local _METALLICGLOSSMAP
-			#pragma shader_feature_local _DETAIL_METALLIC_ON
             #pragma shader_feature_local _PARALLAXMAP
 			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON
-			#pragma shader_feature_local _ _DETAIL_STOCHASTIC_ON _DETAIL_TSS_ON _DETAIL_TRIPLANAR_ON
 			#pragma shader_feature_local _ALPHAMASK_ON
 			// #pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma multi_compile_shadowcaster
@@ -397,20 +380,14 @@ Shader "Mochie/Standard" {
             #pragma fragment frag_meta
 			#define MOCHIE_STANDARD
 			#pragma shader_feature_local _WORKFLOW_PACKED_ON
-			#pragma shader_feature_local _DETAIL_WORKFLOW_PACKED_ON
             #pragma shader_feature_local _EMISSION
             #pragma shader_feature_local _METALLICGLOSSMAP
             #pragma shader_feature_local _SPECGLOSSMAP
-            #pragma shader_feature_local ___ _DETAIL_MULX2
+			#pragma shader_feature_local ___ _DETAIL_MULX2
 			#pragma shader_feature_local _ _STOCHASTIC_ON _TSS_ON _TRIPLANAR_ON
-			#pragma shader_feature_local _ _DETAIL_STOCHASTIC_ON _DETAIL_TSS_ON _DETAIL_TRIPLANAR_ON
-			#pragma shader_feature_local _DETAIL_ROUGH_ON
-			#pragma shader_feature_local _DETAIL_AO_ON
-			#pragma shader_feature_local _DETAIL_METALLIC_ON
 			#pragma shader_feature_local _ALPHAMASK_ON
 			#pragma shader_feature_local _OPAQUELIGHTS_OFF
 			#pragma shader_feature_local _AREALIT_ON
-			#pragma shader_feature_local _DETAIL_SAMPLEMODE_ON
 			#pragma shader_feature_local _AUDIOLINK_ON
 			#pragma shader_feature_local _AUDIOLINK_META_ON
             #pragma shader_feature EDITOR_VISUALIZATION

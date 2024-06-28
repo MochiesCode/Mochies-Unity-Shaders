@@ -157,12 +157,13 @@ float4 frag (g2f i, bool frontFace : SV_IsFrontFace) : SV_Target {
 	#endif
 
 	float4 diffuse = albedo;
+	float3 shadowCol = 1;
 	
 	#if SHADING_ENABLED
 		#if defined(POINT) || defined(SPOT) || defined(POINT_COOKIE)
-			float3 shadowCol = GetAddRamp(i, l, m, shadows, atten);
+			shadowCol = GetAddRamp(i, l, m, shadows, atten);
 		#else
-			float3 shadowCol = GetForwardRamp(i, l, m, atten);
+			shadowCol = GetForwardRamp(i, l, m, atten);
 		#endif
 		diffuse.rgb = GetWorkflow(i, l, m, albedo.rgb);
 		roughness = GetRoughness(smoothness);
@@ -445,10 +446,11 @@ float4 frag(g2f i) : SV_Target {
 	#endif
 
 	float4 diffuse = albedo;
+	float3 shadowCol = 1;
 
 	if (_ApplyOutlineLighting == 1){
 		#if SHADING_ENABLED
-			float3 shadowCol = GetForwardRamp(i, l, m, atten);
+			shadowCol = GetForwardRamp(i, l, m, atten);
 			diffuse.rgb = GetMochieBRDF(i, l, m, diffuse, albedo, specularTint, 0, omr, smoothness, shadowCol);
 		#else
 			diffuse = GetDiffuse(l, albedo, 1);
@@ -472,13 +474,9 @@ float4 frag(g2f i) : SV_Target {
 		if (_ApplyOutlineEmiss == 1){
 			interpolator = 0;
 			if (_ReactToggle == 1){
-				if (_CrossMode == 1){
-					float2 threshold = saturate(float2(_ReactThresh-_Crossfade, _ReactThresh+_Crossfade));
-					interpolator = smootherstep(threshold.x, threshold.y, l.worldBrightness); 
-				}
-				else {
-					interpolator = l.worldBrightness;
-				}
+				float2 threshold = saturate(float2(_ReactThresh-_Crossfade, _ReactThresh+_Crossfade));
+				float3 interp = lerp(l.worldBrightness, l.worldBrightness * shadowCol, _UseShadowsForLREmiss);
+				interpolator = lerp(interp, smootherstep(threshold.x, threshold.y, interp), _CrossMode);
 			}
 			col.rgb = lerp(emiss, diffuse.rgb, interpolator);
 		}

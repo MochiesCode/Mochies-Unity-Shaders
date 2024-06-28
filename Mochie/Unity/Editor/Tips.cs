@@ -66,7 +66,7 @@ namespace Mochie {
 		public static GUIContent queueOffset = new GUIContent("Render Queue Offset", "Offsets the render queue +/- this value.");
 		public static GUIContent useFresnel = new GUIContent("Fresnel", "A rim light effect based on the lighting of the scene");
 		public static GUIContent reflVertexColor = new GUIContent("Vertex Color Reflections", "Multiplies reflection color with vertex color. A good use for this is painting black vertex colors on areas of surfaces you don't want to have visible reflections.");
-		public static GUIContent reflShadows = new GUIContent("Specular Occlusion", "Uses shadows from either realtime directional lights or baked lightmaps to occlude reflections");
+		public static GUIContent reflShadows = new GUIContent("Specular Occlusion", "Uses shadows from either realtime directional lights or baked lightmaps to occlude reflections and specular highlights.");
 		public static GUIContent gsaa = new GUIContent("Specular Antialiasing", "Increases the roughness on rounded corners of normals to hide sparkly artifacts from specular lighting");
 		public static GUIContent bicubicLightmap = new GUIContent("Bicubic Lightmap Sampling", "Samples lightmaps using bicubic filtering to hide aliasing on shadows. Provides a smooth gradient on otherwise low resolution shadows.");
 		public static GUIContent bakeryMode = new GUIContent("Bakery Mode", "Support for the third party lightmapping software Bakery. See Bakery documentation for further details.");
@@ -213,5 +213,9 @@ namespace Mochie {
 		public static GUIContent globalTint = new GUIContent("Global Tint", "Determines the color of the majority of effects in the shader.");
 		public static GUIContent emissionAO = new GUIContent("Emission (AO)", "Takes an ambient occlusion map and inverts it to determine emission. This is the same technique used by bungie for the effect in Destiny.");
 		public static GUIContent invertTint = new GUIContent("Invert Tint", "Uses an inverted copy of the base color texture to determine outline tint.");
+
+		// General
+		public static GUIContent specularHighlightsText = new GUIContent("Specular Highlights");
+		public static GUIContent reflectionText = new GUIContent("Reflections");
 	}
 }

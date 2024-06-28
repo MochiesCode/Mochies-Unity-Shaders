@@ -12,7 +12,6 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
-  - _BICUBIC_LIGHTMAPPING_ON
   - _CAUSTICS_VORONOI_ON
   - _DEPTHFOG_ON
   - _EDGEFADE_ON
@@ -151,9 +150,6 @@ Material:
     - _AreaLitRoughnessMult: 1
     - _AreaLitStrength: 1
     - _AreaLitToggle: 0
-    - _AudioLink: 0
-    - _AudioLinkBand: 0
-    - _AudioLinkStrength: 1
     - _BackfaceReflections: 1
     - _BaseColorDistortionStrength: 0.1
     - _BaseColorOffset: 0

@@ -285,6 +285,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 					float3 wPos = GetWorldSpacePixelPosSP(i.localPos, screenUV);
 					float2 depthUV = Rotate3D(wPos, _CausticsRotation).xz;
 					float3 caustics = 0;
+					float3 causticsShadow = 1;
 					#if CAUSTICS_VORONOI
 						_CausticsDistortion *= 0.5;
 						float3 causticsOffset = UnpackNormal(tex2Dstoch(_CausticsDistortionTex, sampler_FlowMap, (depthUV*_CausticsDistortionScale*0.1)+_Time.y*_CausticsDistortionSpeed*0.05));
@@ -309,13 +310,19 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 						float3 tex1 = MOCHIE_SAMPLE_TEX2D_SAMPLER(_CausticsTex, sampler_FlowMap, uvTex1);
 						caustics = min(tex0, tex1);
 						caustics = clamp(caustics, 0, 0.1);
+						float3 causticsShadow0 = MOCHIE_SAMPLE_TEX2D_SAMPLER(_CausticsShadow, sampler_FlowMap, uvTex0);
+						float3 causticsShadow1 = MOCHIE_SAMPLE_TEX2D_SAMPLER(_CausticsShadow, sampler_FlowMap, uvTex0);
+						causticsShadow = min(causticsShadow0, causticsShadow1);
+						causticsShadow = clamp(causticsShadow, 0.7, 0.8);
 					#elif CAUSTICS_FLIPBOOK
 						float2 causticsUV = (depthUV + uvOffset) * _CausticsScale;
 						caustics = tex2DflipbookSmooth(_CausticsTexArray, sampler_FlowMap, causticsUV * 0.35, _CausticsFlipbookSpeed);
 						caustics = smootherstep(0.15, 1, caustics);
 					#endif
 					// topFade = 1-saturate(pow(caustDepth, _CausticsSurfaceFade) * 2);
-					col.rgb += saturate(caustics * _CausticsColor * caustFade * _CausticsOpacity * surfaceTint);
+					caustics = saturate(caustics * _CausticsColor * caustFade * _CausticsOpacity * surfaceTint);
+					col.rgb *= lerp(1, causticsShadow, _CausticsShadowStrength);
+					col.rgb += caustics;
 				}
 			}
 		#endif

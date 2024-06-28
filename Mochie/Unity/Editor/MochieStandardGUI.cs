@@ -23,7 +23,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		"LTCGI"
 	}, 1);
 
-	string versionLabel = "v1.30";
+	string versionLabel = "v1.31";
 	public static string receiverText = "AreaLit Maps";
 	public static string emitterText = "AreaLit Light";
 	public static string projectorText = "AreaLit Projector";
@@ -212,6 +212,7 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty ltcgi_diffuse_off = null;
 	MaterialProperty ltcgi_spec_off = null;
 	MaterialProperty ltcgiStrength = null;
+	MaterialProperty ltcgiRoughness = null;
 	MaterialProperty _BakeryMode = null;
 	MaterialProperty _BAKERY_LMSPEC = null;
 	MaterialProperty _BAKERY_SHNONLINEAR = null;
@@ -450,6 +451,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		reflShadowAreaLit = FindProperty("_ReflShadowAreaLit", props);
 		triplanarSpace = FindProperty("_TriplanarSpace", props);
 		hueMode = FindProperty("_HueMode", props);
+		ltcgiRoughness = FindProperty("_LTCGIRoughness", props);
 	}
 
 	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props){
@@ -473,8 +475,6 @@ internal class MochieStandardGUI : ShaderGUI {
 		// Use default labelWidth
 		EditorGUIUtility.labelWidth = 0f;
 
-		bool isLite = MGUI.IsLiteVersion(material);
-
 		// Detect any changes to the material
 		EditorGUI.BeginChangeCheck();{
 			
@@ -491,50 +491,44 @@ internal class MochieStandardGUI : ShaderGUI {
 			MGUI.Space2();
 
 			// Detail properties
+			
 			MGUI.BoldLabel("Detail Textures");
 			MGUI.PropertyGroup(()=>{
-				DoDetailArea();
+				if (!MGUI.IsNewLiteVersion(material)){
+					DoDetailArea();
+				}
+				else {
+					DoDetailAreaLite();
+				}
 			});
 			MGUI.Space2();
 
-			// Emission
-			// bool emissFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "Emission");
-			// if (emissFoldout){
-			// 	DoEmissionArea(material);
-			// }
-			
-			// Reflections & Specular Highlights
-			// bool reflSpecFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "Specularity");
-			// if (reflSpecFoldout){
-				MGUI.BoldLabel("Specularity");
-				DoReflSpecArea(isLite);
-			// }
+			MGUI.BoldLabel("Specularity");
+			DoReflSpecArea(MGUI.IsNewLiteVersion(material));
 			MGUI.Space4();
 
-			if (!isLite){
-				// Rim
-				bool rimFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "Rim Light");
-				if (rimFoldout){
-					DoRimArea();
-				}
+			// Rim
+			// bool rimFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "Rim Light");
+			// if (rimFoldout){
+			// 	DoRimArea();
+			// }
 
-				// Subsurface
-				bool subsurfaceArea = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "Subsurface Scattering");
-				if (subsurfaceArea){
-					DoSubsurfaceArea();
-				}
+			// Subsurface
+			bool subsurfaceArea = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "Subsurface Scattering");
+			if (subsurfaceArea){
+				DoSubsurfaceArea();
+			}
 
-				// Rain
-				bool rainArea = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "Rain");
-				if (rainArea){
-					DoRainArea();
-				}
+			// Rain
+			bool rainArea = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "Rain");
+			if (rainArea){
+				DoRainArea();
+			}
 
-				// Filtering
-				bool filteringFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "Filtering");
-				if (filteringFoldout){
-					DoFilteringArea();
-				}
+			// Filtering
+			bool filteringFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "Filtering");
+			if (filteringFoldout){
+				DoFilteringArea();
 			}
 
 			// UVs
@@ -547,14 +541,14 @@ internal class MochieStandardGUI : ShaderGUI {
 			if (needsHeightMaskUV || needsEmissMaskUV || needsAlphaMaskUV || needsRainMaskUV || needsRimMaskUV || needsDetailMaskUV){
 				bool uvFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "UVs");
 				if (uvFoldout){
-					DoUVArea();
+					DoUVArea(MGUI.IsNewLiteVersion(material));
 				}
 			}
 
 			// Rendering options
 			bool renderFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "Render Settings");
 			if (renderFoldout){
-				DoRenderingArea(material, isLite);
+				DoRenderingArea(material, MGUI.IsNewLiteVersion(material));
 			}
 
 			// AreaLit
@@ -615,7 +609,7 @@ internal class MochieStandardGUI : ShaderGUI {
 			// if (MGUI.PropertyButton("Unity Standard Packing Format")){
 			// 	ApplyStandardPackingFormat(mat);
 			// }
-			if (samplingMode.floatValue == 3 || detailSamplingMode.floatValue == 3)
+			if (samplingMode.floatValue == 3 || (detailSamplingMode.floatValue == 3 && !MGUI.IsNewLiteVersion(mat)))
 				me.ShaderProperty(triplanarSpace, "Triplanar Space");
 
 		});
@@ -805,6 +799,24 @@ internal class MochieStandardGUI : ShaderGUI {
 		MGUI.SpaceN2();
 	}
 
+	void DoDetailAreaLite(){
+		bool hasDetailAlbedo = detailAlbedoMap.textureValue;
+		bool hasDetailNormal = detailNormalMap.textureValue;
+		MGUI.PropertyGroup(()=>{
+			me.TexturePropertySingleLine(Tips.albedoText, detailAlbedoMap, hasDetailAlbedo ? detailColor : null, hasDetailAlbedo ? detailAlbedoBlend : null);
+			me.TexturePropertySingleLine(Tips.normalMapText, detailNormalMap, hasDetailNormal ? detailNormalMapScale : null);
+			me.TexturePropertySingleLine(Tips.detailMaskText, detailMask, detailMask.textureValue ? detailMaskChannel : null);
+		});
+		MGUI.PropertyGroup(()=>{
+			me.ShaderProperty(uvSetSecondary, Tips.uvSetLabel.text);
+			if (uvSetSecondary.floatValue >= 5)
+				me.ShaderProperty(uvSecSwizzle, "Swizzle");
+			MGUI.TextureSOScroll(me, detailAlbedoMap, uv1Scroll);
+			me.ShaderProperty(uv1Rot, "Rotation");
+		});
+		MGUI.SpaceN2();
+	}
+
 	void DoEmissionArea(Material material){
 		if (me.EmissionEnabledProperty()){
 			emissionEnabled = true;
@@ -854,7 +866,7 @@ internal class MochieStandardGUI : ShaderGUI {
 						me.ShaderProperty(edgeFade, "Edge Fade");
 						me.ShaderProperty(ssrHeight, "Depth");
 					}
-					MGUI.ToggleFloat(me, Tips.reflVertexColor, reflVertexColor, reflVertexColorStrength);
+					// MGUI.ToggleFloat(me, Tips.reflVertexColor, reflVertexColor, reflVertexColorStrength);
 				}
 				MGUI.ToggleFloat(me, Tips.reflShadows, reflShadows, reflShadowStrength);
 				if (reflShadows.floatValue == 1){
@@ -870,7 +882,7 @@ internal class MochieStandardGUI : ShaderGUI {
 				MGUI.ToggleFloat(me, Tips.gsaa, gsaa, gsaaStrength);
 				MGUI.ToggleFloat(me, Tips.useFresnel, useFresnel, fresnelStrength);
 			});
-			if (mirrorToggle.floatValue == 0 && !isLite){
+			if (mirrorToggle.floatValue == 0){
 				MGUI.PropertyGroup(()=>{
 					me.TexturePropertySingleLine(Tips.reflOverrideText, reflOverride);
 					me.TexturePropertySingleLine(Tips.reflCubeText, reflCube, reflCube.textureValue ? cubeThreshold : null);
@@ -943,7 +955,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		});
 	}
 
-	void DoUVArea(){
+	void DoUVArea(bool isLite){
 		bool needsHeightMaskUV = (((workflow.floatValue > 0 && useHeight.floatValue == 1) || (workflow.floatValue == 0 && heightMap.textureValue)) && parallaxMask.textureValue) && samplingMode.floatValue < 3;
 		bool needsEmissMaskUV = emissionEnabled && emissionMask.textureValue;
 		bool needsAlphaMaskUV = blendMode.floatValue > 0 && useAlphaMask.floatValue > 0;
@@ -1061,9 +1073,11 @@ internal class MochieStandardGUI : ShaderGUI {
 				me.ShaderProperty(bicubicLightmap, Tips.bicubicLightmap);
 				me.ShaderProperty(unityFogToggle, Tips.unityFogToggleText);
 				me.ShaderProperty(vertexBaseColor, Tips.vertexBaseColorText);
-				me.ShaderProperty(mirrorToggle, Tips.mirrorMode);
-				if (mirrorToggle.floatValue == 1){
-					me.ShaderProperty(mirrorNormalOffsetSwizzle, Tips.mirrorNormalSwizzleText);
+				if (!isLite){
+					me.ShaderProperty(mirrorToggle, Tips.mirrorMode);
+					if (mirrorToggle.floatValue == 1){
+						me.ShaderProperty(mirrorNormalOffsetSwizzle, Tips.mirrorNormalSwizzleText);
+					}
 				}
 				me.EnableInstancingField();
 				MGUI.SpaceN2();
@@ -1199,6 +1213,7 @@ internal class MochieStandardGUI : ShaderGUI {
 			MGUI.PropertyGroupLayer(()=>{
 				MGUI.SpaceN2();
 				me.ShaderProperty(ltcgiStrength, "Strength");
+				me.ShaderProperty(ltcgiRoughness, "Roughness Multiplier");
 				me.ShaderProperty(ltcgi_spec_off, "Disable Specular");
 				me.ShaderProperty(ltcgi_diffuse_off, "Disable Diffuse");
 				MGUI.SpaceN2();
@@ -1220,7 +1235,7 @@ internal class MochieStandardGUI : ShaderGUI {
 	public static void SetupMaterialWithBlendMode(Material material){
 		int samplingMode = material.GetInt("_SamplingMode");
 		int ssrToggle = material.GetInt("_SSR");
-		bool isLite = MGUI.IsLiteVersion(material);
+		bool isLite = MGUI.IsNewLiteVersion(material);
 
 		switch (material.GetInt("_BlendMode")){
 			case 0:
@@ -1286,7 +1301,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		int blendModeEnum = material.GetInt("_BlendMode");
 		int ltcgiToggle = material.GetInt("_LTCGI");
 		int detailSamplingMode = material.GetInt("_DetailSamplingMode");
-		bool isLite = MGUI.IsLiteVersion(material);
+		bool isLite = MGUI.IsNewLiteVersion(material);
 
 		material.SetInt("_ReflCubeToggle", material.GetTexture("_ReflCube") ? 1 : 0);
 		material.SetInt("_ReflCubeOverrideToggle", material.GetTexture("_ReflCubeOverride") ? 1 : 0);

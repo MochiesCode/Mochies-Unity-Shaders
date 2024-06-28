@@ -63,6 +63,10 @@ namespace Mochie {
 			return mat.shader.name.Contains("(Lite)");
 		}
 		
+		public static bool IsNewLiteVersion(Material mat){
+			return mat.shader.name.Contains("Lite");
+		}
+
 		public static void FillArray<T>(T[] array, T value){
 			for (int i = 0; i < array.Length; i++)
 				array[i] = value;
@@ -249,6 +253,19 @@ namespace Mochie {
 			buttonRect.height = 19;
 			buttonRect.x += GetInspectorWidth()-offset;
 			return GUI.Button(buttonRect, label);
+		}
+
+		// Regular shader property but the text is bold
+		public static void ShaderPropertyBold(MaterialEditor me, MaterialProperty prop, string text){
+			me.ShaderProperty(prop, " ");
+			SpaceN20();
+			BoldLabel(text);
+		}
+
+		public static void ShaderPropertyBold(MaterialEditor me, MaterialProperty prop, GUIContent text){
+			me.ShaderProperty(prop, " ");
+			SpaceN20();
+			BoldLabel(text);
 		}
 
 		// Slider with a toggle
@@ -868,6 +885,14 @@ namespace Mochie {
 			EditorGUILayout.LabelField(text, EditorStyles.boldLabel);
 		}
 
+		public static void BoldLabel(GUIContent text){
+			EditorGUILayout.LabelField(text);
+		}
+		
+		public static void Label(string text){
+			EditorGUILayout.LabelField(text);
+		}
+
 		// Mimics the normal map import warning - written by Orels1
 		static bool TextureImportWarningBox(string message){
 			GUILayout.BeginVertical(new GUIStyle(EditorStyles.helpBox));
@@ -885,20 +910,39 @@ namespace Mochie {
 			}, GUILayout.Height(22));
 			EditorGUILayout.EndHorizontal();
 			GUILayout.EndVertical();
+			MGUI.Space2();
 			return buttonPress;
 		}
 
 		public static void sRGBWarning(MaterialProperty tex){
 			if (tex.textureValue){
-				string sRGBWarning = "This texture is marked as sRGB, but should not contain color information.";
+				string warningText = "This texture is marked as sRGB, but should be linear.";
 				string texPath = AssetDatabase.GetAssetPath(tex.textureValue);
 				TextureImporter texImporter;
 				var importer = TextureImporter.GetAtPath(texPath) as TextureImporter;
 				if (importer != null){
 					texImporter = (TextureImporter)importer;
 					if (texImporter.sRGBTexture){
-						if (TextureImportWarningBox(sRGBWarning)){
+						if (TextureImportWarningBox(warningText)){
 							texImporter.sRGBTexture = false;
+							texImporter.SaveAndReimport();
+						}
+					}
+				}
+			}
+		}
+
+		public static void NormalWarning(MaterialProperty tex){
+			if (tex.textureValue){
+				string warningText = "This texture is not marked as a normal map.";
+				string texPath = AssetDatabase.GetAssetPath(tex.textureValue);
+				TextureImporter texImporter;
+				var importer = TextureImporter.GetAtPath(texPath) as TextureImporter;
+				if (importer != null){
+					texImporter = (TextureImporter)importer;
+					if (texImporter.textureType != TextureImporterType.NormalMap){
+						if (TextureImportWarningBox(warningText)){
+							texImporter.textureType = TextureImporterType.NormalMap;
 							texImporter.SaveAndReimport();
 						}
 					}

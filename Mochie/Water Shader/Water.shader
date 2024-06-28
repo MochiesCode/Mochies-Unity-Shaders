@@ -133,6 +133,8 @@ Shader "Mochie/Water" {
 		[Enum(Off,0, Voronoi,1, Texture,2, Flipbook,3)]_CausticsToggle("Caustics Toggle", Int) = 1
 		_CausticsTex("Caustics Texture", 2D) = "black" {}
 		_CausticsTexArray("Texture Array", 2DArray) = "black" {}
+		_CausticsShadow("Caustics Shadow Tex", 2D) = "white" {}
+		_CausticsShadowStrength("Caustics Shadow Strength", Float) = 1
 		_CausticsDisp("Dispersion", Float) = 0.15
 		_CausticsDistortion("Distortion", Float) = 0.5
 		_CausticsDistortionTex("Distortion Texture", 2D) = "bump" {}

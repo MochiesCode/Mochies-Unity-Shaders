@@ -73,6 +73,7 @@ MOCHIE_DECLARE_TEX2D_NOSAMPLER(_AreaLitMask);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_DetailBaseColor);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_DetailNormal);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_OpacityMask);
+MOCHIE_DECLARE_TEX2D_NOSAMPLER(_CausticsShadow);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_CausticsDistortionTex);
 
 MOCHIE_DECLARE_TEX2DARRAY(_VertOffsetFlipbook);
@@ -199,6 +200,7 @@ float _SubsurfaceStrength;
 float4 _FogTint2;
 float _FogPower2;
 float _FogBrightness2;
+float _CausticsShadowStrength;
 int _VertexOffsetMaskChannel;
 int _BlendNoiseSource;
 int _FlowMapUV;

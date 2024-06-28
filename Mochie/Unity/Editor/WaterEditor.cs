@@ -51,7 +51,7 @@ public class WaterEditor : ShaderGUI {
 	}, 0);
 
     string header = "WaterHeader_Pro";
-	string versionLabel = "v1.19";
+	string versionLabel = "v1.20";
 
 	MaterialProperty _Color = null;
 	MaterialProperty _NonGrabColor = null;
@@ -123,6 +123,8 @@ public class WaterEditor : ShaderGUI {
 	MaterialProperty _CausticsSpeed = null;
 	MaterialProperty _CausticsFade = null;
 	MaterialProperty _CausticsDisp = null;
+	MaterialProperty _CausticsShadow = null;
+	MaterialProperty _CausticsShadowStrength = null;
 	MaterialProperty _CausticsDistortion = null;
 	MaterialProperty _CausticsDistortionTex = null;
 	MaterialProperty _CausticsDistortionScale = null;
@@ -590,6 +592,7 @@ public class WaterEditor : ShaderGUI {
 						MGUI.PropertyGroup(()=>{
 							if (_CausticsToggle.floatValue == 2){
 								me.TexturePropertySingleLine(new GUIContent("Caustics Texture"), _CausticsTex);
+								me.TexturePropertySingleLine(new GUIContent("Shadow Texture"), _CausticsShadow, _CausticsShadowStrength);
 							}
 							else if (_CausticsToggle.floatValue == 3){
 								me.TexturePropertySingleLine(new GUIContent("Caustics Flipbook"), _CausticsTexArray);

@@ -132,9 +132,9 @@ half4 BRDF1_Mochie_PBS (
 		reflCol *= shadowedReflections;
 	#endif
 
-	#ifdef FULL_VERSION
-		reflCol *= lerp(1, vertexColor, _ReflVertexColor*_ReflVertexColorStrength);
-	#endif
+	// #ifdef FULL_VERSION
+	// 	reflCol *= lerp(1, vertexColor, _ReflVertexColor*_ReflVertexColorStrength);
+	// #endif
 
     return half4(diffCol + specCol + reflCol + subsurfaceCol, 1);
 }

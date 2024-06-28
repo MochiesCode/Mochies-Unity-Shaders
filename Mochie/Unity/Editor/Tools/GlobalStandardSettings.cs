@@ -13,6 +13,7 @@ namespace Mochie {
         bool inactive = true;
 
         Shader standardShader;
+        Shader standardLiteShader;
 
         List<Material> projectMaterials = new List<Material>();
         List<Material> sceneMaterials = new List<Material>();
@@ -55,13 +56,14 @@ namespace Mochie {
         static void Init(){
             GlobalStandardSettings window = (GlobalStandardSettings)EditorWindow.GetWindow(typeof(GlobalStandardSettings));
             window.titleContent = new GUIContent("Standard Shader Settings");
-            window.minSize = new Vector2(300, 692);
-            window.maxSize = new Vector2(300, 692);
+            window.minSize = new Vector2(300, 761);
+            window.maxSize = new Vector2(300, 761);
             window.Show();
         }
 
         void Awake(){
             standardShader = Shader.Find("Mochie/Standard");
+            standardLiteShader = Shader.Find("Mochie/Standard Lite");
             RefreshMaterials();
         }
 
@@ -86,12 +88,22 @@ namespace Mochie {
                 RefreshMaterials();
             }
 
-            if (MGUI.SimpleButton("Migrate From Mochie Standard Lite", buttonWidth, 0f)){
-                MigrateFromLite();
+            MGUI.Space8();
+            MGUI.BoldLabel("Shader Swapper");
+            if (MGUI.SimpleButton("Mochie Standard > Mochie Standard Lite", buttonWidth, 0f)){
+                MigrateFromStandardToLite();
             }
 
-            if (MGUI.SimpleButton("Migrate From Unity Standard", buttonWidth, 0f)){
-                MigrateFromUnityStandard();
+            if (MGUI.SimpleButton(" Mochie Standard Lite > Mochie Standard", buttonWidth, 0f)){
+                MigrateFromLiteToStandard();
+            }
+
+            if (MGUI.SimpleButton("Unity Standard > Mochie Standard", buttonWidth, 0f)){
+                MigrateFromUnityStandardToStandard();
+            }
+
+            if (MGUI.SimpleButton("Unity Standard > Mochie Standard Lite", buttonWidth, 0f)){
+                MigrateFromUnityStandardToLite();
             }
 
             MGUI.Space8();
@@ -114,10 +126,10 @@ namespace Mochie {
             }
 
             MGUI.Space8();
-            MGUI.BoldLabel("Bakery Settings");
+            MGUI.BoldLabel("Lightmapping Settings");
             MGUI.PropertyGroup(()=>{
                 dirMode = (BakeryMode)EditorGUILayout.EnumPopup("Directional Mode", dirMode);
-                bicubicSampling = EditorGUILayout.Toggle("Bicubic Lightmapping", bicubicSampling);
+                bicubicSampling = EditorGUILayout.Toggle("Bicubic Sampling", bicubicSampling);
                 nonLinearSH = EditorGUILayout.Toggle("Non-Linear SH", nonLinearSH);
                 lightmapSpecular = EditorGUILayout.Toggle("Lightmap Specular", lightmapSpecular);
             });
@@ -143,7 +155,16 @@ namespace Mochie {
             }
         }
         
-        void MigrateFromLite(){
+        void MigrateFromStandardToLite(){
+            if (standardMaterials != null){
+                foreach(Material m in standardMaterials){
+                    m.shader = standardLiteShader;
+                }
+            }
+            RefreshMaterials();
+        }
+
+        void MigrateFromLiteToStandard(){
             if (standardLiteMaterials != null){
                 foreach(Material m in standardLiteMaterials){
                     m.shader = standardShader;
@@ -152,7 +173,7 @@ namespace Mochie {
             RefreshMaterials();
         }
 
-        void MigrateFromUnityStandard(){
+        void MigrateFromUnityStandardToStandard(){
             if (standardUnityMaterials != null){
                 foreach (Material m in standardUnityMaterials){
                     m.shader = standardShader;
@@ -161,8 +182,20 @@ namespace Mochie {
             RefreshMaterials();
         }
 
+        void MigrateFromUnityStandardToLite(){
+            if (standardUnityMaterials != null){
+                foreach (Material m in standardUnityMaterials){
+                    m.shader = standardLiteShader;
+                }
+            }
+            RefreshMaterials();
+        }
+
         void ApplyBakerySettings(){
-            foreach (Material m in standardMaterials){
+            List<Material> materials = new List<Material>();
+            materials.AddRange(standardMaterials);
+            materials.AddRange(standardLiteMaterials);
+            foreach (Material m in materials){
 
                 // Directional Mode
                 m.SetInt("_BakeryMode", (int)dirMode);
@@ -185,7 +218,10 @@ namespace Mochie {
         }
 
         void ApplyWorkflowSettings(){
-            foreach (Material m in standardMaterials){
+            List<Material> materials = new List<Material>();
+            materials.AddRange(standardMaterials);
+            materials.AddRange(standardLiteMaterials);
+            foreach (Material m in materials){
 
                 // Workflow
                 m.SetInt("_Workflow", (int)workflowMode);
@@ -223,7 +259,10 @@ namespace Mochie {
         }
 
         void ApplyFilterSettings(){
-            foreach(Material m in standardMaterials){
+            List<Material> materials = new List<Material>();
+            materials.AddRange(standardMaterials);
+            materials.AddRange(standardLiteMaterials);
+            foreach (Material m in materials){
                 m.SetInt("_Filtering", filteringToggle ? 1 : 0);
                 if (filteringToggle){
                     m.SetFloat("_HuePost", filteringHue);
@@ -269,7 +308,7 @@ namespace Mochie {
                     if (shaderName == "Mochie/Standard"){
                         standardMaterials.Add(m);
                     }
-                    else if (shaderName == "Mochie/Standard (Lite)"){
+                    else if (shaderName == "Mochie/Standard (Lite)" || shaderName == "Mochie/Standard Lite"){
                         standardLiteMaterials.Add(m);
                     }
                     else if (shaderName == "Hidden/InternalErrorShader"){

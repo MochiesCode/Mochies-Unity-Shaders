@@ -764,7 +764,7 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
         c.rgb += areaLitColor * _AreaLitStrength;
     #endif
 
-    Rim(s.posWorld, s.normalWorld, c.rgb, i.tex2.zw);
+    // Rim(s.posWorld, s.normalWorld, c.rgb, i.tex2.zw);
 
     UNITY_EXTRACT_FOG_FROM_EYE_VEC(i);
     if (_UnityFogToggle == 1){

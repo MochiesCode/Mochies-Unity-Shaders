@@ -213,6 +213,8 @@ int _UVRimMaskSwizzle;
 int _UVDetailMaskSwizzle;
 int _MirrorNormalOffsetSwizzle;
 
+float _LTCGIRoughness;
+
 float3 shadowedReflections;
 
 #if MIRROR_ENABLED
@@ -322,6 +324,11 @@ float2 SelectUVSet(VertexInput v, int selection, int swizzle, float3 worldPos){
 	return 0;
 }
 
+float2 SelectOcclusionUVSet(VertexInput v, int selection){
+	float2 uvs[] = {v.uv0, v.uv1, v.uv2, v.uv3, v.uv4, v.uv1 * unity_LightmapST.xy + unity_LightmapST.zw};
+	return uvs[selection];
+}
+
 void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1, inout float4 texcoord2, inout float4 texcoord3, inout float4 texcoord4, float3 worldPos)
 {
 	texcoord.xy = Rotate2DStandard(SelectUVSet(v, _UVPri, _UVPriSwizzle, worldPos), _UV0Rotate);
@@ -372,7 +379,7 @@ void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1, ino
 	}
 
 	#if AREALIT_ENABLED
-		texcoord4.xy = SelectUVSet(v, _OcclusionUVSet, 0, 0);
+		texcoord4.xy = SelectOcclusionUVSet(v, _OcclusionUVSet);
 		texcoord4.xy = TRANSFORM_TEX(texcoord4.xy, _AreaLitOcclusion);
 	#endif
 }
