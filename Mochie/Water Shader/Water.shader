@@ -136,6 +136,7 @@ Shader "Mochie/Water" {
 		_CausticsShadow("Caustics Shadow Tex", 2D) = "white" {}
 		_CausticsShadowStrength("Caustics Shadow Strength", Float) = 1
 		_CausticsDisp("Dispersion", Float) = 0.15
+		_CausticsFlipbookDisp("Dispersion", Float) = 0.6
 		_CausticsDistortion("Distortion", Float) = 0.5
 		_CausticsDistortionTex("Distortion Texture", 2D) = "bump" {}
 		_CausticsDistortionScale("Distortion Scale", Float) = 0.2
@@ -179,6 +180,7 @@ Shader "Mochie/Water" {
 		_FoamDistortionStrength("Distortion Strength", Float) = 0.1
 		[Toggle(_FOAM_NORMALS_ON)]_FoamNormalToggle("Foam Normals", Int) = 0
 		_FoamNormalStrength("Foam Normal Strength", Float) = 4
+		_FoamCrestPower("Foam Crest Power", Float) = 1
 
 		[Toggle(_EDGEFADE_ON)]_EdgeFadeToggle("Enable", Int) = 1
 		_EdgeFadePower("Power", Float) = 300
@@ -228,7 +230,8 @@ Shader "Mochie/Water" {
 		[HideInInspector]_NoiseTexSSR("SSR Noise Tex", 2D) = "black"
 		[HideInInspector]_ZeroProp("", Float) = 0
 
-		_Test("Test", Float) = 10
+		_Test1("Test 1", Float) = 0
+		_Test2("Test 2", Float) = 1
     }
 
     SubShader {

@@ -51,7 +51,7 @@ public class WaterEditor : ShaderGUI {
 	}, 0);
 
     string header = "WaterHeader_Pro";
-	string versionLabel = "v1.20";
+	string versionLabel = "v1.21";
 
 	MaterialProperty _Color = null;
 	MaterialProperty _NonGrabColor = null;
@@ -253,11 +253,16 @@ public class WaterEditor : ShaderGUI {
 	MaterialProperty _AudioLink = null;
 	MaterialProperty _AudioLinkStrength = null;
 	MaterialProperty _AudioLinkBand = null;
+	MaterialProperty _CausticsFlipbookDisp = null;
+	// MaterialProperty _FoamCrestPower = null;
 	// MaterialProperty _FogTint2 = null;
 	// MaterialProperty _FogPower2 = null;
 	// MaterialProperty _FogBrightness2 = null;
 
 	// MaterialProperty _NormalFlipbookStochasticToggle = null;
+
+	// MaterialProperty _Test1 = null;
+	// MaterialProperty _Test2 = null;
 	
     BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 	bool m_FirstTimeApply = true;
@@ -507,6 +512,7 @@ public class WaterEditor : ShaderGUI {
 					});
 				}
 				else if (_VertOffsetMode.floatValue == 2){
+					MGUI.DisplayInfo("For best results ensure your base mesh is a plane of approximately 10m x 10m (before scaling in the scene). Also don't be afraid to use extremely large or small values, these settings vary significantly depending on the scale you're working at.");
 					MGUI.BoldLabel("Global");
 					MGUI.PropertyGroup(() => {
 						me.ShaderProperty(_WaveStrengthGlobal, "Strength");
@@ -602,12 +608,14 @@ public class WaterEditor : ShaderGUI {
 							
 							if (_CausticsToggle.floatValue == 1){
 								me.ShaderProperty(_CausticsPower, "Power");
-								me.ShaderProperty(_CausticsDisp, "Phase");
+								me.ShaderProperty(_CausticsDisp, "Dispersion");
 							}
 							if (_CausticsToggle.floatValue != 3)
 								me.ShaderProperty(_CausticsSpeed, "Speed");
-							else
+							else {
 								me.ShaderProperty(_CausticsFlipbookSpeed, "Speed");
+								me.ShaderProperty(_CausticsFlipbookDisp, "Dispersion");
+							}
 							me.ShaderProperty(_CausticsScale, "Scale");
 							me.ShaderProperty(_CausticsFade, Tips.causticsFade);
 							// me.ShaderProperty(_CausticsSurfaceFade, Tips.causticsSurfaceFade);
@@ -654,6 +662,7 @@ public class WaterEditor : ShaderGUI {
 					me.ShaderProperty(_FoamPower, Tips.foamPower);
 					me.ShaderProperty(_FoamEdgeStrength, Tips.foamEdgeStrength);
 					me.ShaderProperty(_FoamCrestStrength, Tips.foamCrestStrength);
+					// me.ShaderProperty(_FoamCrestPower, Tips.foamCrestPower);
 					me.ShaderProperty(_FoamCrestThreshold, Tips.foamCrestThreshold);
 				});
 				MGUI.ToggleGroupEnd();
@@ -818,6 +827,9 @@ public class WaterEditor : ShaderGUI {
 			Foldouts.Foldout("RENDER SETTINGS", foldouts, renderingTabButtons, mat, me, renderingTabAction);
 
         }
+
+		// me.ShaderProperty(_Test1, "Test 1");
+		// me.ShaderProperty(_Test2, "Test 2");
 		ApplyMaterialSettings(mat);
 
 		MGUI.DoFooter(versionLabel);
@@ -1033,6 +1045,7 @@ public class WaterEditor : ShaderGUI {
 		_CausticsColor.colorValue = Color.white;
 		_CausticsPower.floatValue = 1f;
 		_CausticsFlipbookSpeed.floatValue = 8f;
+		_CausticsFlipbookDisp.floatValue = 2f;
 	}
 
 	void ResetFog(){

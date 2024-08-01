@@ -699,13 +699,13 @@ internal class MochieStandardGUI : ShaderGUI {
 				if (uvPri.floatValue >= 5)
 					me.ShaderProperty(uvPriSwizzle, "Swizzle");
 				MGUI.TextureSOScroll(me, albedoMap, uv0Scroll);
+				me.ShaderProperty(uv0Rot, "Rotation");
 			}
 			else {
 				MGUI.TextureSO(me, albedoMap);
 			}
 			if (EditorGUI.EndChangeCheck())
 				emissionMap.textureScaleAndOffset = albedoMap.textureScaleAndOffset; 
-			me.ShaderProperty(uv0Rot, "Rotation");
 		});
 		MGUI.SpaceN2();
 	}
@@ -790,11 +790,11 @@ internal class MochieStandardGUI : ShaderGUI {
 				if (uvSetSecondary.floatValue >= 5)
 					me.ShaderProperty(uvSecSwizzle, "Swizzle");
 				MGUI.TextureSOScroll(me, detailAlbedoMap, uv1Scroll);
+				me.ShaderProperty(uv1Rot, "Rotation");
 			}
 			else {
 				MGUI.TextureSO(me, detailAlbedoMap);
 			}
-			me.ShaderProperty(uv1Rot, "Rotation");
 		});
 		MGUI.SpaceN2();
 	}

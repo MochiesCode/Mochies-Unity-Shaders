@@ -220,8 +220,10 @@ int _VisualizeFlowmap;
 int _AudioLink;
 int _AudioLinkBand;
 float _AudioLinkStrength;
+float _FoamCrestPower;
+float _CausticsFlipbookDisp;
 
-float _Test;
+float _Test1, _Test2;
 float _ZeroProp;
 const static float2 jump = float2(0.1, 0.25);
 

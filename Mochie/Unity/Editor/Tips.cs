@@ -184,6 +184,7 @@ namespace Mochie {
 		public static GUIContent foamCrestThreshold = new GUIContent("Crest Threshold", "How high or low a gerstner wave must be to have crest foam.");
 		public static GUIContent foamEdgeStrength = new GUIContent("Edge Strength", "How visible the foam is on the edges.");
 		public static GUIContent foamPower = new GUIContent("Edge Power", "Intensity of the edge foam gradient.");
+		public static GUIContent foamCrestPower = new GUIContent("Crest Power", "Intensity of the crest foam gradient.");
 		public static GUIContent foamRoughness = new GUIContent("Roughness", "How rough the foam should be when calculating reflections and specular highlights.");
 		public static GUIContent foamNoiseTexCrestStrength = new GUIContent("Crest Noise", "How strongly the noise texture should affect crest foam.");
 		public static GUIContent foamNoiseTexStrength = new GUIContent("Edge Noise", "How strongly the noise texture should affect edge foam.");

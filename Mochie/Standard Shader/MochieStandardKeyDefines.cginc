@@ -33,7 +33,7 @@
 
 #define AREALIT_ENABLED defined(_AREALIT_ON) && !defined(SHADER_API_MOBILE)
 
-#define LTCGI_ENABLED defined(LTCGI) && !defined(SHADER_API_MOBILE)
+#define LTCGI_ENABLED defined(LTCGI)
 
 #define MIRROR_ENABLED defined(_MIRROR_ON) && !defined(SHADER_API_MOBILE)
 

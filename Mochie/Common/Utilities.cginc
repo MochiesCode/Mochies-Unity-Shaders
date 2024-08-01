@@ -10,6 +10,22 @@ float2 Rotate2D(float2 coords, float rot){
 	return mul(coords, mat);
 }
 
+float3x3 AngleAxis3x3(float angle, float3 axis){
+    float c, s;
+    sincos(angle, s, c);
+
+    float t = 1 - c;
+    float x = axis.x;
+    float y = axis.y;
+    float z = axis.z;
+
+    return float3x3(
+        t * x * x + c,      t * x * y - s * z,  t * x * z + s * y,
+        t * x * y + s * z,  t * y * y + c,      t * y * z - s * x,
+        t * x * z - s * y,  t * y * z + s * x,  t * z * z + c
+    );
+}
+
 float2 ScaleOffsetScrollUV(float2 uv, float2 scale, float2 offset, float2 scroll){
 	return (uv + offset + (scroll * _Time.y * 0.1)) * scale;
 }

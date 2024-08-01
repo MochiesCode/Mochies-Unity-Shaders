@@ -21,7 +21,7 @@
 #endif
 
 #if LTCGI_ENABLED
-	#include "/Packages/at.pimaker.ltcgi/Shaders/LTCGI.cginc"
+	#include "Packages/at.pimaker.ltcgi/Shaders/LTCGI.cginc"
 #endif
 
 //---------------------------------------

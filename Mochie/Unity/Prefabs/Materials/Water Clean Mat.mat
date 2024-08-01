@@ -13,7 +13,7 @@ Material:
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - _BICUBIC_LIGHTMAPPING_ON
-  - _CAUSTICS_TEXTURE_ON
+  - _CAUSTICS_FLIPBOOK_ON
   - _DEPTH_EFFECTS_ON
   - _EDGEFADE_ON
   - _FLOW_ON
@@ -47,7 +47,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _CausticsShadow:
-        m_Texture: {fileID: 2800000, guid: d12d8147d80a3314d98dc024b734cc68, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _CausticsTex:
@@ -168,15 +168,16 @@ Material:
     - _CausticsDistortion: 0.5
     - _CausticsDistortionScale: 0.2
     - _CausticsFade: 10
+    - _CausticsFlipbookDisp: 0.6
     - _CausticsFlipbookSpeed: 16
-    - _CausticsOpacity: 1
+    - _CausticsOpacity: 0.5
     - _CausticsPower: 1
     - _CausticsScale: 1
     - _CausticsShadowStrength: 1
     - _CausticsSpeed: 1
     - _CausticsSurfaceFade: 100
     - _CausticsThreshold: 0
-    - _CausticsToggle: 2
+    - _CausticsToggle: 3
     - _CullMode: 2
     - _DepthEffects: 1
     - _DetailNormalStrength: 1
@@ -194,6 +195,7 @@ Material:
     - _FlowSpeed: 0.25
     - _FlowStrength: 0.3
     - _FlowToggle: 1
+    - _FoamCrestPower: 1
     - _FoamCrestStrength: 0
     - _FoamCrestThreshold: 0.5
     - _FoamDistortionStrength: 0.1
@@ -261,6 +263,8 @@ Material:
     - _TessMin: 1
     - _TessellationOffsetMask: 1
     - _Test: 10
+    - _Test1: 0
+    - _Test2: 1
     - _TexCoordSpace: 0
     - _TexCoordSpaceSwizzle: 1
     - _TransparencyMode: 2
