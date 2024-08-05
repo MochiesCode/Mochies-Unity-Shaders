@@ -2,7 +2,7 @@
 
 A collection of shaders including a highly customizable toon shader, a standard shader replacement, particle shader, water shader, glass shader, and screenspace effect shader. 
 
-Available on my [Patreon](https://www.patreon.com/mochieshaders) are more feature rich versions of a several of these shaders, such as Uber with geometry and dissolve effects, a hugely enhanced Screen FX with loads of extra stuff, tessellated Water, and exclusive patron-only shaders and packages!
+Available on my [Patreon](https://www.patreon.com/mochieshaders) are more feature rich versions of a several of these shaders, as well as exclusive patron-only shaders such as my splat mapping shader, blindness simulator, Destiny's "Taken" character shader, and more!
 
 For more information, or help with any of my shaders, feel free to add me on discord! `Mochie#8794` or just `Mochie`.
 
