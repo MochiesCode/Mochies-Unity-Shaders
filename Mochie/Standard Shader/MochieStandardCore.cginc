@@ -752,7 +752,7 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
 	half4 c = MOCHIE_BRDF(
 				s.diffColor, s.specColor, s.oneMinusReflectivity, 
 				s.smoothness, s.normalWorld, -s.eyeVec, s.posWorld, screenUVs, screenPos,
-				s.metallic, s.thickness, s.subsurfaceColor, atten, i.ambientOrLightmapUV, i.color, gi.light, gi.indirect
+				s.metallic, s.thickness, s.subsurfaceColor, atten, i.ambientOrLightmapUV, i.color, occlusion, gi.light, gi.indirect
 			);
 
     c.rgb += Emission(i.tex.xy, i.tex1.zw, sd);
@@ -880,7 +880,7 @@ half4 fragForwardAddInternal (VertexOutputForwardAdd i, bool frontFace)
 
 	half4 c = MOCHIE_BRDF (s.diffColor, s.specColor, s.oneMinusReflectivity, 
 				s.smoothness, s.normalWorld, -s.eyeVec, s.posWorld, 0, 0,
-				s.metallic, s.thickness, s.subsurfaceColor, atten, 0, i.color, light, noIndirect);
+				s.metallic, s.thickness, s.subsurfaceColor, atten, 0, i.color, 1, light, noIndirect);
 								
     UNITY_EXTRACT_FOG_FROM_EYE_VEC(i);
     if (_UnityFogToggle == 1){

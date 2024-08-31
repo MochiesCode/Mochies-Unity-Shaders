@@ -18,7 +18,8 @@ float3 get_camera_pos() {
 half4 BRDF1_Mochie_PBS (
 	half3 diffColor, half3 specColor, half oneMinusReflectivity, half smoothness,
     half3 normal, half3 viewDir, half3 worldPos, half2 screenUVs, half4 screenPos,
-    half metallic, half thickness, half3 ssColor, half atten, float4 lightmapUV, float3 vertexColor,
+    half metallic, half thickness, half3 ssColor, half atten, float4 lightmapUV, 
+	float3 vertexColor, float occlusion,
 	UnityLight light, UnityIndirect gi)
 {
 	
@@ -74,7 +75,8 @@ half4 BRDF1_Mochie_PBS (
 		diffCol = diffColor * (gi.diffuse + light.color * diffuseTerm);
 
 	half3 specCol = specularTerm * light.color * FresnelTerm (specColor, lh) * _SpecularStrength;
-	half3 reflCol = surfaceReduction * gi.specular * FresnelLerp (specColor, grazingTerm, lerp(1, nv, _FresnelStrength*_UseFresnel)) * _ReflectionStrength;
+	half fresnel = FresnelLerp (specColor, grazingTerm, lerp(1, nv, _FresnelStrength*_UseFresnel));
+	half3 reflCol = surfaceReduction * gi.specular * fresnel * _ReflectionStrength;
 	#if SSR_ENABLED
 		half4 ssrCol = GetSSR(worldPos, viewDir, reflect(-viewDir, normal), normal, smoothness, diffColor, metallic, screenUVs, screenPos);
 		ssrCol.rgb *= _SSRStrength;
@@ -99,20 +101,22 @@ half4 BRDF1_Mochie_PBS (
 	}
 
 	#ifdef LTCGI
-		half3 diffLight = 0;
+		float3 diffLight = 0;
+		float3 reflLight = 0;
 		if (_LTCGIStrength > 0){
 			LTCGI_Contribution(
 				worldPos, 
 				normal, 
 				viewDir, 
-				perceptualRoughness,
+				perceptualRoughness * _LTCGIRoughness,
 				(lightmapUV - unity_LightmapST.zw) / unity_LightmapST.xy,
 				diffLight
 				#ifndef _GLOSSYREFLECTIONS_OFF
-					, reflCol
+					, reflLight
 				#endif
 			);
-			diffCol += (diffColor * diffLight) * _LTCGIStrength;
+			reflCol += reflLight * occlusion * fresnel * surfaceReduction * _LTCGIStrength;
+			diffCol += diffLight * diffColor * _LTCGIStrength;
 		}
     #endif
 
