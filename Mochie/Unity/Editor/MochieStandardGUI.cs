@@ -247,6 +247,7 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty mirrorNormalOffsetSwizzle = null;
 	MaterialProperty reflShadowAreaLit = null;
 	MaterialProperty triplanarSpace = null;
+	MaterialProperty ignoreRealtimeGI = null;
 
 	MaterialEditor me;
 
@@ -452,6 +453,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		triplanarSpace = FindProperty("_TriplanarSpace", props);
 		hueMode = FindProperty("_HueMode", props);
 		ltcgiRoughness = FindProperty("_LTCGIRoughness", props);
+		ignoreRealtimeGI = FindProperty("_IgnoreRealtimeGI", props);
 	}
 
 	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props){
@@ -1073,6 +1075,7 @@ internal class MochieStandardGUI : ShaderGUI {
 				me.ShaderProperty(bicubicLightmap, Tips.bicubicLightmap);
 				me.ShaderProperty(unityFogToggle, Tips.unityFogToggleText);
 				me.ShaderProperty(vertexBaseColor, Tips.vertexBaseColorText);
+				me.ShaderProperty(ignoreRealtimeGI, Tips.ignoreRealtimeGIText);
 				if (!isLite){
 					me.ShaderProperty(mirrorToggle, Tips.mirrorMode);
 					if (mirrorToggle.floatValue == 1){

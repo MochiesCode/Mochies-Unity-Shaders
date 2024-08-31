@@ -6,6 +6,7 @@ using System.IO;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using System.Reflection;
 
 namespace Mochie {
 	public static class MGUI {
@@ -30,7 +31,14 @@ namespace Mochie {
 			}
 			return assets;
 		}
-		
+
+		public static string GetCurrentProjectFolderPath(){
+            Type projectWindowUtilType = typeof(ProjectWindowUtil);
+            MethodInfo getActiveFolderPath = projectWindowUtilType.GetMethod("GetActiveFolderPath", BindingFlags.Static | BindingFlags.NonPublic);
+            object obj = getActiveFolderPath.Invoke(null, new object[0]);
+            return obj.ToString();
+        }
+
 		public static void UpdateMaterials(){
 			List<Material> materials = FindAssetsByType<Material>();
 			foreach (Material m in materials){

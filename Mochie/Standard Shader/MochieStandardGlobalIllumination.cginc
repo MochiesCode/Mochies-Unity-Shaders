@@ -19,6 +19,8 @@
 #define SAMPLE_TEXTURE2D(textureName, samplerName, coord2) textureName.Sample(samplerName, coord2)
 #endif
 
+int				_IgnoreRealtimeGI;
+
 // Bicubic lightmap sampling from bakery standard shader
 
 float4 standardCubic(float v)
@@ -132,7 +134,7 @@ inline half3 DecodeDirectionalSpecularLightmap (half3 color, half4 dirTex, half3
     o_light.dir /= directionality;
 
     #ifdef DYNAMICLIGHTMAP_ON
-    if (isRealtimeLightmap)
+    if (isRealtimeLightmap && _IgnoreRealtimeGI != 1)
     {
         // Realtime directional lightmaps' intensity needs to be divided by N.L
         // to get the incoming light intensity. Baked directional lightmaps are already
@@ -245,16 +247,18 @@ inline UnityGI UnityGI_Base(UnityGIInput data, half occlusion, half3 normalWorld
     #endif
 
     #ifdef DYNAMICLIGHTMAP_ON
-        // Dynamic lightmaps
-        fixed4 realtimeColorTex = SampleDynamicLightmapBicubic(data.lightmapUV.zw);
-        half3 realtimeColor = DecodeRealtimeLightmap (realtimeColorTex);
+        if (_IgnoreRealtimeGI != 1){
+            // Dynamic lightmaps
+            fixed4 realtimeColorTex = SampleDynamicLightmapBicubic(data.lightmapUV.zw);
+            half3 realtimeColor = DecodeRealtimeLightmap (realtimeColorTex);
 
-        #ifdef DIRLIGHTMAP_COMBINED
-            half4 realtimeDirTex = SampleDynamicLightmapDirBicubic(data.lightmapUV.zw);
-            o_gi.indirect.diffuse += DecodeDirectionalLightmap (realtimeColor, realtimeDirTex, normalWorld);
-        #else
-            o_gi.indirect.diffuse += realtimeColor;
-        #endif
+            #ifdef DIRLIGHTMAP_COMBINED
+                half4 realtimeDirTex = SampleDynamicLightmapDirBicubic(data.lightmapUV.zw);
+                o_gi.indirect.diffuse += DecodeDirectionalLightmap (realtimeColor, realtimeDirTex, normalWorld);
+            #else
+                o_gi.indirect.diffuse += realtimeColor;
+            #endif
+        }
     #endif
 
     o_gi.indirect.diffuse *= occlusion;
@@ -309,16 +313,18 @@ inline UnityGI UnityGI_Base(UnityGIInput data, half occlusion, half3 normalWorld
     #endif
 
     #ifdef DYNAMICLIGHTMAP_ON
-        // Dynamic lightmaps
-        fixed4 realtimeColorTex = UNITY_SAMPLE_TEX2D(unity_DynamicLightmap, data.lightmapUV.zw);
-        half3 realtimeColor = DecodeRealtimeLightmap (realtimeColorTex);
+        if (_IgnoreRealtimeGI != 1){
+            // Dynamic lightmaps
+            fixed4 realtimeColorTex = UNITY_SAMPLE_TEX2D(unity_DynamicLightmap, data.lightmapUV.zw);
+            half3 realtimeColor = DecodeRealtimeLightmap (realtimeColorTex);
 
-        #ifdef DIRLIGHTMAP_COMBINED
-            half4 realtimeDirTex = UNITY_SAMPLE_TEX2D_SAMPLER(unity_DynamicDirectionality, unity_DynamicLightmap, data.lightmapUV.zw);
-            o_gi.indirect.diffuse += DecodeDirectionalLightmap (realtimeColor, realtimeDirTex, normalWorld);
-        #else
-            o_gi.indirect.diffuse += realtimeColor;
-        #endif
+            #ifdef DIRLIGHTMAP_COMBINED
+                half4 realtimeDirTex = UNITY_SAMPLE_TEX2D_SAMPLER(unity_DynamicDirectionality, unity_DynamicLightmap, data.lightmapUV.zw);
+                o_gi.indirect.diffuse += DecodeDirectionalLightmap (realtimeColor, realtimeDirTex, normalWorld);
+            #else
+                o_gi.indirect.diffuse += realtimeColor;
+            #endif
+        }
     #endif
 
     o_gi.indirect.diffuse *= occlusion;

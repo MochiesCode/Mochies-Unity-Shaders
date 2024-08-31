@@ -48,9 +48,9 @@ Shader "Mochie/Standard Lite" {
 		[Enum(Red,0, Green,1, Blue,2, Alpha,3)]_DetailMetallicChannel("Metallic Channel", Int) = 2
 		[Enum(Red,0, Green,1, Blue,2, Alpha,3)]_DetailOcclusionChannel("Occlusion Channel", Int) = 0
 
-        _Glossiness("Roughness", Range(0.0, 1.0)) = 0.5
+        _Glossiness("Roughness", Range(0.0, 1.0)) = 1
         _SpecGlossMap("Roughness Map", 2D) = "white" {}
-        _Metallic("Metallic", Range(0.0, 1.0)) = 0.0
+        _Metallic("Metallic", Range(0.0, 1.0)) = 0
         _MetallicGlossMap("Metallic", 2D) = "white" {}
         _BumpScale("Scale", Float) = 1.0
         _BumpMap("Normal Map", 2D) = "bump" {}
@@ -249,6 +249,8 @@ Shader "Mochie/Standard Lite" {
 		[ToggleUI]_UnityFogToggle("Unity Fog", Int) = 1
 		[HideInInspector] _ReflectionTex0("", 2D) = "white" {}
         [HideInInspector] _ReflectionTex1("", 2D) = "white" {}
+
+		[ToggleUI]_IgnoreRealtimeGI("Ignore Realtime GI", Int) = 0
 
 		// [HideInInspector] BAKERY_META_ALPHA_ENABLE ("Enable Bakery alpha meta pass", Float) = 1.0
     }

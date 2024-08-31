@@ -71,7 +71,7 @@ void ApplyExtraDroplets(v2f i, inout float3 rainNormal, inout float flipbookBase
 		droplets = Remap(droplets, 1-_DynamicDroplets, 1, 0, 1);
 		float dropletRough = smoothstep(0, 0.1, droplets);
 		droplets = smoothstep(0, 0.4, droplets);
-		flipbookBase = smoothstep(0, 0.1, flipbookBase);
+		// flipbookBase = smoothstep(0, 0.1, flipbookBase);
 		flipbookBase = saturate(flipbookBase + dropletRough);
 		rainNormal = lerp(rainNormal, dropletMaskNormal, droplets);
 	}

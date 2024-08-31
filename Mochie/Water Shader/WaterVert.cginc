@@ -167,8 +167,6 @@ v2f vert (
 	#endif
 	o.localPos = v.vertex;
 
-	o.isInVRMirror = _VRChatMirrorMode == 1;
-
 	// v.tangent.xyz = normalize(v.tangent.xyz);
 	// v.normal = normalize(v.normal);
 	// float3x3 objectToTangent = float3x3(v.tangent.xyz, (cross(v.normal, v.tangent.xyz) * v.tangent.w), v.normal);

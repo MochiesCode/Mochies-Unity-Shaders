@@ -81,7 +81,7 @@ namespace Mochie {
 		public static GUIContent vertexBaseColorText = new GUIContent("Vertex Base Color", "Multiplies base color with vertex color.");
 		public static GUIContent unityFogToggleText = new GUIContent("Unity Scene Fog", "Enables or disables unity scene fog on this material.");
 		public static GUIContent mirrorNormalSwizzleText = new GUIContent("Normal Swizzle", "Determines the axis of offset when applying the normal maps to mirror based reflections. If reflections look broken or incorrect, try each of these options to see which matches the orientation of your surface.");
-
+		public static GUIContent ignoreRealtimeGIText = new GUIContent("Ignore Realtime GI", "When enabled this material will ignore Enlighten realtime GI.");
 		// Uber
 		public static GUIContent renderModeLabel = new GUIContent("Shading", "Enables or disables shading. If you aren't using any shading features, disabling this can provide a huge performance boost");
 		public static GUIContent blendModeLabel = new GUIContent("Blending Mode", "Opaque:\nDefault blending mode, has no transparency support.\n\nCutout:\nPixels outside the alpha threshold will be discarded and not rendered.\n\nDithered:\nUses a dithering pattern to apply cutout blending in a way that somewhat mimics the semi-transparency of fade.\n\nFade:\nCreates a smoothly blended transparency that takes all alpha values from 0-1 into account when determining opacity.\n\nTransparent:\nFunctions similarily to Fade, but maintains reflections and specular behavior on transparent areas (ie. glass).");

@@ -18,7 +18,7 @@ float3 get_camera_pos() {
 half4 BRDF1_Mochie_PBS (
 	half3 diffColor, half3 specColor, half oneMinusReflectivity, half smoothness,
     half3 normal, half3 viewDir, half3 worldPos, half2 screenUVs, half4 screenPos,
-    half metallic, half thickness, half3 ssColor, half atten, float2 lightmapUV, float3 vertexColor,
+    half metallic, half thickness, half3 ssColor, half atten, float4 lightmapUV, float3 vertexColor,
 	UnityLight light, UnityIndirect gi)
 {
 	
@@ -99,8 +99,8 @@ half4 BRDF1_Mochie_PBS (
 	}
 
 	#ifdef LTCGI
+		half3 diffLight = 0;
 		if (_LTCGIStrength > 0){
-			half3 diffLight = 0;
 			LTCGI_Contribution(
 				worldPos, 
 				normal, 
@@ -118,11 +118,25 @@ half4 BRDF1_Mochie_PBS (
 
 	#if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
 		if (_ReflShadows == 1){
-			float3 lightmap = Desaturate(DecodeLightmap(UNITY_SAMPLE_TEX2D(unity_Lightmap, lightmapUV)));
+			#if defined(_BICUBIC_SAMPLING_ON)
+				float3 lightmap = Desaturate(DecodeLightmap(SampleLightmapBicubic(lightmapUV.xy)));
+			#else
+				float3 lightmap = Desaturate(DecodeLightmap(UNITY_SAMPLE_TEX2D(unity_Lightmap, lightmapUV.xy)));
+			#endif
+			#if defined(DYNAMICLIGHTMAP_ON)
+				#if defined(_BICUBIC_SAMPLING_ON)
+					lightmap += Desaturate(DecodeRealtimeLightmap(SampleDynamicLightmapBicubic(lightmapUV.zw)));
+				#else
+					lightmap += Desaturate(DecodeRealtimeLightmap(UNITY_SAMPLE_TEX2D(unity_DynamicLightmap, lightmapUV.zw)));
+				#endif
+			#endif
 			lightmap = GetContrast(lightmap, _ContrastReflShad);
 			lightmap = lerp(lightmap, GetHDR(lightmap), _HDRReflShad);
 			lightmap *= _BrightnessReflShad;
 			lightmap *= _TintReflShad;
+			#if defined(LTCGI)
+				lightmap += diffLight;
+			#endif
 			shadowedReflections = saturate(lerp(1, lightmap, _ReflShadowStrength));
 			reflCol *= shadowedReflections;
 			specCol *= shadowedReflections;

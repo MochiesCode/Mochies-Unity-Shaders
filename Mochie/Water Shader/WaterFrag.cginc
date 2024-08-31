@@ -14,6 +14,8 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos);
 	atten = FadeShadows(i.worldPos, atten);
 
+	i.isInVRMirror = _VRChatMirrorMode == 1;
+	
 	if (_TexCoordSpace == 1){
 		_GlobalTexCoordScaleWorld = abs(_GlobalTexCoordScaleWorld);
 		float2 worldCoordSelect[3] = {-i.worldPos.xy, -i.worldPos.xz, -i.worldPos.yz}; 

@@ -87,7 +87,7 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
 	float3 reflDir = reflect(-viewDir, normalDir);
 
 	float roughnessMap = SampleTexture(_RoughnessMap, TRANSFORM_TEX(i.uv, _RoughnessMap)) * _Roughness;
-	float flipbookRoughness = flipbookBase;
+	flipbookBase = smoothstep(0, 0.1, flipbookBase);
 	#if defined(_RAINMODE_AUTO)
 		flipbookBase *= rainThreshold;
 	#endif
