@@ -128,11 +128,13 @@ half4 BRDF1_Mochie_PBS (
 				float3 lightmap = Desaturate(DecodeLightmap(UNITY_SAMPLE_TEX2D(unity_Lightmap, lightmapUV.xy)));
 			#endif
 			#if defined(DYNAMICLIGHTMAP_ON)
-				#if defined(_BICUBIC_SAMPLING_ON)
-					lightmap += Desaturate(DecodeRealtimeLightmap(SampleDynamicLightmapBicubic(lightmapUV.zw)));
-				#else
-					lightmap += Desaturate(DecodeRealtimeLightmap(UNITY_SAMPLE_TEX2D(unity_DynamicLightmap, lightmapUV.zw)));
-				#endif
+				if (_IgnoreRealtimeGI != 1){
+					#if defined(_BICUBIC_SAMPLING_ON)
+						lightmap += Desaturate(DecodeRealtimeLightmap(SampleDynamicLightmapBicubic(lightmapUV.zw)));
+					#else
+						lightmap += Desaturate(DecodeRealtimeLightmap(UNITY_SAMPLE_TEX2D(unity_DynamicLightmap, lightmapUV.zw)));
+					#endif
+				}
 			#endif
 			lightmap = GetContrast(lightmap, _ContrastReflShad);
 			lightmap = lerp(lightmap, GetHDR(lightmap), _HDRReflShad);
