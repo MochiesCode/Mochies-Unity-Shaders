@@ -592,6 +592,9 @@ void ApplyParallax(inout g2f i){
 		i.uv2.xy += parallaxOffset;
 		i.uv3.xy += parallaxOffset;
 		i.uv3.zw += parallaxOffset;
+		#if PACKED_WORKFLOW
+			packedTex = MOCHIE_SAMPLE_TEX2D_SAMPLER(_PackedMap, sampler_MainTex, i.uv.xy);
+		#endif
     }
 }
 

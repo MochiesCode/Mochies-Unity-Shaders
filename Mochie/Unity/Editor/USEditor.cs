@@ -163,7 +163,7 @@ internal class USEditor : ShaderGUI {
 
 	static readonly string unityFolderPath = "Assets/Mochie/Unity";
 	string header = "Header_Pro";
-	string versionLabel = "v1.30.3";
+	string versionLabel = "v1.30.4";
 	// β
 	
 	MaterialProperty _RenderMode = null; 

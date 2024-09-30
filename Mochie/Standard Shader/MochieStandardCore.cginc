@@ -630,6 +630,12 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
 		screenPos = i.screenPos;
 	#endif
 
+    #if defined(_TANGENT_TO_WORLD)
+        i.tangentToWorldAndPackedData[0].xyz = frontFace ? i.tangentToWorldAndPackedData[0].xyz : -i.tangentToWorldAndPackedData[0].xyz;
+        i.tangentToWorldAndPackedData[1].xyz = frontFace ? i.tangentToWorldAndPackedData[1].xyz : -i.tangentToWorldAndPackedData[1].xyz;
+    #endif
+    i.tangentToWorldAndPackedData[2].xyz = frontFace ? i.tangentToWorldAndPackedData[2].xyz : -i.tangentToWorldAndPackedData[2].xyz;
+    
 	SampleData sd = SampleDataSetup(i);
     FragmentCommonData s = FragmentSetup(i.tex, i.tex2, i.tex3, i.tex4, i.eyeVec.xyz, IN_VIEWDIR4PARALLAX(i), i.tangentToWorldAndPackedData, IN_WORLDPOS(i), i.color.rgb, frontFace, sd);
     #if AREALIT_ENABLED

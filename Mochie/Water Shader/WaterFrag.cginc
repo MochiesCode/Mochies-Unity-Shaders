@@ -455,7 +455,11 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 		float metallic = metallicMap * _Metallic;
 
 		float omr = unity_ColorSpaceDielectricSpec.a - metallic * unity_ColorSpaceDielectricSpec.a;
-		float3 specularTint = lerp(unity_ColorSpaceDielectricSpec.rgb, 1, metallic);
+		float3 specularBaseColor = mainTex;
+		#if DETAIL_BASECOLOR_ENABLED
+			specularBaseColor = lerp(mainTex.rgb, detailBC.rgb, detailBC.a);
+		#endif
+		float3 specularTint = lerp(unity_ColorSpaceDielectricSpec.rgb, specularBaseColor, metallic);
 
 		#if BASE_PASS
 			float3 lightDir = _Specular == 1 ? UnityWorldSpaceLightDir(i.worldPos) : _LightDir;
@@ -493,7 +497,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 				float3 reflDir = reflect(-viewDir, normalDir);
 				float surfaceReduction = 1.0 / (roughBRDF*roughBRDF + 1.0);
 				float grazingTerm = saturate((1-rough) + (1-omr));
-				float fresnel = FresnelLerp(specularTint, grazingTerm, NdotV);
+				float3 fresnel = FresnelLerp(specularTint, grazingTerm, NdotV);
 				#if defined(_REFLECTIONS_MANUAL_ON)
 					reflCol = GetManualReflections(reflDir, rough);
 				#elif defined(_REFLECTIONS_MIRROR_ON)

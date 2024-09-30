@@ -20,10 +20,11 @@ internal class MochieStandardGUI : ShaderGUI {
 		"Specularity",
 		"Rain",
 		"AreaLit",
-		"LTCGI"
+		"LTCGI",
+		"Lightmap Settings"
 	}, 1);
 
-	string versionLabel = "v1.32.1";
+	string versionLabel = "v1.32.2";
 	public static string receiverText = "AreaLit Maps";
 	public static string emitterText = "AreaLit Light";
 	public static string projectorText = "AreaLit Projector";
@@ -547,10 +548,10 @@ internal class MochieStandardGUI : ShaderGUI {
 				}
 			}
 
-			// Rendering options
-			bool renderFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "Render Settings");
-			if (renderFoldout){
-				DoRenderingArea(material, MGUI.IsNewLiteVersion(material));
+			// Lightmap Settings
+			bool lightmappingFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "Lightmap Settings");
+			if (lightmappingFoldout){
+				DoLightmappingArea();
 			}
 
 			// AreaLit
@@ -583,6 +584,12 @@ internal class MochieStandardGUI : ShaderGUI {
 				material.DisableKeyword("LTCGI");
 				material.DisableKeyword("LTCGI_DIFFUSE_OFF");
 				material.DisableKeyword("LTCGI_SPECULAR_OFF");
+			}
+
+			// Render Settings
+			bool renderFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "Render Settings");
+			if (renderFoldout){
+				DoRenderingArea(material, MGUI.IsNewLiteVersion(material));
 			}
 
 			// Watermark and version display
@@ -646,18 +653,15 @@ internal class MochieStandardGUI : ShaderGUI {
 				me.TexturePropertySingleLine(Tips.packedMapText, packedMap);
 				MGUI.sRGBWarning(packedMap);
 				if (packedMap.textureValue){
-					MGUI.PropertyGroupLayer(() => {
-						MGUI.SpaceN3();
+					MGUI.PropertyGroup(()=>{
 						me.ShaderProperty(metallicChannel, "Metallic");
 						me.ShaderProperty(roughChannel, roughLabel.text);
 						me.ShaderProperty(occlusionChannel, "Occlusion");
 						if (useHeight.floatValue == 1 && samplingMode.floatValue < 3){
 							me.ShaderProperty(heightChannel, "Height");
 						}
-						MGUI.SpaceN3();
 					});
-					MGUI.PropertyGroupLayer( () => {
-						MGUI.SpaceN2();
+					MGUI.PropertyGroup(()=>{
 						MGUI.ToggleSlider(me, Tips.metallicPackedText, metalMult, metallic);
 						MGUI.ToggleSlider(me, roughStrLabel, roughMult, roughness);
 						MGUI.ToggleSlider(me, Tips.occlusionPackedText, occMult, occlusionStrength);
@@ -666,7 +670,6 @@ internal class MochieStandardGUI : ShaderGUI {
 							me.ShaderProperty(steps, Tips.stepsText);
 							me.ShaderProperty(parallaxOfs, Tips.parallaxOfsText);
 						}
-						MGUI.SpaceN2();
 					});
 					MGUI.Space8();
 				}
@@ -752,26 +755,20 @@ internal class MochieStandardGUI : ShaderGUI {
 				me.TexturePropertySingleLine(Tips.detailMaskText, detailMask, detailMask.textureValue ? detailMaskChannel : null);
 				MGUI.sRGBWarning(detailPackedMap);
 				if (detailPackedMap.textureValue){
-					MGUI.PropertyGroupLayer(()=>{
-						MGUI.SpaceN3();
+					MGUI.PropertyGroup(()=>{
 						me.ShaderProperty(detailMetallicChannel, "Metallic");
 						me.ShaderProperty(detailRoughnessChannel, roughLabel.text);
 						me.ShaderProperty(detailOcclusionChannel, "Occlusion");
-						MGUI.SpaceN3();
 					});
-					MGUI.PropertyGroupLayer(()=>{
-						MGUI.SpaceN2();
+					MGUI.PropertyGroup(()=>{
 						me.ShaderProperty(detailMetallicBlend, "Metallic Blend");
 						me.ShaderProperty(detailRoughBlend, roughBlendLabel);
 						me.ShaderProperty(detailAOBlend, "Occlusion Blend");
-						MGUI.SpaceN2();
 					});
-					MGUI.PropertyGroupLayer(()=>{
-						MGUI.SpaceN2();
+					MGUI.PropertyGroup(()=>{
 						MGUI.ToggleSlider(me, Tips.metallicPackedText, detailMetalMult, detailMetallicStrength);
 						MGUI.ToggleSlider(me, roughStrLabel, detailRoughMult, detailRoughnessStrength);
 						MGUI.ToggleSlider(me, Tips.occlusionPackedText, detailOccMult, detailOcclusionStrength);
-						MGUI.SpaceN2();
 					});
 				}
 			}
@@ -824,8 +821,7 @@ internal class MochieStandardGUI : ShaderGUI {
 			emissionEnabled = true;
 			bool hadEmissionTexture = emissionMap.textureValue != null;
 			MGUI.ToggleGroup(!emissionEnabled);
-			MGUI.PropertyGroupLayer( () => {
-				MGUI.SpaceN2();
+			MGUI.PropertyGroup(()=>{
 				me.LightmapEmissionFlagsProperty(0, true);
 				me.ShaderProperty(audioLinkEmission, Tips.audioLinkEmission);
 				me.ShaderProperty(emissPulseWave, Tips.emissPulseWave);
@@ -845,8 +841,8 @@ internal class MochieStandardGUI : ShaderGUI {
 				// me.TexturePropertyWithHDRColor(Tips.emissionText, emissionMap, emissionColorForRendering, false);
 				MGUI.SpaceN2();
 				me.TexturePropertySingleLine(Tips.maskText, emissionMask);
-				MGUI.SpaceN4();
 			});
+			MGUI.SpaceN2();
 			MGUI.ToggleGroupEnd();
 			float brightness = emissionColorForRendering.colorValue.maxColorComponent;
 			if (emissionMap.textureValue != null && !hadEmissionTexture && brightness <= 0f)
@@ -872,17 +868,21 @@ internal class MochieStandardGUI : ShaderGUI {
 				}
 				MGUI.ToggleFloat(me, Tips.reflShadows, reflShadows, reflShadowStrength);
 				if (reflShadows.floatValue == 1){
-					MGUI.PropertyGroupLayer(() =>{
-						MGUI.SpaceN2();
+					MGUI.PropertyGroup(() =>{
 						me.ShaderProperty(tintReflShad, "Lightmap Tint");
 						me.ShaderProperty(brightnessReflShad, "Brightness");
 						me.ShaderProperty(contrastReflShad, "Contrast");
 						me.ShaderProperty(hdrReflShad, "HDR");
-						MGUI.SpaceN2();
 					});
 				}
 				MGUI.ToggleFloat(me, Tips.gsaa, gsaa, gsaaStrength);
 				MGUI.ToggleFloat(me, Tips.useFresnel, useFresnel, fresnelStrength);
+				if (!isLite){
+					me.ShaderProperty(mirrorToggle, Tips.mirrorMode);
+					if (mirrorToggle.floatValue == 1){
+						me.ShaderProperty(mirrorNormalOffsetSwizzle, Tips.mirrorNormalSwizzleText);
+					}
+				}
 			});
 			if (mirrorToggle.floatValue == 0){
 				MGUI.PropertyGroup(()=>{
@@ -918,24 +918,20 @@ internal class MochieStandardGUI : ShaderGUI {
 		MGUI.PropertyGroup(()=>{
 			me.ShaderProperty(subsurface, "Enable");
 			MGUI.ToggleGroup(subsurface.floatValue == 0);
-			MGUI.PropertyGroupLayer(() => {
-				MGUI.SpaceN1();
+			MGUI.PropertyGroup(() => {
 				me.TexturePropertySingleLine(Tips.thicknessMapText, thicknessMap, thicknessMapPower);
 				me.ShaderProperty(scatterCol, Tips.scatterCol);
 				me.ShaderProperty(scatterAlbedoTint, Tips.scatterAlbedoTint);
-				MGUI.SpaceN2();
 			});
-			MGUI.Space1();
-			MGUI.PropertyGroupLayer(()=>{
-				MGUI.SpaceN2();
+			MGUI.PropertyGroup(()=>{
 				me.ShaderProperty(scatterIntensity, Tips.scatterIntensity);
 				me.ShaderProperty(scatterAmbient, Tips.scatterAmbient);
 				me.ShaderProperty(scatterPow, Tips.scatterPow);
 				me.ShaderProperty(scatterDist, Tips.scatterDist);
 				me.ShaderProperty(wrappingFactor, Tips.wrappingFactor);
-				MGUI.SpaceN2();
 			});
 			MGUI.ToggleGroupEnd();
+			MGUI.SpaceN2();
 		});
 	}
 
@@ -943,17 +939,16 @@ internal class MochieStandardGUI : ShaderGUI {
 		MGUI.PropertyGroup(()=>{
 			me.ShaderProperty(rainToggle, "Enable");
 			MGUI.ToggleGroup(rainToggle.floatValue == 0);
-			MGUI.PropertyGroupLayer(()=>{
-				MGUI.SpaceN2();
+			MGUI.PropertyGroup(()=>{
 				me.TexturePropertySingleLine(Tips.maskText, rainMask);
 				me.ShaderProperty(rippleStr, "Strength");
 				me.ShaderProperty(rippleScale, "Scale");
 				me.ShaderProperty(rippleSpeed, "Speed");
 				me.ShaderProperty(rippleDensity, "Density");
 				me.ShaderProperty(rippleSize, "Size");
-				MGUI.SpaceN2();
 			});
 			MGUI.ToggleGroupEnd();
+			MGUI.SpaceN2();
 		});
 	}
 
@@ -973,78 +968,66 @@ internal class MochieStandardGUI : ShaderGUI {
 
 			if (needsDetailMaskUV){
 				MGUI.BoldLabel("Detail Mask");
-				MGUI.PropertyGroupLayer(()=>{
-					MGUI.SpaceN2();
+				MGUI.PropertyGroup(()=>{
 					me.ShaderProperty(uvDetailMask, Tips.uvSetLabel.text);
 					if (uvDetailMask.floatValue >= 5)
 						me.ShaderProperty(uvDetailMaskSwizzle, "Swizzle");
 					MGUI.TextureSOScroll(me, detailMask, detailScroll);
 					me.ShaderProperty(detailRotate, "Rotation");
-					MGUI.SpaceN2();
 				});
 			}
 			if (needsHeightMaskUV){
 				MGUI.Space4();
 				MGUI.BoldLabel("Height Mask");
-				MGUI.PropertyGroupLayer(()=>{
-					MGUI.SpaceN2();
+				MGUI.PropertyGroup(()=>{
 					me.ShaderProperty(uvHeightMask, Tips.uvSetLabel.text);
 					if (uvHeightMask.floatValue >= 5)
 						me.ShaderProperty(uvHeightMaskSwizzle, "Swizzle");
 					MGUI.TextureSOScroll(me, parallaxMask, uv2Scroll);
-					MGUI.SpaceN2();
 				});
 			}
 			if (needsEmissMaskUV){
 				MGUI.Space4();
 				MGUI.BoldLabel("Emission Mask");
-				MGUI.PropertyGroupLayer(()=>{
-					MGUI.SpaceN2();
+				MGUI.PropertyGroup(()=>{
 					me.ShaderProperty(uvEmissMask, Tips.uvSetLabel.text);
 					if (uvEmissMask.floatValue >= 5)
 						me.ShaderProperty(uvEmissMaskSwizzle, "Swizzle");
 					MGUI.TextureSOScroll(me, emissionMask, uv3Scroll);
 					me.ShaderProperty(uv3Rot, "Rotation");
-					MGUI.SpaceN2();
 				});
 			}
 			if (needsAlphaMaskUV){
 				MGUI.Space4();
 				MGUI.BoldLabel("Alpha Mask");
-				MGUI.PropertyGroupLayer(()=>{
-					MGUI.SpaceN2();
+				MGUI.PropertyGroup(()=>{
 					me.ShaderProperty(uvAlphaMask, Tips.uvSetLabel.text);
 					if (uvAlphaMask.floatValue >= 5)
 						me.ShaderProperty(uvAlphaMaskSwizzle, "Swizzle");
 					MGUI.TextureSOScroll(me, alphaMask, uv4Scroll);
 					me.ShaderProperty(uv4Rot, "Rotation");
-					MGUI.SpaceN2();
 				});
 			}
 			if (needsRainMaskUV){
 				MGUI.Space4();
 				MGUI.BoldLabel("Rain Mask");
-				MGUI.PropertyGroupLayer(()=>{
-					MGUI.SpaceN2();
+				MGUI.PropertyGroup(()=>{
 					me.ShaderProperty(uvRainMask, Tips.uvSetLabel.text);
 					if (uvRainMask.floatValue >= 5)
 						me.ShaderProperty(uvRainMaskSwizzle, "Swizzle");
 					MGUI.TextureSOScroll(me, rainMask, uv5Scroll);
 					me.ShaderProperty(uv5Rot, "Rotation");
-					MGUI.SpaceN2();
 				});
 			}
 			if (needsRimMaskUV){
 				MGUI.Space4();
 				MGUI.BoldLabel("Rim Mask");
-				MGUI.PropertyGroupLayer(()=>{
-					MGUI.SpaceN2();
+				MGUI.PropertyGroup(()=>{
 					me.ShaderProperty(uvRimMask, Tips.uvSetLabel.text);
 					if (uvRimMask.floatValue >= 5)
 						me.ShaderProperty(uvRimMaskSwizzle, "Swizzle");
 					MGUI.TextureSOScroll(me, rimMask, uvRimMaskScroll);
 					me.ShaderProperty(uvRimMaskRot, "Rotation");
-					MGUI.SpaceN2();
 				});
 			}
 		});
@@ -1052,48 +1035,42 @@ internal class MochieStandardGUI : ShaderGUI {
 
 	void DoRenderingArea(Material mat, bool isLite){
 		MGUI.PropertyGroup(()=>{
-			MGUI.PropertyGroupLayer(() => {
-				MGUI.SpaceN2();
+			MGUI.PropertyGroup(() => {
 				me.ShaderProperty(culling, Tips.culling);
 				queueOffset.floatValue = (int)queueOffset.floatValue;
 				me.ShaderProperty(queueOffset, Tips.queueOffset);
 				MGUI.SpaceN1();
 				MGUI.DummyProperty("Render Queue:", mat.renderQueue.ToString());
-				MGUI.SpaceN4();
 			});
-
-			MGUI.Space1();
-			MGUI.PropertyGroupLayer(() => {
-				MGUI.SpaceN3();
-				me.ShaderProperty(_BakeryMode, Tips.bakeryMode);
-				me.ShaderProperty(_BAKERY_SHNONLINEAR, "Bakery Non-Linear SH");
-				me.ShaderProperty(_BAKERY_LMSPEC, "Bakery Lightmap Specular");
-				MGUI.SpaceN3();
-			});
-			MGUI.PropertyGroupLayer(()=>{
-				MGUI.SpaceN3();
-				me.ShaderProperty(bicubicLightmap, Tips.bicubicLightmap);
+			MGUI.PropertyGroup(()=>{
 				me.ShaderProperty(unityFogToggle, Tips.unityFogToggleText);
 				me.ShaderProperty(vertexBaseColor, Tips.vertexBaseColorText);
-				me.ShaderProperty(ignoreRealtimeGI, Tips.ignoreRealtimeGIText);
-				if (!isLite){
-					me.ShaderProperty(mirrorToggle, Tips.mirrorMode);
-					if (mirrorToggle.floatValue == 1){
-						me.ShaderProperty(mirrorNormalOffsetSwizzle, Tips.mirrorNormalSwizzleText);
-					}
-				}
 				me.EnableInstancingField();
-				MGUI.SpaceN2();
-				me.DoubleSidedGIField();
-				MGUI.SpaceN3();
 			});
+			MGUI.SpaceN2();
 			if (mirrorToggle.floatValue == 1){
+				MGUI.Space2();
 				MGUI.DisplayWarning("Mirror mode requires a VRChat mirror component with this shader selected in the custom shader field. It also requires the mesh be facing forwards on the local Z axis (see default unity quad for example). Lastly, this incurs the same performance cost as any other VRChat mirror, use it very sparingly.");
 			}
-			MGUI.Space1();
 			// me.TexturePropertySingleLine(new GUIContent("RNM0"), _RNM0);
 			// me.TexturePropertySingleLine(new GUIContent("RNM1"), _RNM1);
 			// me.TexturePropertySingleLine(new GUIContent("RNM2"), _RNM2);
+		});
+	}
+
+	void DoLightmappingArea(){
+		MGUI.PropertyGroup(() => {
+			MGUI.PropertyGroup(() => {
+				me.ShaderProperty(_BakeryMode, Tips.bakeryMode);
+				me.ShaderProperty(_BAKERY_SHNONLINEAR, "Bakery Non-Linear SH");
+				me.ShaderProperty(_BAKERY_LMSPEC, "Bakery Lightmap Specular");
+			});
+			MGUI.PropertyGroup(() => {
+				me.ShaderProperty(bicubicLightmap, Tips.bicubicLightmap);
+				me.ShaderProperty(ignoreRealtimeGI, Tips.ignoreRealtimeGIText);
+				me.DoubleSidedGIField();
+			});
+			MGUI.SpaceN2();
 		});
 	}
 
@@ -1105,45 +1082,37 @@ internal class MochieStandardGUI : ShaderGUI {
 			me.ShaderProperty(hueMode, "Hue Mode");
 			MGUI.Space2();
 			MGUI.BoldLabel("Global Color");
-			MGUI.PropertyGroupLayer(()=>{
-				MGUI.SpaceN1();
+			MGUI.PropertyGroup(()=>{
 				me.ShaderProperty(huePost, "Hue");
 				me.ShaderProperty(saturationPost, "Saturation");
 				me.ShaderProperty(brightnessPost, "Brightness");
 				me.ShaderProperty(contrastPost, "Contrast");
 				me.ShaderProperty(acesFilter, Tips.aces);
-				MGUI.SpaceN2();
 			});
 			MGUI.Space4();
 			MGUI.BoldLabel("Base Color");
-			MGUI.PropertyGroupLayer(()=>{
-				MGUI.SpaceN1();
+			MGUI.PropertyGroup(()=>{
 				me.ShaderProperty(hue, "Hue");
 				me.ShaderProperty(saturation, "Saturation");
 				me.ShaderProperty(brightness, "Brightness");
 				me.ShaderProperty(contrast, "Contrast");
-				MGUI.SpaceN2();
 			});
 			MGUI.Space4();
 			MGUI.BoldLabel("Detail Color");
-			MGUI.PropertyGroupLayer(()=>{
-				MGUI.SpaceN1();
+			MGUI.PropertyGroup(()=>{
 				me.ShaderProperty(hueDet, "Hue");
 				me.ShaderProperty(saturationDet, "Saturation");
 				me.ShaderProperty(brightnessDet, "Brightness");
 				me.ShaderProperty(contrastDet, "Contrast");
-				MGUI.SpaceN2();
 			});
 			if (emissionEnabled){
 				MGUI.Space4();
 				MGUI.BoldLabel("Emission Color");
-				MGUI.PropertyGroupLayer(()=>{
-					MGUI.SpaceN1();
+				MGUI.PropertyGroup(()=>{
 					me.ShaderProperty(hueEmiss, "Hue");
 					me.ShaderProperty(saturationEmiss, "Saturation");
 					me.ShaderProperty(brightnessEmiss, "Brightness");
 					me.ShaderProperty(contrastEmiss, "Contrast");
-					MGUI.SpaceN2();
 				});
 			}
 			MGUI.ToggleGroupEnd();
@@ -1175,16 +1144,13 @@ internal class MochieStandardGUI : ShaderGUI {
 		MGUI.PropertyGroup(()=>{
 			me.ShaderProperty(areaLitToggle, "Enable");
 			MGUI.ToggleGroup(areaLitToggle.floatValue == 0);
-			MGUI.PropertyGroupLayer(()=>{
-				MGUI.SpaceN2();
+			MGUI.PropertyGroup(()=>{
 				me.ShaderProperty(areaLitStrength, "Strength");
 				me.ShaderProperty(areaLitRoughnessMult, "Roughness Multiplier");
 				me.ShaderProperty(opaqueLights, Tips.opaqueLightsText);
 				me.ShaderProperty(reflShadowAreaLit, "Apply Specular Occlusion");
-				MGUI.SpaceN2();
 			});
-			MGUI.PropertyGroupLayer(()=>{
-				MGUI.SpaceN2();
+			MGUI.PropertyGroup(()=>{
 				var lightMeshText = !lightMesh.textureValue ? Tips.lightMeshText : new GUIContent(
 					Tips.lightMeshText.text + $" (max: {lightMesh.textureValue.height})", Tips.lightMeshText.tooltip
 				);
@@ -1202,7 +1168,6 @@ internal class MochieStandardGUI : ShaderGUI {
 					me.ShaderProperty(occlusionUVSet, "UV Set");
 				}
 				MGUI.TextureSO(me, areaLitOcclusion, areaLitOcclusion.textureValue);
-				MGUI.SpaceN2();
 			});
 			MGUI.ToggleGroupEnd();
 			MGUI.DisplayInfo("Note that the AreaLit package files MUST be inside a folder named AreaLit (case sensitive) directly in the Assets folder (Assets/AreaLit)");
@@ -1213,15 +1178,14 @@ internal class MochieStandardGUI : ShaderGUI {
 		MGUI.PropertyGroup(()=>{
 			me.ShaderProperty(ltcgi, "Enable");
 			MGUI.ToggleGroup(ltcgi.floatValue == 0);
-			MGUI.PropertyGroupLayer(()=>{
-				MGUI.SpaceN2();
+			MGUI.PropertyGroup(()=>{
 				me.ShaderProperty(ltcgiStrength, "Strength");
 				me.ShaderProperty(ltcgiRoughness, "Roughness Multiplier");
 				me.ShaderProperty(ltcgi_spec_off, "Disable Specular");
 				me.ShaderProperty(ltcgi_diffuse_off, "Disable Diffuse");
-				MGUI.SpaceN2();
 			});
 			MGUI.ToggleGroupEnd();
+			MGUI.SpaceN2();
 		});
 	}
 

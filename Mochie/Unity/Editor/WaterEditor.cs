@@ -51,7 +51,7 @@ public class WaterEditor : ShaderGUI {
 	}, 0);
 
     string header = "WaterHeader_Pro";
-	string versionLabel = "v1.21";
+	string versionLabel = "v1.21.1";
 
 	MaterialProperty _Color = null;
 	MaterialProperty _NonGrabColor = null;

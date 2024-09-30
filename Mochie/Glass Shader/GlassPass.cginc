@@ -115,7 +115,7 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
 		#if defined(_REFLECTIONS_ON)
 			float surfaceReduction = 1.0 / (roughBRDF*roughBRDF + 1.0);
 			float grazingTerm = saturate((1-_Roughness) + (1-omr));
-			float fresnel = FresnelLerp(specularTint, grazingTerm, NdotV);
+			float3 fresnel = FresnelLerp(specularTint, grazingTerm, NdotV);
 			reflCol = GetWorldReflections(reflDir, i.worldPos, roughness) * fresnel * surfaceReduction;
 		#endif
 	#endif
