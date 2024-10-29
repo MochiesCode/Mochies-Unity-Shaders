@@ -51,7 +51,7 @@ public class WaterEditor : ShaderGUI {
 	}, 0);
 
     string header = "WaterHeader_Pro";
-	string versionLabel = "v1.21.1";
+	string versionLabel = "v1.21.2";
 
 	MaterialProperty _Color = null;
 	MaterialProperty _NonGrabColor = null;
@@ -478,8 +478,11 @@ public class WaterEditor : ShaderGUI {
 				MGUI.PropertyGroup(()=>{
 					MGUI.ToggleGroup(_FlowToggle.floatValue == 0);
 					me.TexturePropertySingleLine(flowLabel, _FlowMap, _FlowMapUV);
-					if (_BlendNoiseSource.floatValue == 1)
+					MGUI.sRGBWarning(_FlowMap);
+					if (_BlendNoiseSource.floatValue == 1){
 						me.TexturePropertySingleLine(Tips.blendNoise, _BlendNoise);
+						MGUI.sRGBWarning(_BlendNoise);
+					}
 					MGUI.Vector2Field(_FlowMapScale, "Flow Map Scale");
 					if (_BlendNoiseSource.floatValue == 1)
 						MGUI.Vector2Field(_BlendNoiseScale, "Blend Noise Scale");

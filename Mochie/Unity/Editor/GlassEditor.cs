@@ -8,7 +8,7 @@ using Mochie;
 
 public class GlassEditor : ShaderGUI {
 
-	string versionLabel = "v1.6.1";
+	string versionLabel = "v1.6.2";
 
 	// Surface
 	MaterialProperty _GrabpassTint = null;
@@ -42,7 +42,7 @@ public class GlassEditor : ShaderGUI {
 	MaterialProperty _RippleSize = null;
 	MaterialProperty _RippleDensity = null;
 	MaterialProperty _DynamicDroplets = null;
-	MaterialProperty _RainBias = null;
+	// MaterialProperty _RainBias = null;
 	MaterialProperty _RainThreshold = null;
 	MaterialProperty _RainThresholdSize = null;
 
@@ -79,6 +79,7 @@ public class GlassEditor : ShaderGUI {
 			MGUI.BoldLabel("SURFACE");
 			MGUI.PropertyGroup(()=>{
 				MGUI.PropertyGroup(()=>{
+					me.ShaderProperty(_BlendMode, "Transparency");
 					if (_BlendMode.floatValue == 0)
 						me.ShaderProperty(_GrabpassTint, "Grabpass Tint");
 					me.ShaderProperty(_SpecularityTint, "Specularity Tint");
@@ -103,6 +104,7 @@ public class GlassEditor : ShaderGUI {
 						me.ShaderProperty(_Refraction, "Refraction");
 					});
 				}
+				MGUI.SpaceN2();
 			});
 			MGUI.Space10();
 
@@ -143,13 +145,14 @@ public class GlassEditor : ShaderGUI {
 					MGUI.DummyProperty("Render Queue:", mat.renderQueue.ToString());
 					me.ShaderProperty(_QueueOffset, Tips.queueOffset);
 					me.ShaderProperty(_Culling, "Culling Mode");
-					me.ShaderProperty(_SamplingMode, "Sampling Mode");
+					
 					/// EditorGUI.BeginChangeCheck();
-					me.ShaderProperty(_BlendMode, "Transparency");
+					
 					// if (EditorGUI.EndChangeCheck())
 					// 	SetBlendMode(mat);
 				});
 				MGUI.PropertyGroup(()=>{
+					me.ShaderProperty(_SamplingMode, "Sampling Mode");
 					me.ShaderProperty(_TexCoordSpace, "Texture Coordinate Space");
 					if (_TexCoordSpace.floatValue == 1f){
 						me.ShaderProperty(_TexCoordSpaceSwizzle, "Swizzle");
@@ -179,7 +182,6 @@ public class GlassEditor : ShaderGUI {
 			me.ShaderProperty(_Speed, "Speed");
 			me.ShaderProperty(_XScale, "X Scale");
 			me.ShaderProperty(_YScale, "Y Scale");
-			me.ShaderProperty(_RainBias, "Mip Bias");
 			me.ShaderProperty(_DynamicDroplets, "Dynamic Droplets");
 		});
 	}
@@ -219,8 +221,8 @@ public class GlassEditor : ShaderGUI {
 		int rainToggle = mat.GetInt("_RainToggle");
 		float roughness = mat.GetFloat("_Roughness");
 		bool hasNormal = mat.GetTexture("_NormalMap") && mat.GetFloat("_NormalStrength") > 0;
-		bool canGrab = roughness > 0 || rainToggle == 1 || hasNormal;
-		if (blendMode == 0) blendMode = canGrab ? blendMode : 1;
+		// bool canGrab = roughness > 0 || rainToggle == 1 || hasNormal;
+		// if (blendMode == 0) blendMode = canGrab ? blendMode : 1;
 
 		switch (blendMode){
 			case 0: // Grabpass

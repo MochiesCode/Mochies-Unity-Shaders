@@ -8,7 +8,7 @@ using Mochie;
 
 public class UnderwaterEditor : ShaderGUI {
 
-	string versionLabel = "v1.0.1";
+	string versionLabel = "v1.0.2";
 
 	// Base
 	// MaterialProperty _RenderMode = null;

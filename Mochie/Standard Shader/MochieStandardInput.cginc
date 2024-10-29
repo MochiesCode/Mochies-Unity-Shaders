@@ -233,9 +233,9 @@ float3 shadowedReflections;
 #endif
 
 #if AUDIOLINK_ENABLED
-	#ifndef LTCGI
+	// #ifndef LTCGI
 		Texture2D	_AudioTexture;
-	#endif
+	// #endif
 	SamplerState	sampler_AudioTexture;
 	int				_AudioLinkEmission;
 	float			_AudioLinkEmissionStrength;

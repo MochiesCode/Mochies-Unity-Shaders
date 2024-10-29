@@ -306,7 +306,7 @@ float3 GetAddRamp(g2f i, lighting l, masks m, float shadows, float atten){
 			float3 ramp0 = linearstep(0, _RampWidth0, l.NdotL-_RampPos);
 			float3 ramp1 = linearstep(0, _RampWidth1, l.NdotL-_RampPos);
 			ramp = lerp(ramp0, ramp1, _RampWeight);
-			ramp = lerp(_ShadowTint.rgb, 1, ramp * atten * shadows);
+			ramp = ramp * atten * shadows; // lerp(_ShadowTint.rgb, 1, ramp * atten * shadows);
 			ApplyDithering(i, ramp);
 		}
 		else if (_ShadowMode == 2){

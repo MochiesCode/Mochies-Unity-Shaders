@@ -34,6 +34,8 @@
 		_FogOpacity("Opacity", Range(0,1)) = 0.8
 		_FogRadius("Radius", Float) = 1.7
 		_FogFade("Fade", Float) = 3
+
+		[HideInInspector]_NaNLmao("", float) = 0
 		
     }
     SubShader {
@@ -83,6 +85,7 @@
 			float3 _CausticsRotation;
 			float3 _CausticsColor;
 			float _RenderMode;
+			float _NaNLmao;
 
 			struct appdata {
                 float4 vertex : POSITION;
@@ -101,6 +104,11 @@
 			
             v2f vert (appdata v){
                 v2f o = (v2f)0;
+
+				#if defined(SHADER_API_MOBILE)
+					v.vertex = 0/_NaNLmao;
+				#endif
+
 				UNITY_SETUP_INSTANCE_ID(v);
 				UNITY_TRANSFER_INSTANCE_ID(v, o);
 				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
@@ -120,6 +128,7 @@
 				// 	o.localPos = v.vertex;
 				// }
 				o.uv = ComputeGrabScreenPos(o.pos);
+
                 return o;
             }
 
@@ -142,6 +151,10 @@
 			}
 
 			float4 frag (v2f i) : SV_Target {
+
+				#if defined(SHADER_API_MOBILE)
+					discard;
+				#endif
 
 				UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
 
@@ -192,6 +205,7 @@
 			float _FogFade;
 			float _FogOpacity;
 			float _RenderMode;
+			float _NaNLmao;
 
 			struct appdata {
                 float4 vertex : POSITION;
@@ -225,6 +239,11 @@
 
             v2f vert (appdata v){
                 v2f o = (v2f)0;
+
+				#if defined(SHADER_API_MOBILE)
+					v.vertex = 0/_NaNLmao;
+				#endif
+
 				UNITY_SETUP_INSTANCE_ID(v);
 				UNITY_TRANSFER_INSTANCE_ID(v, o);
 				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
@@ -276,6 +295,10 @@
 
 			float4 frag (v2f i) : SV_Target {
 
+				#if defined(SHADER_API_MOBILE)
+					discard;
+				#endif
+
 				UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
 
 				float4 fogCol = 0;
@@ -315,7 +338,8 @@
 			float4 _CameraDepthTexture_TexelSize;
 			float4 _Color;
 			float _RenderMode;
-
+			float _NaNLmao;
+			
 			#include "WaterBlurKernels.cginc"
 
             struct appdata {
@@ -350,6 +374,11 @@
 
             v2f vert (appdata v){
                 v2f o = (v2f)0;
+
+				#if defined(SHADER_API_MOBILE)
+					v.vertex = 0/_NaNLmao;
+				#endif
+
 				UNITY_SETUP_INSTANCE_ID(v);
 				UNITY_TRANSFER_INSTANCE_ID(v, o);
 				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
@@ -396,6 +425,10 @@
 			}
 
             float4 frag (v2f i) : SV_Target {
+				
+				#if defined(SHADER_API_MOBILE)
+					discard;
+				#endif
 
 				UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
 
@@ -404,6 +437,9 @@
 					MirrorCheck();
 					float2 blurStr = _BlurStr * GetRadius(i) * 0.01;
 					blurStr.x *= 0.5625;
+					#if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
+						blurStr *= 0.5;
+					#endif
 					float2 uv = i.uv.xy / i.uv.w;
 					float2 uvb = uv;
 					#ifdef HIGH_QUALITY_BLUR

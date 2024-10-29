@@ -24,7 +24,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		"Lightmap Settings"
 	}, 1);
 
-	string versionLabel = "v1.32.2";
+	string versionLabel = "v1.32.3";
 	public static string receiverText = "AreaLit Maps";
 	public static string emitterText = "AreaLit Light";
 	public static string projectorText = "AreaLit Projector";

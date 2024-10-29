@@ -144,7 +144,11 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
 	float4 baseColorTex = SampleTexture(_BaseColor, TRANSFORM_TEX(i.uv, _BaseColor)) * _BaseColorTint;
 	float3 baseColor = baseColorTex.rgb * baseColorTex.a;
 	#if defined(_LIT_BASECOLOR_ON) || defined(UNITY_PASS_FORWARDADD)
-		float3 lightCol = ShadeSH9(normalDir) + _LightColor0;
+		#if defined(UNITY_PASS_FORWARDBASE)
+			float3 lightCol = ShadeSH9(normalDir) + _LightColor0;
+		#else
+			float3 lightCol = _LightColor0;
+		#endif
 		baseColor *= saturate(lightCol) * atten;
 	#endif
 	float occlusion = lerp(1, SampleTexture(_OcclusionMap, TRANSFORM_TEX(i.uv, _OcclusionMap)), _Occlusion);
