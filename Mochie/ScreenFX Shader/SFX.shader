@@ -24,6 +24,7 @@ Shader "Mochie/Screen FX" {
 		_AutoShiftSpeed("", Float) = 0.25
 		_Hue("", Range(0,1)) = 0
 		[Enum(HSV,0, Oklab,1)]_HueMode("", Int) = 0
+		[ToggleUI]_MonoTint("", Int) = 0
 		_Saturation("", Float) = 1
 		_SaturationR("", Float) = 1
 		_SaturationG("", Float) = 1

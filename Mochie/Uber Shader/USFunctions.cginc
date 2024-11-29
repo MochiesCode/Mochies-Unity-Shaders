@@ -15,8 +15,12 @@ void ApplyGeneralFilters(inout float3 albedo){
 
 void ApplyHSVFilter(inout float3 albedo){
 	_Hue += lerp(0, frac(_Time.y*_AutoShiftSpeed), _AutoShift);
-	if (_Hue > 0 && _Hue < 1)
-		albedo = HSVShift(albedo, _Hue, 0, 0);
+	if ((_Hue > 0 && _Hue < 1) || _MonoTint == 1){
+		if (_HueMode == 0)
+			albedo = HueShift(albedo, _Hue, _MonoTint);
+		else
+			albedo = HueShiftOklab(albedo, _Hue, _MonoTint);
+	}
 }
 
 void ApplyTeamColors(masks m, inout float3 albedo){;

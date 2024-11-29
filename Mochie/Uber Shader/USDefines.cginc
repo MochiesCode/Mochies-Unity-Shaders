@@ -229,6 +229,8 @@ int _MatcapNormal0Mix;
 int _MatcapNormal1Mix;
 int _DetailMetallicBlending;
 int _UsingDetailMetallic;
+int _HueMode;
+int _MonoTint;
 float _DetailMetallicStrength;
 
 float _RefractionBlurStrength;

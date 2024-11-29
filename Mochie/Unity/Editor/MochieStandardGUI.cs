@@ -24,7 +24,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		"Lightmap Settings"
 	}, 1);
 
-	string versionLabel = "v1.32.3";
+	string versionLabel = "v1.33";
 	public static string receiverText = "AreaLit Maps";
 	public static string emitterText = "AreaLit Light";
 	public static string projectorText = "AreaLit Projector";
@@ -72,6 +72,7 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty contrast = null;
 	MaterialProperty brightness = null;
 	MaterialProperty hueMode = null;
+	MaterialProperty monoTint = null;
 	MaterialProperty hue = null;
 	MaterialProperty saturationDet = null;
 	MaterialProperty contrastDet = null;
@@ -455,6 +456,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		hueMode = FindProperty("_HueMode", props);
 		ltcgiRoughness = FindProperty("_LTCGIRoughness", props);
 		ignoreRealtimeGI = FindProperty("_IgnoreRealtimeGI", props);
+		monoTint = FindProperty("_MonoTint", props);
 	}
 
 	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props){
@@ -1080,6 +1082,7 @@ internal class MochieStandardGUI : ShaderGUI {
 			MGUI.ToggleGroup(filtering.floatValue == 0);
 			MGUI.Space2();
 			me.ShaderProperty(hueMode, "Hue Mode");
+			me.ShaderProperty(monoTint, Tips.monoTintText);
 			MGUI.Space2();
 			MGUI.BoldLabel("Global Color");
 			MGUI.PropertyGroup(()=>{

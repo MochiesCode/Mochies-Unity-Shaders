@@ -167,11 +167,11 @@ void ApplyColor(v2f i, inout float3 col, audioLinkData ald){
 	float3 rgb = GetInversion(col) * _Color;
 	_Hue += lerp(0, frac(_Time.y*_AutoShiftSpeed), _AutoShift);
 	float3 hsv = rgb;
-	if (_Hue > 0 && _Hue < 1){
+	if ((_Hue > 0 && _Hue < 1) || _MonoTint == 1){
 		if (_HueMode == 0)
-			hsv = HueShift(rgb, _Hue);
+			hsv = HueShift(rgb, _Hue, _MonoTint);
 		else
-			hsv = HueShiftOklab(rgb, _Hue);
+			hsv = HueShiftOklab(rgb, _Hue, _MonoTint);
 	}
 	float3 filteredCol = hsv*_RGB;
 	ApplyGeneralFilters(filteredCol);

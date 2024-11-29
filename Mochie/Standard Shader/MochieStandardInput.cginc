@@ -40,6 +40,7 @@ int				_UseAlphaMask;
 int 			_AlphaMaskChannel;
 float			_Saturation;
 float			_Hue;
+float			_MonoTint;
 float			_Contrast;
 float			_Brightness;
 float			_ACES;
@@ -386,11 +387,11 @@ void TexCoords(VertexInput v, inout float4 texcoord, inout float4 texcoord1, ino
 
 half3 Filtering(float3 col, float hue, float saturation, float brightness, float contrast, float aces){
 	if (_Filtering == 1){
-		if (hue > 0 && hue < 1){
+		if ((hue > 0 && hue < 1) || _MonoTint == 1){
 			if (_HueMode == 0)
-				col = HueShift(col, hue);
+				col = HueShift(col, hue, _MonoTint);
 			else
-				col = HueShiftOklab(col, hue);
+				col = HueShiftOklab(col, hue, _MonoTint);
 		}
 		col = lerp(dot(col, float3(0.3,0.59,0.11)), col, saturation);
 		col = GetContrast(col, contrast);

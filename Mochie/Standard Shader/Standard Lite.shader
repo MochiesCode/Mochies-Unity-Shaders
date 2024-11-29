@@ -120,6 +120,7 @@ Shader "Mochie/Standard Lite" {
 
 		[ToggleUI]_Filtering("Filtering", Int) = 0
 		[Enum(HSV,0, Oklab,1)]_HueMode("Hue Mode", Int) = 0
+		[ToggleUI]_MonoTint("Mono Tint", Int) = 0
 		_Hue("Hue", Range(0,1)) = 0
 		_Contrast("Contrast", Float) = 1
 		_Saturation("Saturation", Float) = 1

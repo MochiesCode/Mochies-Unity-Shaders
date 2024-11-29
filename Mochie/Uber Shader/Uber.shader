@@ -400,6 +400,8 @@ Shader "Mochie/Uber" {
 		[ToggleUI]_AutoShift("tog", Int) = 0
 		_AutoShiftSpeed("ra", Range(0,1)) = 0.25
 		_Hue("ra", Range(0,1)) = 0
+		[Enum(HSV,0, Oklab,1)]_HueMode("Hue Mode", Int) = 0
+		[ToggleUI]_MonoTint("Mono Tint", Int) = 0
 		_Value("fl", Float) = 0
 
 		_TeamColorMask("tex", 2D) = "white" {} // Team Colors

@@ -163,7 +163,7 @@ internal class USEditor : ShaderGUI {
 
 	static readonly string unityFolderPath = "Assets/Mochie/Unity";
 	string header = "Header_Pro";
-	string versionLabel = "v1.30.5";
+	string versionLabel = "v1.31";
 	// β
 	
 	MaterialProperty _RenderMode = null; 
@@ -710,6 +710,8 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _DetailMetallic = null;
 	MaterialProperty _DetailMetallicStrength = null;
 	MaterialProperty _UseShadowsForLREmiss = null;
+	MaterialProperty _HueMode = null;
+	MaterialProperty _MonoTint = null;
 
 	MaterialProperty _VRCFallback = null;
 	MaterialProperty _NaNLmao = null;
@@ -1604,13 +1606,19 @@ internal class USEditor : ShaderGUI {
 				me.ShaderProperty(_TeamFiltering, "Color Masking");
 				me.ShaderProperty(_PostFiltering, Tips.postFiltering);
 				me.ShaderProperty(_Invert, "Invert");
-				me.ShaderProperty(_AutoShift, "Auto Hue Shift");
+				
 			});
-			MGUI.PropertyGroup(() => {
+			MGUI.PropertyGroup(()=>{
+				me.ShaderProperty(_HueMode, "Hue Mode");
+				me.ShaderProperty(_MonoTint, Tips.monoTintText);
+				me.ShaderProperty(_AutoShift, "Auto Hue Shift");
 				if (_AutoShift.floatValue == 0)
 					me.ShaderProperty(_Hue, "Hue");
 				else
 					me.ShaderProperty(_AutoShiftSpeed, "Shift Speed");
+			});
+			MGUI.PropertyGroup(() => {
+
 				MGUI.Vector3FieldRGB(_RGB, "RGB Multiplier");
 				me.ShaderProperty(_Saturation, "Saturation");
 				me.ShaderProperty(_Brightness, "Brightness");
@@ -3218,6 +3226,8 @@ internal class USEditor : ShaderGUI {
 		_Value.floatValue = 0f;
 		_Invert.floatValue = 0f;
 		_ACES.floatValue = 0f;
+		_HueMode.floatValue = 0f;
+		_MonoTint.floatValue = 0f;
 	}
 
 	void DoSpriteReset(){

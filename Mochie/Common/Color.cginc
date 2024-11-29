@@ -54,6 +54,13 @@ float3 HSVShift(float3 col, float hue, float saturation, float value){
     return HSVtoRGB(hsvCol + hsv);
 }
 
+float3 HSVShiftMonoTint(float3 col, float hue, float saturation, float value, float monoTint){
+	float3 hsv = float3(hue, saturation, value);
+    float3 hsvCol = RGBtoHSV(col);
+	hsvCol.x = hsvCol.x * (1-monoTint) + hue;
+    return HSVtoRGB(hsvCol);
+}
+
 float3 linear_srgb_to_oklab(float3 c){
     float l = 0.4122214708 * c.x + 0.5363325363 * c.y + 0.0514459929 * c.z;
     float m = 0.2119034982 * c.x + 0.6806995451 * c.y + 0.1073969566 * c.z;
@@ -86,10 +93,10 @@ float3 oklab_to_linear_srgb(float3 c){
     );
 }
 
-float3 HueShiftOklab(float3 color, float shift){
+float3 HueShiftOklab(float3 color, float shift, float monoTint){
     float3 oklab = linear_srgb_to_oklab(color + 0.0000001);
     float hue = atan2(oklab.z, oklab.y);
-    hue += shift * UNITY_PI * 2;  // Add the hue shift
+    hue = shift * UNITY_PI * 2 + hue * (1-monoTint);  // Add the hue shift
     
     float chroma = length(oklab.yz);
     oklab.y = cos(hue) * chroma;
@@ -98,8 +105,8 @@ float3 HueShiftOklab(float3 color, float shift){
     return oklab_to_linear_srgb(oklab);
 }
 
-float3 HueShift(float3 col, float hue){
-	return HSVShift(col, hue, 0, 0);
+float3 HueShift(float3 col, float hue, float monoTint){
+	return HSVShiftMonoTint(col, hue, 0, 0, monoTint);
 }
 
 // sRGB luminance(Y) values

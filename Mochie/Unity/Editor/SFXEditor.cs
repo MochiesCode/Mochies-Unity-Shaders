@@ -55,7 +55,7 @@ public class SFXEditor : ShaderGUI {
 
     // Texture file names
 	string header = "SFXHeader_Pro";
-	string versionLabel = "v1.18";
+	string versionLabel = "v1.19";
 	
     // Commonly used strings
     string modeLabel = "Mode";
@@ -105,6 +105,7 @@ public class SFXEditor : ShaderGUI {
 	MaterialProperty _ClampToggle = null;
 	MaterialProperty _ClampMax = null;
 	MaterialProperty _HueMode = null;
+	MaterialProperty _MonoTint = null;
 
     // Shake
     MaterialProperty _ShakeModel = null;
@@ -528,6 +529,7 @@ public class SFXEditor : ShaderGUI {
 						else
 							me.ShaderProperty(_AutoShiftSpeed, "Shift Speed");
 						me.ShaderProperty(_HueMode, "Hue Mode");
+						me.ShaderProperty(_MonoTint, Tips.monoTintText);
 						me.ShaderProperty(_AutoShift, "Auto Hue Shift");
 					});
 					MGUI.PropertyGroup(()=>{
@@ -1336,6 +1338,8 @@ public class SFXEditor : ShaderGUI {
 		_SaturationB.floatValue = 1f;
 		_ClampToggle.floatValue = 0f;
 		_ClampMax.floatValue = 1f;
+		_HueMode.floatValue = 0f;
+		_MonoTint.floatValue = 0f;
 	}
 
 	void ResetShake(){

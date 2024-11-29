@@ -31,6 +31,7 @@ float _SaturationR, _SaturationG, _SaturationB;
 float _ScanLine, _ScanLineThick, _ScanLineSpeed;
 float _NoiseMinRange, _NoiseMaxRange;
 float _ClampMax;
+float _MonoTint;
 
 // Shake
 int _ShakeModel, _ShakeUseGlobal;
