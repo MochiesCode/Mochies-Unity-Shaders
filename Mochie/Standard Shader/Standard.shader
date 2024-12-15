@@ -254,6 +254,13 @@ Shader "Mochie/Standard" {
 		[ToggleUI]_IgnoreRealtimeGI("Ignore Realtime GI", Int) = 0
 
 		// [HideInInspector] BAKERY_META_ALPHA_ENABLE ("Enable Bakery alpha meta pass", Float) = 1.0
+
+        [KeywordEnum(None, Array, Directional, Bakery MonoSH)] _Kanikama_Mode("Kanikama Mode", Float) = 0
+        [Toggle(_KANIKAMA_DIRECTIONAL_SPECULAR)] _Kanikama_Directional_Specular("Kanikama Directional Specular", Float) = 0
+        [Toggle(_KANIKAMA_BAKERY_SHNONLINEAR)] _Kanikama_Bakery_SHNonlinear ("Kanikama SH non-linear mode", Float) = 1
+        [PerRendererData]_Udon_LightmapArray("LightmapArray", 2DArray) = ""{}
+        [PerRendererData]_Udon_LightmapIndArray("LightmapIndArray", 2DArray) = ""{}
+        [Toggle(_KANIKAMA_LTC)] _Kanikama_LTC("Kanikama LTC", Float) = 0
     }
 
     CGINCLUDE
@@ -266,6 +273,7 @@ Shader "Mochie/Standard" {
         Tags {
 			"RenderType"="Opaque" 
 			"PerformanceChecks"="False"
+			"KanikamaGI"="True"
 			"LTCGI"="_LTCGI"
 		}
         LOD 300
@@ -319,7 +327,11 @@ Shader "Mochie/Standard" {
 			#pragma shader_feature_local _OPAQUELIGHTS_OFF
 			#pragma shader_feature_local _AREALIT_ON
 			#pragma shader_feature_local _MIRROR_ON
-			// #pragma multi_compile _ LOD_FADE_CROSSFADE
+            #pragma shader_feature_local_fragment _ _KANIKAMA_MODE_ARRAY _KANIKAMA_MODE_DIRECTIONAL _KANIKAMA_MODE_BAKERY_MONOSH
+            #pragma shader_feature_local_fragment _ _KANIKAMA_DIRECTIONAL_SPECULAR
+            #pragma shader_feature_local_fragment _ _KANIKAMA_BAKERY_SHNONLINEAR
+            #pragma shader_feature_local_fragment _ _KANIKAMA_LTC
+            // #pragma multi_compile _ LOD_FADE_CROSSFADE
 			#pragma multi_compile_fog
             #pragma multi_compile_fwdbase
             #pragma multi_compile_instancing

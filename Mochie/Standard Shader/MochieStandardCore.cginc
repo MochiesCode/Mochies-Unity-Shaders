@@ -11,6 +11,12 @@
 #include "MochieStandardSSS.cginc"
 #include "MochieStandardBRDF.cginc"
 
+#include "Packages/net.shivaduke28.kanikama.bakery/Runtime/Application/Shaders/KanikamaBakery.hlsl"
+#if defined(_KANIKAMA_LTC)
+#include "Packages/net.shivaduke28.kanikama/Runtime/Application/Shaders/KanikamaLTC.hlsl"
+#endif
+
+
 #include "AutoLight.cginc"
 
 static float3 TangentNormal = float3(0,0,1);
@@ -754,8 +760,16 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
         }
         #endif
     #endif
-    
-	half4 c = MOCHIE_BRDF(
+    #if defined(_KANIKAMA_MODE_ARRAY) || defined(_KANIKAMA_MODE_DIRECTIONAL) || defined(_KANIKAMA_MODE_BAKERY_MONOSH)
+        half3 kanikamaDiffuse;
+        half3 kanikamaSpecular;
+        KanikamaBakeryGI(i.ambientOrLightmapUV.xy, s.normalWorld, -s.eyeVec, s.smoothness, occlusion, kanikamaDiffuse,
+                         kanikamaSpecular);
+        gi.indirect.diffuse += kanikamaDiffuse;
+        gi.indirect.specular += kanikamaSpecular;
+    #endif
+
+    half4 c = MOCHIE_BRDF(
 				s.diffColor, s.specColor, s.oneMinusReflectivity, 
 				s.smoothness, s.normalWorld, -s.eyeVec, s.posWorld, screenUVs, screenPos,
 				s.metallic, s.thickness, s.subsurfaceColor, atten, i.ambientOrLightmapUV, i.color, occlusion, gi.light, gi.indirect
@@ -768,6 +782,14 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i, bool frontFace)
         if (_ReflShadows == 1 && _ReflShadowAreaLit == 1)
             areaLitColor *= shadowedReflections;
         c.rgb += areaLitColor * _AreaLitStrength;
+    #endif
+
+    #if defined(_KANIKAMA_LTC)
+        half3 kanikamaLtcSpec;
+        KanikamaLTCSpecular(s.posWorld, s.normalWorld, -s.eyeVec,
+            SmoothnessToPerceptualRoughness(s.smoothness), i.ambientOrLightmapUV.xy, occlusion, s.specColor,
+            kanikamaLtcSpec);
+        c.rgb += kanikamaLtcSpec;
     #endif
 
     // Rim(s.posWorld, s.normalWorld, c.rgb, i.tex2.zw);

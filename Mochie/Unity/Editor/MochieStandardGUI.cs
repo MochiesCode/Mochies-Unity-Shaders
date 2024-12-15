@@ -21,6 +21,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		"Rain",
 		"AreaLit",
 		"LTCGI",
+		"Kanikama",
 		"Lightmap Settings"
 	}, 1);
 
@@ -251,6 +252,12 @@ internal class MochieStandardGUI : ShaderGUI {
 	MaterialProperty triplanarSpace = null;
 	MaterialProperty ignoreRealtimeGI = null;
 
+	// kanikama edition
+	MaterialProperty kanikamaMode;
+	MaterialProperty kanikamaDirectionalSpecular;
+	MaterialProperty kanikamaBakerySHNonlinear;
+	MaterialProperty kanikamaLTC;
+
 	MaterialEditor me;
 
 	bool m_FirstTimeApply = true;
@@ -457,6 +464,11 @@ internal class MochieStandardGUI : ShaderGUI {
 		ltcgiRoughness = FindProperty("_LTCGIRoughness", props);
 		ignoreRealtimeGI = FindProperty("_IgnoreRealtimeGI", props);
 		monoTint = FindProperty("_MonoTint", props);
+
+		kanikamaMode = FindProperty("_Kanikama_Mode", props);
+		kanikamaDirectionalSpecular = FindProperty("_Kanikama_Directional_Specular", props);
+		kanikamaBakerySHNonlinear = FindProperty("_Kanikama_Bakery_SHNonlinear", props);
+		kanikamaLTC = FindProperty("_Kanikama_LTC", props);
 	}
 
 	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props){
@@ -586,6 +598,14 @@ internal class MochieStandardGUI : ShaderGUI {
 				material.DisableKeyword("LTCGI");
 				material.DisableKeyword("LTCGI_DIFFUSE_OFF");
 				material.DisableKeyword("LTCGI_SPECULAR_OFF");
+			}
+
+			if (Shader.Find("Kanikama/KanikamaBakeryStandard") != null)
+			{
+				var kanikamaFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "Kanikama");
+				if (kanikamaFoldout){
+					DoKanikamaArea();
+				}
 			}
 
 			// Render Settings
@@ -1190,6 +1210,18 @@ internal class MochieStandardGUI : ShaderGUI {
 			MGUI.ToggleGroupEnd();
 			MGUI.SpaceN2();
 		});
+	}
+
+	void DoKanikamaArea()
+	{
+		MGUI.PropertyGroup(()=>{
+			me.ShaderProperty(kanikamaMode, "Kanikama Mode");
+			me.ShaderProperty(kanikamaDirectionalSpecular, "Kanikama Directional Specular");
+			me.ShaderProperty(kanikamaLTC, "Kanikama LTC");
+			MGUI.ToggleGroupEnd();
+			MGUI.SpaceN2();
+		});
+		
 	}
 
 	public override void AssignNewShaderToMaterial(Material material, Shader oldShader, Shader newShader){
