@@ -16,17 +16,25 @@
 		// Caustics
 		[Toggle(CAUSTICS_ENABLED)]_CausticsToggle("Enable", Int) = 1
 		[HideInInspector]_NormalMap("Normal Map", 2D) = "bump" {}
-		_CausticsColor("Color", Color) = (1,1,1,1)
+		[Enum(Voronoi,0, Texture,1, Flipbook,2)]_CausticsMode("Caustics Style", Int) = 0
+		_CausticsTex("Caustics Texture", 2D) = "black" {}
+		_CausticsTexArray("Texture Array", 2DArray) = "black" {}
 		_CausticsDisp("Dispersion", Float) = 0.25
+		_CausticsFlipbookDisp("Dispersion", Float) = 0.6
 		_CausticsDistortion("Distortion", Float) = 0.1
+		_CausticsDistortionTex("Distortion Texture", 2D) = "bump" {}
 		_CausticsDistortionScale("Distortion Scale", Float) = 1
 		_CausticsDistortionSpeed("Distortion Speed", Vector) = (-0.1, -0.1,0,0)
-		_CausticsOpacity("Opacity", Float) = 0.5
+		_CausticsColor("Color", Color) = (1,1,1,1)
+		_CausticsOpacity("Opacity", Float) = .5
 		_CausticsPower("Power", Float) = 1
-		_CausticsScale("Scale", Float) = 15
+		_CausticsThreshold("Threshold", Float) = 0
+		_CausticsScale("Scale", Float) = 10
 		_CausticsSpeed("Speed", Float) = 3
 		_CausticsFade("Depth Fade", Float) = 5
 		_CausticsRotation("Rotation", Vector) = (-20,0,20,0)
+		_CausticsSurfaceFade("Surface Fade", Float) = 100
+		_CausticsFlipbookSpeed("Flipbook Speed", Float) = 16
 
 		// Fog
 		[Toggle(FOG_ENABLED)]_FogToggle("Enable", Int) = 1
@@ -63,6 +71,7 @@
             #pragma fragment frag
 			#pragma multi_compile_instancing
 			#pragma shader_feature_local CAUSTICS_ENABLED
+			#pragma shader_feature_local _ _CAUSTICS_VORONOI_ON _CAUSTICS_TEXTURE_ON _CAUSTICS_FLIPBOOK_ON
             #include "UnityCG.cginc"
 			#include "../Common/Sampling.cginc"
 
@@ -72,18 +81,26 @@
 			#include "../Common/Utilities.cginc"
 			#include "../Common/Noise.cginc"
 
-			sampler2D _NormalMap;
+			MOCHIE_DECLARE_TEX2D(_CausticsTex);
+			MOCHIE_DECLARE_TEX2D(_CausticsDistortionTex);
+			MOCHIE_DECLARE_TEX2DARRAY(_CausticsTexArray);
+			float4 _CausticsTex_TexelSize;
+			float _CausticsFlipbookSpeed;
 			float _CausticsDisp;
 			float _CausticsDistortion;
 			float _CausticsDistortionScale;
-			float3 _CausticsDistortionSpeed;
-			float _CausticsOpacity;
-			float _CausticsPower;
+			float2 _CausticsDistortionSpeed;
+			float3 _CausticsRotation;
+			float _CausticsSurfaceFade;
+			float3 _CausticsColor;
 			float _CausticsScale;
 			float _CausticsSpeed;
+			float _CausticsPower;
+			float _CausticsOpacity;
 			float _CausticsFade;
-			float3 _CausticsRotation;
-			float3 _CausticsColor;
+			float _CausticsFlipbookDisp;
+
+			sampler2D _NormalMap;
 			float _RenderMode;
 			float _NaNLmao;
 
@@ -164,19 +181,51 @@
 					float2 screenUV = GetScreenUV(i);
 					float caustDepth = saturate(1-GetDepth(i, screenUV));
 					float caustFade = saturate(pow(caustDepth, _CausticsFade));
-					if (caustFade > 0){
-						float3 wPos = GetWorldSpacePixelPosSP(i.localPos, screenUV);
-						float2 depthUV = Rotate3D(wPos, _CausticsRotation).xz;
-						float3 causticsOffset = UnpackNormal(tex2D(_NormalMap, (depthUV*_CausticsDistortionScale*0.1)+_Time.y*_CausticsDistortionSpeed*0.05));
-						float2 causticsUV = (depthUV + (causticsOffset.xy * _CausticsDistortion)) * _CausticsScale;
-						float voronoi0 = Voronoi2D(causticsUV, _Time.y*_CausticsSpeed);
-						float voronoi1 = Voronoi2D(causticsUV, (_Time.y*_CausticsSpeed)+_CausticsDisp);
-						float voronoi2 = Voronoi2D(causticsUV, (_Time.y*_CausticsSpeed)+_CausticsDisp*2.0);
-						float3 voronoi = float3(voronoi0, voronoi1, voronoi2);
-						voronoi = pow(voronoi, _CausticsPower);
-						float3 caustics = smootherstep(0, 1, voronoi) * _CausticsOpacity * caustFade * _CausticsColor;
-						col.rgb += caustics;
-					}
+					#if defined(_CAUSTICS_VORONOI_ON)
+						if (caustFade > 0){
+							float3 wPos = GetWorldSpacePixelPosSP(i.localPos, screenUV);
+							float2 depthUV = Rotate3D(wPos, _CausticsRotation).xz;
+							float3 causticsOffset = UnpackNormal(tex2D(_NormalMap, (depthUV*_CausticsDistortionScale*0.1)+_Time.y*_CausticsDistortionSpeed*0.05));
+							float2 causticsUV = (depthUV + (causticsOffset.xy * _CausticsDistortion)) * _CausticsScale;
+							float voronoi0 = Voronoi2D(causticsUV, _Time.y*_CausticsSpeed);
+							float voronoi1 = Voronoi2D(causticsUV, (_Time.y*_CausticsSpeed)+_CausticsDisp);
+							float voronoi2 = Voronoi2D(causticsUV, (_Time.y*_CausticsSpeed)+_CausticsDisp*2.0);
+							float3 voronoi = float3(voronoi0, voronoi1, voronoi2);
+							voronoi = pow(voronoi, _CausticsPower);
+							float3 caustics = smootherstep(0, 1, voronoi) * _CausticsOpacity * caustFade * _CausticsColor;
+							col.rgb += caustics;
+						}
+					#elif defined(_CAUSTICS_TEXTURE_ON)
+						if (caustFade > 0){
+							float3 wPos = GetWorldSpacePixelPosSP(i.localPos, screenUV);
+							float2 depthUV = Rotate3D(wPos, _CausticsRotation).xz;
+							float3 causticsOffset = UnpackNormal(tex2D(_NormalMap, (depthUV*_CausticsDistortionScale*0.1)+_Time.y*_CausticsDistortionSpeed*0.05));
+							float2 causticsUV = (depthUV + (causticsOffset.xy * _CausticsDistortion)) * _CausticsScale / 5.0;
+							causticsUV *= 0.2;
+							_CausticsSpeed *= 0.05;
+							_CausticsOpacity *= 10;
+							float2 uvTex0 = causticsUV +_Time.y * _CausticsSpeed * 0.4;
+							float2 uvTex1 = causticsUV * -1 + _Time.y * _CausticsSpeed * 0.2;
+							float3 tex0 = MOCHIE_SAMPLE_TEX2D(_CausticsTex, uvTex0);
+							float3 tex1 = MOCHIE_SAMPLE_TEX2D(_CausticsTex, uvTex1);
+							float3 caustics = min(tex0, tex1);
+							caustics = clamp(caustics, 0, 0.1);
+							col.rgb += caustics * _CausticsOpacity;
+						}
+					#elif defined(_CAUSTICS_FLIPBOOK_ON)
+						if (caustFade > 0){
+							float3 wPos = GetWorldSpacePixelPosSP(i.localPos, screenUV);
+							float2 depthUV = Rotate3D(wPos, _CausticsRotation).xz;
+							float2 causticsUV = depthUV * _CausticsScale / 7.0;
+							_CausticsFlipbookSpeed *= 0.8;
+							float causticsR = tex2DflipbookSmooth(_CausticsTexArray, sampler_CausticsTexArray, causticsUV * 0.35, _CausticsFlipbookSpeed).r;
+							float causticsG = tex2DflipbookSmooth(_CausticsTexArray, sampler_CausticsTexArray, causticsUV * 0.35, _CausticsFlipbookSpeed + (0.0005 * _CausticsFlipbookDisp)).g;
+							float causticsB = tex2DflipbookSmooth(_CausticsTexArray, sampler_CausticsTexArray, causticsUV * 0.35, _CausticsFlipbookSpeed + (0.0005 * _CausticsFlipbookDisp * 1.5)).b;
+							float3 caustics = float3(causticsR, causticsG, causticsB);
+							caustics = smootherstep(0.15, 1, caustics);
+							col.rgb += caustics;
+						}
+					#endif
 				#else
 					discard;
 				#endif

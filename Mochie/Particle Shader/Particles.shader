@@ -117,6 +117,7 @@ Shader "Mochie/Particles" {
 			#pragma shader_feature_local _FLIPBOOK_BLENDING_ON
 			#pragma shader_feature_local _FADING_ON
             #pragma shader_feature_local _AUDIOLINK_ON
+            #pragma multi_compile _ SOFTPARTICLES_ON
             #pragma multi_compile_instancing
             #include "PSDefines.cginc"
 
@@ -131,9 +132,7 @@ Shader "Mochie/Particles" {
 				o.uv0 = v.uv0;
 				o.color = v.color;
 
-				#if FADING_ENABLED
-					o.projPos = GetProjPos(v.vertex.xyzz, o.pos);
-				#endif
+				o.projPos = GetProjPos(v.vertex.xyzz, o.pos);
 
 				#if PULSE_ENABLED
                 	o.pulse = GetPulse();
@@ -164,5 +163,5 @@ Shader "Mochie/Particles" {
             ENDCG
         }
     }
-    CustomEditor "PSEditor"
+    CustomEditor "ParticleEditor"
 }

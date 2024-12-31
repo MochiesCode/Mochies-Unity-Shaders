@@ -231,6 +231,7 @@ int _DetailMetallicBlending;
 int _UsingDetailMetallic;
 int _HueMode;
 int _MonoTint;
+int _LitCubemap;
 float _DetailMetallicStrength;
 
 float _RefractionBlurStrength;

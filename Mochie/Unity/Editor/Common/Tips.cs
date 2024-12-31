@@ -4,6 +4,23 @@ using UnityEditor;
 
 namespace Mochie {
 	public static class Tips {
+		
+		// General
+		public static GUIContent specularHighlightsText = new GUIContent("Specular Highlights", "GGX Specular Highlights.");
+		public static GUIContent cubemapReflectionsText = new GUIContent("Cubemap Reflections", "Cubemap-based reflections, usually from reflection probes.");
+		public static GUIContent ssrText = new GUIContent("Screen Space Reflections", "Screen Space Reflections create reflections on surfaces based on what's visible on screen.");
+		public static GUIContent ssrEdgeFadeText = new GUIContent("Edge Fade", "The distance from the edge of the screen at which screenspace reflections will fade out. This helps mask edges where there is no screen information.");
+		public static GUIContent ssrDepthText = new GUIContent("Depth", "The distance from the surface at which objects will appear in screenspace reflections. Larger values will lose precision for closer objects.");
+		public static GUIContent roughnessText = new GUIContent("Roughness", "How rough or smooth the surface should look. Rougher surfaces scatter more light rather than directly reflecting it as a mirror image.");
+		public static GUIContent smoothnessText = new GUIContent("Smoothness", "How smooth or rough the surface should look. Smoother surfaces scatter less light, making reflections clearer, and specular highlights smaller/sharper.");
+		public static GUIContent metallicText = new GUIContent("Metallic", "How metallic a surface should look. Higher values will decrease visibility of base color in favor of reflective color to simulate the behavior of metal surfaces in real life. Lower values will look more akin to plastic.");
+		public static GUIContent normalMapText = new GUIContent("Normal Map", "Determines the behavior of light on the surface. Primarily used to fake small details or smooth bevels on sharp edges.");
+		public static GUIContent occlusionText = new GUIContent("Ambient Occlusion", "Adds extra shading to simulate contact shadows in crevices or corners where less light reaches (think how the DVD logo almost never perfectly bounces into the corner of the screen). Darker values will add darker shading.");
+		public static GUIContent parallaxHeightText = new GUIContent("Parallax Height", "Uses parallax occlusion mapping to simulate detailed 3d geometry on a surface.");
+		public static GUIContent heightMapText = new GUIContent("Height Map", parallaxHeightText.tooltip);
+		public static GUIContent maskText = new GUIContent("Mask", "Darker parts of the texture will reduce the masked effect, lighter parts will remain closer to base values.");
+		public static GUIContent smoothnessModeText = new GUIContent("Smoothness Mode", "Use smoothness maps/values instead of roughness.");
+
 		// Standard
 		public static GUIContent standWorkflow = new GUIContent("Workflow", "Standard:\nDefault packing mode of visually separated texture slots for PBR maps, uses MAHS format.\n\nPacked: \nModular packing mode that combines all PBR texture slots into one and allows channel selection.");
 		public static GUIContent standBlendMode = new GUIContent("Blending Mode", "Opaque:\nDefault blending mode, has no transparency support.\n\nCutout:\nPixels outside the alpha threshold will be discarded and not rendered.\n\nFade:\nCreates a smoothly blended transparency that takes all alpha values from 0-1 into account when determining opacity.\n\nTransparent:\nFunctions similarily to Fade, but maintains reflections and specular behavior on transparent areas (ie. glass).");
@@ -11,16 +28,9 @@ namespace Mochie {
 		public static GUIContent uvSetLabel = new GUIContent("UV Set");
 		public static GUIContent albedoText = new GUIContent("Base Color", "Unshaded base color (RGB) and transparency (A)");
 		public static GUIContent alphaCutoffText = new GUIContent("Alpha Cutoff", "Threshold for alpha cutoff");
-		public static GUIContent metallicMapText = new GUIContent("Metallic", "How metallic a surface should look. Higher values will decrease visibility of base color in favor of reflective color to simulate the behavior of metal surfaces in real life. Lower values will look more akin to plastic.");
-		public static GUIContent metallicPackedText = new GUIContent("Metallic Strength", metallicMapText.tooltip);
-		public static GUIContent roughnessText = new GUIContent("Roughness", "How rough or smooth the surface should look. Rougher surfaces scatter more light rather than directly reflecting it as a mirror image.");
+		public static GUIContent metallicPackedText = new GUIContent("Metallic Strength", metallicText.tooltip);
 		public static GUIContent roughnessPackedText = new GUIContent("Roughness Strength", roughnessText.tooltip);
-		public static GUIContent highlightsText = new GUIContent("Specular Highlights", "GGX Specular Highlights.");
-		public static GUIContent reflectionsText = new GUIContent("Cubemap Reflections", "Cubemap-based reflections.");
-		public static GUIContent normalMapText = new GUIContent("Normal Map", "Determines the behavior of light on the surface. Primarily used to fake small details or smooth bevels on sharp edges.");
-		public static GUIContent heightMapText = new GUIContent("Height Map", "Uses parallax occlusion mapping to generate fake 3d bumps on a surface.");
 		public static GUIContent heightMapPackedText = new GUIContent("Height Strength", heightMapText.tooltip);
-		public static GUIContent occlusionText = new GUIContent("Ambient Occlusion", "Adds extra shading to simulate contact shadows in crevices or corners where less light reaches (think how the DVD logo almost never perfectly bounces into the corner of the screen). Darker values will add darker shading.");
 		public static GUIContent occlusionPackedText = new GUIContent("Occlusion Strength", occlusionText.tooltip);
 		public static GUIContent emissionText = new GUIContent("Color", "Adds extra color value after all lighting calculations to simulate an emissive effect.");
 		public static GUIContent detailMaskText = new GUIContent("Detail Mask", "Mask for secondary maps.");
@@ -31,10 +41,8 @@ namespace Mochie {
 		public static GUIContent packedMapText = new GUIContent("Packed Map", "Texture containing roughness, metallic, ambient occlusion and optional height maps in the RGBA channels.");
 		public static GUIContent reflCubeText = new GUIContent("Reflection Fallback", "Replace environment reflections below the luminance threshold with this cubemap");
 		public static GUIContent reflOverrideText = new GUIContent("Reflection Override", "Override the primary reflection probe sample with this cubemap");
-		public static GUIContent ssrText = new GUIContent("Screen Space Reflections", "Screen Space Reflections create reflections on surfaces based on what's visible on screen.");
 		public static GUIContent edgeFadeText = new GUIContent("Edge Fade", "Fades SSR around the edges of the screen to avoid a hard cutoff visual.");
 		public static GUIContent stepsText = new GUIContent("Parallax Samples", "Number of steps/samples used to calculate parallax height. More samples is more expensive, but looks smoother.");
-		public static GUIContent maskText = new GUIContent("Mask");
 		public static GUIContent heightMaskText = new GUIContent("Height Mask");
 		public static GUIContent parallaxOfsText = new GUIContent("Parallax Offset", "Offsets the parallax height value up or down to hide artifacts.");
 		public static GUIContent thicknessMapText = new GUIContent("Thickness Map", "Determines the thickness of the surface. Thinner areas will let more light through.");
@@ -64,7 +72,7 @@ namespace Mochie {
 		public static GUIContent detailSamplingMode = new GUIContent("Use Sampling Mode", "Uses the selected Sampling Mode from the shader variant section to sample the detail textures.");
 		public static GUIContent culling = new GUIContent("Culling", "Off:\nRenders both back and front faces at all times. Only use this if absolutely necessary.\n\nFront:\nCulls front faces, only displaying back faces.\n\nBack:\nCulls back faces, only displaying front faces.");
 		public static GUIContent queueOffset = new GUIContent("Render Queue Offset", "Offsets the render queue +/- this value.");
-		public static GUIContent useFresnel = new GUIContent("Fresnel", "A rim light effect based on the lighting of the scene");
+		public static GUIContent useFresnel = new GUIContent("Fresnel", "The Fresnel effect changes the behavior of specularity (reflections and specular highlights) based on viewing angle. Reflections are more visible on surfaces when viewed from a sharp angle.");
 		public static GUIContent reflVertexColor = new GUIContent("Vertex Color Reflections", "Multiplies reflection color with vertex color. A good use for this is painting black vertex colors on areas of surfaces you don't want to have visible reflections.");
 		public static GUIContent reflShadows = new GUIContent("Specular Occlusion", "Uses shadows from either realtime directional lights or baked lightmaps to occlude reflections and specular highlights.");
 		public static GUIContent gsaa = new GUIContent("Specular Antialiasing", "Increases the roughness on rounded corners of normals to hide sparkly artifacts from specular lighting");
@@ -97,7 +105,7 @@ namespace Mochie {
 		public static GUIContent mirrorTexLabel = new GUIContent("Base Color (Mirror)", "The base color texture that appears in mirrors.");
 		public static GUIContent emissTexLabel = new GUIContent("Emission Map", "Adds extra color value after all lighting calculations to simulate an emissive effect.");
 		public static GUIContent normalTexLabel = new GUIContent("Normal", normalMapText.tooltip);
-		public static GUIContent metallicTexLabel = new GUIContent("Metallic", metallicMapText.tooltip);
+		public static GUIContent metallicTexLabel = new GUIContent("Metallic", metallicText.tooltip);
 		public static GUIContent roughnessTexLabel = new GUIContent("Roughness", roughnessText.tooltip);
 		public static GUIContent occlusionTexLabel = new GUIContent("Occlusion", occlusionText.tooltip);
 		public static GUIContent heightTexLabel = new GUIContent("Height", heightMapText.tooltip);
@@ -126,10 +134,11 @@ namespace Mochie {
 		public static GUIContent matcapLabel = new GUIContent("Matcap");
 		public static GUIContent matcapPrimaryMask = new GUIContent("Primary Matcap");
 		public static GUIContent matcapSecondaryMask = new GUIContent("Secondary Matcap");
-		public static GUIContent specLabel = new GUIContent("Specular");
+		public static GUIContent specLabel = new GUIContent("Specular Highlights");
 		public static GUIContent reflLabel = new GUIContent("Reflections");
 		public static GUIContent matcapBlendLabel = new GUIContent("Matcap Blend", "Interpolates between the two matcaps.");
 		public static GUIContent anisoBlendLabel = new GUIContent("Specular Blend", "Interpolates between GGX and anisotropic specular when using the combined specular mode.");
+		public static GUIContent litCubemapLabel = new GUIContent("Apply Lighting", "Scale the brightness of the cubemap reflections with the lighting in the environment.");
 		public static GUIContent emissLabel = new GUIContent("Emission");
 		public static GUIContent emissPulseLabel = new GUIContent("Emission Pulse");
 		public static GUIContent filterLabel = new GUIContent("Filtering");
@@ -193,9 +202,6 @@ namespace Mochie {
 		public static GUIContent causticsFade = new GUIContent("Depth Fade", "Determines how strongly caustics will fade out at greater depths.");
 		public static GUIContent causticsSurfaceFade = new GUIContent("Surface Fade", "Determines how strongly caustics will fade out close to the surface.");
 		public static GUIContent turbulence = new GUIContent("Strength", "Adds variation to the height of waves.");
-		public static GUIContent waterNormalMap = new GUIContent("Normal Map", "Determines the behavior of light on the surface. Primarily used to fake small details or smooth bevels on sharp edges. Also serves as the source for refraction and distortion effects on textures.");
-		public static GUIContent waterRoughness = new GUIContent("Roughness", roughnessText.tooltip);
-		public static GUIContent waterMetallic = new GUIContent("Metallic", "How metallic a surface should look. Higher values will decrease visibility of base color in favor of reflective color to simulate the behavior of metal surfaces in real life. Lower values will look more akin to normnal water.");
 		public static GUIContent blendNoise = new GUIContent("Blend Noise", "Each normal map (and some other textures) are sampled twice with different uvs. This texture will determine the pattern for blending between the two samples.");
 		public static GUIContent detailMode = new GUIContent("Decal Mode", "Uses the alpha and UVs of the decal base color for blending and sampling these textures.");
 		
@@ -216,9 +222,5 @@ namespace Mochie {
 		public static GUIContent globalTint = new GUIContent("Global Tint", "Determines the color of the majority of effects in the shader.");
 		public static GUIContent emissionAO = new GUIContent("Emission (AO)", "Takes an ambient occlusion map and inverts it to determine emission. This is the same technique used by bungie for the effect in Destiny.");
 		public static GUIContent invertTint = new GUIContent("Invert Tint", "Uses an inverted copy of the base color texture to determine outline tint.");
-
-		// General
-		public static GUIContent specularHighlightsText = new GUIContent("Specular Highlights");
-		public static GUIContent reflectionText = new GUIContent("Reflections");
 	}
 }

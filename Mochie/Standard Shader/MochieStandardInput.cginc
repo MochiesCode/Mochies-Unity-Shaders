@@ -240,6 +240,8 @@ float3 shadowedReflections;
 	SamplerState	sampler_AudioTexture;
 	int				_AudioLinkEmission;
 	float			_AudioLinkEmissionStrength;
+	float			_AudioLinkMin;
+	float			_AudioLinkMax;
 #endif
 
 float GSAARoughness(float3 normal, float roughness){
@@ -535,13 +537,17 @@ half3 Emission(float2 uv, float2 uvMask, SampleData sd)
 			#if defined(_AUDIOLINK_ON) && defined(_AUDIOLINK_META_ON)
 				audioLinkData al = (audioLinkData)0;
 				InitializeAudioLink(al, 0);
-				emissTex *= lerp(1, GetAudioLinkBand(al, _AudioLinkEmission), _AudioLinkEmissionStrength * al.textureExists);
+				float alMult = GetAudioLinkBand(al, _AudioLinkEmission);
+				alMult = Remap(alMult, 0, 1, _AudioLinkMin, _AudioLinkMax);
+				emissTex *= lerp(1, alMult, _AudioLinkEmissionStrength * al.textureExists);
 			#endif
 		#else
 			#if AUDIOLINK_ENABLED
 				audioLinkData al = (audioLinkData)0;
 				InitializeAudioLink(al, 0);
-				emissTex *= lerp(1, GetAudioLinkBand(al, _AudioLinkEmission), _AudioLinkEmissionStrength * al.textureExists);
+				float alMult = GetAudioLinkBand(al, _AudioLinkEmission);
+				alMult = Remap(alMult, 0, 1, _AudioLinkMin, _AudioLinkMax);
+				emissTex *= lerp(1, alMult, _AudioLinkEmissionStrength * al.textureExists);
 			#endif
 		#endif
 		return emissTex;

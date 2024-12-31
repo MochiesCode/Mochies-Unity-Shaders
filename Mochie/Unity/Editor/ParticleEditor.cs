@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Collections.Generic;
 using Mochie;
 
-public class PSEditor : ShaderGUI {
+public class ParticleEditor : ShaderGUI {
 
     GUIContent texLabel = new GUIContent("Base Color");
    	GUIContent tex2Label = new GUIContent("Secondary Color");
@@ -36,7 +36,7 @@ public class PSEditor : ShaderGUI {
 	}, 0);
 
     string header = "ParticleHeader_Pro";
-	string versionLabel = "v2.2";
+	string versionLabel = "v2.2.1";
 
     // Render Settings
     MaterialProperty _BlendMode = null;

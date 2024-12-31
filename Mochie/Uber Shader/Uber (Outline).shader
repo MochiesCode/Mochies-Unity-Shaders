@@ -220,6 +220,7 @@ Shader "Mochie/Uber (Outline)" {
 		[HideInInspector]_NoiseTexSSR("SSRNoise", 2D) = "black" {}
 		[ToggleUI]_FresnelToggle("tog", Int) = 1
 		_FresnelStrength("fl", Float) = 1
+		[ToggleUI]_LitCubemap("tog", Int) = 0
 
 		// SPECULAR
 		[Enum(Off,0, GGX,1, Anisotropic,2, Combined,3)]_Specular("en4", Int) = 0
@@ -925,5 +926,5 @@ Shader "Mochie/Uber (Outline)" {
             ENDCG
         }
     }
-    CustomEditor "USEditor"
+    CustomEditor "UberEditor"
 }

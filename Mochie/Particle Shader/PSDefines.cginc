@@ -68,9 +68,7 @@ struct v2f {
 		float3 center : TEXCOORD3;
 		float3 vertex : TEXCOORD4;
 	#endif
-	#if FADING_ENABLED
-    	float4 projPos : TEXCOORD5;
-	#endif
+    float4 projPos : TEXCOORD5;
 	#if PULSE_ENABLED
 		float pulse : TEXCOORD6;
 	#endif

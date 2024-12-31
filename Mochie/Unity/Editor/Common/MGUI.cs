@@ -686,9 +686,15 @@ namespace Mochie {
 			DoMinMaxSlider(minRange, maxRange, 0f, 1f, label, groupLayers);
 		}
 		
-		public static void DoMinMaxSlider(MaterialProperty minRange, MaterialProperty maxRange, float minLimit, float maxLimit, string label, int groupLayers){
+		private static void DoMinMaxSlider(MaterialProperty minRange, MaterialProperty maxRange, float minLimit, float maxLimit, string label, int groupLayers){
 			SpaceN2();
-			float offset0 = groupLayers == 1 ? 16f : 20f;
+			float offset0 = 0f;
+			switch (groupLayers){
+				case 1: offset0 = 16f; break;
+				case 2: offset0 = 20f; break;
+				case 3: offset0 = 24f; break;
+				default: break;
+			}
 			string numFormat = "F";
 			float minR = minRange.floatValue;
 			float maxR = maxRange.floatValue;

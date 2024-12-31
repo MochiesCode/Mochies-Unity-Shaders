@@ -8,7 +8,7 @@ using Mochie;
 
 public class UnderwaterEditor : ShaderGUI {
 
-	string versionLabel = "v1.0.2";
+	string versionLabel = "v1.1";
 
 	// Base
 	// MaterialProperty _RenderMode = null;
@@ -23,18 +23,24 @@ public class UnderwaterEditor : ShaderGUI {
 	MaterialProperty _Fade = null;
 
 	// Caustics
+	MaterialProperty _CausticsTex = null;
 	MaterialProperty _CausticsToggle = null;
-	MaterialProperty _CausticsColor = null;
-	MaterialProperty _CausticsDisp = null;
-	MaterialProperty _CausticsDistortion = null;
-	MaterialProperty _CausticsDistortionScale = null;
-	MaterialProperty _CausticsDistortionSpeed = null;
+	MaterialProperty _CausticsMode = null;
 	MaterialProperty _CausticsOpacity = null;
-	MaterialProperty _CausticsPower = null;
 	MaterialProperty _CausticsScale = null;
 	MaterialProperty _CausticsSpeed = null;
 	MaterialProperty _CausticsFade = null;
+	MaterialProperty _CausticsDisp = null;
+	MaterialProperty _CausticsDistortion = null;
+	MaterialProperty _CausticsDistortionTex = null;
+	MaterialProperty _CausticsDistortionScale = null;
+	MaterialProperty _CausticsDistortionSpeed = null;
 	MaterialProperty _CausticsRotation = null;
+	MaterialProperty _CausticsColor = null;
+	MaterialProperty _CausticsPower = null;
+	MaterialProperty _CausticsTexArray = null;
+	MaterialProperty _CausticsFlipbookSpeed = null;
+	MaterialProperty _CausticsFlipbookDisp = null;
 
 	// Fog
 	MaterialProperty _FogToggle = null;
@@ -92,18 +98,36 @@ public class UnderwaterEditor : ShaderGUI {
 			me.ShaderProperty(_CausticsToggle, "Enable");
 			MGUI.ToggleGroup(_CausticsToggle.floatValue == 0f);
 			MGUI.PropertyGroup(()=>{
+				me.ShaderProperty(_CausticsMode, "Style");
+				if (_CausticsMode.floatValue == 1){
+					me.TexturePropertySingleLine(new GUIContent("Caustics Texture"), _CausticsTex);
+				}
+				else if (_CausticsMode.floatValue == 2){
+					me.TexturePropertySingleLine(new GUIContent("Caustics Flipbook"), _CausticsTexArray);
+				}
 				me.ShaderProperty(_CausticsColor, "Color");
 				me.ShaderProperty(_CausticsOpacity, "Strength");
-				me.ShaderProperty(_CausticsDisp, "Dispersion");
-				me.ShaderProperty(_CausticsDistortion, "Distortion");
-				me.ShaderProperty(_CausticsDistortionScale, "Distortion Scale");
-				MGUI.Vector2Field(_CausticsDistortionSpeed, "Distortion Speed");
 				
-				me.ShaderProperty(_CausticsPower, "Power");
+				if (_CausticsMode.floatValue == 0){
+					me.ShaderProperty(_CausticsPower, "Power");
+					me.ShaderProperty(_CausticsDisp, "Dispersion");
+				}
+				if (_CausticsMode.floatValue != 2)
+					me.ShaderProperty(_CausticsSpeed, "Speed");
+				else {
+					me.ShaderProperty(_CausticsFlipbookSpeed, "Speed");
+					me.ShaderProperty(_CausticsFlipbookDisp, "Dispersion");
+				}
 				me.ShaderProperty(_CausticsScale, "Scale");
-				me.ShaderProperty(_CausticsSpeed, "Speed");
-				me.ShaderProperty(_CausticsFade, "Depth Fade");
+				me.ShaderProperty(_CausticsFade, Tips.causticsFade);
+				// me.ShaderProperty(_CausticsSurfaceFade, Tips.causticsSurfaceFade);
 				MGUI.Vector3Field(_CausticsRotation, "Rotation", false);
+				if (_CausticsMode.floatValue != 2){
+					me.ShaderProperty(_CausticsDistortion, "Distortion Strength");
+					me.ShaderProperty(_CausticsDistortionScale, "Distortion Scale");
+					MGUI.Vector2Field(_CausticsDistortionSpeed, "Distortion Speed");
+					me.TexturePropertySingleLine(new GUIContent("Distortion Texture"), _CausticsDistortionTex);
+				}
 				if (MGUI.ResetButton())
 					ResetCaustics();
 			});
@@ -135,7 +159,10 @@ public class UnderwaterEditor : ShaderGUI {
 	}
 
 	void ApplyMaterialSettings(Material mat){
-		
+		int causticsMode = mat.GetInt("_CausticsMode");
+		MGUI.SetKeyword(mat, "_CAUSTICS_VORONOI_ON", causticsMode == 0);
+		MGUI.SetKeyword(mat, "_CAUSTICS_TEXTURE_ON", causticsMode == 1);
+		MGUI.SetKeyword(mat, "_CAUSTICS_FLIPBOOK_ON", causticsMode == 2);
 	}
 
 	void ResetCaustics(){
@@ -150,6 +177,8 @@ public class UnderwaterEditor : ShaderGUI {
 		_CausticsRotation.vectorValue = new Vector4(-20f,0,20f,0);
 		_CausticsColor.colorValue = Color.white;
 		_CausticsPower.floatValue = 1f;
+		_CausticsFlipbookSpeed.floatValue = 16f;
+		_CausticsFlipbookDisp.floatValue = 0.6f;
 	}
 
 	void ResetFog(){

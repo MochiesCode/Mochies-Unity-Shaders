@@ -4,7 +4,7 @@ using UnityEditor;
 using System.Collections.Generic;
 using Mochie;
 
-internal class MochieStandardGUI : ShaderGUI {
+internal class StandardEditor : ShaderGUI {
 
     public static Dictionary<Material, Toggles> foldouts = new Dictionary<Material, Toggles>();
     Toggles toggles = new Toggles(new string[] {
@@ -24,7 +24,7 @@ internal class MochieStandardGUI : ShaderGUI {
 		"Lightmap Settings"
 	}, 1);
 
-	string versionLabel = "v1.33";
+	string versionLabel = "v1.34";
 	public static string receiverText = "AreaLit Maps";
 	public static string emitterText = "AreaLit Light";
 	public static string projectorText = "AreaLit Projector";
@@ -171,6 +171,8 @@ internal class MochieStandardGUI : ShaderGUI {
 	
 	MaterialProperty audioLinkEmission = null;
 	MaterialProperty audioLinkEmissionStrength = null;
+	MaterialProperty audioLinkMin = null;
+	MaterialProperty audioLinkMax = null;
 
 	MaterialProperty uvPri = null;
 	MaterialProperty uvEmissMask = null;
@@ -457,6 +459,8 @@ internal class MochieStandardGUI : ShaderGUI {
 		ltcgiRoughness = FindProperty("_LTCGIRoughness", props);
 		ignoreRealtimeGI = FindProperty("_IgnoreRealtimeGI", props);
 		monoTint = FindProperty("_MonoTint", props);
+		audioLinkMin = FindProperty("_AudioLinkMin", props);
+		audioLinkMax = FindProperty("_AudioLinkMax", props);
 	}
 
 	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props){
@@ -509,7 +513,7 @@ internal class MochieStandardGUI : ShaderGUI {
 			MGUI.Space2();
 
 			MGUI.BoldLabel("Specularity");
-			DoReflSpecArea(MGUI.IsNewLiteVersion(material));
+			DoSpecularityArea(MGUI.IsNewLiteVersion(material));
 			MGUI.Space4();
 
 			// Rim
@@ -631,7 +635,7 @@ internal class MochieStandardGUI : ShaderGUI {
 			me.ShaderProperty(workflow, Tips.standWorkflow);
 			me.ShaderProperty(samplingMode, Tips.samplingMode);
 			if (workflow.floatValue > 0 && samplingMode.floatValue < 3)
-				me.ShaderProperty(useHeight, Tips.useHeight);
+				me.ShaderProperty(useHeight, Tips.parallaxHeightText);
 			if (samplingMode.floatValue == 3){
 				me.ShaderProperty(triplanarFalloff, Tips.triplanarFalloff);
 			}
@@ -680,7 +684,7 @@ internal class MochieStandardGUI : ShaderGUI {
 				}
 			}
 			else {
-				me.TexturePropertySingleLine(Tips.metallicMapText, metallicMap, metallic);
+				me.TexturePropertySingleLine(Tips.metallicText, metallicMap, metallic);
 				MGUI.sRGBWarning(metallicMap);
 				me.TexturePropertySingleLine(roughLabel, roughnessMap, roughness);
 				MGUI.sRGBWarning(roughnessMap);
@@ -775,7 +779,7 @@ internal class MochieStandardGUI : ShaderGUI {
 				}
 			}
 			else {
-				me.TexturePropertySingleLine(Tips.metallicMapText, detailMetallicMap, hasMetallic ? detailMetallicStrength : null, hasMetallic ? detailMetallicBlend : null);
+				me.TexturePropertySingleLine(Tips.metallicText, detailMetallicMap, hasMetallic ? detailMetallicStrength : null, hasMetallic ? detailMetallicBlend : null);
 				MGUI.sRGBWarning(detailMetallicMap);
 				me.TexturePropertySingleLine(Tips.roughnessText, detailRoughnessMap, hasRoughness ? detailRoughnessStrength : null, hasRoughness ? detailRoughBlend : null);
 				MGUI.sRGBWarning(detailRoughnessMap);
@@ -825,16 +829,15 @@ internal class MochieStandardGUI : ShaderGUI {
 			MGUI.ToggleGroup(!emissionEnabled);
 			MGUI.PropertyGroup(()=>{
 				me.LightmapEmissionFlagsProperty(0, true);
-				me.ShaderProperty(audioLinkEmission, Tips.audioLinkEmission);
 				me.ShaderProperty(emissPulseWave, Tips.emissPulseWave);
-				if (audioLinkEmission.floatValue > 0){
-					me.ShaderProperty(audioLinkEmissionStrength, Tips.audioLinkEmissionStrength);
-				}
 				if (emissPulseWave.floatValue > 0){
 					me.ShaderProperty(emissPulseStrength, Tips.emissPulseStrength);
 					me.ShaderProperty(emissPulseSpeed, Tips.emissPulseSpeed);
 				}
+				me.ShaderProperty(audioLinkEmission, Tips.audioLinkEmission);
 				if (audioLinkEmission.floatValue > 0){
+					me.ShaderProperty(audioLinkEmissionStrength, Tips.audioLinkEmissionStrength);
+					MGUI.SliderMinMax(audioLinkMin, audioLinkMax, 0f, 2f, "Remap", 0);
 					me.ShaderProperty(audioLinkEmissionMeta, Tips.audioLinkEmissionMeta);
 				}
 				MGUI.Space2();
@@ -855,16 +858,16 @@ internal class MochieStandardGUI : ShaderGUI {
 		}
 	}
 
-	void DoReflSpecArea(bool isLite){;
+	void DoSpecularityArea(bool isLite){;
 		MGUI.PropertyGroup(() => {
 			MGUI.PropertyGroup(()=>{
-				MGUI.ToggleFloat(me, Tips.highlightsText, highlights, specularStrength);
-				MGUI.ToggleFloat(me, Tips.reflectionsText, reflections, reflectionStrength);
+				MGUI.ToggleFloat(me, Tips.specularHighlightsText, highlights, specularStrength);
+				MGUI.ToggleFloat(me, Tips.cubemapReflectionsText, reflections, reflectionStrength);
 				if (!isLite){
 					MGUI.ToggleFloat(me, Tips.ssrText, ssr, ssrStrength);
 					if (ssr.floatValue == 1){
-						me.ShaderProperty(edgeFade, "Edge Fade");
-						me.ShaderProperty(ssrHeight, "Depth");
+						me.ShaderProperty(edgeFade, Tips.ssrEdgeFadeText);
+						me.ShaderProperty(ssrHeight, Tips.ssrDepthText);
 					}
 					// MGUI.ToggleFloat(me, Tips.reflVertexColor, reflVertexColor, reflVertexColorStrength);
 				}
@@ -893,7 +896,8 @@ internal class MochieStandardGUI : ShaderGUI {
 				});
 			}
 			if (ssr.floatValue == 1 && !isLite){
-				MGUI.DisplayWarning("Screenspace reflections in VRChat require the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs\n\nThey are also VERY expensive, please use them sparingly!");
+				MGUI.DisplayInfo("Screenspace reflections in VRChat require the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs or at least one directional light with shadows enabled in the scene. \n\nThey can also be expensive, please use them sparingly!");
+				MGUI.Space2();
 			}
 			MGUI.SpaceN2();
 		});

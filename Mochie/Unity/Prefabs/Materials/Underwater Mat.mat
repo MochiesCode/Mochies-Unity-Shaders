@@ -15,6 +15,7 @@ Material:
   - CAUSTICS_ENABLED
   - DOF_ENABLED
   - FOG_ENABLED
+  - _CAUSTICS_FLIPBOOK_ON
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -26,6 +27,18 @@ Material:
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
+    - _CausticsDistortionTex:
+        m_Texture: {fileID: 2800000, guid: 4229641ad60880a4a8e7c5614adf58a3, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _CausticsTex:
+        m_Texture: {fileID: 2800000, guid: 260d71fa929534a49aa9a5efb274f6d3, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _CausticsTexArray:
+        m_Texture: {fileID: 18700000, guid: c0fa48a763b58a64aa5dbafeb6a4c84a, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _NormalMap:
         m_Texture: {fileID: 2800000, guid: 8c0fe4ffb1eaa3748a17395d8c9bd71a, type: 3}
         m_Scale: {x: 1, y: 1}
@@ -37,10 +50,15 @@ Material:
     - _CausticsDistortion: 0.1
     - _CausticsDistortionScale: 1
     - _CausticsFade: 5
+    - _CausticsFlipbookDisp: 0.6
+    - _CausticsFlipbookSpeed: 16
+    - _CausticsMode: 2
     - _CausticsOpacity: 0.5
     - _CausticsPower: 1
     - _CausticsScale: 15
     - _CausticsSpeed: 3
+    - _CausticsSurfaceFade: 100
+    - _CausticsThreshold: 0
     - _CausticsToggle: 1
     - _DoFToggle: 1
     - _Fade: 1.25
@@ -49,6 +67,7 @@ Material:
     - _FogRadius: 1.7
     - _FogToggle: 1
     - _HQBlur: 0
+    - _NaNLmao: 0
     - _Radius: 1
     - _RenderMode: 0
     - _StencilRef: 65

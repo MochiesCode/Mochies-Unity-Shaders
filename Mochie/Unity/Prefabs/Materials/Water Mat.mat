@@ -21,6 +21,7 @@ Material:
   - _FOAM_ON
   - _NORMALMAP_1_ON
   - _REFLECTIONS_ON
+  - _SCREENSPACE_REFLECTIONS_ON
   - _SPECULAR_ON
   m_InvalidKeywords:
   - _NORMAL_FLIPBOOK_STOCHASTIC_ON
@@ -244,7 +245,7 @@ Material:
     - _Rotation0: 0
     - _Rotation1: 0
     - _Roughness: 0
-    - _SSR: 0
+    - _SSR: 1
     - _SSRHeight: 0.2
     - _SSRStrength: 1
     - _ShadowStrength: 0

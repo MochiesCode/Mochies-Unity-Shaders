@@ -323,5 +323,5 @@ Shader "Mochie/Screen FX" {
             ENDCG
         }
     }
-	CustomEditor "SFXEditor"
+	CustomEditor "ScreenFXEditor"
 }

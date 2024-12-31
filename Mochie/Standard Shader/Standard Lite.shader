@@ -72,7 +72,9 @@ Shader "Mochie/Standard Lite" {
 		[Enum(Off,0, Bass,1, Low Mids,2, Upper Mids,3, Highs,4)]_AudioLinkEmission("Emission Band", Int) = 0
 		_AudioLinkEmissionStrength("Emission Strength", Float) = 1
 		[ToggleUI]_AudioLinkEmissionMeta("Audio Link Meta Emission", Int) = 0
-
+		_AudioLinkMin("Audio Link Min", Float) = 0
+		_AudioLinkMax("Audio Link Max", Float) = 1
+		
 		_UV0Rotate("UV0 Rotation", Float) = 0
 		_UV0Scroll("UV0 Scrolling", Vector) = (0,0,0,0)
 		_UV1Rotate("UV1 Rotation", Float) = 0
@@ -431,5 +433,5 @@ Shader "Mochie/Standard Lite" {
         // }
     }
     FallBack "VertexLit"
-    CustomEditor "MochieStandardGUI"
+    CustomEditor "StandardEditor"
 }

@@ -48,6 +48,8 @@ float _RainThresholdSize;
 float _TexCoordSpace;
 float _TexCoordSpaceSwizzle;
 float _GlobalTexCoordScale;
+float _RefractionIOR;
+float _RefractVertexNormal;
 float _Test;
 
 struct appdata {

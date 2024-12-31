@@ -161,6 +161,15 @@ float3 GetWorldReflections(float3 reflDir, float3 worldPos, float roughness){
     return p0;
 }
 
+float3 GetStaticReflections(float3 reflDir, float roughness, float3 worldBrightness){
+	float3 reflections = texCUBElod(_ReflCube, float4(reflDir, roughness * UNITY_SPECCUBE_LOD_STEPS));
+	reflections = DecodeHDR(float4(reflections,1), _ReflCube_HDR);
+	if (_LitCubemap == 1){
+		reflections *= worldBrightness;
+	}
+	return reflections;
+}
+
 float3 GetReflections(g2f i, lighting l, masks m, float roughness){
     float3 reflections = 0;
 	// roughness = lerp(roughness*roughness, saturate(roughness*2), saturate(1-l.NdotV));
@@ -172,16 +181,14 @@ float3 GetReflections(g2f i, lighting l, masks m, float roughness){
 					reflections = GetWorldReflections(l.reflectionDir, i.worldPos.xyz, roughness);
 				}
 				else {
-					reflections = texCUBElod(_ReflCube, float4(l.reflectionDir, roughness * UNITY_SPECCUBE_LOD_STEPS));
-					reflections = DecodeHDR(float4(reflections,1), _ReflCube_HDR);
+					reflections = GetStaticReflections(l.reflectionDir, roughness, l.worldBrightness);
 				}
 			#else
 				reflections = GetWorldReflections(l.reflectionDir, i.worldPos.xyz, roughness);
 			#endif
 		#else
 			#if REFLCUBE_EXISTS
-				reflections = texCUBElod(_ReflCube, float4(l.reflectionDir, roughness * UNITY_SPECCUBE_LOD_STEPS));
-				reflections = DecodeHDR(float4(reflections,1), _ReflCube_HDR);
+				reflections = GetStaticReflections(l.reflectionDir, roughness, l.worldBrightness);
 			#endif
 		#endif
 		reflections *= l.ao;

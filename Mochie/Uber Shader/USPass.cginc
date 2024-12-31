@@ -428,7 +428,8 @@ float4 frag(g2f i) : SV_Target {
 
 	#if ALPHA_TEST
 		if (_UseAlphaMask == 1){
-			float4 alphaMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_AlphaMask, sampler_MainTex, i.uv.xy);
+			float2 alphaMaskUV = TRANSFORM_TEX(i.rawUV, _AlphaMask);
+			float4 alphaMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_AlphaMask, sampler_MainTex, alphaMaskUV);
 			albedo.a = ChannelCheck(alphaMask, _AlphaMaskChannel);
 		}
 		else {
@@ -644,7 +645,8 @@ float4 frag(g2f i) : SV_Target {
 		float4 albedo = _MainTex.Sample(sampler_MainTex, i.uv.xy) * _Color;
 		ApplyBCDissolve(i, al, albedo, bcRimColor);
 		if (_UseAlphaMask == 1){
-			float4 alphaMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_AlphaMask, sampler_MainTex, i.uv.xy);
+			float2 alphaMaskUV = TRANSFORM_TEX(i.rawUV, _AlphaMask);
+			float4 alphaMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_AlphaMask, sampler_MainTex, alphaMaskUV);
 			albedo.a = ChannelCheck(alphaMask, _AlphaMaskChannel);
 		}
 		#if ALPHA_PREMULTIPLY

@@ -120,9 +120,19 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
 		#endif
 	#endif
 
-	// float2 offset = lerp(normalMap, normalDir, _RefractMeshNormals) * _Refraction * 0.01;
-	float2 offset = normalMap * _Refraction * 0.01;
-	float2 screenUV = (i.uvGrab.xy / max(EPSILON, i.uvGrab.w)) + offset;
+	float2 screenUV = 0;
+	float2 offset = 0;
+	if (_RefractVertexNormal == 1){
+		float2 screenUV = GetGrabPos(UNITY_PROJ_COORD(i.uvGrab));
+		float2 IOR = (_RefractionIOR-1) * mul(UNITY_MATRIX_V, float4(normalDir, 0));
+		offset = ((1/(i.uvGrab.z + 1) * IOR)) * (1-dot(normalDir, viewDir));
+		offset = float2(offset.x, -(offset.y * _ProjectionParams.x)) * (_Refraction/5.0f);
+	}
+	else {
+		offset = normalMap * _Refraction * 0.01;
+	}
+	screenUV = (i.uvGrab.xy / max(EPSILON, i.uvGrab.w)) + offset;
+
 	// float3 wPos = GetWorldSpacePixelPos(i.localPos, screenUV);
 	// float dist = distance(wPos, i.cameraPos);
 	// _Blur *= 1-min(dist/10, 1);

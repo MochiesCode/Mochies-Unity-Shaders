@@ -5,7 +5,7 @@ using System.Reflection;
 using System.Collections.Generic;
 using Mochie;
 
-public class SFXEditor : ShaderGUI {
+public class ScreenFXEditor : ShaderGUI {
 
     public enum BlendingModes {Opaque, Alpha, Premultiplied, Additive, Soft_Additive, Multiply, Multiply_2x}
 

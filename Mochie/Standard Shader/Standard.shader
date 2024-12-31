@@ -72,6 +72,8 @@ Shader "Mochie/Standard" {
 		[Enum(Off,0, Bass,1, Low Mids,2, Upper Mids,3, Highs,4)]_AudioLinkEmission("Emission Band", Int) = 0
 		_AudioLinkEmissionStrength("Emission Strength", Float) = 1
 		[ToggleUI]_AudioLinkEmissionMeta("Audio Link Meta Emission", Int) = 0
+		_AudioLinkMin("Audio Link Min", Float) = 0
+		_AudioLinkMax("Audio Link Max", Float) = 1
 
 		_UV0Rotate("UV0 Rotation", Float) = 0
 		_UV0Scroll("UV0 Scrolling", Vector) = (0,0,0,0)
@@ -195,7 +197,7 @@ Shader "Mochie/Standard" {
 		_LTCGIRoughness("LTCGI Roughness", Float) = 1
 		_FresnelStrength("Fresnel Strength", Float) = 1
 		_SSRStrength("SSR Strength", Float) = 1
-		_SSRHeight("SSR Height", Range(0.1, 0.5)) = 0.1
+		_SSRHeight("SSR Height", Float) = 0.1
 		_ReflectionStrength("Relfection Strength", Float) = 1
 		_SpecularStrength("Specular Strength", Float) = 1
 		_QueueOffset("Queue Offset", Int) = 0
@@ -454,5 +456,5 @@ Shader "Mochie/Standard" {
         // }
     }
     FallBack "VertexLit"
-    CustomEditor "MochieStandardGUI"
+    CustomEditor "StandardEditor"
 }

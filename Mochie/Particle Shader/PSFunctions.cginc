@@ -91,7 +91,6 @@ float3 GetHSVFilter(float4 col, audioLinkData al){
 }
 
 void Softening(v2f i, inout float fade){
-	#if FADING_ENABLED
 		float2 screenUV = i.projPos.xy / i.projPos.w;
 		#if UNITY_UV_STARTS_AT_TOP
 			if (_CameraDepthTexture_TexelSize.y < 0) {
@@ -101,7 +100,6 @@ void Softening(v2f i, inout float fade){
 		float sceneZ = LinearEyeDepth(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, screenUV));
 		float partZ = i.projPos.z;
 		fade = saturate((1-_SoftenStr) * (sceneZ-partZ));
-	#endif
 }
 
 float4 GetTexture(v2f i, audioLinkData al){ 
@@ -182,7 +180,7 @@ float GetPulse(){
 
 float4 GetColor(v2f i){
 
-	#if FADING_ENABLED
+	#if defined(_FADING_ON) && defined(SOFTPARTICLES_ON)
 		Softening(i, fade);
     	i.color.a *= fade;
 	#endif

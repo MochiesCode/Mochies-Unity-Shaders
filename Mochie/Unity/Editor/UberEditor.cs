@@ -10,7 +10,7 @@ class GradientObject : ScriptableObject {
 	public Gradient gradient = new Gradient();
 }
 
-internal class USEditor : ShaderGUI {
+internal class UberEditor : ShaderGUI {
 
     static Dictionary<Material, Toggles> foldouts = new Dictionary<Material, Toggles>();
 	Dictionary<Action, GUIContent> baseTabButtons = new Dictionary<Action, GUIContent>();
@@ -74,7 +74,7 @@ internal class USEditor : ShaderGUI {
 			"Lighting",
 			"Shadows",
 			"Reflections",
-			"Specular",
+			"Specular Highlights",
 			"Subsurface",
 			"Matcap",
 			"Basic Rim",
@@ -163,7 +163,7 @@ internal class USEditor : ShaderGUI {
 
 	static readonly string unityFolderPath = "Assets/Mochie/Unity";
 	string header = "Header_Pro";
-	string versionLabel = "v1.31";
+	string versionLabel = "v1.32";
 	// β
 	
 	MaterialProperty _RenderMode = null; 
@@ -712,6 +712,7 @@ internal class USEditor : ShaderGUI {
 	MaterialProperty _UseShadowsForLREmiss = null;
 	MaterialProperty _HueMode = null;
 	MaterialProperty _MonoTint = null;
+	MaterialProperty _LitCubemap = null;
 
 	MaterialProperty _VRCFallback = null;
 	MaterialProperty _NaNLmao = null;
@@ -1263,14 +1264,15 @@ internal class USEditor : ShaderGUI {
 								reflCubeLabel.text = "Fallback Cubemap";
 							else
 								reflCubeLabel.text = "Cubemap";
-							me.TexturePropertySingleLine(reflCubeLabel, _ReflCube);
+							me.TexturePropertySingleLine(reflCubeLabel, _ReflCube, _LitCubemap);
+							MGUI.TexPropLabel(Tips.litCubemapLabel, 100, false);
 							me.ShaderProperty(_ReflCol, "Tint");
 							me.ShaderProperty(_ReflectionStr, "Strength");
 							MGUI.ToggleFloat(me, "Fresnel", _FresnelToggle, _FresnelStrength);
 							MGUI.ToggleSlider(me, "Manual Roughness", _ReflUseRough, _ReflRough);
 							MGUI.ToggleIntSlider(me, "Stepping", _ReflStepping, _ReflSteps);
 							me.ShaderProperty(_LightingBasedIOR, Tips.lightingBasedIOR);
-							me.ShaderProperty(_SSR, "SSR");
+							me.ShaderProperty(_SSR, Tips.ssrText);
 							if (reflError){
 								MGUI.PropertyGroupLayer(() => {
 									if (queueError){
@@ -1290,7 +1292,7 @@ internal class USEditor : ShaderGUI {
 				};
 				Foldouts.SubFoldout("Reflections", foldouts, reflTabButtons, mat, me, reflTabAction);
 
-				// Specular
+				// Specular Highlights
 				specTabButtons.Add(()=>{DoSpecReset();}, MGUI.resetLabel);
 				Action specTabAction = ()=>{
 					me.ShaderProperty(_Specular, "Mode");
@@ -1352,7 +1354,7 @@ internal class USEditor : ShaderGUI {
 						});
 					}
 				};
-				Foldouts.SubFoldout("Specular", foldouts, specTabButtons, mat, me, specTabAction);
+				Foldouts.SubFoldout("Specular Highlights", foldouts, specTabButtons, mat, me, specTabAction);
 
 				// Matcap
 				matcapTabButtons.Add(()=>{DoMatcapReset();}, MGUI.resetLabel);

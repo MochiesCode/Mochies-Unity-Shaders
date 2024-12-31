@@ -17,7 +17,8 @@
         [KeywordEnum(ULTRA, HIGH, MED, LOW)]BlurQuality("Blur Quality", Int) = 1
 		_Blur("Blur Strength", Float) = 1
         _Refraction("Refraction Strength", Float) = 5
-        [ToggleUI]_RefractMeshNormals("Refract Mesh Normals", Int) = 0
+        [ToggleUI]_RefractVertexNormal("Refract Mesh Normals", Int) = 0
+        _RefractionIOR("IOR", Float) = 1.3
 
         [Toggle(_RAIN_ON)]_RainToggle("Enable", Int) = 0
 		[HideInInspector]_RainSheet("Texture Sheet", 2D) = "black" {}

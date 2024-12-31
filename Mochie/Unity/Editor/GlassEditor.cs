@@ -8,7 +8,7 @@ using Mochie;
 
 public class GlassEditor : ShaderGUI {
 
-	string versionLabel = "v1.6.2";
+	string versionLabel = "v1.7";
 
 	// Surface
 	MaterialProperty _GrabpassTint = null;
@@ -26,6 +26,8 @@ public class GlassEditor : ShaderGUI {
 	MaterialProperty _Refraction = null;
 	MaterialProperty _Blur = null;
 	MaterialProperty BlurQuality = null;
+	MaterialProperty _RefractionIOR = null;
+	MaterialProperty _RefractVertexNormal = null;
 
 	// Rain
 	MaterialProperty _RainToggle = null;
@@ -88,7 +90,7 @@ public class GlassEditor : ShaderGUI {
 				MGUI.PropertyGroup(()=>{
 					me.TexturePropertySingleLine(Tips.baseColorLabel, _BaseColor);
 					MGUI.TextureSO(me, _BaseColor, _BaseColor.textureValue);
-					me.TexturePropertySingleLine(Tips.metallicMapText, _MetallicMap, _Metallic);
+					me.TexturePropertySingleLine(Tips.metallicText, _MetallicMap, _Metallic);
 					MGUI.TextureSO(me, _MetallicMap, _MetallicMap.textureValue);
 					me.TexturePropertySingleLine(Tips.roughnessTexLabel, _RoughnessMap, _Roughness);
 					MGUI.TextureSO(me, _RoughnessMap, _RoughnessMap.textureValue);
@@ -102,6 +104,10 @@ public class GlassEditor : ShaderGUI {
 						me.ShaderProperty(BlurQuality, "Blur Quality");
 						me.ShaderProperty(_Blur, "Blur Strength");
 						me.ShaderProperty(_Refraction, "Refraction");
+						if (_RefractVertexNormal.floatValue == 1){
+							me.ShaderProperty(_RefractionIOR, "Index of Refraction");
+						}
+						me.ShaderProperty(_RefractVertexNormal, "Refract Mesh Normals");
 					});
 				}
 				MGUI.SpaceN2();

@@ -360,7 +360,7 @@ public class WaterEditor : ShaderGUI {
 				if (_NormalMapMode.floatValue == 0){
 					MGUI.BoldLabel("Primary");
 					MGUI.PropertyGroup(() => {
-						me.TexturePropertySingleLine(Tips.waterNormalMap, _NormalMap0, _Normal0StochasticToggle);
+						me.TexturePropertySingleLine(Tips.normalMapText, _NormalMap0, _Normal0StochasticToggle);
 						MGUI.TexPropLabel(Tips.stochasticLabel, 117, false);
 						me.ShaderProperty(_NormalStr0, "Strength");
 						MGUI.Vector2Field(_NormalMapScale0, "Scale");
@@ -372,7 +372,7 @@ public class WaterEditor : ShaderGUI {
 					me.ShaderProperty(_Normal1Toggle, " ");
 					MGUI.PropertyGroup(() => {
 						MGUI.ToggleGroup(_Normal1Toggle.floatValue == 0);
-						me.TexturePropertySingleLine(Tips.waterNormalMap, _NormalMap1, _Normal1StochasticToggle);
+						me.TexturePropertySingleLine(Tips.normalMapText, _NormalMap1, _Normal1StochasticToggle);
 						MGUI.TexPropLabel(Tips.stochasticLabel, 117, false);
 						me.ShaderProperty(_NormalStr1, "Strength");
 						MGUI.Vector2Field(_NormalMapScale1, "Scale");
@@ -396,9 +396,9 @@ public class WaterEditor : ShaderGUI {
 			reflSpecTabButtons.Add(()=>{ResetReflSpec();}, MGUI.resetLabel);
 			Action reflSpecTabAction = ()=>{
 				MGUI.Space4();
-				me.TexturePropertySingleLine(Tips.waterRoughness, _RoughnessMap, _Roughness);
+				me.TexturePropertySingleLine(Tips.roughnessText, _RoughnessMap, _Roughness);
 				MGUI.TextureSO(me, _RoughnessMap, _RoughnessMap.textureValue && _DetailTextureMode.floatValue != 1);
-				me.TexturePropertySingleLine(Tips.waterMetallic, _MetallicMap, _Metallic);
+				me.TexturePropertySingleLine(Tips.metallicText, _MetallicMap, _Metallic);
 				MGUI.TextureSO(me, _MetallicMap, _MetallicMap.textureValue && _DetailTextureMode.floatValue != 1);
 				me.ShaderProperty(_DetailTextureMode, Tips.detailMode);
 				MGUI.Space8();
@@ -418,8 +418,8 @@ public class WaterEditor : ShaderGUI {
 					if (_DepthEffects.floatValue == 1 && _Reflections.floatValue != 3){
 						MGUI.ToggleFloat(me, "Screenspace Reflections", _SSR, _SSRStrength);
 						if (_SSR.floatValue > 0){
-							me.ShaderProperty(_EdgeFadeSSR, "Edge Fade");
-							me.ShaderProperty(_SSRHeight, "Depth");
+							me.ShaderProperty(_EdgeFadeSSR, Tips.ssrEdgeFadeText);
+							me.ShaderProperty(_SSRHeight, Tips.ssrDepthText);
 						}
 					}
 					me.ShaderProperty(_BackfaceReflections, "Apply to Backfaces");
