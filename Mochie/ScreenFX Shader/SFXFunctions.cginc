@@ -1,6 +1,10 @@
 #ifndef SFX_FUNCS_INCLUDED
 #define SFX_FUNCS_INCLUDED
 
+float GetFalloff(int useGlobal, float globalFalloff, float minRange, float maxRange, float distance){
+    return lerp(smoothstep(maxRange, clamp(minRange, 0, maxRange-0.001), distance), globalFalloff, useGlobal);
+}
+
 // ---------------------------
 // Audio Link
 // ---------------------------
@@ -117,7 +121,7 @@ float4 GetTriplanar(v2f i, sampler2D tex, sampler2D nTex, float2 _ST0, float2 _S
 			float noise = (noiseX * wNorm.x) + (noiseY * wNorm.y) + (noiseZ * wNorm.z);
 			if (_Triplanar == 2)
 				radius = saturate(radius-GetNoise(i.uv.xy, _TPNoise));
-			col.a *= radius*i.globalF*i.pulseSpeed;
+			col.a *= radius*i.tpF*i.pulseSpeed;
 			col.a *= lerp(noise, 1, col.a);
 			return col;
 		#endif
@@ -184,7 +188,7 @@ void ApplyColor(v2f i, inout float3 col, audioLinkData ald){
 
 void ApplyTransparency(v2f i, inout float4 col){
     switch (_BlendMode){
-        case 1: col *= i.globalF; col.a *= _Opacity; break;
+        case 1: col.a *= _Opacity; break;
 		case 2: col *= i.globalF * _Opacity; break;
         case 3: case 4: col.rgb *= i.globalF; col.rgb *= _Opacity; break;
         case 5: col = lerp(1, col, i.globalF*_Opacity); break;
@@ -195,7 +199,7 @@ void ApplyTransparency(v2f i, inout float4 col){
 
 float4 DoZoomTransparency(v2f i, float4 col){
     switch (_BlendMode){
-        case 1: col *= i.globalF; col.a *= _Opacity; break;
+        case 1: col.a *= _Opacity; break;
 		case 2: col *= i.globalF; break;
         case 3: case 4: col.rgb *= i.globalF; col.rgb *= _Opacity; break;
         case 5: col = lerp(1, col, i.globalF*_Opacity); break;

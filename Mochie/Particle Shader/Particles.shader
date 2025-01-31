@@ -79,7 +79,7 @@ Shader "Mochie/Particles" {
         _AudioLinkRemapCutoutMin("", Float) = 0
         _AudioLinkRemapCutoutMax("", Float) = 1
 
-
+        [HideInInspector]_MaterialResetCheck("Reset", Int) = 0
 		[HideInInspector]_NaNLmao("", Float) = 0.0
     }
     

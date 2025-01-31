@@ -477,6 +477,11 @@ internal class StandardEditor : ShaderGUI {
 			m_FirstTimeApply = false;
 		}
 
+		if (material.GetInt("_MaterialResetCheck") == 0){
+			material.SetInt("_MaterialResetCheck", 1);
+			MaterialChanged(material);
+		}
+
 		// Add mat to foldout dictionary if it isn't in there yet
 		if (!foldouts.ContainsKey(material))
 			foldouts.Add(material, toggles);
@@ -708,7 +713,7 @@ internal class StandardEditor : ShaderGUI {
 			if (samplingMode.floatValue < 3){
 				me.ShaderProperty(uvPri, Tips.uvSetLabel.text);
 				if (uvPri.floatValue >= 5)
-					me.ShaderProperty(uvPriSwizzle, "Swizzle");
+					me.ShaderProperty(uvPriSwizzle, Tips.swizzleText);
 				MGUI.TextureSOScroll(me, albedoMap, uv0Scroll);
 				me.ShaderProperty(uv0Rot, "Rotation");
 			}
@@ -793,7 +798,7 @@ internal class StandardEditor : ShaderGUI {
 			if (detailSamplingMode.floatValue < 3){
 				me.ShaderProperty(uvSetSecondary, Tips.uvSetLabel.text);
 				if (uvSetSecondary.floatValue >= 5)
-					me.ShaderProperty(uvSecSwizzle, "Swizzle");
+					me.ShaderProperty(uvSecSwizzle, Tips.swizzleText);
 				MGUI.TextureSOScroll(me, detailAlbedoMap, uv1Scroll);
 				me.ShaderProperty(uv1Rot, "Rotation");
 			}
@@ -815,7 +820,7 @@ internal class StandardEditor : ShaderGUI {
 		MGUI.PropertyGroup(()=>{
 			me.ShaderProperty(uvSetSecondary, Tips.uvSetLabel.text);
 			if (uvSetSecondary.floatValue >= 5)
-				me.ShaderProperty(uvSecSwizzle, "Swizzle");
+				me.ShaderProperty(uvSecSwizzle, Tips.swizzleText);
 			MGUI.TextureSOScroll(me, detailAlbedoMap, uv1Scroll);
 			me.ShaderProperty(uv1Rot, "Rotation");
 		});
@@ -977,7 +982,7 @@ internal class StandardEditor : ShaderGUI {
 				MGUI.PropertyGroup(()=>{
 					me.ShaderProperty(uvDetailMask, Tips.uvSetLabel.text);
 					if (uvDetailMask.floatValue >= 5)
-						me.ShaderProperty(uvDetailMaskSwizzle, "Swizzle");
+						me.ShaderProperty(uvDetailMaskSwizzle, Tips.swizzleText);
 					MGUI.TextureSOScroll(me, detailMask, detailScroll);
 					me.ShaderProperty(detailRotate, "Rotation");
 				});
@@ -988,7 +993,7 @@ internal class StandardEditor : ShaderGUI {
 				MGUI.PropertyGroup(()=>{
 					me.ShaderProperty(uvHeightMask, Tips.uvSetLabel.text);
 					if (uvHeightMask.floatValue >= 5)
-						me.ShaderProperty(uvHeightMaskSwizzle, "Swizzle");
+						me.ShaderProperty(uvHeightMaskSwizzle, Tips.swizzleText);
 					MGUI.TextureSOScroll(me, parallaxMask, uv2Scroll);
 				});
 			}
@@ -998,7 +1003,7 @@ internal class StandardEditor : ShaderGUI {
 				MGUI.PropertyGroup(()=>{
 					me.ShaderProperty(uvEmissMask, Tips.uvSetLabel.text);
 					if (uvEmissMask.floatValue >= 5)
-						me.ShaderProperty(uvEmissMaskSwizzle, "Swizzle");
+						me.ShaderProperty(uvEmissMaskSwizzle, Tips.swizzleText);
 					MGUI.TextureSOScroll(me, emissionMask, uv3Scroll);
 					me.ShaderProperty(uv3Rot, "Rotation");
 				});
@@ -1009,7 +1014,7 @@ internal class StandardEditor : ShaderGUI {
 				MGUI.PropertyGroup(()=>{
 					me.ShaderProperty(uvAlphaMask, Tips.uvSetLabel.text);
 					if (uvAlphaMask.floatValue >= 5)
-						me.ShaderProperty(uvAlphaMaskSwizzle, "Swizzle");
+						me.ShaderProperty(uvAlphaMaskSwizzle, Tips.swizzleText);
 					MGUI.TextureSOScroll(me, alphaMask, uv4Scroll);
 					me.ShaderProperty(uv4Rot, "Rotation");
 				});
@@ -1020,7 +1025,7 @@ internal class StandardEditor : ShaderGUI {
 				MGUI.PropertyGroup(()=>{
 					me.ShaderProperty(uvRainMask, Tips.uvSetLabel.text);
 					if (uvRainMask.floatValue >= 5)
-						me.ShaderProperty(uvRainMaskSwizzle, "Swizzle");
+						me.ShaderProperty(uvRainMaskSwizzle, Tips.swizzleText);
 					MGUI.TextureSOScroll(me, rainMask, uv5Scroll);
 					me.ShaderProperty(uv5Rot, "Rotation");
 				});
@@ -1031,7 +1036,7 @@ internal class StandardEditor : ShaderGUI {
 				MGUI.PropertyGroup(()=>{
 					me.ShaderProperty(uvRimMask, Tips.uvSetLabel.text);
 					if (uvRimMask.floatValue >= 5)
-						me.ShaderProperty(uvRimMaskSwizzle, "Swizzle");
+						me.ShaderProperty(uvRimMaskSwizzle, Tips.swizzleText);
 					MGUI.TextureSOScroll(me, rimMask, uvRimMaskScroll);
 					me.ShaderProperty(uvRimMaskRot, "Rotation");
 				});
@@ -1126,27 +1131,6 @@ internal class StandardEditor : ShaderGUI {
 		});
 	}
 
-	void CheckTrilinear(Texture tex) {
-		if(!tex)
-			return;
-		if(tex.mipmapCount <= 1) {
-			me.HelpBoxWithButton(
-				EditorGUIUtility.TrTextContent("Mip maps are required, please enable them in the texture import settings."),
-				EditorGUIUtility.TrTextContent("OK"));
-			return;
-		}
-		if(tex.filterMode != FilterMode.Trilinear) {
-			if(me.HelpBoxWithButton(
-				EditorGUIUtility.TrTextContent("Trilinear filtering is required, and aniso is recommended."),
-				EditorGUIUtility.TrTextContent("Fix Now"))) {
-				tex.filterMode = FilterMode.Trilinear;
-				tex.anisoLevel = 1;
-				EditorUtility.SetDirty(tex);
-			}
-			return;
-		}
-	}
-
 	void DoAreaLitArea(){
 		MGUI.PropertyGroup(()=>{
 			me.ShaderProperty(areaLitToggle, "Enable");
@@ -1163,13 +1147,13 @@ internal class StandardEditor : ShaderGUI {
 				);
 				me.TexturePropertySingleLine(lightMeshText, lightMesh);
 				me.TexturePropertySingleLine(Tips.lightTex0Text, lightTex0);
-				CheckTrilinear(lightTex0.textureValue);
+				MGUI.CheckTrilinear(lightTex0.textureValue, me);
 				me.TexturePropertySingleLine(Tips.lightTex1Text, lightTex1);
-				CheckTrilinear(lightTex1.textureValue);
+				MGUI.CheckTrilinear(lightTex1.textureValue, me);
 				me.TexturePropertySingleLine(Tips.lightTex2Text, lightTex2);
-				CheckTrilinear(lightTex2.textureValue);
+				MGUI.CheckTrilinear(lightTex2.textureValue, me);
 				me.TexturePropertySingleLine(Tips.lightTex3Text, lightTex3);
-				CheckTrilinear(lightTex3.textureValue);
+				MGUI.CheckTrilinear(lightTex3.textureValue, me);
 				me.TexturePropertySingleLine(new GUIContent("Occlusion"), areaLitOcclusion);
 				if (areaLitOcclusion.textureValue){
 					me.ShaderProperty(occlusionUVSet, "UV Set");

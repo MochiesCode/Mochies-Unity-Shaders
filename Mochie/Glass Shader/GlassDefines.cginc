@@ -3,9 +3,16 @@
 #include "UnityPBSLighting.cginc"
 #include "../Common/Sampling.cginc"
 
+#define AREALIT_ENABLED defined(_AREALIT_ON)
+
+#if AREALIT_ENABLED
+	#include "../../AreaLit/Shader/Lighting.hlsl"
+#endif
+
 #define EPSILON 1.192092896e-07
 
-// UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
+#define GRABPASS_ENABLED defined(_GRABPASS_ON) && !defined(SHADER_API_MOBILE)
+
 MOCHIE_DECLARE_TEX2D_SCREENSPACE(_GlassGrab);
 sampler2D _RainSheet;
 sampler2D _BaseColor;
@@ -51,6 +58,12 @@ float _GlobalTexCoordScale;
 float _RefractionIOR;
 float _RefractVertexNormal;
 float _Test;
+
+float _AreaLitStrength;
+float _AreaLitRoughnessMult;
+float4 _AreaLitMask_ST;
+
+float rainStrength;
 
 struct appdata {
 	float4 vertex : POSITION;

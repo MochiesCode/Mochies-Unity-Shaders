@@ -55,7 +55,7 @@ Material:
     - _CausticsMode: 0
     - _CausticsOpacity: 0.5
     - _CausticsPower: 1
-    - _CausticsScale: 15
+    - _CausticsScale: 10
     - _CausticsSpeed: 3
     - _CausticsSurfaceFade: 100
     - _CausticsThreshold: 0

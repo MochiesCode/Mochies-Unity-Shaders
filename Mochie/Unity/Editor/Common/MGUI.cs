@@ -964,6 +964,27 @@ namespace Mochie {
 			}
 		}
 
+		public static void CheckTrilinear(Texture tex, MaterialEditor me) {
+			if(!tex)
+				return;
+			if(tex.mipmapCount <= 1) {
+				me.HelpBoxWithButton(
+					EditorGUIUtility.TrTextContent("Mip maps are required, please enable them in the texture import settings."),
+					EditorGUIUtility.TrTextContent("OK"));
+				return;
+			}
+			if(tex.filterMode != FilterMode.Trilinear) {
+				if(me.HelpBoxWithButton(
+					EditorGUIUtility.TrTextContent("Trilinear filtering is required, and aniso is recommended."),
+					EditorGUIUtility.TrTextContent("Fix Now"))) {
+					tex.filterMode = FilterMode.Trilinear;
+					tex.anisoLevel = 1;
+					EditorUtility.SetDirty(tex);
+				}
+				return;
+			}
+		}
+
 		// Shorthand spacing funcs
 		public static void SpaceN24(){ GUILayout.Space(-24); }
 		public static void SpaceN22(){ GUILayout.Space(-22); }

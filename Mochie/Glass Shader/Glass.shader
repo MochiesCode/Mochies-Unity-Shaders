@@ -14,13 +14,13 @@
         _Metallic("Metallic", Range(0,1)) = 0
 		_Occlusion("Occlusion", Range(0,1)) = 1
         _NormalStrength("Normal Strength", Float) = 1
-        [KeywordEnum(ULTRA, HIGH, MED, LOW)]BlurQuality("Blur Quality", Int) = 1
+        [Enum(Low,0, Medium,1, High,2, Ultra,3)]_BlurQuality("Blur Quality", Int) = 1
 		_Blur("Blur Strength", Float) = 1
         _Refraction("Refraction Strength", Float) = 5
         [ToggleUI]_RefractVertexNormal("Refract Mesh Normals", Int) = 0
-        _RefractionIOR("IOR", Float) = 1.3
+        _RefractionIOR("IOR", Float) = 1.2
 
-        [Toggle(_RAIN_ON)]_RainToggle("Enable", Int) = 0
+        // [Toggle(_RAIN_ON)]_RainToggle("Enable", Int) = 0
 		[HideInInspector]_RainSheet("Texture Sheet", 2D) = "black" {}
 		[HideInInspector]_Rows("Rows", Float) = 8
 		[HideInInspector]_Columns("Columns", Float) = 8
@@ -35,7 +35,7 @@
         _RippleDensity("Ripple Density", Float) = 1.57079632679
         _RainThreshold("Threshold", Range(0,1)) = 0.01
         _RainThresholdSize("Threshold Size", Range(0,1)) = 0.01
-        [Enum(Droplets,0, Ripples,1, Automatic,2)]_RainMode("Mode", Int) = 0
+        [Enum(Off,0, Droplets,1, Ripples,2, Automatic,3)]_RainMode("Mode", Int) = 0
         _RainMask("Mask", 2D) = "white" {}
         [Enum(Red,0, Green,1, Blue,2, Alpha,0)]_RainMaskChannel("Channel", Int) = 0
         _DropletMask("Rain Droplet Mask", 2D) = "white" {}
@@ -57,6 +57,18 @@
         [HideInInspector]_ZWrite("Z Write", Int) = 0
         [HideInInspector]_MaterialResetCheck("Reset", Int) = 0
         _QueueOffset("Queue Offset", Int) = 0
+
+        [ToggleUI]_AreaLitToggle("Enable", Int) = 0
+		_AreaLitMask("Mask", 2D) = "white" {}
+		_AreaLitStrength("Strength", Float) = 1
+		_AreaLitRoughnessMult("Roughness Multiplier", Float) = 1
+		[NoScaleOffset]_LightMesh("Light Mesh", 2D) = "black" {}
+		[NoScaleOffset]_LightTex0("Light Texture 0", 2D) = "white" {}
+		[NoScaleOffset]_LightTex1("Light Texture 1", 2D) = "black" {}
+		[NoScaleOffset]_LightTex2("Light Texture 2", 2D) = "black" {}
+		[NoScaleOffset]_LightTex3("Light Texture 3", 2DArray) = "black" {}
+		[ToggleOff]_OpaqueLights("Opaque Lights", Float) = 1.0
+
     }
     SubShader {
         Tags { 
@@ -82,7 +94,7 @@
             #pragma multi_compile_fog
             #pragma multi_compile_fwdbase
             #pragma shader_feature_local _RAIN_ON
-            #pragma shader_feature_local _ BLURQUALITY_ULTRA BLURQUALITY_HIGH BLURQUALITY_MED BLURQUALITY_LOW
+            #pragma shader_feature_local _ _BLURQUALITY_ULTRA _BLURQUALITY_HIGH _BLURQUALITY_MED _BLURQUALITY_LOW
             #pragma shader_feature_local _REFLECTIONS_ON
             #pragma shader_feature_local _SPECULAR_HIGHLIGHTS_ON
             #pragma shader_feature_local _GRABPASS_ON
@@ -90,6 +102,7 @@
             #pragma shader_feature_local _STOCHASTIC_SAMPLING_ON
             #pragma shader_feature_local _NORMALMAP_ON
             #pragma shader_feature_local _ _RAINMODE_RIPPLE _RAINMODE_AUTO 
+            #pragma shader_feature_local _AREALIT_ON
             #pragma target 5.0
 
             #include "GlassDefines.cginc"

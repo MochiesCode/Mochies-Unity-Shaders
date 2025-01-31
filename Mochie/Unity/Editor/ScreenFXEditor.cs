@@ -55,7 +55,7 @@ public class ScreenFXEditor : ShaderGUI {
 
     // Texture file names
 	string header = "SFXHeader_Pro";
-	string versionLabel = "v1.19";
+	string versionLabel = "v1.20";
 	
     // Commonly used strings
     string modeLabel = "Mode";
@@ -298,6 +298,10 @@ public class ScreenFXEditor : ShaderGUI {
     MaterialProperty _ShiftX = null;
     MaterialProperty _ShiftY = null;
     MaterialProperty _OutlineCol = null;
+	MaterialProperty _OutlineTex = null;
+	MaterialProperty _OutlineTexAlt = null;
+	MaterialProperty _OutlineTexCoord = null;
+	MaterialProperty _OutlineTexCoordAlt = null;
     MaterialProperty _OutlineThresh = null;
 	MaterialProperty _OutlineAltEnable = null;
 	MaterialProperty _OutlineThreshAlt = null;
@@ -344,7 +348,6 @@ public class ScreenFXEditor : ShaderGUI {
 	MaterialProperty _SobelFilterOpacity = null;
 
     BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
-    MaterialEditor m_MaterialEditor;
 
 	[DrawGizmo(GizmoType.Selected | GizmoType.Active)]
     static void DrawGizmo(MeshRenderer meshRenderer, GizmoType gizmoType){
@@ -477,6 +480,7 @@ public class ScreenFXEditor : ShaderGUI {
 			foldouts.Add(mat, toggles);
 
 		ApplyMaterialSettings(mat);
+		SetBlendMode(mat);
 		
         Texture2D headerTex = (Texture2D)Resources.Load(header, typeof(Texture2D));
 
@@ -499,7 +503,8 @@ public class ScreenFXEditor : ShaderGUI {
 					SetBlendMode(mat);
                 if (_BlendMode.floatValue > 0)
                     me.ShaderProperty(_Opacity, "Opacity");
-				
+				if (_BlendMode.floatValue > 1)
+					MGUI.DisplayInfo("Blend modes other than opaque and alpha use the global falloff to fade out the entire material. This is because these blend modes change screen values by default and need to falloff based on something, even when no effects are enabled.");
 				GUILayout.Label("Global Falloff", EditorStyles.boldLabel);
 				MGUI.SpaceN2();
                 me.ShaderProperty(_MinRange, minLabel);
@@ -884,7 +889,13 @@ public class ScreenFXEditor : ShaderGUI {
 							});
 						}
 						else MGUI.Space6();
-						MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
+						MGUI.DisplayInfo("This feature requires a \"Depth Light\" prefab be present in the scene.\n(Found in: Assets/Mochie/Unity/Prefabs)");
+						if (_OutlineType.floatValue == 1){
+							MGUI.PropertyGroup(()=>{
+								me.ShaderProperty(_OutlineAltEnable, "Enable Mix Tint");
+								me.ShaderProperty(_SobelClearInner, "Remove Inner Shading");
+							});
+						}
 						MGUI.PropertyGroup(()=>{
 							if (_OutlineType.floatValue == 2)
 								me.ShaderProperty(_AuraSampleCount, "Sample Count");
@@ -896,7 +907,9 @@ public class ScreenFXEditor : ShaderGUI {
 								me.ShaderProperty(_OutlineHueShift, "Hue");
 							}
 							if (_OutlineCubeToggle.floatValue == 0){
-								me.ShaderProperty(_OutlineCol, "Base Line Tint");
+								me.TexturePropertySingleLine(new GUIContent("Base Line Tint"), _OutlineTex, _OutlineCol);
+								if (_OutlineTex.textureValue)
+									MGUI.Vector2Field(_OutlineTexCoord, "Coordinates");
 							}
 							else {
 								me.TexturePropertySingleLine(new GUIContent("Base Cubemap"), _OutlineCube, _OutlineCol);
@@ -912,7 +925,9 @@ public class ScreenFXEditor : ShaderGUI {
 							}
 							if (_OutlineType.floatValue == 1 && _OutlineAltEnable.floatValue == 1){
 								if (_OutlineCubeToggle.floatValue == 0){
-									me.ShaderProperty(_OutlineColAlt, "Mix Line Tint");
+									me.TexturePropertySingleLine(new GUIContent("Mix Line Tint"), _OutlineTexAlt, _OutlineColAlt);
+									if (_OutlineTexAlt.textureValue)
+										MGUI.Vector2Field(_OutlineTexCoordAlt, "Coordinates");
 								}
 								else {
 									me.TexturePropertySingleLine(new GUIContent("Mix Cubemap"), _OutlineCubeAlt, _OutlineColAlt);
@@ -943,15 +958,11 @@ public class ScreenFXEditor : ShaderGUI {
 								}
 							}
 							if (_OutlineType.floatValue == 1){
-								me.ShaderProperty(_OutlineAltEnable, "Enable Mix Tint");
-							}
-							if (_OutlineType.floatValue == 1){
 								me.ShaderProperty(_OutlineThiccS, "Thickness");
 								me.ShaderProperty(_OutlineThresh, "Base Strength");
 								if (_OutlineAltEnable.floatValue == 1){
 									me.ShaderProperty(_OutlineThreshAlt, "Mix Strength");
 								}
-								me.ShaderProperty(_SobelClearInner, "Remove Inner Shading");
 							}
 							else if (_OutlineType.floatValue == 2){
 								me.ShaderProperty(_AuraStr, "Thickness");
@@ -1200,13 +1211,6 @@ public class ScreenFXEditor : ShaderGUI {
 		MGUI.DoFooter(versionLabel);
     }
 
-	void SetKeyword(Material m, string keyword, bool state) {
-		if (state)
-			m.EnableKeyword(keyword);
-		else
-			m.DisableKeyword(keyword);
-	}
-
 	void ApplyMaterialSettings(Material mat){
 		int filterMode = mat.GetInt("_FilterModel");
 		int shakeMode = mat.GetInt("_ShakeModel");
@@ -1249,26 +1253,26 @@ public class ScreenFXEditor : ShaderGUI {
 		bool audioLinkEnabled = audioLink == 1;
 		bool sobelFilterEnabled = sobelFilter == 1;
 		
-		SetKeyword(mat, "_COLOR_ON", filteringEnabled);
-		SetKeyword(mat, "_SHAKE_ON", shakeEnabled);
-		SetKeyword(mat, "_DISTORTION_ON", distortionEnabled);
-		SetKeyword(mat, "_DISTORTION_WORLD_ON", distortionTriEnabled);
-		SetKeyword(mat, "_BLUR_PIXEL_ON", blurPixelEnabled);
-		SetKeyword(mat, "_BLUR_DITHER_ON", blurDitherEnabled);
-		SetKeyword(mat, "_BLUR_RADIAL_ON", blurRadEnabled);
-		SetKeyword(mat, "_BLUR_Y_ON", blurYEnabled);
-		SetKeyword(mat, "_CHROMATIC_ABBERATION_ON", blurChromEnabled);
-		SetKeyword(mat, "_DOF_ON", dofEnabled);
-		SetKeyword(mat, "_ZOOM_ON", zoomEnabled);
-		SetKeyword(mat, "_ZOOM_RGB_ON", zoomRGBEnabled);
-		SetKeyword(mat, "_IMAGE_OVERLAY_ON", sstEnabled);
-		SetKeyword(mat, "_IMAGE_OVERLAY_DISTORTION_ON", sstDistEnabled);
-		SetKeyword(mat, "_FOG_ON", fogEnabled);
-		SetKeyword(mat, "_TRIPLANAR_ON", tpEnabled);
-		SetKeyword(mat, "_OUTLINE_ON", outlineEnabled);
-		SetKeyword(mat, "_NOISE_ON", noiseEnabled);
-		SetKeyword(mat, "_AUDIOLINK_ON", audioLinkEnabled);
-		SetKeyword(mat, "_SOBEL_FILTER_ON", sobelFilterEnabled);
+		MGUI.SetKeyword(mat, "_COLOR_ON", filteringEnabled);
+		MGUI.SetKeyword(mat, "_SHAKE_ON", shakeEnabled);
+		MGUI.SetKeyword(mat, "_DISTORTION_ON", distortionEnabled);
+		MGUI.SetKeyword(mat, "_DISTORTION_WORLD_ON", distortionTriEnabled);
+		MGUI.SetKeyword(mat, "_BLUR_PIXEL_ON", blurPixelEnabled);
+		MGUI.SetKeyword(mat, "_BLUR_DITHER_ON", blurDitherEnabled);
+		MGUI.SetKeyword(mat, "_BLUR_RADIAL_ON", blurRadEnabled);
+		MGUI.SetKeyword(mat, "_BLUR_Y_ON", blurYEnabled);
+		MGUI.SetKeyword(mat, "_CHROMATIC_ABBERATION_ON", blurChromEnabled);
+		MGUI.SetKeyword(mat, "_DOF_ON", dofEnabled);
+		MGUI.SetKeyword(mat, "_ZOOM_ON", zoomEnabled);
+		MGUI.SetKeyword(mat, "_ZOOM_RGB_ON", zoomRGBEnabled);
+		MGUI.SetKeyword(mat, "_IMAGE_OVERLAY_ON", sstEnabled);
+		MGUI.SetKeyword(mat, "_IMAGE_OVERLAY_DISTORTION_ON", sstDistEnabled);
+		MGUI.SetKeyword(mat, "_FOG_ON", fogEnabled);
+		MGUI.SetKeyword(mat, "_TRIPLANAR_ON", tpEnabled);
+		MGUI.SetKeyword(mat, "_OUTLINE_ON", outlineEnabled);
+		MGUI.SetKeyword(mat, "_NOISE_ON", noiseEnabled);
+		MGUI.SetKeyword(mat, "_AUDIOLINK_ON", audioLinkEnabled);
+		MGUI.SetKeyword(mat, "_SOBEL_FILTER_ON", sobelFilterEnabled);
 
 		mat.SetShaderPassEnabled("Always", zoomEnabled || zoomRGBEnabled || sstEnabled || sstDistEnabled ||  letterboxEnabled);
 	}

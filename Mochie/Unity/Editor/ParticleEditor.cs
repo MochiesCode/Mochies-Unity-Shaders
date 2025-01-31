@@ -117,7 +117,6 @@ public class ParticleEditor : ShaderGUI {
 
     BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 	List<ParticleSystemRenderer> m_RenderersUsingThisMaterial = new List<ParticleSystemRenderer>();
-    MaterialEditor m_MaterialEditor;
 	bool m_FirstTimeApply = true;
 
 	bool displayKeywords = false;
@@ -143,6 +142,12 @@ public class ParticleEditor : ShaderGUI {
 		header = "ParticleHeader_Pro";
 		if (!EditorGUIUtility.isProSkin){
 			header = "ParticleHeader";
+		}
+
+		if (mat.GetInt("_MaterialResetCheck") == 0){
+			mat.SetInt("_MaterialResetCheck", 1);
+			ApplyMaterialSettings(mat);
+			SetBlendMode(mat);
 		}
 
         Texture2D headerTex = (Texture2D)Resources.Load(header, typeof(Texture2D));

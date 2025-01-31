@@ -55,14 +55,15 @@ float3 GetFlipbookNormals(v2f i, inout float flipbookBase, float mask){
     float4 uvdd = float4(ddx(origUV), ddy(origUV));
 
     flipbookBase = tex2Dgrad(_RainSheet, flipUV, uvdd.xw, uvdd.zw) * mask;
-    return tex2DnormalGlass(_RainSheet, flipUV, uvdd, _Strength*mask);
+	rainStrength = _Strength * mask;
+    return tex2DnormalGlass(_RainSheet, flipUV, uvdd, rainStrength);
 }
 
 // based on https://www.toadstorm.com/blog/?p=742
 void ApplyExtraDroplets(v2f i, inout float3 rainNormal, inout float flipbookBase, float mask){
 	if (_DynamicDroplets > 0){
 		float2 dropletMaskUV = ScaleOffsetUV(i.uv, float2(_XScale, _YScale), 0);
-		float4 dropletMask = tex2Dbias(_DropletMask, float4(dropletMaskUV,0,_RainBias));
+		float4 dropletMask = tex2Dbias(_DropletMask, float4(dropletMaskUV,0,-1));
 		float3 dropletMaskNormal = UnpackScaleNormal(float4(dropletMask.rg,1,1), _Strength*2*mask);
 		float droplets = Remap(dropletMask.b, 0, 1, -1, 1);
 		droplets += (_Time.y*(_Speed/200.0));
@@ -85,34 +86,34 @@ float3 BlurredGrabpassSample(float2 uv, float str){
 	blurStr.x *= 0.5625;
 	float2 uvBlur = uv;
 	
-	#if defined(BLURQUALITY_ULTRA)
+	#if defined(_BLURQUALITY_ULTRA)
 		[unroll(71)]
 		for (uint index = 0; index < 71; ++index){
 			uvBlur.xy = uv.xy + (kernel71[index] * blurStr);
 			blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_GlassGrab, uvBlur);
 		}
-		blurCol /= 70;
-	#elif defined(BLURQUALITY_HIGH)
+		blurCol /= 71;
+	#elif defined(_BLURQUALITY_HIGH)
 		[unroll(43)]
 		for (uint index = 0; index < 43; ++index){
 			uvBlur.xy = uv.xy + (kernel43[index] * blurStr);
 			blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_GlassGrab, uvBlur);
 		}
-		blurCol /= 42;
-	#elif defined(BLURQUALITY_MED)
+		blurCol /= 43;
+	#elif defined(_BLURQUALITY_MED)
 		[unroll(22)]
 		for (uint index = 0; index < 22; ++index){
 			uvBlur.xy = uv.xy + (kernel22[index] * blurStr);
 			blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_GlassGrab, uvBlur);
 		}
-		blurCol /= 21;
-	#elif defined(BLURQUALITY_LOW)
+		blurCol /= 22;
+	#elif defined(_BLURQUALITY_LOW)
 		[unroll(16)]
 		for (uint index = 0; index < 16; ++index){
 			uvBlur.xy = uv.xy + (kernel16[index] * blurStr);
 			blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_GlassGrab, uvBlur);
 		}
-		blurCol /= 15;
+		blurCol /= 16;
 	#endif
 
 	return blurCol;

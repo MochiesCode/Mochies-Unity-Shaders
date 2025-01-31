@@ -254,6 +254,8 @@ Shader "Mochie/Standard Lite" {
         [HideInInspector] _ReflectionTex1("", 2D) = "white" {}
 
 		[ToggleUI]_IgnoreRealtimeGI("Ignore Realtime GI", Int) = 0
+		
+		[HideInInspector]_MaterialResetCheck("Reset", Int) = 0
 
 		// [HideInInspector] BAKERY_META_ALPHA_ENABLE ("Enable Bakery alpha meta pass", Float) = 1.0
     }

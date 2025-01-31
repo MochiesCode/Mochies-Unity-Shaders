@@ -688,6 +688,8 @@ Shader "Mochie/Uber (Outline)" {
 		[HideInInspector]_NaNLmao("fl", Float) = 0.0
 		[HideInInspector]_OutlineCulling("tog", Int) = 1
 		[HideInInspector]_UseMatcap1("tog", Int) = 0
+		
+		[HideInInspector]_MaterialResetCheck("Reset", Int) = 0
 
 		[IntRange]_StencilRef("ra", Range(1,255)) = 1
         [Enum(UnityEngine.Rendering.StencilOp)]_StencilPass("enx", Float) = 0

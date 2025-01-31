@@ -265,7 +265,6 @@ public class WaterEditor : ShaderGUI {
 	// MaterialProperty _Test2 = null;
 	
     BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
-	bool m_FirstTimeApply = true;
 
 	MaterialEditor me;
 
@@ -283,9 +282,6 @@ public class WaterEditor : ShaderGUI {
                 property.SetValue(this, FindProperty(property.Name, props));
         }
         Material mat = (Material)me.target;
-        if (m_FirstTimeApply){
-			m_FirstTimeApply = false;
-        }
 
 		header = "WaterHeader_Pro";
 		if (!EditorGUIUtility.isProSkin){
@@ -300,6 +296,17 @@ public class WaterEditor : ShaderGUI {
 
 		if (!foldouts.ContainsKey(mat))
 			foldouts.Add(mat, toggles);
+
+		if (mat.GetInt("_MaterialResetCheck") == 0){
+			mat.SetInt("_MaterialResetCheck", 1);
+			SetKeywords(mat);
+			SetBlendMode(mat);
+		}
+
+		foreach (var obj in _TransparencyMode.targets){
+			SetKeywords((Material)obj);
+			SetBlendMode((Material)obj);
+		}
 
         EditorGUI.BeginChangeCheck(); {
 			
@@ -773,13 +780,13 @@ public class WaterEditor : ShaderGUI {
 						);
 						me.TexturePropertySingleLine(lightMeshText, _LightMesh);
 						me.TexturePropertySingleLine(Tips.lightTex0Text, _LightTex0);
-						CheckTrilinear(_LightTex0.textureValue);
+						MGUI.CheckTrilinear(_LightTex0.textureValue, me);
 						me.TexturePropertySingleLine(Tips.lightTex1Text, _LightTex1);
-						CheckTrilinear(_LightTex1.textureValue);
+						MGUI.CheckTrilinear(_LightTex1.textureValue, me);
 						me.TexturePropertySingleLine(Tips.lightTex2Text, _LightTex2);
-						CheckTrilinear(_LightTex2.textureValue);
+						MGUI.CheckTrilinear(_LightTex2.textureValue, me);
 						me.TexturePropertySingleLine(Tips.lightTex3Text, _LightTex3);
-						CheckTrilinear(_LightTex3.textureValue);
+						MGUI.CheckTrilinear(_LightTex3.textureValue, me);
 					});
 					MGUI.ToggleGroupEnd();
 					MGUI.DisplayInfo("Note that the AreaLit package files MUST be inside a folder named AreaLit (case sensitive) directly in the Assets folder (Assets/AreaLit)");
@@ -804,7 +811,7 @@ public class WaterEditor : ShaderGUI {
 					EditorGUI.BeginChangeCheck();
 					me.ShaderProperty(_TransparencyMode, "Transparency Mode");
 					if (EditorGUI.EndChangeCheck()){
-						ApplyTransparencySettings(mat);
+						SetBlendMode(mat);
 					}
 					me.ShaderProperty(_CullMode, "Culling Mode");
 					me.ShaderProperty(_ZWrite, "ZWrite");
@@ -824,7 +831,7 @@ public class WaterEditor : ShaderGUI {
 					}
 				});
 				if (_DepthEffects.floatValue == 1 && transMode == 2){
-					MGUI.DisplayInfo("   Depth effects require a \"Depth Light\" prefab be present in the scene.\n   (Found in: Assets/Mochie/Unity/Prefabs)");
+					MGUI.DisplayInfo("Depth effects require a \"Depth Light\" prefab be present in the scene.\n(Found in: Assets/Mochie/Unity/Prefabs)");
 				}
 			};
 			Foldouts.Foldout("RENDER SETTINGS", foldouts, renderingTabButtons, mat, me, renderingTabAction);
@@ -833,7 +840,7 @@ public class WaterEditor : ShaderGUI {
 
 		// me.ShaderProperty(_Test1, "Test 1");
 		// me.ShaderProperty(_Test2, "Test 2");
-		ApplyMaterialSettings(mat);
+		SetKeywords(mat);
 
 		MGUI.DoFooter(versionLabel);
     }
@@ -841,11 +848,11 @@ public class WaterEditor : ShaderGUI {
 	public override void AssignNewShaderToMaterial(Material mat, Shader oldShader, Shader newShader) {
 		base.AssignNewShaderToMaterial(mat, oldShader, newShader);
 		MGUI.ClearKeywords(mat);
-		ApplyMaterialSettings(mat);
-		ApplyTransparencySettings(mat);
+		SetKeywords(mat);
+		SetBlendMode(mat);
 	}
 
-	void ApplyTransparencySettings(Material mat){
+	void SetBlendMode(Material mat){
 		int transMode = mat.GetInt("_TransparencyMode");
 		switch (transMode){
 			
@@ -889,7 +896,7 @@ public class WaterEditor : ShaderGUI {
 		}
 	}
 
-	void ApplyMaterialSettings(Material mat){
+	void SetKeywords(Material mat){
 		int transMode = mat.GetInt("_TransparencyMode");
 		int depthFXToggle = mat.GetInt("_DepthEffects");
 		int vertMode = mat.GetInt("_VertOffsetMode");
@@ -918,27 +925,6 @@ public class WaterEditor : ShaderGUI {
 		MGUI.SetKeyword(mat, "_NORMALMAP_FLIPBOOK_ON", normalMapMode == 1);
 		MGUI.SetKeyword(mat, "_SCREENSPACE_REFLECTIONS_ON", ssrEnabled);
 		MGUI.SetKeyword(mat, "_BICUBIC_LIGHTMAPPING_ON", bicubic == 1);
-	}
-
-	void CheckTrilinear(Texture tex) {
-		if(!tex)
-			return;
-		if(tex.mipmapCount <= 1) {
-			me.HelpBoxWithButton(
-				EditorGUIUtility.TrTextContent("Mip maps are required, please enable them in the texture import settings."),
-				EditorGUIUtility.TrTextContent("OK"));
-			return;
-		}
-		if(tex.filterMode != FilterMode.Trilinear) {
-			if(me.HelpBoxWithButton(
-				EditorGUIUtility.TrTextContent("Trilinear filtering is required, and aniso is recommended."),
-				EditorGUIUtility.TrTextContent("Fix Now"))) {
-				tex.filterMode = FilterMode.Trilinear;
-				tex.anisoLevel = 1;
-				EditorUtility.SetDirty(tex);
-			}
-			return;
-		}
 	}
 
 	void ResetSurface(){
@@ -1146,7 +1132,7 @@ public class WaterEditor : ShaderGUI {
 		_TexCoordSpaceSwizzle.floatValue = 1f;
 		_GlobalTexCoordScaleUV.floatValue = 1f;
 		_GlobalTexCoordScaleWorld.floatValue = 0.1f;
-		ApplyTransparencySettings(mat);
+		SetBlendMode(mat);
 	}
 
 	void ClearDictionaries(){

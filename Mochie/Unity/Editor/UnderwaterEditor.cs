@@ -65,6 +65,10 @@ public class UnderwaterEditor : ShaderGUI {
 			m_FirstTimeApply = false;
         }
 
+		if (mat.GetInt("_MaterialResetCheck") == 0){
+			mat.SetInt("_MaterialResetCheck", 1);
+			ApplyMaterialSettings(mat);
+		}
 
         EditorGUI.BeginChangeCheck(); {
 

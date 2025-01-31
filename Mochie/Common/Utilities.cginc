@@ -241,12 +241,8 @@ float RoundTo(float x, float y){
 	return ceil(x*y)/y;
 }
 
-float SmoothFalloff(float minR, float maxR, float d){
-	return smoothstep(maxR, clamp(minR, 0, maxR-0.001), d);
-}
-
-float GetFalloff(int ug, float gf, float minR, float maxR, float d){
-    return lerp(smoothstep(maxR, clamp(minR, 0, maxR-0.001), d), gf, ug);
+float SmoothFalloff(float minRange, float maxRange, float distance){
+	return smoothstep(maxRange, clamp(minRange, 0, maxRange-0.001), distance);
 }
 
 float Safe_DotClamped(float3 a, float3 b){

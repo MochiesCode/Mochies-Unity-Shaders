@@ -20,6 +20,8 @@ namespace Mochie {
 		public static GUIContent heightMapText = new GUIContent("Height Map", parallaxHeightText.tooltip);
 		public static GUIContent maskText = new GUIContent("Mask", "Darker parts of the texture will reduce the masked effect, lighter parts will remain closer to base values.");
 		public static GUIContent smoothnessModeText = new GUIContent("Smoothness Mode", "Use smoothness maps/values instead of roughness.");
+		public static GUIContent swizzleText = new GUIContent("Swizzle", "Which two axis should be used as UVs for sampling textures");
+		public static GUIContent texCoordSpaceText = new GUIContent("Texture Coordinate Space", "UV:\nUses the regular UVs baked into the mesh data.\n\nWorld:\nUses the world space coordinates of the mesh as UVs");
 
 		// Standard
 		public static GUIContent standWorkflow = new GUIContent("Workflow", "Standard:\nDefault packing mode of visually separated texture slots for PBR maps, uses MAHS format.\n\nPacked: \nModular packing mode that combines all PBR texture slots into one and allows channel selection.");
@@ -222,5 +224,12 @@ namespace Mochie {
 		public static GUIContent globalTint = new GUIContent("Global Tint", "Determines the color of the majority of effects in the shader.");
 		public static GUIContent emissionAO = new GUIContent("Emission (AO)", "Takes an ambient occlusion map and inverts it to determine emission. This is the same technique used by bungie for the effect in Destiny.");
 		public static GUIContent invertTint = new GUIContent("Invert Tint", "Uses an inverted copy of the base color texture to determine outline tint.");
+
+		// Glass
+		public static GUIContent rainModeText = new GUIContent("Mode", "Droplets:\nDotted droplets and streaks of rain, best used on vertical surfaces.\n\nRipples:\nRippling circles that you'd see on horizontal surfaces where water might pool.\n\nAutomatic:\nRenders both ripples and droplets and interpolates between them based on the angle of the surface. Vertical surfaces will display droplets, horizontal surfaces will display ripples.");
+		public static GUIContent litBaseColorText = new GUIContent("Lit Base Color", "Applies realtime and light probe lighting to the base color. Does not support baked lightmaps.");
+		public static GUIContent samplingModeText = new GUIContent("Sampling Mode", "Default:\nSamples textures normally.\n\nStochastic:\nUses uvs to generate pseudo-random positions for sampling to alleviate tiling artifacts. 3 samples per texture.");
+		public static GUIContent normalRefractionText = new GUIContent("Normal Refraction", "Refraction strength for normal maps and rain.");
+		public static GUIContent meshRefractionText = new GUIContent("Mesh Refraction", "Includes mesh normals in refraction calculations. Do not use on flat surfaces.");
 	}
 }

@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Screen FX Mat
-  m_Shader: {fileID: 4800000, guid: 0d1d977ca72938b4bb8f3ed06b9a8645, type: 3}
+  m_Shader: {fileID: 4800000, guid: 59e95fd81cd9e734f838e83e6faf1482, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -40,6 +40,14 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _OutlineTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OutlineTexAlt:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _ScreenTex:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -49,7 +57,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _TPNoiseTex:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: dfbb7eeed695dc14d82b08d887041406, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _TPTexture:
@@ -191,6 +199,7 @@ Material:
     - _Letterbox: 0
     - _LetterboxStr: 0
     - _ManualScrub: 0
+    - _MaterialResetCheck: 0
     - _MaxRange: 15
     - _MinRange: 8
     - _MonoTint: 0
@@ -300,6 +309,8 @@ Material:
     - _NoiseRGB: {r: 0, g: 0, b: 0, a: 0}
     - _OutlineCol: {r: 0, g: 0, b: 0, a: 1}
     - _OutlineColAlt: {r: 1, g: 1, b: 1, a: 1}
+    - _OutlineTexCoord: {r: 0.5, g: 0.5, b: 0, a: 0}
+    - _OutlineTexCoordAlt: {r: 0.5, g: 0.5, b: 0, a: 0}
     - _RGB: {r: 1, g: 1, b: 1, a: 0}
     - _SSTColor: {r: 1, g: 1, b: 1, a: 1}
     - _SobelFilterBackgroundColor: {r: 0, g: 0, b: 0, a: 1}

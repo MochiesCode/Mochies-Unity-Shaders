@@ -229,7 +229,8 @@ Shader "Mochie/Water" {
         [HideInInspector]_DstBlend("__dst", Float) = 0.0
 		[HideInInspector]_NoiseTexSSR("SSR Noise Tex", 2D) = "black"
 		[HideInInspector]_ZeroProp("", Float) = 0
-
+		[HideInInspector]_MaterialResetCheck("Reset", Int) = 0
+		
 		_Test1("Test 1", Float) = 0
 		_Test2("Test 2", Float) = 1
     }

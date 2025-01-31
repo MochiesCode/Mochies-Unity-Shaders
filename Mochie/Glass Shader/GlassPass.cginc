@@ -48,6 +48,7 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
 	float rainThreshold = 0;
 
 	float3 normalDir = normalize(i.normal);
+	float3 vNormalDir = normalDir;
 	float3 normalMap = 0;
 	#if defined(_NORMALMAP_ON)
 		normalMap = UnpackScaleNormal(SampleTexture(_NormalMap, TRANSFORM_TEX(i.uv, _NormalMap)), _NormalStrength);
@@ -88,12 +89,14 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
 
 	float roughnessMap = SampleTexture(_RoughnessMap, TRANSFORM_TEX(i.uv, _RoughnessMap)) * _Roughness;
 	flipbookBase = smoothstep(0, 0.1, flipbookBase);
+	flipbookBase *= smoothstep(0, 0.1, rainStrength);
 	#if defined(_RAINMODE_AUTO)
 		flipbookBase *= rainThreshold;
 	#endif
 	float roughness = saturate(roughnessMap-flipbookBase);
+	float3 occlusion = lerp(1, SampleTexture(_OcclusionMap, TRANSFORM_TEX(i.uv, _OcclusionMap)), _Occlusion);
 
-	#if defined(_SPECULAR_HIGHLIGHTS_ON) || defined(_REFLECTIONS_ON)
+	#if defined(_SPECULAR_HIGHLIGHTS_ON) || defined(_REFLECTIONS_ON) || defined(_AREALIT_ON)
 		float roughSq = roughness * roughness;
 		float roughBRDF = max(roughSq, 0.003);
 		float metallic = SampleTexture(_MetallicMap, TRANSFORM_TEX(i.uv, _MetallicMap)) * _Metallic;
@@ -118,28 +121,43 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
 			float3 fresnel = FresnelLerp(specularTint, grazingTerm, NdotV);
 			reflCol = GetWorldReflections(reflDir, i.worldPos, roughness) * fresnel * surfaceReduction;
 		#endif
+
+		#if defined(_AREALIT_ON)
+			AreaLightFragInput ai;
+			ai.pos = i.worldPos;
+			ai.normal = normalDir;
+			ai.view = -viewDir;
+			ai.roughness = roughBRDF * _AreaLitRoughnessMult;
+			ai.occlusion = float4(occlusion, 1);
+			ai.screenPos = i.pos.xy;
+			half4 diffTerm, specTerm;
+			if (_AreaLitStrength > 0){
+				ShadeAreaLights(ai, diffTerm, specTerm, true, !IsSpecularOff(), IsStereo());
+			}
+			else {
+				diffTerm = 0;
+				specTerm = 0;
+			}
+		#endif
 	#endif
 
-	float2 screenUV = 0;
-	float2 offset = 0;
-	if (_RefractVertexNormal == 1){
-		float2 screenUV = GetGrabPos(UNITY_PROJ_COORD(i.uvGrab));
-		float2 IOR = (_RefractionIOR-1) * mul(UNITY_MATRIX_V, float4(normalDir, 0));
-		offset = ((1/(i.uvGrab.z + 1) * IOR)) * (1-dot(normalDir, viewDir));
-		offset = float2(offset.x, -(offset.y * _ProjectionParams.x)) * (_Refraction/5.0f);
-	}
-	else {
-		offset = normalMap * _Refraction * 0.01;
-	}
-	screenUV = (i.uvGrab.xy / max(EPSILON, i.uvGrab.w)) + offset;
-
-	// float3 wPos = GetWorldSpacePixelPos(i.localPos, screenUV);
-	// float dist = distance(wPos, i.cameraPos);
-	// _Blur *= 1-min(dist/10, 1);
-
 	float3 grabCol = 0;
+	#if GRABPASS_ENABLED
+		float2 screenUV = 0;
+		float2 offset = normalMap * _Refraction * 0.01;
+		if (_RefractVertexNormal == 1){
+			float2 screenUV = GetGrabPos(UNITY_PROJ_COORD(i.uvGrab));
+			float2 IOR = (_RefractionIOR - 1) * mul(UNITY_MATRIX_V, float4(vNormalDir, 0));
+			float2 meshOffset = ((1/(i.uvGrab.z + 1) * IOR)) * (1-dot(vNormalDir, viewDir));
+			meshOffset = float2(meshOffset.x, -(meshOffset.y * _ProjectionParams.x));
+			offset += meshOffset;
+		}
+		screenUV = (i.uvGrab.xy / max(EPSILON, i.uvGrab.w)) + offset;
 
-	#ifdef _GRABPASS_ON
+		// float3 wPos = GetWorldSpacePixelPos(i.localPos, screenUV);
+		// float dist = distance(wPos, i.cameraPos);
+		// _Blur *= 1-min(dist/10, 1);
+
 		float blurStr = _Blur * 0.0125;
 		#if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
 			blurStr *= 0.25;
@@ -152,6 +170,9 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
 	#endif
 
 	float4 baseColorTex = SampleTexture(_BaseColor, TRANSFORM_TEX(i.uv, _BaseColor)) * _BaseColorTint;
+	#if defined(_AREALIT_ON) && defined(_LITBASECOLOR_ON)
+		baseColorTex.rgb += diffTerm;
+	#endif
 	float3 baseColor = baseColorTex.rgb * baseColorTex.a;
 	#if defined(_LIT_BASECOLOR_ON) || defined(UNITY_PASS_FORWARDADD)
 		#if defined(UNITY_PASS_FORWARDBASE)
@@ -161,18 +182,22 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
 		#endif
 		baseColor *= saturate(lightCol) * atten;
 	#endif
-	float occlusion = lerp(1, SampleTexture(_OcclusionMap, TRANSFORM_TEX(i.uv, _OcclusionMap)), _Occlusion);
-	float3 specularity = (specCol + reflCol) * _SpecularityTint;
+	float3 specularity = specCol + reflCol;
+	#if defined(_AREALIT_ON)
+		specularity += specTerm * specularTint;
+	#endif
+	specularity *= _SpecularityTint;
 
 	float3 col = (specularity + grabCol + baseColor) * occlusion;
-	#ifdef _GRABPASS_ON
+	
+	#if GRABPASS_ENABLED
 		float4 finalCol = float4(col, 1);
 	#else
 		float4 finalCol = float4(col, 0);
 	#endif
 
 	UNITY_APPLY_FOG(i.fogCoord, finalCol);
-	return finalCol; // float4(flipbookBase.xxx, 1);
+	return finalCol;
 }
 
 #endif

@@ -781,6 +781,12 @@ internal class UberEditor : ShaderGUI {
 		foreach (var obj in _BlendMode.targets)
 			ApplyMaterialSettings((Material)obj);
 
+		if (mat.GetInt("_MaterialResetCheck") == 0){
+			mat.SetInt("_MaterialResetCheck", 1);
+			ApplyMaterialSettings(mat);
+			SetBlendMode(mat);
+		}
+
 		Texture2D headerTex = (Texture2D)Resources.Load(header, typeof(Texture2D));
 		Texture2D standardIcon = (Texture2D)Resources.Load("StandardIcon", typeof(Texture2D));
 		Texture2D toonIcon = (Texture2D)Resources.Load("ToonIcon", typeof(Texture2D));

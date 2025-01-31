@@ -162,6 +162,10 @@ float depth;
 	samplerCUBE _OutlineCube;
 	samplerCUBE _OutlineCubeAlt;
 	samplerCUBE _OutlineBackgroundCube;
+	MOCHIE_DECLARE_TEX2D(_OutlineTex);
+	MOCHIE_DECLARE_TEX2D(_OutlineTexAlt);
+	float2 _OutlineTexCoord;
+	float2 _OutlineTexCoordAlt;
 	int _OLUseGlobal, _OutlineType, _Shift, _InvertX, _InvertY, _Sobel, _DepthBufferToggle, _SobelClearInner, _OutlineCubeToggle;
 	int _AutoRotate, _AutoRotateAlt, _AutoRotateBG;
 	int _AuraSampleCount;
@@ -225,6 +229,7 @@ struct v2f {
 	float noiseF : TEXCOORD23;
 	float3 viewDir : TEXCOORD24;
 	float3 worldPos : TEXCOORD25;
+	float tpF : TEXCOORD26;
 	UNITY_VERTEX_INPUT_INSTANCE_ID 
 	UNITY_VERTEX_OUTPUT_STEREO
 };

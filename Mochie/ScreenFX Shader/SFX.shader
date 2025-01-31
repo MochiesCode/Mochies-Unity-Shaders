@@ -186,13 +186,17 @@ Shader "Mochie/Screen FX" {
 		_OutlineCube("", CUBE) = "black" {}
 		_OutlineCubeAlt("", CUBE) = "white" {}
 		_OutlineBackgroundCube("", CUBE) = "white" {}
-		[Enum(Solid Color,0, Cubemap,1)]_OutlineCubeToggle("", Int) = 0
+		[Enum(Texture,0, Cubemap,1)]_OutlineCubeToggle("", Int) = 0
 		_CubeRotate("vec", Vector) = (180,0,0,0)
 		[ToggleUI]_AutoRotate("tog", Int) = 0
 		_CubeRotateAlt("vec", Vector) = (180,0,0,0)
 		[ToggleUI]_AutoRotateAlt("tog", Int) = 0
 		_CubeRotateBG("vec", Vector) = (180,0,0,0)
 		[ToggleUI]_AutoRotateBG("tog", Int) = 0
+		_OutlineTex("tex", 2D) = "white" {}
+		_OutlineTexAlt("tex", 2D) = "white" {}
+		_OutlineTexCoord("fl", Vector) = (0.5, 0.5, 0,0)
+		_OutlineTexCoordAlt("fl", Vector) = (0.5, 0.5, 0,0)
 		
 		// Audio Link
 		[ToggleUI]_AudioLinkToggle("", Int) = 0
@@ -284,6 +288,8 @@ Shader "Mochie/Screen FX" {
 		[HDR]_SobelFilterColor("", Color) = (1,1,1,1)
 		_SobelFilterBackgroundColor("", Color) = (0,0,0,1)
 		_SobelFilterOpacity("", Range(0,1)) = 1
+
+		[HideInInspector]_MaterialResetCheck("Reset", Int) = 0
     }
     SubShader {
         Tags {

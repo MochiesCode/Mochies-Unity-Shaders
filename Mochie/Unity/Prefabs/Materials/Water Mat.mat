@@ -27,8 +27,9 @@ Material:
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
+  m_CustomRenderQueue: 3000
+  stringTagMap:
+    RenderType: Transparent
   disabledShaderPasses: []
   m_LockedProperties: 
   m_SavedProperties:
@@ -217,6 +218,7 @@ Material:
     - _GlobalTexCoordScaleUV: 1
     - _GlobalTexCoordScaleWorld: 0.1
     - _InvertNormals: 0
+    - _MaterialResetCheck: 1
     - _Metallic: 0
     - _MirrorNormalOffsetSwizzle: 1
     - _NoiseTexBlur: 0.8
@@ -314,8 +316,8 @@ Material:
     - _FoamNoiseTexScroll: {r: 0, g: 0.1, b: 0, a: 0}
     - _FoamTexScale: {r: 6, g: 6, b: 0, a: 0}
     - _FoamTexScroll: {r: 0.1, g: -0.1, b: 0, a: 0}
-    - _FogTint: {r: 0.11, g: 0.26, b: 0.26, a: 1}
-    - _FogTint2: {r: 0.055, g: 0.13, b: 0.13, a: 1}
+    - _FogTint: {r: 0.10999996, g: 0.25999996, b: 0.25999996, a: 1}
+    - _FogTint2: {r: 0.054999977, g: 0.12999997, b: 0.12999997, a: 1}
     - _LightDir: {r: 0, g: 0.75, b: 1, a: 0}
     - _MainTexScroll: {r: 0, g: 0.1, b: 0, a: 0}
     - _NoiseTexScale: {r: 3, g: 3, b: 0, a: 0}

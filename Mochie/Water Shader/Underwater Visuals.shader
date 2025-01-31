@@ -44,6 +44,7 @@
 		_FogFade("Fade", Float) = 3
 
 		[HideInInspector]_NaNLmao("", float) = 0
+		[HideInInspector]_MaterialResetCheck("Reset", Int) = 0
 		
     }
     SubShader {
