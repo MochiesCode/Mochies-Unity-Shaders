@@ -12,7 +12,7 @@ using UnityEngine;
 
 namespace Mochie {
     public class GifImporter{
-        [MenuItem("Mochie/Convert to Flipbook Asset")]
+        [MenuItem("Tools/Mochie/Convert to Flipbook Asset")]
 		[MenuItem("Assets/Convert to Flipbook Asset")]
         static void GifImport(){
             string path = AssetDatabase.GetAssetPath(Selection.activeObject);
@@ -23,7 +23,7 @@ namespace Mochie {
             AssetDatabase.SaveAssets();
         }
 
-        [MenuItem("Mochie/Convert to Flipbook Asset", true)]
+        [MenuItem("Tools/Mochie/Convert to Flipbook Asset", true)]
 		[MenuItem("Assets/Convert to Flipbook Asset", true,50)]
         static bool ValidateGifImport(){
             if (Selection.activeObject == null)

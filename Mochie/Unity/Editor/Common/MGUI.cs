@@ -1,4 +1,5 @@
 ﻿// A collection of UI functions I've developed over the years to improve customization of editor scripts
+// Full of lots of garbage duplicate stuff I'm too lazy to clean out
 // By Mochie#8794
 
 using System;
@@ -454,7 +455,7 @@ namespace Mochie {
 				toggle.floatValue = tog;
 			EditorGUI.showMixedValue = false;
 
-			EditorGUIUtility.labelWidth = 10f;
+			EditorGUIUtility.labelWidth = 13f;
 			EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
 
 			EditorGUI.BeginChangeCheck();
@@ -501,7 +502,7 @@ namespace Mochie {
 				toggle.floatValue = tog;
 			EditorGUI.showMixedValue = false;
 
-			EditorGUIUtility.labelWidth = 10f;
+			EditorGUIUtility.labelWidth = 13f;
 			EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
 
 			EditorGUI.BeginChangeCheck();
@@ -548,7 +549,7 @@ namespace Mochie {
 				vec.vectorValue = new Vector4(vec.vectorValue.x, vec.vectorValue.y, vec.vectorValue.z, tog);
 			EditorGUI.showMixedValue = false;
 
-			EditorGUIUtility.labelWidth = 10f;
+			EditorGUIUtility.labelWidth = 13f;
 			EditorGUI.BeginDisabledGroup(toggle == 0);
 
 			EditorGUI.BeginChangeCheck();
@@ -586,7 +587,7 @@ namespace Mochie {
 			SpaceN20();
 			Rect r = EditorGUILayout.GetControlRect();
 			r.x += labelWidth;
-			EditorGUIUtility.labelWidth = 10f;
+			EditorGUIUtility.labelWidth = 13f;
 
 			EditorGUI.BeginChangeCheck();
 			EditorGUI.showMixedValue = vec.hasMixedValue;
@@ -623,7 +624,7 @@ namespace Mochie {
 			SpaceN20();
 			Rect r = EditorGUILayout.GetControlRect();
 			r.x += labelWidth;
-			EditorGUIUtility.labelWidth = 10f;
+			EditorGUIUtility.labelWidth = 13f;
 
 			EditorGUI.BeginChangeCheck();
 			EditorGUI.showMixedValue = vec.hasMixedValue;
@@ -659,7 +660,7 @@ namespace Mochie {
 			SpaceN20();
 			Rect r = EditorGUILayout.GetControlRect();
 			r.x += labelWidth;
-			EditorGUIUtility.labelWidth = 10f;
+			EditorGUIUtility.labelWidth = 13f;
 
 			EditorGUI.BeginChangeCheck();
 			EditorGUI.showMixedValue = vec.hasMixedValue;
@@ -924,7 +925,7 @@ namespace Mochie {
 			}, GUILayout.Height(22));
 			EditorGUILayout.EndHorizontal();
 			GUILayout.EndVertical();
-			MGUI.Space2();
+			Space2();
 			return buttonPress;
 		}
 

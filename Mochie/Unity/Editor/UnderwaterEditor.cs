@@ -8,7 +8,7 @@ using Mochie;
 
 public class UnderwaterEditor : ShaderGUI {
 
-	string versionLabel = "v1.1";
+	string versionLabel = "v1.2";
 
 	// Base
 	// MaterialProperty _RenderMode = null;
@@ -17,6 +17,7 @@ public class UnderwaterEditor : ShaderGUI {
 
 	// Depth of Field
 	MaterialProperty _DoFToggle = null;
+	MaterialProperty _DepthToggle = null;
 	MaterialProperty _HQBlur = null;
 	MaterialProperty _BlurStr = null;
 	MaterialProperty _Radius = null;
@@ -79,21 +80,20 @@ public class UnderwaterEditor : ShaderGUI {
 				// me.ShaderProperty(_RenderMode, "Mesh Rendering Mode");
 				me.ShaderProperty(_Color, "Color");
 				me.ShaderProperty(_StencilRef, "Stencil Reference");
-				if (MGUI.ResetButton())
-					ResetBase();
 			});
 			MGUI.Space10();
 
-			MGUI.BoldLabel("Depth of Field");
+			MGUI.BoldLabel("Blur");
 			me.ShaderProperty(_DoFToggle, "Enable");
 			MGUI.ToggleGroup(_DoFToggle.floatValue == 0f);
 			MGUI.PropertyGroup(()=>{
 				me.ShaderProperty(_HQBlur, "High Quality");
+				me.ShaderProperty(_DepthToggle, "Depth of Field");
 				me.ShaderProperty(_BlurStr, "Strength");
-				me.ShaderProperty(_Radius, "Radius");
-				me.ShaderProperty(_Fade, "Fade");
-				if (MGUI.ResetButton())
-					ResetDOF();
+				if (_DepthToggle.floatValue == 1){
+					me.ShaderProperty(_Radius, "Radius");
+					me.ShaderProperty(_Fade, "Fade");
+				}
 			});
 			MGUI.ToggleGroupEnd();
 			MGUI.Space10();
@@ -132,8 +132,6 @@ public class UnderwaterEditor : ShaderGUI {
 					MGUI.Vector2Field(_CausticsDistortionSpeed, "Distortion Speed");
 					me.TexturePropertySingleLine(new GUIContent("Distortion Texture"), _CausticsDistortionTex);
 				}
-				if (MGUI.ResetButton())
-					ResetCaustics();
 			});
 			MGUI.ToggleGroupEnd();
 			MGUI.Space10();
@@ -146,8 +144,6 @@ public class UnderwaterEditor : ShaderGUI {
 				me.ShaderProperty(_FogOpacity, "Opacity");
 				me.ShaderProperty(_FogRadius, "Radius");
 				me.ShaderProperty(_FogFade, "Fade");
-				if (MGUI.ResetButton())
-					ResetFog();
 			});
 			MGUI.ToggleGroupEnd();
 		}
@@ -167,41 +163,5 @@ public class UnderwaterEditor : ShaderGUI {
 		MGUI.SetKeyword(mat, "_CAUSTICS_VORONOI_ON", causticsMode == 0);
 		MGUI.SetKeyword(mat, "_CAUSTICS_TEXTURE_ON", causticsMode == 1);
 		MGUI.SetKeyword(mat, "_CAUSTICS_FLIPBOOK_ON", causticsMode == 2);
-	}
-
-	void ResetCaustics(){
-		_CausticsOpacity.floatValue = 0.5f;
-		_CausticsScale.floatValue = 15f;
-		_CausticsSpeed.floatValue = 3f;
-		_CausticsFade.floatValue = 5f;
-		_CausticsDistortion.floatValue = 0.1f;
-		_CausticsDisp.floatValue = 0.25f;
-		_CausticsDistortionSpeed.vectorValue = new Vector4(-0.1f, -0.1f, 0f, 0f);
-		_CausticsDistortionScale.floatValue = 1f;
-		_CausticsRotation.vectorValue = new Vector4(-20f,0,20f,0);
-		_CausticsColor.colorValue = Color.white;
-		_CausticsPower.floatValue = 1f;
-		_CausticsFlipbookSpeed.floatValue = 16f;
-		_CausticsFlipbookDisp.floatValue = 0.6f;
-	}
-
-	void ResetFog(){
-		_FogTint.colorValue = new Color(0.11f, 0.26f, 0.26f, 1f);
-		_FogOpacity.floatValue = 0.8f;
-		_FogRadius.floatValue = 1.7f;
-		_FogFade.floatValue = 3f;
-	}
-
-	void ResetDOF(){
-		_HQBlur.floatValue = 0f;
-		_BlurStr.floatValue = 1.3f;
-		_Radius.floatValue = 1f;
-		_Fade.floatValue = 1.25f;
-	}
-
-	void ResetBase(){
-		// _RenderMode.floatValue = 0f;
-		_Color.colorValue = Color.white;
-		_StencilRef.floatValue = 65f;
 	}
 }

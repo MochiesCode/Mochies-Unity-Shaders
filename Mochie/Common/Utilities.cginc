@@ -10,6 +10,17 @@ float2 Rotate2D(float2 coords, float rot){
 	return mul(coords, mat);
 }
 
+float2 Rotate2DCentered(float2 coords, float rot){
+	rot *= (UNITY_PI/180.0);
+	float sinVal = sin(rot);
+	float cosX = cos(rot);
+	float2x2 mat = float2x2(cosX, -sinVal, sinVal, cosX);
+	coords -= 0.5;
+	coords = mul(coords, mat);
+	coords += 0.5;
+	return coords;
+}
+
 float3x3 AngleAxis3x3(float angle, float3 axis){
     float c, s;
     sincos(angle, s, c);
@@ -27,7 +38,7 @@ float3x3 AngleAxis3x3(float angle, float3 axis){
 }
 
 float2 ScaleOffsetScrollUV(float2 uv, float2 scale, float2 offset, float2 scroll){
-	return (uv + offset + (scroll * _Time.y * 0.1)) * scale;
+	return (uv + offset + (frac(_Time.y * scroll) * 0.1)) * scale;
 }
 
 float2 ScaleOffsetUV(float2 uv, float2 scale, float2 offset){
@@ -38,6 +49,13 @@ float2 ScaleOffsetRotateUV(float2 uv, float2 scale, float2 offset, float rot){
 	uv -= offset + 0.5;
 	uv = Rotate2D(uv, rot) + 0.5;
 	uv = (uv - 0.5) / scale + 0.5;
+    return uv;
+}
+
+float2 ScaleOffsetRotateScrollUV(float2 uv, float2 scale, float2 offset, float rot, float2 scroll){
+    uv = Rotate2DCentered(uv, rot);
+    uv = uv * scale + offset;
+    uv += frac(_Time.y * scroll);
     return uv;
 }
 

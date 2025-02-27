@@ -715,6 +715,7 @@ Shader "Mochie/Uber" {
 		ZTest [_ZTest]
 		Cull [_CullingMode]
 		AlphaToMask [_ATM]
+		
         Pass {
             Name "ForwardBase"
             Tags {"LightMode"="ForwardBase"}

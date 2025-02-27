@@ -6,8 +6,9 @@
 		_Color("Screen Tint", Color) = (1,1,1,1)
 		[IntRange]_StencilRef("Stencil Reference", Range(1,255)) = 65
 
-		// Depth of Field
+		// Blur
 		[Toggle(DOF_ENABLED)]_DoFToggle("Enable", Int) = 1
+		[Toggle(DEPTH_ENABLED)]_DepthToggle("Depth of Field", Int) = 1
 		[Toggle(HIGH_QUALITY_BLUR)]_HQBlur("High Quality", Int) = 0
 		_BlurStr("Strength", Float) = 1.3
 		_Radius("Vision Radius", Float) = 1
@@ -379,13 +380,17 @@
 			#pragma multi_compile_instancing
 			#pragma shader_feature_local DOF_ENABLED
 			#pragma shader_feature_local HIGH_QUALITY_BLUR
+			#pragma shader_feature_local DEPTH_ENABLED
             #include "UnityCG.cginc"
 			#include "../Common/Sampling.cginc"
 
-			MOCHIE_DECLARE_TEX2D_SCREENSPACE(_CameraDepthTexture);
+			#ifdef DEPTH_ENABLED
+				MOCHIE_DECLARE_TEX2D_SCREENSPACE(_CameraDepthTexture);
+				float4 _CameraDepthTexture_TexelSize;
+			#endif
             MOCHIE_DECLARE_TEX2D_SCREENSPACE(_DoFGrab);
 			float _Radius, _Fade, _BlurStr;
-			float4 _CameraDepthTexture_TexelSize;
+			
 			float4 _Color;
 			float _RenderMode;
 			float _NaNLmao;
@@ -444,7 +449,9 @@
 					v.vertex.x *= 1.4;
 					float4 wPos = mul(unity_CameraToWorld, v.vertex);
 					float4 oPos = mul(unity_WorldToObject, wPos);
-					o.raycast = UnityObjectToViewPos(oPos).xyz * float3(-1,-1,1);
+					#ifdef DEPTH_ENABLED
+						o.raycast = UnityObjectToViewPos(oPos).xyz * float3(-1,-1,1);
+					#endif
 					o.pos = UnityObjectToClipPos(oPos);
 				// }
 				// else {
@@ -458,21 +465,23 @@
 				if (unity_CameraProjection[2][0] != 0.0f || unity_CameraProjection[2][1] != 0.0f) discard;
 			}
 
-			float GetRadius(v2f i){
-				float2 screenUV = i.uv.xy/i.uv.w;
-				#if UNITY_UV_STARTS_AT_TOP
-					if (_CameraDepthTexture_TexelSize.y < 0) {
-						screenUV.y = 1 - screenUV.y;
-					}
-				#endif
-				screenUV.y = _ProjectionParams.x * .5 + .5 - screenUV.y * _ProjectionParams.x;
-				float depth = Linear01Depth(DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, screenUV)));
-				i.raycast *= (_ProjectionParams.z / i.raycast.z);
-				float4 vPos = float4(i.raycast * depth, 1);
-				float3 wPos = mul(unity_CameraToWorld, vPos).xyz;
-				float dist = distance(wPos, i.cameraPos);
-				return 1-smoothstep(_Radius, _Radius-_Fade, dist);
-			}
+			#ifdef DEPTH_ENABLED
+				float GetRadius(v2f i){
+					float2 screenUV = i.uv.xy/i.uv.w;
+					#if UNITY_UV_STARTS_AT_TOP
+						if (_CameraDepthTexture_TexelSize.y < 0) {
+							screenUV.y = 1 - screenUV.y;
+						}
+					#endif
+					screenUV.y = _ProjectionParams.x * .5 + .5 - screenUV.y * _ProjectionParams.x;
+					float depth = Linear01Depth(DecodeFloatRG(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, screenUV)));
+					i.raycast *= (_ProjectionParams.z / i.raycast.z);
+					float4 vPos = float4(i.raycast * depth, 1);
+					float3 wPos = mul(unity_CameraToWorld, vPos).xyz;
+					float dist = distance(wPos, i.cameraPos);
+					return 1-smoothstep(_Radius, _Radius-_Fade, dist);
+				}
+			#endif
 
             float4 frag (v2f i) : SV_Target {
 				
@@ -485,7 +494,10 @@
 				float4 blurCol = 0;
 				#ifdef DOF_ENABLED
 					MirrorCheck();
-					float2 blurStr = _BlurStr * GetRadius(i) * 0.01;
+					float2 blurStr = _BlurStr * 0.01;
+					#ifdef DEPTH_ENABLED
+						blurStr *= GetRadius(i);
+					#endif
 					blurStr.x *= 0.5625;
 					#if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
 						blurStr *= 0.5;
@@ -499,7 +511,7 @@
 							uvb.xy = uv.xy + (blurKernel[k] * blurStr);
 							blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_DoFGrab, uvb);
 						}
-						blurCol /= 136;
+						blurCol /= 137;
 					#else
 						[unroll(43)]
 						for (uint k = 0; k < 44; ++k){

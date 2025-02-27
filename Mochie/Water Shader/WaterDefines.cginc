@@ -75,6 +75,7 @@ MOCHIE_DECLARE_TEX2D_NOSAMPLER(_DetailNormal);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_OpacityMask);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_CausticsShadow);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_CausticsDistortionTex);
+MOCHIE_DECLARE_TEX2D_NOSAMPLER(_RippleMask);
 
 MOCHIE_DECLARE_TEX2DARRAY(_VertOffsetFlipbook);
 MOCHIE_DECLARE_TEX2DARRAY_NOSAMPLER(_NormalMapFlipbook);
@@ -87,6 +88,7 @@ samplerCUBE _ReflCube;
 sampler2D _ReflectionTex0;
 sampler2D _ReflectionTex1;
 
+float4 _RippleMask_ST;
 float4 _VertexOffsetMask_ST;
 float4 _CausticsTex_TexelSize;
 float4 _OpacityMask_ST;

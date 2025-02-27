@@ -51,7 +51,7 @@ public class WaterEditor : ShaderGUI {
 	}, 0);
 
     string header = "WaterHeader_Pro";
-	string versionLabel = "v1.21.2";
+	string versionLabel = "v1.22";
 
 	MaterialProperty _Color = null;
 	MaterialProperty _NonGrabColor = null;
@@ -254,6 +254,8 @@ public class WaterEditor : ShaderGUI {
 	MaterialProperty _AudioLinkStrength = null;
 	MaterialProperty _AudioLinkBand = null;
 	MaterialProperty _CausticsFlipbookDisp = null;
+	MaterialProperty _RippleMask = null;
+	MaterialProperty _QueueOffset = null;
 	// MaterialProperty _FoamCrestPower = null;
 	// MaterialProperty _FogTint2 = null;
 	// MaterialProperty _FogPower2 = null;
@@ -724,8 +726,10 @@ public class WaterEditor : ShaderGUI {
 			Action rainTabAction = ()=>{
 				me.ShaderProperty(_RainToggle, "Enable");
 				MGUI.Space4();
+				MGUI.ToggleGroup(_RainToggle.floatValue == 0);
 				MGUI.PropertyGroup(()=>{
-					MGUI.ToggleGroup(_RainToggle.floatValue == 0);
+					me.TexturePropertySingleLine(Tips.maskText, _RippleMask);
+					MGUI.TextureSO(me, _RippleMask, _RippleMask.textureValue);
 					me.ShaderProperty(_RippleStr, "Strength");
 					me.ShaderProperty(_RippleSpeed, "Speed");
 					me.ShaderProperty(_RippleScale, "Scale");
@@ -733,8 +737,8 @@ public class WaterEditor : ShaderGUI {
 				MGUI.PropertyGroup(()=>{
 					me.ShaderProperty(_RippleDensity, "Ripple Density");
 					me.ShaderProperty(_RippleSize, "Ripple Size");
-					MGUI.ToggleGroupEnd();
 				});
+				MGUI.ToggleGroupEnd();
 			};
 			Foldouts.Foldout("RAIN", foldouts, rainTabButtons, mat, me, rainTabAction);
 
@@ -804,7 +808,10 @@ public class WaterEditor : ShaderGUI {
 			Action renderingTabAction = ()=>{
 				MGUI.Space4();
 				MGUI.PropertyGroup(()=>{
-					me.RenderQueueField();
+					_QueueOffset.floatValue = (int)_QueueOffset.floatValue;
+					me.ShaderProperty(_QueueOffset, Tips.queueOffset);
+					MGUI.SpaceN1();
+					MGUI.DummyProperty("Render Queue:", mat.renderQueue.ToString());
 					me.ShaderProperty(_StencilRef, "Stencil Reference");
 				});
 				MGUI.PropertyGroup(()=>{
@@ -865,7 +872,7 @@ public class WaterEditor : ShaderGUI {
 				mat.SetShaderPassEnabled("Always", false);
 				mat.EnableKeyword("_OPAQUE_MODE_ON");
 				mat.DisableKeyword("_PREMUL_MODE_ON");
-				mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Geometry;
+				mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Geometry+mat.GetInt("_QueueOffset");
 			break;
 
 			// Premultiplied
@@ -877,7 +884,7 @@ public class WaterEditor : ShaderGUI {
 				mat.SetShaderPassEnabled("Always", false);
 				mat.DisableKeyword("_OPAQUE_MODE_ON");
 				mat.EnableKeyword("_PREMUL_MODE_ON");
-				mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+				mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent+mat.GetInt("_QueueOffset");
 			break;
 
 			// Grabpass
@@ -889,7 +896,7 @@ public class WaterEditor : ShaderGUI {
 				mat.SetShaderPassEnabled("Always", true);
 				mat.DisableKeyword("_OPAQUE_MODE_ON");
 				mat.DisableKeyword("_PREMUL_MODE_ON");
-				mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+				mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent+mat.GetInt("_QueueOffset");
 			break;
 
 			default: break;

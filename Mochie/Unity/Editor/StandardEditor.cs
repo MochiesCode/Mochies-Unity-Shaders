@@ -1,19 +1,17 @@
-using System;
+﻿using UnityEditor;
 using UnityEngine;
-using UnityEditor;
+using System.Reflection;
 using System.Collections.Generic;
 using Mochie;
+using System.IO;
 
-internal class StandardEditor : ShaderGUI {
+public class StandardEditor : ShaderGUI {
 
     public static Dictionary<Material, Toggles> foldouts = new Dictionary<Material, Toggles>();
     Toggles toggles = new Toggles(new string[] {
 		"Shader Variant",
 		"Primary Textures",
-		// "Detail Textures",
 		"UVs",
-		// "Emission",
-		"Rim Light",
 		"Subsurface Scattering",
 		"Filtering",
 		"Render Settings",
@@ -21,1311 +19,1205 @@ internal class StandardEditor : ShaderGUI {
 		"Rain",
 		"AreaLit",
 		"LTCGI",
-		"Lightmap Settings"
+		"Lightmap Settings",
+		"Debug"
 	}, 1);
 
-	string versionLabel = "v1.34";
-	public static string receiverText = "AreaLit Maps";
-	public static string emitterText = "AreaLit Light";
-	public static string projectorText = "AreaLit Projector";
-	// β
+	string versionLabel = "v2.0";
 
-	MaterialProperty blendMode = null;
-	MaterialProperty workflow = null;
-	MaterialProperty albedoMap = null;
-	MaterialProperty albedoColor = null;
-	MaterialProperty detailColor = null;
-	MaterialProperty alphaCutoff = null;
-	MaterialProperty metallicMap = null;
-	MaterialProperty metallic = null;
-	MaterialProperty roughness = null;
-	MaterialProperty roughnessMap = null;
-	MaterialProperty highlights = null;
-	MaterialProperty reflections = null;
-	MaterialProperty bumpScale = null;
-	MaterialProperty bumpMap = null;
-	MaterialProperty occlusionStrength = null;
-	MaterialProperty occlusionMap = null;
-	MaterialProperty heightMapScale = null;
-	MaterialProperty heightMap = null;
-	MaterialProperty emissionColorForRendering = null;
-	MaterialProperty emissionMap = null;
-	MaterialProperty detailMask = null;
-	MaterialProperty detailAlbedoMap = null;
-	MaterialProperty detailAlbedoBlend = null;
-	MaterialProperty detailRoughnessMap = null;
-	MaterialProperty detailRoughBlend = null;
-	MaterialProperty detailAOMap = null;
-	MaterialProperty detailAOBlend = null;
-	MaterialProperty detailNormalMapScale = null;
-	MaterialProperty detailNormalMap = null;
-	MaterialProperty detailMetallicMap = null;
-	MaterialProperty detailMetallicBlend = null;
-	MaterialProperty detailMetallicChannel = null;
-	MaterialProperty detailOcclusionChannel = null;
-	MaterialProperty detailRoughnessChannel = null;
-	MaterialProperty uvSetSecondary = null;
-	MaterialProperty culling = null;
-	MaterialProperty packedMap = null;
-	MaterialProperty useHeight = null;
-	MaterialProperty saturation = null;
-	MaterialProperty contrast = null;
-	MaterialProperty brightness = null;
-	MaterialProperty hueMode = null;
-	MaterialProperty monoTint = null;
-	MaterialProperty hue = null;
-	MaterialProperty saturationDet = null;
-	MaterialProperty contrastDet = null;
-	MaterialProperty brightnessDet = null;
-	MaterialProperty hueDet = null;
-	MaterialProperty hueEmiss = null;
-	MaterialProperty saturationEmiss = null;
-	MaterialProperty brightnessEmiss = null;
-	MaterialProperty contrastEmiss = null;
-	MaterialProperty reflShadows = null;
-	MaterialProperty audioLinkEmissionMeta = null;
+	// Variant Settings
+	MaterialProperty _BlendMode = null;
+	MaterialProperty _SmoothnessToggle = null;
+	MaterialProperty _TriplanarCoordSpace = null;
+	MaterialProperty _Cutoff = null;
+	MaterialProperty _AlphaSource = null;
+	MaterialProperty _MipMapRescaling = null;
+	MaterialProperty _MipMapScale = null;
 
-	MaterialProperty huePost = null;
-	MaterialProperty saturationPost = null;
-	MaterialProperty contrastPost = null;
-	MaterialProperty brightnessPost = null;
-	MaterialProperty acesFilter = null;
+	// Primary Textures
+	MaterialProperty _PrimaryWorkflow = null;
+	MaterialProperty _PrimarySampleMode = null;
+	MaterialProperty _PackedHeight = null;
+	MaterialProperty _MainTex = null;
+	MaterialProperty _Color = null;
+	MaterialProperty _NormalMap = null;
+	MaterialProperty _NormalStrength = null;
+	MaterialProperty _PackedMap = null;
+	MaterialProperty _MetallicMap = null;
+	MaterialProperty _MetallicStrength = null;
+	MaterialProperty _MetallicMultiplier = null;
+	MaterialProperty _MetallicChannel = null;
+	MaterialProperty _RoughnessMap = null;
+	MaterialProperty _RoughnessStrength = null;
+	MaterialProperty _RoughnessMultiplier = null;
+	MaterialProperty _RoughnessChannel = null;
+	MaterialProperty _OcclusionMap = null;
+	MaterialProperty _OcclusionStrength = null;
+	MaterialProperty _OcclusionMultiplier = null;
+	MaterialProperty _OcclusionChannel = null;
+	MaterialProperty _HeightMap = null;
+	MaterialProperty _HeightStrength = null;
+	MaterialProperty _HeightOffset = null;
+	MaterialProperty _HeightSteps = null;
+	MaterialProperty _HeightMultiplier = null;
+	MaterialProperty _HeightChannel = null;
+	MaterialProperty _UVMainSet = null;
+	MaterialProperty _UVMainSwizzle = null;
+	MaterialProperty _UVMainScroll = null;
+	MaterialProperty _UVMainRotation = null;
 
-	MaterialProperty subsurface = null;
-	MaterialProperty thicknessMap = null;
-	MaterialProperty thicknessMapPower = null;
-	MaterialProperty scatterCol = null;
-	MaterialProperty scatterAmbient = null;
-	MaterialProperty scatterIntensity = null;
-	MaterialProperty scatterPow = null;
-	MaterialProperty scatterDist = null;
-	MaterialProperty scatterAlbedoTint = null;
-	MaterialProperty wrappingFactor = null;
+	// Emission/Audiolink
+	MaterialProperty _EmissionMap = null;
+	MaterialProperty _EmissionStrength = null;
+	MaterialProperty _EmissionColor = null;
+	MaterialProperty _EmissionPulseWave = null;
+	MaterialProperty _EmissionPulseSpeed = null;
+	MaterialProperty _EmissionPulseStrength = null;
+	MaterialProperty _AudioLinkEmission = null;
+	MaterialProperty _AudioLinkEmissionStrength = null;
+	MaterialProperty _AudioLinkEmissionMeta = null;
+	MaterialProperty _AudioLinkMin = null;
+	MaterialProperty _AudioLinkMax = null;
+
+	// Detail Textures
+	MaterialProperty _DetailWorkflow = null;
+	MaterialProperty _DetailSampleMode = null;
+	MaterialProperty _DetailMainTex = null;
+	MaterialProperty _DetailMainTexStrength = null;
+	MaterialProperty _DetailColor = null;
+	MaterialProperty _DetailMainTexBlend = null;
+	MaterialProperty _DetailNormalMap = null;
+	MaterialProperty _DetailNormalStrength = null;
+	MaterialProperty _DetailPackedMap = null;
+	MaterialProperty _DetailMetallicMap = null;
+	MaterialProperty _DetailMetallicStrength = null;
+	MaterialProperty _DetailMetallicBlend = null;
+	MaterialProperty _DetailMetallicMultiplier = null;
+	MaterialProperty _DetailMetallicChannel = null;
+	MaterialProperty _DetailRoughnessMap = null;
+	MaterialProperty _DetailRoughnessStrength = null;
+	MaterialProperty _DetailRoughnessBlend = null;
+	MaterialProperty _DetailRoughnessMultiplier = null;
+	MaterialProperty _DetailRoughnessChannel = null;
+	MaterialProperty _DetailOcclusionMap = null;
+	MaterialProperty _DetailOcclusionStrength = null;
+	MaterialProperty _DetailOcclusionBlend = null;
+	MaterialProperty _DetailOcclusionMultiplier = null;
+	MaterialProperty _DetailOcclusionChannel = null;
+	MaterialProperty _UVDetailSet = null;
+	MaterialProperty _UVDetailSwizzle = null;
+	MaterialProperty _UVDetailScroll = null;
+	MaterialProperty _UVDetailRotation = null;
+
+	// Independant Textures
+	MaterialProperty _DetailMask = null;
+	MaterialProperty _DetailMaskChannel = null;
+	MaterialProperty _UVDetailMaskSet = null;
+	MaterialProperty _UVDetailMaskSwizzle = null;
+	MaterialProperty _UVDetailMaskScroll = null;
+	MaterialProperty _UVDetailMaskRotation = null;
+
+	MaterialProperty _HeightMask = null;
+	MaterialProperty _HeightMaskChannel = null;
+	MaterialProperty _UVHeightMaskSet = null;
+	MaterialProperty _UVHeightMaskSwizzle = null;
+	MaterialProperty _UVHeightMaskScroll = null;
+	MaterialProperty _UVHeightMaskRotation = null;
+
+	MaterialProperty _RainMask = null;
+	MaterialProperty _RainMaskChannel = null;
+	MaterialProperty _UVRainMaskSet = null;
+	MaterialProperty _UVRainMaskSwizzle = null;
+	MaterialProperty _UVRainMaskScroll = null;
+	MaterialProperty _UVRainMaskRotation = null;
+
+	MaterialProperty _EmissionMask = null;
+	MaterialProperty _EmissionMaskChannel = null;
+	MaterialProperty _UVEmissionMaskSet = null;
+	MaterialProperty _UVEmissionMaskSwizzle = null;
+	MaterialProperty _UVEmissionMaskScroll = null;
+	MaterialProperty _UVEmissionMaskRotation = null;
+
+	MaterialProperty _AlphaMask = null;
+	MaterialProperty _AlphaMaskChannel = null;
+	MaterialProperty _UVAlphaMaskSet = null;
+	MaterialProperty _UVAlphaMaskSwizzle = null;
+	MaterialProperty _UVAlphaMaskScroll = null;
+	MaterialProperty _UVAlphaMaskRotation = null;
+
+	// Specularity
+	MaterialProperty _ShadingModel = null;
+	MaterialProperty _ReflectionsToggle = null;
+	MaterialProperty _SpecularHighlightsToggle = null;
+	MaterialProperty _SpecularOcclusionToggle = null;
+	MaterialProperty _SpecularOcclusionStrength = null;
+	MaterialProperty _SpecularOcclusionContrast = null;
+	MaterialProperty _SpecularOcclusionBrightness = null;
+	MaterialProperty _SpecularOcclusionTint = null;
+	MaterialProperty _SpecularOcclusionHDR = null;
+	MaterialProperty _SpecularHighlightStrength = null;
+	MaterialProperty _ReflectionStrength = null;
+	MaterialProperty _FresnelToggle = null;
+	MaterialProperty _FresnelStrength = null;
+	MaterialProperty _SSRToggle = null;
+	MaterialProperty _SSRStrength = null;
+	MaterialProperty _SSREdgeFade = null;
+	MaterialProperty _SSRHeight = null;
+	MaterialProperty _ContactHardening = null;
+	MaterialProperty _GSAAToggle = null;
+	MaterialProperty _GSAAStrength = null;
+	MaterialProperty _IndirectSpecularOcclusionStrength = null;
+	MaterialProperty _RealtimeSpecularOcclusionStrength = null;
+
+	// Subsurface Scattering
+	MaterialProperty _Subsurface = null;
+	MaterialProperty _ThicknessMap = null;
+	MaterialProperty _ScatterCol = null;
+	MaterialProperty _ThicknessMapPower = null;
+	MaterialProperty _ScatterAmbient = null;
+	MaterialProperty _ScatterIntensity = null;
+	MaterialProperty _ScatterPow = null;
+	MaterialProperty _ScatterDist = null; 
+	MaterialProperty _WrappingFactor = null;
+	MaterialProperty _ScatterBaseColorTint = null;
+
+	// Filtering
+	MaterialProperty _Filtering = null;
+	MaterialProperty _HueMode = null;
+	MaterialProperty _MonoTint = null;
+	MaterialProperty _HuePost = null;
+	MaterialProperty _SaturationPost = null;
+	MaterialProperty _BrightnessPost = null;
+	MaterialProperty _ContrastPost = null;
+	MaterialProperty _ACES = null;
+	MaterialProperty _Hue = null;
+	MaterialProperty _Saturation = null;
+	MaterialProperty _Brightness = null;
+	MaterialProperty _Contrast = null;
+	MaterialProperty _HueDet = null;
+	MaterialProperty _SaturationDet = null;
+	MaterialProperty _BrightnessDet = null;
+	MaterialProperty _ContrastDet = null;
+	MaterialProperty _HueEmiss = null;
+	MaterialProperty _SaturationEmiss = null;
+	MaterialProperty _BrightnessEmiss = null;
+	MaterialProperty _ContrastEmiss = null;
 	
-	MaterialProperty uv0Rot = null;
-	MaterialProperty uv1Rot = null;
-	MaterialProperty uv3Rot = null;
-	MaterialProperty uv4Rot = null;
-	MaterialProperty uv5Rot = null;
-	MaterialProperty uv0Scroll = null;
-	MaterialProperty uv1Scroll = null;
-	MaterialProperty uv2Scroll = null;
-	MaterialProperty uv3Scroll = null;
-	MaterialProperty uv4Scroll = null;
-	MaterialProperty uv5Scroll = null;
-	MaterialProperty reflCube = null;
-	MaterialProperty cubeThreshold = null;
-	MaterialProperty heightMult = null;
-	MaterialProperty roughMult = null;
-	MaterialProperty metalMult = null;
-	MaterialProperty occMult = null;
+	// Rain
+	MaterialProperty _RainMode = null;
+	MaterialProperty _UVRainSet = null;
+	MaterialProperty _UVRainSwizzle = null;
+	MaterialProperty _UVRainRotation = null;
+	MaterialProperty _UVRippleSet = null;
+	MaterialProperty _UVRippleSwizzle = null;
+	MaterialProperty _UVRippleRotation = null;
+	MaterialProperty _RainSheet = null;
+	MaterialProperty _RainRows = null;
+	MaterialProperty _RainColumns = null;
+	MaterialProperty _RainSpeed = null;
+	MaterialProperty _RainScale = null;
+	MaterialProperty _RainStrength = null;
+	MaterialProperty _DropletMask = null;
+	MaterialProperty _DynamicDroplets = null;
+	MaterialProperty _RainThreshold = null;
+	MaterialProperty _RainThresholdSize = null;
+	MaterialProperty _RippleScale = null;
+	MaterialProperty _RippleSpeed = null;
+	MaterialProperty _RippleStrength = null;
+	MaterialProperty _RippleDensity = null;
+	MaterialProperty _RippleSize = null;
 
-	MaterialProperty detailWorkflow = null;
-	MaterialProperty detailSamplingMode = null;
-	MaterialProperty detailTriplanarFalloff = null;
-	MaterialProperty detailPackedMap = null;
-	MaterialProperty detailRoughMult = null;
-	MaterialProperty detailMetalMult = null;
-	MaterialProperty detailOccMult = null;
-	// MaterialProperty detailUseSmoothness = null;
-	MaterialProperty detailRoughnessStrength = null;
-	MaterialProperty detailMetallicStrength = null;
-	MaterialProperty detailOcclusionStrength = null;
-
-	MaterialProperty gsaa = null;
-	MaterialProperty ssr = null;
-	MaterialProperty ssrNoise = null;
-	MaterialProperty edgeFade = null;
-	MaterialProperty steps = null;
-
-	MaterialProperty emissionMask = null;
-	MaterialProperty queueOffset = null;
-	MaterialProperty reflectionStrength = null;
-	MaterialProperty specularStrength = null;
-	MaterialProperty parallaxMask = null;
-	
-	MaterialProperty ssrStrength = null;
-	MaterialProperty parallaxOfs = null;
-	MaterialProperty emissIntensity = null;
-	MaterialProperty reflOverride = null;
-	MaterialProperty roughChannel = null;
-	MaterialProperty metallicChannel = null;
-	MaterialProperty occlusionChannel = null;
-	MaterialProperty heightChannel = null;
-	MaterialProperty samplingMode = null;
-	MaterialProperty triplanarFalloff = null;
-	MaterialProperty useSmoothness = null;
-	MaterialProperty detailMaskChannel = null;
-	MaterialProperty gsaaStrength = null;
-	MaterialProperty reflShadowStrength = null;
-	MaterialProperty reflVertexColor = null;
-	MaterialProperty reflVertexColorStrength = null;
-	MaterialProperty emissPulseWave = null;
-	MaterialProperty emissPulseSpeed = null;
-	MaterialProperty emissPulseStrength = null;
-
-	MaterialProperty brightnessReflShad = null;
-	MaterialProperty contrastReflShad = null;
-	MaterialProperty hdrReflShad = null;
-	MaterialProperty tintReflShad = null;
-	
-	MaterialProperty audioLinkEmission = null;
-	MaterialProperty audioLinkEmissionStrength = null;
-	MaterialProperty audioLinkMin = null;
-	MaterialProperty audioLinkMax = null;
-
-	MaterialProperty uvPri = null;
-	MaterialProperty uvEmissMask = null;
-	MaterialProperty uvHeightMask = null;
-
-	MaterialProperty alphaMask = null;
-	MaterialProperty uvAlphaMask = null;
-	MaterialProperty useAlphaMask = null;
-	MaterialProperty alphaMaskChannel = null;
-	MaterialProperty alphaMaskOpacity = null;
-	MaterialProperty useFresnel = null;
-	MaterialProperty fresnelStrength = null;
-
-	MaterialProperty rainMask = null;
-	MaterialProperty uvRainMask = null;
-	MaterialProperty rainToggle = null;
-	MaterialProperty rippleScale = null;
-	MaterialProperty rippleSpeed = null;
-	MaterialProperty rippleStr = null;
-	MaterialProperty rippleSize = null;
-	MaterialProperty rippleDensity = null;
-
-	MaterialProperty rimTog = null;
-	MaterialProperty rimStr = null;
-	MaterialProperty rimBlend = null;
-	MaterialProperty rimCol = null;
-	MaterialProperty rimWidth = null;
-	MaterialProperty rimEdge = null;
-	MaterialProperty rimMask = null;
-	MaterialProperty uvRimMask = null;
-	MaterialProperty uvRimMaskScroll = null;
-	MaterialProperty uvRimMaskRot = null;
-
-	MaterialProperty uvDetailMask = null;
-	MaterialProperty detailScroll = null;
-	MaterialProperty detailRotate = null;
-
-	MaterialProperty filtering = null;
-	MaterialProperty bicubicLightmap = null;
-	MaterialProperty ltcgi = null;
-	MaterialProperty ltcgi_diffuse_off = null;
-	MaterialProperty ltcgi_spec_off = null;
-	MaterialProperty ltcgiStrength = null;
-	MaterialProperty ltcgiRoughness = null;
-	MaterialProperty _BakeryMode = null;
+	// Lightmapping Settings
 	MaterialProperty _BAKERY_LMSPEC = null;
 	MaterialProperty _BAKERY_SHNONLINEAR = null;
-	// MaterialProperty _RNM0 = null;
-	// MaterialProperty _RNM1 = null;
-	// MaterialProperty _RNM2 = null;
+	MaterialProperty _BakeryMode = null;
+	MaterialProperty _BicubicSampling = null;
+	MaterialProperty _IgnoreRealtimeGI = null;
+	MaterialProperty _ApplyHeightOffset = null;
 
-	MaterialProperty areaLitToggle = null;
-	MaterialProperty areaLitStrength = null;
-	MaterialProperty areaLitRoughnessMult = null;
-	MaterialProperty lightMesh = null;
-	MaterialProperty lightTex0 = null;
-	MaterialProperty lightTex1 = null;
-	MaterialProperty lightTex2 = null;
-	MaterialProperty lightTex3 = null;
-	MaterialProperty opaqueLights = null;
-	MaterialProperty mirrorToggle = null;
-	MaterialProperty occlusionUVSet = null;
-	MaterialProperty areaLitOcclusion = null;
-	MaterialProperty ssrHeight = null;
-	MaterialProperty unityFogToggle = null;
-	MaterialProperty vertexBaseColor = null;
+	// AreaLit
+	MaterialProperty _AreaLitToggle = null;
+	MaterialProperty _AreaLitStrength = null;
+	MaterialProperty _AreaLitRoughnessMultiplier = null;
+	MaterialProperty _AreaLitSpecularOcclusion = null;
+	MaterialProperty _LightMesh = null;
+	MaterialProperty _LightTex0 = null;
+	MaterialProperty _LightTex1 = null;
+	MaterialProperty _LightTex2 = null;
+	MaterialProperty _LightTex3 = null;
+	MaterialProperty _OpaqueLights = null;
+	MaterialProperty _AreaLitOcclusion = null;
+	MaterialProperty _AreaLitOcclusionUVSet = null;
 
-	MaterialProperty uvPriSwizzle = null;
-	MaterialProperty uvSecSwizzle = null;
-	MaterialProperty uvEmissMaskSwizzle = null;
-	MaterialProperty uvHeightMaskSwizzle = null;
-	MaterialProperty uvAlphaMaskSwizzle = null;
-	MaterialProperty uvRainMaskSwizzle = null;
-	MaterialProperty uvRimMaskSwizzle = null;
-	MaterialProperty uvDetailMaskSwizzle = null;
-	MaterialProperty mirrorNormalOffsetSwizzle = null;
-	MaterialProperty reflShadowAreaLit = null;
-	MaterialProperty triplanarSpace = null;
-	MaterialProperty ignoreRealtimeGI = null;
+	// LTCGI
+	MaterialProperty _LTCGI = null;
+	MaterialProperty _LTCGIStrength = null;
+	MaterialProperty _LTCGIRoughness = null;
+	MaterialProperty _LTCGISpecularOcclusion = null;
+	MaterialProperty _LTCGI_DiffuseColor = null;
+	MaterialProperty _LTCGI_SpecularColor = null;
+
+	// Render Settings
+	MaterialProperty _Culling = null;
+	MaterialProperty _QueueOffset = null;
+	MaterialProperty _UnityFogToggle = null;
+	MaterialProperty _VertexBaseColor = null;
+	MaterialProperty _MaterialDebugMode = null;
+
+	// Debug
+	MaterialProperty _DebugEnable = null;
+	MaterialProperty _DebugBaseColor = null;
+	MaterialProperty _DebugNormals = null;
+	MaterialProperty _DebugRoughness = null;
+	MaterialProperty _DebugMetallic = null;
+	MaterialProperty _DebugHeight = null;
+	MaterialProperty _DebugVertexColors = null;
+	MaterialProperty _DebugAtten = null;
+	MaterialProperty _DebugReflections = null;
+	MaterialProperty _DebugSpecular = null;
+	MaterialProperty _DebugOcclusion = null;
+	MaterialProperty _DebugAlpha = null;
+	MaterialProperty _DebugLighting = null;
+	MaterialProperty _NoiseTexSSR = null;
+	MaterialProperty _DefaultSampler = null;
+	MaterialProperty _SrcBlend = null;
+	MaterialProperty _DstBlend = null;
+	MaterialProperty _ZWrite = null;
+	MaterialProperty _ZTest = null;
+	MaterialProperty _DFG = null;
 
 	MaterialEditor me;
+    BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
-	bool m_FirstTimeApply = true;
 	bool emissionEnabled = false;
+	bool firstTimeApply = true;
 
-	public void FindProperties(MaterialProperty[] props, Material mat){
-		blendMode = FindProperty("_BlendMode", props);
-		workflow = FindProperty("_Workflow", props);
-		albedoMap = FindProperty("_MainTex", props);
-		albedoColor = FindProperty("_Color", props);
-		alphaCutoff = FindProperty("_Cutoff", props);
-		metallicMap = FindProperty("_MetallicGlossMap", props, false);
-		metallic = FindProperty("_Metallic", props, false);
-		roughness = FindProperty("_Glossiness", props);
-		roughnessMap = FindProperty("_SpecGlossMap", props);
-		highlights = FindProperty("_SpecularHighlights", props, false);
-		reflections = FindProperty("_GlossyReflections", props, false);
-		bumpScale = FindProperty("_BumpScale", props);
-		bumpMap = FindProperty("_BumpMap", props);
-		heightMapScale = FindProperty("_Parallax", props);
-		heightMap = FindProperty("_ParallaxMap", props);
-		occlusionStrength = FindProperty("_OcclusionStrength", props);
-		occlusionMap = FindProperty("_OcclusionMap", props);
-		emissionColorForRendering = FindProperty("_EmissionColor", props);
-		emissionMap = FindProperty("_EmissionMap", props);
-		detailMask = FindProperty("_DetailMask", props);
-		detailAlbedoMap = FindProperty("_DetailAlbedoMap", props);
-		detailAlbedoBlend = FindProperty("_DetailAlbedoBlend", props);
-		detailRoughnessMap = FindProperty("_DetailRoughnessMap", props);
-		detailRoughBlend = FindProperty("_DetailRoughBlend", props);
-		detailAOMap = FindProperty("_DetailAOMap", props);
-		detailAOBlend = FindProperty("_DetailAOBlend", props);
-		detailNormalMapScale = FindProperty("_DetailNormalMapScale", props);
-		detailNormalMap = FindProperty("_DetailNormalMap", props);
-		uvSetSecondary = FindProperty("_UVSec", props);
-		packedMap = FindProperty("_PackedMap", props);
-		useHeight = FindProperty("_UseHeight", props);
-		saturation = FindProperty("_Saturation", props);
-		uv0Rot = FindProperty("_UV0Rotate", props);
-		uv1Rot = FindProperty("_UV1Rotate", props);
-		reflCube = FindProperty("_ReflCube", props);
-		cubeThreshold = FindProperty("_CubeThreshold", props);
-		culling = FindProperty("_Cull", props);
-		roughMult = FindProperty("_RoughnessMult", props);
-		heightMult = FindProperty("_HeightMult", props);
-		metalMult = FindProperty("_MetallicMult", props);
-		occMult = FindProperty("_OcclusionMult", props);
-		gsaa = FindProperty("_GSAA", props);
-		ssr = FindProperty("_SSR", props);
-		ssrNoise = FindProperty("_NoiseTexSSR", props);
-		edgeFade = FindProperty("_EdgeFade", props);
-		steps = FindProperty("_ParallaxSteps", props);
-		uv0Scroll = FindProperty("_UV0Scroll", props);
-		uv1Scroll = FindProperty("_UV1Scroll", props);
-		emissionMask = FindProperty("_EmissionMask", props);
-		queueOffset = FindProperty("_QueueOffset", props);
-		reflectionStrength = FindProperty("_ReflectionStrength", props);
-		specularStrength = FindProperty("_SpecularStrength", props);
-		parallaxMask = FindProperty("_ParallaxMask", props);
-		uv2Scroll = FindProperty("_UV2Scroll", props);
-		ssrStrength = FindProperty("_SSRStrength", props);
-		parallaxOfs = FindProperty("_ParallaxOffset", props);
-		emissIntensity = FindProperty("_EmissionIntensity", props);
-		reflOverride = FindProperty("_ReflCubeOverride", props);
-		roughChannel = FindProperty("_RoughnessChannel", props);
-		heightChannel = FindProperty("_HeightChannel", props);
-		metallicChannel = FindProperty("_MetallicChannel", props);
-		occlusionChannel = FindProperty("_OcclusionChannel", props);
-		uv3Scroll = FindProperty("_UV3Scroll", props);
-		samplingMode = FindProperty("_SamplingMode", props);
-		triplanarFalloff = FindProperty("_TriplanarFalloff", props);
-		subsurface = FindProperty("_Subsurface", props);
-		thicknessMap = FindProperty("_ThicknessMap", props);
-		thicknessMapPower = FindProperty("_ThicknessMapPower", props);
-		scatterCol = FindProperty("_ScatterCol", props);
-		scatterAmbient = FindProperty("_ScatterAmbient", props);
-		scatterPow = FindProperty("_ScatterPow", props);
-		scatterIntensity = FindProperty("_ScatterIntensity", props);
-		scatterDist = FindProperty("_ScatterDist", props);
-		scatterAlbedoTint = FindProperty("_ScatterAlbedoTint", props);
-		wrappingFactor = FindProperty("_WrappingFactor", props);
-		reflShadows = FindProperty("_ReflShadows", props);
-		useSmoothness = FindProperty("_UseSmoothness", props);
-		detailMaskChannel = FindProperty("_DetailMaskChannel", props);
-		hue = FindProperty("_Hue", props);
-		hueDet = FindProperty("_HueDet", props);
-		hueEmiss = FindProperty("_HueEmiss", props);
-		huePost = FindProperty("_HuePost", props);
-		saturationDet = FindProperty("_SaturationDet", props);
-		saturationEmiss = FindProperty("_SaturationEmiss", props);
-		saturationPost = FindProperty("_SaturationPost", props);
-		contrast = FindProperty("_Contrast", props);
-		contrastDet = FindProperty("_ContrastDet", props);
-		contrastEmiss = FindProperty("_ContrastEmiss", props);
-		contrastPost = FindProperty("_ContrastPost", props);
-		brightness = FindProperty("_Brightness", props);
-		brightnessDet = FindProperty("_BrightnessDet", props);
-		brightnessEmiss = FindProperty("_BrightnessEmiss", props);
-		brightnessPost = FindProperty("_BrightnessPost", props);
-		audioLinkEmission = FindProperty("_AudioLinkEmission", props);
-		audioLinkEmissionStrength = FindProperty("_AudioLinkEmissionStrength", props);
-		reflShadowStrength = FindProperty("_ReflShadowStrength", props);
-		gsaaStrength = FindProperty("_GSAAStrength", props);
-		reflVertexColor = FindProperty("_ReflVertexColor", props);
-		reflVertexColorStrength = FindProperty("_ReflVertexColorStrength", props);
-		contrastReflShad = FindProperty("_ContrastReflShad", props);
-		brightnessReflShad = FindProperty("_BrightnessReflShad", props);
-		hdrReflShad = FindProperty("_HDRReflShad", props);
-		uv3Rot = FindProperty("_UV3Rotate", props);
-		emissPulseWave = FindProperty("_EmissPulseWave", props);
-		emissPulseSpeed = FindProperty("_EmissPulseSpeed", props);
-		emissPulseStrength = FindProperty("_EmissPulseStrength", props);
-		uvEmissMask = FindProperty("_UVEmissMask", props);
-		uvEmissMask = FindProperty("_UVEmissMask", props);
-		uvPri = FindProperty("_UVPri", props);
-		uvHeightMask = FindProperty("_UVHeightMask", props);
-		uv4Rot = FindProperty("_UV4Rotate", props);
-		uv4Scroll = FindProperty("_UV4Scroll", props);
-		uvAlphaMask = FindProperty("_UVAlphaMask", props);
-		alphaMask = FindProperty("_AlphaMask", props);
-		useAlphaMask = FindProperty("_UseAlphaMask", props);
-		alphaMaskChannel = FindProperty("_AlphaMaskChannel", props);
-		alphaMaskOpacity = FindProperty("_AlphaMaskOpacity", props);
-		useFresnel = FindProperty("_UseFresnel", props);
-		fresnelStrength = FindProperty("_FresnelStrength", props);
-		rimTog = FindProperty("_RimToggle", props);
-		rimStr = FindProperty("_RimStr", props);
-		rimBlend = FindProperty("_RimBlending", props);
-		rimCol = FindProperty("_RimCol", props);
-		rimWidth = FindProperty("_RimWidth", props);
-		rimEdge = FindProperty("_RimEdge", props);
-		bicubicLightmap = FindProperty("_BicubicLightmap", props);
-		ltcgi = FindProperty("_LTCGI", props);
-		ltcgi_diffuse_off = FindProperty("_LTCGI_DIFFUSE_OFF", props);
-		ltcgi_spec_off = FindProperty("_LTCGI_SPECULAR_OFF", props);
-		_BakeryMode = FindProperty("_BakeryMode", props);
-		_BAKERY_LMSPEC = FindProperty("_BAKERY_LMSPEC", props);
-		_BAKERY_SHNONLINEAR = FindProperty("_BAKERY_SHNONLINEAR", props);
-		filtering = FindProperty("_Filtering", props);
-		tintReflShad = FindProperty("_TintReflShad", props);
-		ltcgiStrength = FindProperty("_LTCGIStrength", props);
-		acesFilter = FindProperty("_ACES", props);
-		rainToggle = FindProperty("_RainToggle", props);
-		rippleScale = FindProperty("_RippleScale", props);
-		rippleSpeed = FindProperty("_RippleSpeed", props);
-		rippleStr = FindProperty("_RippleStr", props);
-		rippleSize = FindProperty("_RippleSize", props);
-		rippleDensity = FindProperty("_RippleDensity", props);
-		rainMask = FindProperty("_RainMask", props);
-		uv5Rot = FindProperty("_UV5Rotate", props);
-		uv5Scroll = FindProperty("_UV5Scroll", props);
-		uvRainMask = FindProperty("_UVRainMask", props);
-		mirrorToggle = FindProperty("_MirrorToggle", props);
-		areaLitToggle = FindProperty("_AreaLitToggle", props);
-		lightMesh = FindProperty("_LightMesh", props);
-		lightTex0 = FindProperty("_LightTex0", props);
-		lightTex1 = FindProperty("_LightTex1", props);
-		lightTex2 = FindProperty("_LightTex2", props);
-		lightTex3 = FindProperty("_LightTex3", props);
-		opaqueLights = FindProperty("_OpaqueLights", props);
-		detailColor = FindProperty("_DetailColor", props);
-		detailMetallicMap = FindProperty("_DetailMetallicMap", props);
-		detailWorkflow = FindProperty("_DetailWorkflow", props);
-		detailSamplingMode = FindProperty("_DetailSamplingMode", props);
-		detailTriplanarFalloff = FindProperty("_DetailTriplanarFalloff", props);
-		detailPackedMap = FindProperty("_DetailPackedMap", props);
-		detailRoughMult = FindProperty("_DetailRoughnessMult", props);
-		detailMetalMult = FindProperty("_DetailMetallicMult", props);
-		detailOccMult = FindProperty("_DetailOcclusionMult", props);
-		detailMetallicBlend = FindProperty("_DetailMetallicBlend", props);
-		detailMetallicChannel = FindProperty("_DetailMetallicChannel", props);
-		detailOcclusionChannel = FindProperty("_DetailOcclusionChannel", props);
-		detailRoughnessChannel = FindProperty("_DetailRoughnessChannel", props);
-		detailRoughnessStrength = FindProperty("_DetailRoughnessStrength", props);
-		detailMetallicStrength = FindProperty("_DetailMetallicStrength", props);
-		detailOcclusionStrength = FindProperty("_DetailOcclusionStrength", props);
-		areaLitStrength = FindProperty("_AreaLitStrength", props);
-		areaLitRoughnessMult = FindProperty("_AreaLitRoughnessMult", props);
-		rimMask = FindProperty("_RimMask", props);
-		uvRimMask = FindProperty("_UVRimMask", props);
-		uvRimMaskScroll = FindProperty("_UVRimMaskScroll", props);
-		uvRimMaskRot = FindProperty("_UVRimMaskRotate", props);
-		audioLinkEmissionMeta = FindProperty("_AudioLinkEmissionMeta", props);
-		occlusionUVSet = FindProperty("_OcclusionUVSet", props);
-		areaLitOcclusion = FindProperty("_AreaLitOcclusion", props);
-		uvDetailMask = FindProperty("_UVDetailMask", props);
-		detailScroll = FindProperty("_DetailScroll", props);
-		detailRotate = FindProperty("_DetailRotate", props);
-		ssrHeight = FindProperty("_SSRHeight", props);
-		unityFogToggle = FindProperty("_UnityFogToggle", props);
-		vertexBaseColor = FindProperty("_VertexBaseColor", props);
-		uvPriSwizzle = FindProperty("_UVPriSwizzle", props);
-		uvSecSwizzle = FindProperty("_UVSecSwizzle", props);
-		uvEmissMaskSwizzle = FindProperty("_UVEmissMaskSwizzle", props);
-		uvHeightMaskSwizzle = FindProperty("_UVHeightMaskSwizzle", props);
-		uvAlphaMaskSwizzle = FindProperty("_UVAlphaMaskSwizzle", props);
-		uvRainMaskSwizzle = FindProperty("_UVRainMaskSwizzle", props);
-		uvRimMaskSwizzle = FindProperty("_UVRimMaskSwizzle", props);
-		uvDetailMaskSwizzle = FindProperty("_UVDetailMaskSwizzle", props);
-		mirrorNormalOffsetSwizzle = FindProperty("_MirrorNormalOffsetSwizzle", props);
-		reflShadowAreaLit = FindProperty("_ReflShadowAreaLit", props);
-		triplanarSpace = FindProperty("_TriplanarSpace", props);
-		hueMode = FindProperty("_HueMode", props);
-		ltcgiRoughness = FindProperty("_LTCGIRoughness", props);
-		ignoreRealtimeGI = FindProperty("_IgnoreRealtimeGI", props);
-		monoTint = FindProperty("_MonoTint", props);
-		audioLinkMin = FindProperty("_AudioLinkMin", props);
-		audioLinkMax = FindProperty("_AudioLinkMax", props);
-	}
-
-	public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props){
+    public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props) {
 		me = materialEditor;
-		Material material = materialEditor.target as Material;
+		
+        if (!me.isVisible)
+            return;
 
-		FindProperties(props, material);
+        foreach (var property in GetType().GetFields(bindingFlags)){
+            if (property.FieldType == typeof(MaterialProperty))
+                property.SetValue(this, FindProperty(property.Name, props));
+        }
+        Material mat = (Material)me.target;
 
-		// Make sure that needed setup (ie keywords/renderqueue) are set up if we're switching some existing
-		// material to a standard shader.
-		// Do this before any GUI code has been issued to prevent layout issues in subsequent GUILayout statements (case 780071)
-		if (m_FirstTimeApply){
-			MaterialChanged(material);
-			m_FirstTimeApply = false;
+		bool isLite = MGUI.IsNewLiteVersion(mat);
+		mat.SetShaderPassEnabled("Always", mat.GetInt("_SSRToggle") == 1 && !isLite);
+
+		if (firstTimeApply){
+			SetKeywords(mat);
+			SetBlendMode(mat);
+			firstTimeApply = false;
 		}
 
-		if (material.GetInt("_MaterialResetCheck") == 0){
-			material.SetInt("_MaterialResetCheck", 1);
-			MaterialChanged(material);
+		if (mat.GetInt("_MaterialResetCheck") == 0){
+			mat.SetInt("_MaterialResetCheck", 1);
+			SetKeywords(mat);
+			SetBlendMode(mat);
 		}
 
 		// Add mat to foldout dictionary if it isn't in there yet
-		if (!foldouts.ContainsKey(material))
-			foldouts.Add(material, toggles);
+		if (!foldouts.ContainsKey(mat))
+			foldouts.Add(mat, toggles);
 
-		// Use default labelWidth
-		EditorGUIUtility.labelWidth = 0f;
-
-		// Detect any changes to the material
-		EditorGUI.BeginChangeCheck();{
-			
-			// Core Shader Variant
-			MGUI.BoldLabel("Shader Variant");
-			DoVariantArea(material);
-			MGUI.Space2();
-
-			// Primary properties
-			MGUI.BoldLabel("Primary Textures");
-			MGUI.PropertyGroup(()=>{
-				DoPrimaryArea(material);
-			});
-			MGUI.Space2();
-
-			// Detail properties
-			
-			MGUI.BoldLabel("Detail Textures");
-			MGUI.PropertyGroup(()=>{
-				if (!MGUI.IsNewLiteVersion(material)){
-					DoDetailArea();
-				}
-				else {
-					DoDetailAreaLite();
-				}
-			});
-			MGUI.Space2();
-
-			MGUI.BoldLabel("Specularity");
-			DoSpecularityArea(MGUI.IsNewLiteVersion(material));
-			MGUI.Space4();
-
-			// Rim
-			// bool rimFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "Rim Light");
-			// if (rimFoldout){
-			// 	DoRimArea();
-			// }
-
-			// Subsurface
-			bool subsurfaceArea = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "Subsurface Scattering");
-			if (subsurfaceArea){
-				DoSubsurfaceArea();
-			}
-
-			// Rain
-			bool rainArea = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "Rain");
-			if (rainArea){
-				DoRainArea();
-			}
-
-			// Filtering
-			bool filteringFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "Filtering");
-			if (filteringFoldout){
-				DoFilteringArea();
-			}
-
-			// UVs
-			bool needsHeightMaskUV = (((workflow.floatValue > 0 && useHeight.floatValue == 1) || (workflow.floatValue == 0 && heightMap.textureValue)) && parallaxMask.textureValue) && samplingMode.floatValue < 3;
-			bool needsEmissMaskUV = emissionEnabled && emissionMask.textureValue;
-			bool needsAlphaMaskUV = blendMode.floatValue > 0 && useAlphaMask.floatValue > 0;
-			bool needsRainMaskUV = rainToggle.floatValue == 1 && rainMask.textureValue;
-			bool needsRimMaskUV = rimTog.floatValue == 1 && rimMask.textureValue;
-			bool needsDetailMaskUV = detailMask.textureValue;
-			if (needsHeightMaskUV || needsEmissMaskUV || needsAlphaMaskUV || needsRainMaskUV || needsRimMaskUV || needsDetailMaskUV){
-				bool uvFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "UVs");
-				if (uvFoldout){
-					DoUVArea(MGUI.IsNewLiteVersion(material));
-				}
-			}
-
-			// Lightmap Settings
-			bool lightmappingFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "Lightmap Settings");
-			if (lightmappingFoldout){
-				DoLightmappingArea();
-			}
-
-			// AreaLit
-			if (Shader.Find("AreaLit/Standard") != null){
-				bool arealitFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "AreaLit");
-				if (arealitFoldout){
-					DoAreaLitArea();
-				}
-			}
-			else {
-				areaLitToggle.floatValue = 0f;
-				material.SetInt("_AreaLitToggle", 0);
-				material.DisableKeyword("_AREALIT_ON");
-			}
-
-			// LTCGI
-			if (Shader.Find("LTCGI/Blur Prefilter") != null){
-				bool ltcgiFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "LTCGI");
-				if (ltcgiFoldout){
-					DoLTCGIArea();
-				}
-			}
-			else {
-				ltcgi.floatValue = 0;
-				ltcgi_diffuse_off.floatValue = 0;
-				ltcgi_spec_off.floatValue = 0;
-				material.SetInt("_LTCGI", 0);
-				material.SetInt("_LTCGI_DIFFUSE_OFF", 0);
-				material.SetInt("_LTCGI_SPECULAR_OFF", 0);
-				material.DisableKeyword("LTCGI");
-				material.DisableKeyword("LTCGI_DIFFUSE_OFF");
-				material.DisableKeyword("LTCGI_SPECULAR_OFF");
-			}
-
-			// Render Settings
-			bool renderFoldout = Foldouts.DoSmallFoldoutBold(foldouts, material, me, "Render Settings");
-			if (renderFoldout){
-				DoRenderingArea(material, MGUI.IsNewLiteVersion(material));
-			}
-
-			// Watermark and version display
-			MGUI.DoFooter(versionLabel);
+        EditorGUI.BeginChangeCheck(); {
+			DoVariant(isLite);
+			DoPrimaryTextures(mat, isLite);
+			if (!isLite)
+				DoDetailTextures();
+			else
+				DoDetailTexturesLite();
+			DoSpecularity(isLite);
+			DoSubsurface(mat);
+			DoRain(mat);
+			DoFiltering(mat);
+			DoUVs(mat);
+			DoAreaLit(mat);
+			DoLTCGI(mat);
+			DoLightmapSettings(mat);
+			DoRenderSettings(mat);
+			DoDebug(mat);
 		}
-
-		// Ensure settings are applied correctly if anything changed
 		if (EditorGUI.EndChangeCheck()){
-			foreach (var obj in blendMode.targets)
-				MaterialChanged((Material)obj);
+			SetKeywords(mat);
+			SetBlendMode(mat);
 		}
 
-		MGUI.Space8();
-	}
+		MGUI.Space10();
+		MGUI.DoFooter(versionLabel);
+    }
 
-	void DoVariantArea(Material mat){	
-		MGUI.PropertyGroup(()=>{
-			me.ShaderProperty(blendMode, Tips.standBlendMode);
-			me.ShaderProperty(useSmoothness, Tips.useSmoothness);
-			if (blendMode.floatValue > 0){
-				me.ShaderProperty(useAlphaMask, Tips.separateAlpha);
-			}
-			if (blendMode.floatValue == 1)
-				me.ShaderProperty(alphaCutoff, Tips.alphaCutoffText);
-			// MGUI.SpaceN2();
-			// if (MGUI.PropertyButton("Unity Standard Packing Format")){
-			// 	ApplyStandardPackingFormat(mat);
-			// }
-			if (samplingMode.floatValue == 3 || (detailSamplingMode.floatValue == 3 && !MGUI.IsNewLiteVersion(mat)))
-				me.ShaderProperty(triplanarSpace, "Triplanar Space");
+	#region Layouts
 
-		});
-	}
-
-	void DoPrimaryArea(Material material){
+	void DoVariant(bool isLite){
+		MGUI.BoldLabel("Shader Variant");
 		MGUI.PropertyGroup(()=>{
-			me.ShaderProperty(workflow, Tips.standWorkflow);
-			me.ShaderProperty(samplingMode, Tips.samplingMode);
-			if (workflow.floatValue > 0 && samplingMode.floatValue < 3)
-				me.ShaderProperty(useHeight, Tips.parallaxHeightText);
-			if (samplingMode.floatValue == 3){
-				me.ShaderProperty(triplanarFalloff, Tips.triplanarFalloff);
-			}
-		});
-		MGUI.PropertyGroup(()=>{
-			me.TexturePropertySingleLine(Tips.albedoText, albedoMap, albedoColor);
-			if (useAlphaMask.floatValue == 1 && blendMode.floatValue > 0){
-				me.TexturePropertySingleLine(Tips.alphaMaskText, alphaMask, alphaMaskOpacity, alphaMaskChannel);
-			}
-			GUIContent roughLabel = Tips.roughnessText;
-			GUIContent roughStrLabel = Tips.roughnessPackedText;
-			if (useSmoothness.floatValue == 1){
-				roughLabel.text = "Smoothness";
-				roughStrLabel.text = "Smoothness Strength";
-			}
-			else {
-				roughLabel.text = "Roughness";
-				roughStrLabel.text = "Roughness Strength";
-			}
-			if (workflow.floatValue == 1){
-				me.TexturePropertySingleLine(Tips.packedMapText, packedMap);
-				MGUI.sRGBWarning(packedMap);
-				if (packedMap.textureValue){
-					MGUI.PropertyGroup(()=>{
-						me.ShaderProperty(metallicChannel, "Metallic");
-						me.ShaderProperty(roughChannel, roughLabel.text);
-						me.ShaderProperty(occlusionChannel, "Occlusion");
-						if (useHeight.floatValue == 1 && samplingMode.floatValue < 3){
-							me.ShaderProperty(heightChannel, "Height");
-						}
-					});
-					MGUI.PropertyGroup(()=>{
-						MGUI.ToggleSlider(me, Tips.metallicPackedText, metalMult, metallic);
-						MGUI.ToggleSlider(me, roughStrLabel, roughMult, roughness);
-						MGUI.ToggleSlider(me, Tips.occlusionPackedText, occMult, occlusionStrength);
-						if (useHeight.floatValue == 1 && samplingMode.floatValue < 3){
-							MGUI.ToggleSlider(me, Tips.heightMapPackedText, heightMult, heightMapScale);
-							me.ShaderProperty(steps, Tips.stepsText);
-							me.ShaderProperty(parallaxOfs, Tips.parallaxOfsText);
-						}
-					});
-					MGUI.Space8();
-				}
-				if (useHeight.floatValue == 1 && samplingMode.floatValue < 3){
-					me.TexturePropertySingleLine(Tips.heightMaskText, parallaxMask);
-				}
-			}
-			else {
-				me.TexturePropertySingleLine(Tips.metallicText, metallicMap, metallic);
-				MGUI.sRGBWarning(metallicMap);
-				me.TexturePropertySingleLine(roughLabel, roughnessMap, roughness);
-				MGUI.sRGBWarning(roughnessMap);
-				me.TexturePropertySingleLine(Tips.occlusionText, occlusionMap, occlusionMap.textureValue ? occlusionStrength : null);
-				MGUI.sRGBWarning(occlusionMap);
-				if (samplingMode.floatValue < 3){
-					me.TexturePropertySingleLine(Tips.heightMapText, heightMap, heightMap.textureValue ? heightMapScale : null);
-					MGUI.sRGBWarning(heightMap);
-					if (heightMap.textureValue){
-						me.TexturePropertySingleLine(Tips.heightMaskText, parallaxMask);
-						me.ShaderProperty(steps, Tips.stepsText, 2);
-						me.ShaderProperty(parallaxOfs, Tips.parallaxOfsText, 2);
+			MGUI.PropertyGroup(()=>{
+				me.ShaderProperty(_BlendMode, Tips.standBlendMode);
+				if (isLite){
+					me.ShaderProperty(_PrimaryWorkflow, Tips.workflowText);
+					me.ShaderProperty(_PrimarySampleMode, Tips.samplingMode);
+					if (_PrimaryWorkflow.floatValue == 1){
+						me.ShaderProperty(_PackedHeight, Tips.packedHeightText);
 					}
 				}
+				me.ShaderProperty(_SmoothnessToggle, Tips.smoothnessModeText);
+				if (_PrimarySampleMode.floatValue == 3 || (_DetailSampleMode.floatValue == 3 && !isLite))
+					me.ShaderProperty(_TriplanarCoordSpace, "Triplanar Coordinates");
+			});
+			if (_BlendMode.floatValue > 0){
+				MGUI.PropertyGroup(()=>{
+					me.ShaderProperty(_AlphaSource, Tips.useAlphaMaskLabel);
+					if (_BlendMode.floatValue == 1){
+						me.ShaderProperty(_MipMapRescaling, Tips.mipRescalingText);
+						if (_MipMapRescaling.floatValue == 1){
+							me.ShaderProperty(_MipMapScale, "Mip Map Scale");
+						}
+						me.ShaderProperty(_Cutoff, Tips.alphaCutoffText);
+					}
+				});
 			}
-			me.TexturePropertySingleLine(Tips.normalMapText, bumpMap, bumpMap.textureValue ? bumpScale : null);
-			DoEmissionArea(material);
+			MGUI.SpaceN2();
 		});
-		EditorGUI.BeginChangeCheck();
-		MGUI.PropertyGroup(()=>{
-			if (samplingMode.floatValue < 3){
-				me.ShaderProperty(uvPri, Tips.uvSetLabel.text);
-				if (uvPri.floatValue >= 5)
-					me.ShaderProperty(uvPriSwizzle, Tips.swizzleText);
-				MGUI.TextureSOScroll(me, albedoMap, uv0Scroll);
-				me.ShaderProperty(uv0Rot, "Rotation");
-			}
-			else {
-				MGUI.TextureSO(me, albedoMap);
-			}
-			if (EditorGUI.EndChangeCheck())
-				emissionMap.textureScaleAndOffset = albedoMap.textureScaleAndOffset; 
-		});
-		MGUI.SpaceN2();
+		MGUI.Space6();
 	}
 
-	void DoDetailArea(){
+	void DoPrimaryTextures(Material mat, bool isLite){
+		MGUI.BoldLabel("Primary Textures");
 		MGUI.PropertyGroup(()=>{
-			me.ShaderProperty(detailWorkflow, Tips.standWorkflow);
-			me.ShaderProperty(detailSamplingMode, Tips.samplingMode);
-			// me.ShaderProperty(detailUseSmoothness, Tips.useSmoothness);
-			if (detailSamplingMode.floatValue == 3){
-				me.ShaderProperty(detailTriplanarFalloff, Tips.triplanarFalloff);
+			if (!isLite){
+				MGUI.PropertyGroup(()=>{
+					me.ShaderProperty(_PrimaryWorkflow, Tips.workflowText);
+					me.ShaderProperty(_PrimarySampleMode, Tips.samplingMode);
+					if (_PrimaryWorkflow.floatValue == 1){
+						me.ShaderProperty(_PackedHeight, Tips.packedHeightText);
+					}
+				});
 			}
-			// MGUI.SpaceN2();
-			// if (MGUI.PropertyButton("Unity Standard Packing Format")){
-			// 	ApplyStandardPackingFormat(material);
-			// }
-		});
-		MGUI.PropertyGroup(() => {
-			GUIContent roughLabel = Tips.roughnessText;
-			GUIContent roughBlendLabel = new GUIContent("Balls");
-			GUIContent roughStrLabel = Tips.roughnessPackedText;
-			if (useSmoothness.floatValue == 1){
-				roughLabel.text = "Smoothness";
-				roughBlendLabel.text = "Smoothness Blend";
-				roughStrLabel.text = "Smoothness Strength";
-			}
-			else {
-				roughLabel.text = "Roughness";
-				roughBlendLabel.text = "Roughness Blend";
-				roughStrLabel.text = "Roughness Strength";
-
-			}
-			bool hasDetailAlbedo = detailAlbedoMap.textureValue;
-			bool hasDetailNormal = detailNormalMap.textureValue;
-			bool hasMetallic = detailMetallicMap.textureValue;
-			bool hasRoughness = detailRoughnessMap.textureValue;
-			bool hasAO = detailAOMap.textureValue;
-			me.TexturePropertySingleLine(Tips.albedoText, detailAlbedoMap, hasDetailAlbedo ? detailColor : null, hasDetailAlbedo ? detailAlbedoBlend : null);
-			if (detailWorkflow.floatValue == 1){
-				me.TexturePropertySingleLine(Tips.packedMapText, detailPackedMap);
-				me.TexturePropertySingleLine(Tips.normalMapText, detailNormalMap, hasDetailNormal ? detailNormalMapScale : null);
-				me.TexturePropertySingleLine(Tips.detailMaskText, detailMask, detailMask.textureValue ? detailMaskChannel : null);
-				MGUI.sRGBWarning(detailPackedMap);
-				if (detailPackedMap.textureValue){
-					MGUI.PropertyGroup(()=>{
-						me.ShaderProperty(detailMetallicChannel, "Metallic");
-						me.ShaderProperty(detailRoughnessChannel, roughLabel.text);
-						me.ShaderProperty(detailOcclusionChannel, "Occlusion");
-					});
-					MGUI.PropertyGroup(()=>{
-						me.ShaderProperty(detailMetallicBlend, "Metallic Blend");
-						me.ShaderProperty(detailRoughBlend, roughBlendLabel);
-						me.ShaderProperty(detailAOBlend, "Occlusion Blend");
-					});
-					MGUI.PropertyGroup(()=>{
-						MGUI.ToggleSlider(me, Tips.metallicPackedText, detailMetalMult, detailMetallicStrength);
-						MGUI.ToggleSlider(me, roughStrLabel, detailRoughMult, detailRoughnessStrength);
-						MGUI.ToggleSlider(me, Tips.occlusionPackedText, detailOccMult, detailOcclusionStrength);
-					});
+			MGUI.PropertyGroup(()=>{
+				me.TexturePropertySingleLine(Tips.baseColorText, _MainTex, _Color);
+				if (_BlendMode.floatValue > 0 && _AlphaSource.floatValue == 1)
+					me.TexturePropertySingleLine(Tips.alphaMaskLabel, _AlphaMask, _AlphaMask.textureValue ? _AlphaMaskChannel : null);
+				me.TexturePropertySingleLine(Tips.normalMapText, _NormalMap, _NormalMap.textureValue ? _NormalStrength : null);
+				MGUI.NormalWarning(_NormalMap);
+				if (_PrimaryWorkflow.floatValue == 0){
+					me.TexturePropertySingleLine(Tips.metallicText, _MetallicMap, _MetallicStrength);
+					MGUI.sRGBWarning(_MetallicMap);
+					me.TexturePropertySingleLine(_SmoothnessToggle.floatValue == 0 ? Tips.roughnessText : Tips.smoothnessText, _RoughnessMap, _RoughnessStrength);
+					MGUI.sRGBWarning(_RoughnessMap);
+					me.TexturePropertySingleLine(Tips.occlusionText, _OcclusionMap, _OcclusionMap.textureValue ? _OcclusionStrength : null);
+					MGUI.sRGBWarning(_OcclusionMap);
+					if (_PrimarySampleMode.floatValue != 3){
+						me.TexturePropertySingleLine(Tips.heightMapText, _HeightMap, _HeightMap.textureValue ? _HeightStrength : null);
+						MGUI.sRGBWarning(_HeightMap);
+						if (_HeightMap.textureValue){
+							me.TexturePropertySingleLine(Tips.heightMaskText, _HeightMask, _HeightMask.textureValue ? _HeightMaskChannel : null);
+							me.ShaderProperty(_HeightSteps, Tips.stepsText);
+							me.ShaderProperty(_HeightOffset, Tips.parallaxOffsetLabel);
+						}
+					}
+					// if (MGUI.PropertyButton("Pack Textures")){
+					// 	PackTextures(_MetallicMap, _RoughnessMap, _OcclusionMap, _HeightMap, _PackedMap);
+					// 	_PrimaryWorkflow.floatValue = 1f;
+					// 	mat.SetInt("_PrimaryWorkflow", 1);
+					// 	MGUI.SetKeyword(mat, "_WORKFLOW_PACKED_ON", true);
+					// }
 				}
+				else {
+					me.TexturePropertySingleLine(Tips.packedMapText, _PackedMap);
+					MGUI.sRGBWarning(_PackedMap);
+					if (_PackedHeight.floatValue == 1 && _PrimarySampleMode.floatValue != 3){
+						me.TexturePropertySingleLine(Tips.heightMaskText, _HeightMask, _HeightMask.textureValue ? _HeightMaskChannel : null);
+					}
+				}
+				DoEmission();
+			});
+			if (_PrimaryWorkflow.floatValue == 1){
+				MGUI.PropertyGroup(()=>{
+					me.ShaderProperty(_MetallicChannel, "Metallic Channel");
+					me.ShaderProperty(_RoughnessChannel, _SmoothnessToggle.floatValue == 0 ? "Roughness Channel" : "Smoothness Channel");
+					me.ShaderProperty(_OcclusionChannel, "Occlusion Channel");
+					if (_PackedHeight.floatValue == 1 && _PrimarySampleMode.floatValue != 3){
+						me.ShaderProperty(_HeightChannel, "Height Channel");
+					}
+				});
+				MGUI.PropertyGroup(()=>{
+					MGUI.ToggleSlider(me, Tips.metallicPackedText, _MetallicMultiplier, _MetallicStrength);
+					MGUI.ToggleSlider(me, _SmoothnessToggle.floatValue == 0? Tips.roughnessPackedText : Tips.smoothnessPackedText, _RoughnessMultiplier, _RoughnessStrength);
+					MGUI.ToggleSlider(me, Tips.occlusionPackedText, _OcclusionMultiplier, _OcclusionStrength);
+					if (_PackedHeight.floatValue == 1){
+						MGUI.ToggleSlider(me, Tips.heightMapPackedText, _HeightMultiplier, _HeightStrength);
+						me.ShaderProperty(_HeightSteps, Tips.stepsText);
+						me.ShaderProperty(_HeightOffset, Tips.parallaxOffsetLabel);
+					}
+				});
 			}
-			else {
-				me.TexturePropertySingleLine(Tips.metallicText, detailMetallicMap, hasMetallic ? detailMetallicStrength : null, hasMetallic ? detailMetallicBlend : null);
-				MGUI.sRGBWarning(detailMetallicMap);
-				me.TexturePropertySingleLine(Tips.roughnessText, detailRoughnessMap, hasRoughness ? detailRoughnessStrength : null, hasRoughness ? detailRoughBlend : null);
-				MGUI.sRGBWarning(detailRoughnessMap);
-				me.TexturePropertySingleLine(Tips.occlusionText, detailAOMap, hasAO ? detailOcclusionStrength : null, hasAO ? detailAOBlend : null);
-				me.TexturePropertySingleLine(Tips.normalMapText, detailNormalMap, hasDetailNormal ? detailNormalMapScale : null);
-				me.TexturePropertySingleLine(Tips.detailMaskText, detailMask, detailMask.textureValue ? detailMaskChannel : null);
-				MGUI.sRGBWarning(detailAOMap);
-			}
+			MGUI.PropertyGroup(()=>{
+				if (_PrimarySampleMode.floatValue != 3){
+					me.ShaderProperty(_UVMainSet, Tips.uvSetLabel);
+					if (_UVMainSet.floatValue >= 5){
+						me.ShaderProperty(_UVMainSwizzle, Tips.swizzleText);
+					}
+					MGUI.TextureSOScroll(me, _MainTex, _UVMainScroll);
+					me.ShaderProperty(_UVMainRotation, "Rotation");
+				}
+				else {
+					MGUI.TextureSO(me, _MainTex);
+				}
+			});
+			MGUI.SpaceN2();
 		});
-		MGUI.PropertyGroup(()=>{
-			if (detailSamplingMode.floatValue < 3){
-				me.ShaderProperty(uvSetSecondary, Tips.uvSetLabel.text);
-				if (uvSetSecondary.floatValue >= 5)
-					me.ShaderProperty(uvSecSwizzle, Tips.swizzleText);
-				MGUI.TextureSOScroll(me, detailAlbedoMap, uv1Scroll);
-				me.ShaderProperty(uv1Rot, "Rotation");
-			}
-			else {
-				MGUI.TextureSO(me, detailAlbedoMap);
-			}
-		});
-		MGUI.SpaceN2();
+		MGUI.Space6();
 	}
-
-	void DoDetailAreaLite(){
-		bool hasDetailAlbedo = detailAlbedoMap.textureValue;
-		bool hasDetailNormal = detailNormalMap.textureValue;
-		MGUI.PropertyGroup(()=>{
-			me.TexturePropertySingleLine(Tips.albedoText, detailAlbedoMap, hasDetailAlbedo ? detailColor : null, hasDetailAlbedo ? detailAlbedoBlend : null);
-			me.TexturePropertySingleLine(Tips.normalMapText, detailNormalMap, hasDetailNormal ? detailNormalMapScale : null);
-			me.TexturePropertySingleLine(Tips.detailMaskText, detailMask, detailMask.textureValue ? detailMaskChannel : null);
-		});
-		MGUI.PropertyGroup(()=>{
-			me.ShaderProperty(uvSetSecondary, Tips.uvSetLabel.text);
-			if (uvSetSecondary.floatValue >= 5)
-				me.ShaderProperty(uvSecSwizzle, Tips.swizzleText);
-			MGUI.TextureSOScroll(me, detailAlbedoMap, uv1Scroll);
-			me.ShaderProperty(uv1Rot, "Rotation");
-		});
-		MGUI.SpaceN2();
-	}
-
-	void DoEmissionArea(Material material){
+	
+	void DoEmission(){
 		if (me.EmissionEnabledProperty()){
 			emissionEnabled = true;
-			bool hadEmissionTexture = emissionMap.textureValue != null;
+			bool hadEmissionTexture = _EmissionMap.textureValue != null;
 			MGUI.ToggleGroup(!emissionEnabled);
 			MGUI.PropertyGroup(()=>{
 				me.LightmapEmissionFlagsProperty(0, true);
-				me.ShaderProperty(emissPulseWave, Tips.emissPulseWave);
-				if (emissPulseWave.floatValue > 0){
-					me.ShaderProperty(emissPulseStrength, Tips.emissPulseStrength);
-					me.ShaderProperty(emissPulseSpeed, Tips.emissPulseSpeed);
+				me.ShaderProperty(_EmissionPulseWave, Tips.emissPulseWave);
+				if (_EmissionPulseWave.floatValue > 0){
+					me.ShaderProperty(_EmissionPulseStrength, Tips.emissPulseStrength);
+					me.ShaderProperty(_EmissionPulseSpeed, Tips.emissPulseSpeed);
 				}
-				me.ShaderProperty(audioLinkEmission, Tips.audioLinkEmission);
-				if (audioLinkEmission.floatValue > 0){
-					me.ShaderProperty(audioLinkEmissionStrength, Tips.audioLinkEmissionStrength);
-					MGUI.SliderMinMax(audioLinkMin, audioLinkMax, 0f, 2f, "Remap", 0);
-					me.ShaderProperty(audioLinkEmissionMeta, Tips.audioLinkEmissionMeta);
+				me.ShaderProperty(_AudioLinkEmission, Tips.audioLinkEmission);
+				if (_AudioLinkEmission.floatValue > 0){
+					me.ShaderProperty(_AudioLinkEmissionStrength, Tips.audioLinkEmissionStrength);
+					MGUI.SliderMinMax(_AudioLinkMin, _AudioLinkMax, 0f, 2f, "Remap", 0);
+					me.ShaderProperty(_AudioLinkEmissionMeta, Tips.audioLinkEmissionMeta);
 				}
 				MGUI.Space2();
 				
-				me.TexturePropertySingleLine(Tips.emissionText, emissionMap, emissionColorForRendering, emissIntensity);
-				// me.TexturePropertyWithHDRColor(Tips.emissionText, emissionMap, emissionColorForRendering, false);
+				me.TexturePropertySingleLine(Tips.emissionText, _EmissionMap, _EmissionColor, _EmissionStrength);
 				MGUI.SpaceN2();
-				me.TexturePropertySingleLine(Tips.maskText, emissionMask);
+				me.TexturePropertySingleLine(Tips.maskText, _EmissionMask, _EmissionMask.textureValue ? _EmissionMaskChannel : null);
 			});
 			MGUI.SpaceN2();
 			MGUI.ToggleGroupEnd();
-			float brightness = emissionColorForRendering.colorValue.maxColorComponent;
-			if (emissionMap.textureValue != null && !hadEmissionTexture && brightness <= 0f)
-				emissionColorForRendering.colorValue = Color.white;
-			}
+			float brightness = _EmissionColor.colorValue.maxColorComponent;
+			if (_EmissionMap.textureValue != null && !hadEmissionTexture && brightness <= 0f)
+				_EmissionColor.colorValue = Color.white;
+		}
 		else {
 			emissionEnabled = false;
 		}
 	}
 
-	void DoSpecularityArea(bool isLite){;
-		MGUI.PropertyGroup(() => {
+	void DoDetailTextures(){
+		MGUI.BoldLabel("Detail Textures");
+		MGUI.PropertyGroup(()=>{
 			MGUI.PropertyGroup(()=>{
-				MGUI.ToggleFloat(me, Tips.specularHighlightsText, highlights, specularStrength);
-				MGUI.ToggleFloat(me, Tips.cubemapReflectionsText, reflections, reflectionStrength);
-				if (!isLite){
-					MGUI.ToggleFloat(me, Tips.ssrText, ssr, ssrStrength);
-					if (ssr.floatValue == 1){
-						me.ShaderProperty(edgeFade, Tips.ssrEdgeFadeText);
-						me.ShaderProperty(ssrHeight, Tips.ssrDepthText);
-					}
-					// MGUI.ToggleFloat(me, Tips.reflVertexColor, reflVertexColor, reflVertexColorStrength);
+				me.ShaderProperty(_DetailWorkflow, Tips.workflowText);
+				me.ShaderProperty(_DetailSampleMode, Tips.samplingMode);
+			});
+			MGUI.PropertyGroup(()=>{
+				if (_DetailMainTex.textureValue){
+					me.ShaderProperty(_DetailColor, "Detail Tint");
+					MGUI.Space4();
 				}
-				MGUI.ToggleFloat(me, Tips.reflShadows, reflShadows, reflShadowStrength);
-				if (reflShadows.floatValue == 1){
-					MGUI.PropertyGroup(() =>{
-						me.ShaderProperty(tintReflShad, "Lightmap Tint");
-						me.ShaderProperty(brightnessReflShad, "Brightness");
-						me.ShaderProperty(contrastReflShad, "Contrast");
-						me.ShaderProperty(hdrReflShad, "HDR");
+				me.TexturePropertySingleLine(Tips.detailAlbedoText, _DetailMainTex, _DetailMainTex.textureValue ? _DetailMainTexStrength : null, _DetailMainTex.textureValue ? _DetailMainTexBlend : null);
+				me.TexturePropertySingleLine(Tips.detailNormalMapText, _DetailNormalMap, _DetailNormalMap.textureValue ? _DetailNormalStrength : null);
+				MGUI.NormalWarning(_DetailNormalMap);
+				if (_DetailWorkflow.floatValue == 0){
+					me.TexturePropertySingleLine(Tips.detailMetallicMapText, _DetailMetallicMap, _DetailMetallicMap.textureValue ? _DetailMetallicStrength : null, _DetailMetallicMap.textureValue ? _DetailMetallicBlend : null);
+					MGUI.sRGBWarning(_DetailMetallicMap);
+					me.TexturePropertySingleLine(_SmoothnessToggle.floatValue == 0 ? Tips.detailRoughnessMapText : Tips.detailSmoothnessMapText, _DetailRoughnessMap, _DetailRoughnessMap.textureValue ? _DetailRoughnessStrength : null, _DetailRoughnessMap.textureValue ? _DetailRoughnessBlend : null);
+					MGUI.sRGBWarning(_DetailRoughnessMap);
+					me.TexturePropertySingleLine(Tips.detailAOMapText, _DetailOcclusionMap, _DetailOcclusionMap.textureValue ? _DetailOcclusionStrength : null, _DetailOcclusionMap.textureValue ? _DetailOcclusionBlend : null);
+					MGUI.sRGBWarning(_DetailOcclusionMap);
+				}
+				else {
+					me.TexturePropertySingleLine(Tips.packedMapText, _DetailPackedMap);
+					MGUI.sRGBWarning(_DetailPackedMap);
+				}
+				me.TexturePropertySingleLine(Tips.detailMaskText, _DetailMask, _DetailMask.textureValue ? _DetailMaskChannel : null);
+			});
+			if (_DetailWorkflow.floatValue == 1){
+				MGUI.PropertyGroup(()=>{
+					me.ShaderProperty(_DetailMetallicChannel, "Metallic Channel");
+					me.ShaderProperty(_DetailRoughnessChannel, _SmoothnessToggle.floatValue == 0 ? "Roughness Channel" : "Smoothness Channel");
+					me.ShaderProperty(_DetailOcclusionChannel, "Occlusion Channel");
+				});
+				MGUI.PropertyGroup(()=>{
+					MGUI.ToggleSlider(me, Tips.metallicPackedText, _DetailMetallicMultiplier, _DetailMetallicStrength);
+					MGUI.ToggleSlider(me, _SmoothnessToggle.floatValue == 0 ? Tips.roughnessPackedText : Tips.smoothnessPackedText, _DetailRoughnessMultiplier, _DetailRoughnessStrength);
+					MGUI.ToggleSlider(me, Tips.occlusionPackedText, _DetailOcclusionMultiplier, _DetailOcclusionStrength);
+				});
+			}
+			if (_DetailMainTex.textureValue || _DetailNormalMap.textureValue || (_DetailWorkflow.floatValue == 0 && (_DetailMetallicMap.textureValue || _DetailRoughnessMap.textureValue || _DetailOcclusionMap.textureValue)) || (_DetailWorkflow.floatValue == 1 && _DetailPackedMap.textureValue)){
+				MGUI.PropertyGroup(()=>{
+					if (_DetailSampleMode.floatValue != 3){
+						me.ShaderProperty(_UVDetailSet, Tips.uvSetLabel);
+						if (_UVDetailSet.floatValue >= 5){
+							me.ShaderProperty(_UVDetailSwizzle, Tips.swizzleText);
+						}
+						MGUI.TextureSOScroll(me, _DetailMainTex, _UVDetailScroll);
+						me.ShaderProperty(_UVDetailRotation, "Rotation");
+					}
+					else {
+						MGUI.TextureSO(me, _DetailMainTex);
+					}
+				});
+			}
+			MGUI.SpaceN2();
+		});
+		MGUI.Space6();
+	}
+
+	void DoDetailTexturesLite(){
+		MGUI.BoldLabel("Detail Textures");
+		MGUI.PropertyGroup(()=>{
+			MGUI.PropertyGroup(()=>{
+				if (_DetailMainTex.textureValue){
+					me.ShaderProperty(_DetailColor, "Detail Tint");
+					MGUI.Space4();
+				}
+				me.TexturePropertySingleLine(Tips.detailAlbedoText, _DetailMainTex, _DetailMainTex.textureValue ? _DetailMainTexStrength : null, _DetailMainTex.textureValue ? _DetailMainTexBlend : null);
+				me.TexturePropertySingleLine(Tips.detailNormalMapText, _DetailNormalMap, _DetailNormalMap.textureValue ? _DetailNormalStrength : null);
+				me.TexturePropertySingleLine(Tips.detailMaskText, _DetailMask, _DetailMask.textureValue ? _DetailMaskChannel : null);
+			});
+			if (_DetailMainTex.textureValue || _DetailNormalMap.textureValue){
+				MGUI.PropertyGroup(()=>{
+					me.ShaderProperty(_UVDetailSet, Tips.uvSetLabel);
+					if (_UVDetailSet.floatValue >= 5){
+						me.ShaderProperty(_UVDetailSwizzle, Tips.swizzleText);
+					}
+					MGUI.TextureSOScroll(me, _DetailMainTex, _UVDetailScroll);
+					me.ShaderProperty(_UVDetailRotation, "Rotation");
+				});
+			}
+			MGUI.SpaceN2();
+		});
+		MGUI.Space6();
+	}
+
+	void DoSpecularity(bool isLite){
+		MGUI.ShaderPropertyBold(me, _ShadingModel, "Specularity");
+		MGUI.PropertyGroup(()=>{
+			MGUI.PropertyGroup(()=>{
+				MGUI.ToggleFloat(me, Tips.specularHighlightsText, _SpecularHighlightsToggle, _SpecularHighlightStrength);
+				MGUI.ToggleFloat(me, Tips.cubemapReflectionsText, _ReflectionsToggle, _ReflectionStrength);
+				if (!isLite){
+					MGUI.ToggleFloat(me, Tips.ssrText, _SSRToggle, _SSRStrength);
+					if (_SSRToggle.floatValue == 1){
+						me.ShaderProperty(_SSREdgeFade, Tips.ssrEdgeFadeText);
+						me.ShaderProperty(_SSRHeight, Tips.ssrDepthText);
+					}
+				}
+				if (_ShadingModel.floatValue == 0)
+					MGUI.ToggleFloat(me, Tips.useFresnel, _FresnelToggle, _FresnelStrength);
+				me.ShaderProperty(_ContactHardening, "Contact Hardening");
+				if (_SSRToggle.floatValue == 1 && !isLite){
+					MGUI.DisplayInfo("Screenspace reflections in VRChat require the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs or at least one directional light with shadows enabled in the scene. \n\nThey can also be expensive, please use them sparingly!");
+				}
+			});
+			MGUI.PropertyGroup(()=>{
+				MGUI.ToggleFloat(me, Tips.gsaa, _GSAAToggle, _GSAAStrength);
+				if (_ShadingModel.floatValue == 0){
+					MGUI.ToggleFloat(me, Tips.reflShadows, _SpecularOcclusionToggle, _SpecularOcclusionStrength);
+					if (_SpecularOcclusionToggle.floatValue == 1){
+						MGUI.PropertyGroup(()=>{
+							me.ShaderProperty(_SpecularOcclusionTint, "Lightmap Tint");
+							me.ShaderProperty(_SpecularOcclusionBrightness, "Lightmap Brightness");
+							me.ShaderProperty(_SpecularOcclusionContrast, "Lightmap Contrast");
+							me.ShaderProperty(_SpecularOcclusionHDR, "Lightmap HDR");
+						});
+						MGUI.SpaceN2();
+					}
+				}
+				else {
+					me.ShaderProperty(_IndirectSpecularOcclusionStrength, Tips.indirectSpecOccText);
+					me.ShaderProperty(_RealtimeSpecularOcclusionStrength, Tips.realtimeSpecOccText);
+				}
+			});
+			MGUI.SpaceN2();
+		});
+		MGUI.Space6();
+	}
+
+	void DoSubsurface(Material mat){
+		if (Foldouts.DoSmallFoldoutBold(foldouts, mat, me, "Subsurface Scattering")){
+			MGUI.PropertyGroup(()=>{
+				me.ShaderProperty(_Subsurface, "Enable");
+				MGUI.ToggleGroup(_Subsurface.floatValue == 0);
+				MGUI.PropertyGroup(() => {
+					me.TexturePropertySingleLine(Tips.thicknessMapText, _ThicknessMap, _ThicknessMapPower);
+					me.ShaderProperty(_ScatterCol, Tips.scatterCol);
+					me.ShaderProperty(_ScatterBaseColorTint, Tips.scatterAlbedoTint);
+				});
+				MGUI.PropertyGroup(()=>{
+					me.ShaderProperty(_ScatterIntensity, Tips.scatterIntensity);
+					me.ShaderProperty(_ScatterAmbient, Tips.scatterAmbient);
+					me.ShaderProperty(_ScatterPow, Tips.scatterPow);
+					me.ShaderProperty(_ScatterDist, Tips.scatterDist);
+					me.ShaderProperty(_WrappingFactor, Tips.wrappingFactor);
+				});
+				MGUI.ToggleGroupEnd();
+				MGUI.SpaceN2();
+			});
+			MGUI.Space6();
+		}
+	}
+
+	void DoRain(Material mat){
+		if (Foldouts.DoSmallFoldoutBold(foldouts, mat, me, "Rain")){
+			MGUI.PropertyGroup(()=>{
+				me.ShaderProperty(_RainMode, Tips.rainModeText);
+				if (_RainMode.floatValue == 0 || _RainMode.floatValue == 1){
+					RainDroplets(me);
+				}
+				else if (_RainMode.floatValue == 2){
+					RainRipples(me);
+				}
+				else if (_RainMode.floatValue == 3){
+					MGUI.BoldLabel("Droplets");
+					RainDroplets(me);
+					MGUI.BoldLabel("Ripples");
+					RainRipples(me);
+					MGUI.BoldLabel("Both");
+					RainBoth(me);
+				}
+				MGUI.ToggleGroupEnd();
+				MGUI.SpaceN2();
+			});
+			MGUI.Space6();
+		}
+	}
+
+	void RainDroplets(MaterialEditor me){
+		MGUI.ToggleGroup(_RainMode.floatValue == 0);
+		MGUI.PropertyGroup(()=>{
+			if (_RainMode.floatValue != 3){
+				me.TexturePropertySingleLine(Tips.maskText, _RainMask, _RainMask.textureValue ? _RainMaskChannel : null);
+			}
+			me.ShaderProperty(_RainStrength, "Strength");
+			me.ShaderProperty(_RainSpeed, "Speed");
+			me.ShaderProperty(_DynamicDroplets, "Dynamic Droplets");
+		});
+		MGUI.PropertyGroup(()=>{
+			me.ShaderProperty(_UVRainSet, Tips.uvSetLabel.text);
+			if (_UVRainSet.floatValue >= 5)
+				me.ShaderProperty(_UVRainSwizzle, Tips.swizzleText);
+			MGUI.Vector2Field(_RainScale, "Scale");
+			me.ShaderProperty(_UVRainRotation, "Rotation");
+		});
+		MGUI.ToggleGroupEnd();
+	}
+
+	void RainRipples(MaterialEditor me){
+		MGUI.PropertyGroup(()=>{
+			if (_RainMode.floatValue != 3){
+				me.TexturePropertySingleLine(Tips.maskText, _RainMask, _RainMask.textureValue ? _RainMaskChannel : null);
+			}
+			me.ShaderProperty(_RippleStrength, "Strength");
+			me.ShaderProperty(_RippleSpeed, "Speed");
+			me.ShaderProperty(_RippleDensity, "Density");
+			me.ShaderProperty(_RippleSize, "Size");
+		});
+		MGUI.PropertyGroup(()=>{
+			me.ShaderProperty(_UVRippleSet, Tips.uvSetLabel.text);
+			if (_UVRippleSet.floatValue >= 5)
+				me.ShaderProperty(_UVRippleSwizzle, Tips.swizzleText);
+			MGUI.Vector2Field(_RippleScale, "Scale");
+			me.ShaderProperty(_UVRippleRotation, "Rotation");
+		});
+	}
+
+	void RainBoth(MaterialEditor me){
+		MGUI.PropertyGroup(()=>{
+			me.TexturePropertySingleLine(Tips.maskText, _RainMask, _RainMask.textureValue ? _RainMaskChannel : null);
+			me.ShaderProperty(_RainThreshold, "Angle Threshold");
+			me.ShaderProperty(_RainThresholdSize, "Threshold Blend");
+		});
+	}
+
+	void DoFiltering(Material mat){
+		if (Foldouts.DoSmallFoldoutBold(foldouts, mat, me, "Filtering")){
+			MGUI.PropertyGroup(()=>{
+				me.ShaderProperty(_Filtering, "Enable");
+				MGUI.ToggleGroup(_Filtering.floatValue == 0);
+				MGUI.Space2();
+				me.ShaderProperty(_HueMode, "Hue Mode");
+				me.ShaderProperty(_MonoTint, Tips.monoTintText);
+				MGUI.Space2();
+				MGUI.BoldLabel("Global Color");
+				MGUI.PropertyGroup(()=>{
+					me.ShaderProperty(_HuePost, "Hue");
+					me.ShaderProperty(_SaturationPost, "Saturation");
+					me.ShaderProperty(_BrightnessPost, "Brightness");
+					me.ShaderProperty(_ContrastPost, "Contrast");
+					me.ShaderProperty(_ACES, Tips.aces);
+				});
+				MGUI.Space4();
+				MGUI.BoldLabel("Base Color");
+				MGUI.PropertyGroup(()=>{
+					me.ShaderProperty(_Hue, "Hue");
+					me.ShaderProperty(_Saturation, "Saturation");
+					me.ShaderProperty(_Brightness, "Brightness");
+					me.ShaderProperty(_Contrast, "Contrast");
+				});
+				MGUI.Space4();
+				MGUI.BoldLabel("Detail Color");
+				MGUI.PropertyGroup(()=>{
+					me.ShaderProperty(_HueDet, "Hue");
+					me.ShaderProperty(_SaturationDet, "Saturation");
+					me.ShaderProperty(_BrightnessDet, "Brightness");
+					me.ShaderProperty(_ContrastDet, "Contrast");
+				});
+				if (emissionEnabled){
+					MGUI.Space4();
+					MGUI.BoldLabel("Emission Color");
+					MGUI.PropertyGroup(()=>{
+						me.ShaderProperty(_HueEmiss, "Hue");
+						me.ShaderProperty(_SaturationEmiss, "Saturation");
+						me.ShaderProperty(_BrightnessEmiss, "Brightness");
+						me.ShaderProperty(_ContrastEmiss, "Contrast");
 					});
 				}
-				MGUI.ToggleFloat(me, Tips.gsaa, gsaa, gsaaStrength);
-				MGUI.ToggleFloat(me, Tips.useFresnel, useFresnel, fresnelStrength);
-				if (!isLite){
-					me.ShaderProperty(mirrorToggle, Tips.mirrorMode);
-					if (mirrorToggle.floatValue == 1){
-						me.ShaderProperty(mirrorNormalOffsetSwizzle, Tips.mirrorNormalSwizzleText);
+				MGUI.ToggleGroupEnd();
+				MGUI.SpaceN2();
+			});
+			MGUI.Space6();
+		}
+	}
+
+	void DoUVs(Material mat){
+
+		bool needsHeightMaskUV = ((_PrimaryWorkflow.floatValue == 1 && _PackedHeight.floatValue == 1) || (_PrimaryWorkflow.floatValue == 0 && _HeightMap.textureValue)) && _HeightMask.textureValue ;
+		bool needsDetailMaskUV = _DetailMask.textureValue;
+		bool needsRainMaskUV = _RainMode.floatValue > 0 && _RainMask.textureValue;
+		bool needsEmissionMaskUV = emissionEnabled && _EmissionMask.textureValue;
+		bool needsAlphaMaskUV = _AlphaMask.textureValue && _AlphaSource.floatValue == 1 && _BlendMode.floatValue > 0;
+
+		if (needsHeightMaskUV || needsDetailMaskUV || needsRainMaskUV || needsEmissionMaskUV || needsAlphaMaskUV){
+			if (Foldouts.DoSmallFoldoutBold(foldouts, mat, me, "UVs")){
+				MGUI.PropertyGroup(()=>{
+					if (needsDetailMaskUV){
+						MGUI.BoldLabel("Detail Mask");
+						MGUI.PropertyGroup(()=>{
+							me.ShaderProperty(_UVDetailMaskSet, Tips.uvSetLabel.text);
+							if (_UVDetailMaskSet.floatValue >= 5)
+								me.ShaderProperty(_UVDetailMaskSwizzle, Tips.swizzleText);
+							MGUI.TextureSOScroll(me, _UVDetailMaskSet, _UVDetailMaskScroll);
+							me.ShaderProperty(_UVDetailMaskRotation, "Rotation");
+						});
+					}
+					else {
+						MGUI.SpaceN4();
+					}
+
+					if (needsHeightMaskUV){
+						MGUI.Space4();
+						MGUI.BoldLabel("Height Mask");
+						MGUI.PropertyGroup(()=>{
+							me.ShaderProperty(_UVHeightMaskSet, Tips.uvSetLabel.text);
+							if (_UVHeightMaskSet.floatValue >= 5)
+								me.ShaderProperty(_UVHeightMaskSwizzle, Tips.swizzleText);
+							MGUI.TextureSOScroll(me, _HeightMask, _UVHeightMaskScroll);
+							me.ShaderProperty(_UVHeightMaskRotation, "Rotation");
+						});
+					}
+
+					if (needsEmissionMaskUV){
+						MGUI.Space4();
+						MGUI.BoldLabel("Emission Mask");
+						MGUI.PropertyGroup(()=>{
+							me.ShaderProperty(_UVEmissionMaskSet, Tips.uvSetLabel.text);
+							if (_UVEmissionMaskSet.floatValue >= 5)
+								me.ShaderProperty(_UVEmissionMaskSwizzle, Tips.swizzleText);
+							MGUI.TextureSOScroll(me, _EmissionMask, _UVEmissionMaskScroll);
+							me.ShaderProperty(_UVEmissionMaskRotation, "Rotation");
+						});
+					}
+
+					if (needsRainMaskUV){
+						MGUI.Space4();
+						MGUI.BoldLabel("Rain Mask");
+						MGUI.PropertyGroup(()=>{
+							me.ShaderProperty(_UVRainMaskSet, Tips.uvSetLabel.text);
+							if (_UVRainMaskSet.floatValue >= 5)
+								me.ShaderProperty(_UVRainMaskSwizzle, Tips.swizzleText);
+							MGUI.TextureSOScroll(me, _RainMask, _UVRainMaskScroll);
+							me.ShaderProperty(_UVRainMaskRotation, "Rotation");
+						});
+					}
+
+					if (needsAlphaMaskUV){
+						MGUI.Space4();
+						MGUI.BoldLabel("Alpha Mask");
+						MGUI.PropertyGroup(()=>{
+							me.ShaderProperty(_UVAlphaMaskSet, Tips.uvSetLabel.text);
+							if (_UVAlphaMaskSet.floatValue >= 5)
+								me.ShaderProperty(_UVAlphaMaskSwizzle, Tips.swizzleText);
+							MGUI.TextureSOScroll(me, _AlphaMask, _UVAlphaMaskScroll);
+							me.ShaderProperty(_UVAlphaMaskRotation, "Rotation");
+						});
+					}
+
+					MGUI.SpaceN2();
+				});
+				MGUI.Space6();
+			}
+		}
+	}
+
+	void DoLTCGI(Material mat){
+		if (Shader.Find("LTCGI/Blur Prefilter") != null){
+			LTCGILayout(mat);
+		}
+		else {
+			_LTCGI.floatValue = 0;
+			mat.SetInt("_LTCGI", 0);
+			mat.DisableKeyword("LTCGI");
+		}
+	}
+
+	void LTCGILayout(Material mat){
+		if (Foldouts.DoSmallFoldoutBold(foldouts, mat, me, "LTCGI")){
+			MGUI.PropertyGroup(()=>{
+				me.ShaderProperty(_LTCGI, "Enable");
+				MGUI.ToggleGroup(_LTCGI.floatValue == 0);
+				MGUI.PropertyGroup(()=>{
+					me.ShaderProperty(_LTCGIStrength, "Strength");
+					me.ShaderProperty(_LTCGIRoughness, "Roughness Multiplier");
+					if (_ShadingModel.floatValue == 0)
+						me.ShaderProperty(_LTCGISpecularOcclusion, "Specular Occlusion");
+				});
+				MGUI.PropertyGroup(()=>{
+					me.ShaderProperty(_LTCGI_DiffuseColor, "Diffuse Color");
+					me.ShaderProperty(_LTCGI_SpecularColor, "Specular Color");
+				});
+				MGUI.ToggleGroupEnd();
+				MGUI.SpaceN2();
+			});
+			MGUI.Space6();
+		}
+	}
+
+	void DoAreaLit(Material mat){
+		if (Shader.Find("AreaLit/Standard") != null){
+			AreaLitLayout(mat);
+		}
+		else {
+			_AreaLitToggle.floatValue = 0f;
+			mat.SetInt("_AreaLitToggle", 0);
+			mat.DisableKeyword("_AREALIT_ON");
+		}
+	}
+
+	void CheckTrilinear(Texture tex) {
+		if(!tex)
+			return;
+		if(tex.mipmapCount <= 1) {
+			me.HelpBoxWithButton(
+				EditorGUIUtility.TrTextContent("Mip maps are required, please enable them in the texture import settings."),
+				EditorGUIUtility.TrTextContent("OK"));
+			return;
+		}
+		if(tex.filterMode != FilterMode.Trilinear) {
+			if(me.HelpBoxWithButton(
+				EditorGUIUtility.TrTextContent("Trilinear filtering is required, and aniso is recommended."),
+				EditorGUIUtility.TrTextContent("Fix Now"))) {
+				tex.filterMode = FilterMode.Trilinear;
+				tex.anisoLevel = 1;
+				EditorUtility.SetDirty(tex);
+			}
+			return;
+		}
+	}
+
+	void AreaLitLayout(Material mat){
+		if (Foldouts.DoSmallFoldoutBold(foldouts, mat, me, "AreaLit")){
+			MGUI.PropertyGroup(()=>{
+				me.ShaderProperty(_AreaLitToggle, "Enable");
+				MGUI.ToggleGroup(_AreaLitToggle.floatValue == 0);
+				MGUI.PropertyGroup(()=>{
+					me.ShaderProperty(_AreaLitStrength, "Strength");
+					me.ShaderProperty(_AreaLitRoughnessMultiplier, "Roughness Multiplier");
+					if (_ShadingModel.floatValue == 0)
+						me.ShaderProperty(_AreaLitSpecularOcclusion, "Specular Occlusion");
+					me.ShaderProperty(_OpaqueLights, Tips.opaqueLightsText);
+				});
+				MGUI.PropertyGroup(()=>{
+					var lightMeshText = !_LightMesh.textureValue ? Tips.lightMeshText : new GUIContent(
+						Tips.lightMeshText.text + $" (max: {_LightMesh.textureValue.height})", Tips.lightMeshText.tooltip
+					);
+					me.TexturePropertySingleLine(lightMeshText, _LightMesh);
+					me.TexturePropertySingleLine(Tips.lightTex0Text, _LightTex0);
+					CheckTrilinear(_LightTex0.textureValue);
+					me.TexturePropertySingleLine(Tips.lightTex1Text, _LightTex1);
+					CheckTrilinear(_LightTex1.textureValue);
+					me.TexturePropertySingleLine(Tips.lightTex2Text, _LightTex2);
+					CheckTrilinear(_LightTex2.textureValue);
+					me.TexturePropertySingleLine(Tips.lightTex3Text, _LightTex3);
+					CheckTrilinear(_LightTex3.textureValue);
+					me.TexturePropertySingleLine(new GUIContent("Occlusion"), _AreaLitOcclusion);
+					if (_AreaLitOcclusion.textureValue){
+						me.ShaderProperty(_AreaLitOcclusionUVSet, "UV Set");
+					}
+					MGUI.TextureSO(me, _AreaLitOcclusion, _AreaLitOcclusion.textureValue);
+				});
+				MGUI.DisplayInfo("Note that the AreaLit package files MUST be inside a folder named AreaLit (case sensitive) directly in the Assets folder (Assets/AreaLit)");
+				MGUI.ToggleGroupEnd();
+			});
+			MGUI.Space6();
+		}
+	}
+
+	void DoLightmapSettings(Material mat){
+		if (Foldouts.DoSmallFoldoutBold(foldouts, mat, me, "Lightmap Settings")){
+			MGUI.PropertyGroup(()=>{
+				MGUI.PropertyGroup(()=>{
+					me.ShaderProperty(_BakeryMode, Tips.bakeryMode);
+					me.ShaderProperty(_BAKERY_SHNONLINEAR, "Bakery Non-Linear SH");
+					me.ShaderProperty(_BAKERY_LMSPEC, "Bakery Lightmap Specular");
+				});
+				MGUI.PropertyGroup(()=>{
+					me.ShaderProperty(_BicubicSampling, Tips.bicubicLightmap);
+					if ((_PrimaryWorkflow.floatValue == 0 && _HeightMap.textureValue) || (_PrimaryWorkflow.floatValue == 1 && _PackedHeight.floatValue == 1))
+						me.ShaderProperty(_ApplyHeightOffset, Tips.heightmapLightmapText);
+					me.ShaderProperty(_IgnoreRealtimeGI, Tips.ignoreRealtimeGIText);
+				});
+				MGUI.SpaceN2();
+				if ((_PrimaryWorkflow.floatValue == 0 && _HeightMap.textureValue) || (_PrimaryWorkflow.floatValue == 1 && _PackedHeight.floatValue == 1)){
+					if (_ApplyHeightOffset.floatValue == 1){
+						MGUI.DisplayWarning("Please note that due to lightmaps being atlased, manipulating their uvs often reveals visual artifacts, and is often not recommended. Be sure to check for artifacts if using this option.");
 					}
 				}
 			});
-			if (mirrorToggle.floatValue == 0){
-				MGUI.PropertyGroup(()=>{
-					me.TexturePropertySingleLine(Tips.reflOverrideText, reflOverride);
-					me.TexturePropertySingleLine(Tips.reflCubeText, reflCube, reflCube.textureValue ? cubeThreshold : null);
-				});
-			}
-			if (ssr.floatValue == 1 && !isLite){
-				MGUI.DisplayInfo("Screenspace reflections in VRChat require the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs or at least one directional light with shadows enabled in the scene. \n\nThey can also be expensive, please use them sparingly!");
-				MGUI.Space2();
-			}
-			MGUI.SpaceN2();
-		});
-	}
-
-	void DoRimArea(){
-		MGUI.PropertyGroup(()=>{
-			me.ShaderProperty(rimTog, "Enable");
-			MGUI.ToggleGroup(rimTog.floatValue == 0);
-			MGUI.PropertyGroup(() => {
-				me.TexturePropertySingleLine(Tips.maskLabel, rimMask);
-				me.ShaderProperty(rimBlend, Tips.rimBlend);
-				me.ShaderProperty(rimCol, Tips.rimCol);
-				me.ShaderProperty(rimStr, Tips.rimStr);
-				me.ShaderProperty(rimWidth, Tips.rimWidth);
-				me.ShaderProperty(rimEdge, Tips.rimEdge);
-			});
-			MGUI.ToggleGroupEnd();
-			MGUI.SpaceN2();
-		});
-	}
-
-	void DoSubsurfaceArea(){
-		MGUI.PropertyGroup(()=>{
-			me.ShaderProperty(subsurface, "Enable");
-			MGUI.ToggleGroup(subsurface.floatValue == 0);
-			MGUI.PropertyGroup(() => {
-				me.TexturePropertySingleLine(Tips.thicknessMapText, thicknessMap, thicknessMapPower);
-				me.ShaderProperty(scatterCol, Tips.scatterCol);
-				me.ShaderProperty(scatterAlbedoTint, Tips.scatterAlbedoTint);
-			});
-			MGUI.PropertyGroup(()=>{
-				me.ShaderProperty(scatterIntensity, Tips.scatterIntensity);
-				me.ShaderProperty(scatterAmbient, Tips.scatterAmbient);
-				me.ShaderProperty(scatterPow, Tips.scatterPow);
-				me.ShaderProperty(scatterDist, Tips.scatterDist);
-				me.ShaderProperty(wrappingFactor, Tips.wrappingFactor);
-			});
-			MGUI.ToggleGroupEnd();
-			MGUI.SpaceN2();
-		});
-	}
-
-	void DoRainArea(){
-		MGUI.PropertyGroup(()=>{
-			me.ShaderProperty(rainToggle, "Enable");
-			MGUI.ToggleGroup(rainToggle.floatValue == 0);
-			MGUI.PropertyGroup(()=>{
-				me.TexturePropertySingleLine(Tips.maskText, rainMask);
-				me.ShaderProperty(rippleStr, "Strength");
-				me.ShaderProperty(rippleScale, "Scale");
-				me.ShaderProperty(rippleSpeed, "Speed");
-				me.ShaderProperty(rippleDensity, "Density");
-				me.ShaderProperty(rippleSize, "Size");
-			});
-			MGUI.ToggleGroupEnd();
-			MGUI.SpaceN2();
-		});
-	}
-
-	void DoUVArea(bool isLite){
-		bool needsHeightMaskUV = (((workflow.floatValue > 0 && useHeight.floatValue == 1) || (workflow.floatValue == 0 && heightMap.textureValue)) && parallaxMask.textureValue) && samplingMode.floatValue < 3;
-		bool needsEmissMaskUV = emissionEnabled && emissionMask.textureValue;
-		bool needsAlphaMaskUV = blendMode.floatValue > 0 && useAlphaMask.floatValue > 0;
-		bool needsRainMaskUV = rainToggle.floatValue == 1 && rainMask.textureValue;
-		bool needsRimMaskUV = rimTog.floatValue == 1 && rimMask.textureValue;
-		bool needsDetailMaskUV = detailMask.textureValue;
-
-		MGUI.PropertyGroup(() => {
-			// MGUI.BoldLabel("Primary");
-
-			// MGUI.Space4();
-			// MGUI.BoldLabel("Detail");
-
-			if (needsDetailMaskUV){
-				MGUI.BoldLabel("Detail Mask");
-				MGUI.PropertyGroup(()=>{
-					me.ShaderProperty(uvDetailMask, Tips.uvSetLabel.text);
-					if (uvDetailMask.floatValue >= 5)
-						me.ShaderProperty(uvDetailMaskSwizzle, Tips.swizzleText);
-					MGUI.TextureSOScroll(me, detailMask, detailScroll);
-					me.ShaderProperty(detailRotate, "Rotation");
-				});
-			}
-			if (needsHeightMaskUV){
-				MGUI.Space4();
-				MGUI.BoldLabel("Height Mask");
-				MGUI.PropertyGroup(()=>{
-					me.ShaderProperty(uvHeightMask, Tips.uvSetLabel.text);
-					if (uvHeightMask.floatValue >= 5)
-						me.ShaderProperty(uvHeightMaskSwizzle, Tips.swizzleText);
-					MGUI.TextureSOScroll(me, parallaxMask, uv2Scroll);
-				});
-			}
-			if (needsEmissMaskUV){
-				MGUI.Space4();
-				MGUI.BoldLabel("Emission Mask");
-				MGUI.PropertyGroup(()=>{
-					me.ShaderProperty(uvEmissMask, Tips.uvSetLabel.text);
-					if (uvEmissMask.floatValue >= 5)
-						me.ShaderProperty(uvEmissMaskSwizzle, Tips.swizzleText);
-					MGUI.TextureSOScroll(me, emissionMask, uv3Scroll);
-					me.ShaderProperty(uv3Rot, "Rotation");
-				});
-			}
-			if (needsAlphaMaskUV){
-				MGUI.Space4();
-				MGUI.BoldLabel("Alpha Mask");
-				MGUI.PropertyGroup(()=>{
-					me.ShaderProperty(uvAlphaMask, Tips.uvSetLabel.text);
-					if (uvAlphaMask.floatValue >= 5)
-						me.ShaderProperty(uvAlphaMaskSwizzle, Tips.swizzleText);
-					MGUI.TextureSOScroll(me, alphaMask, uv4Scroll);
-					me.ShaderProperty(uv4Rot, "Rotation");
-				});
-			}
-			if (needsRainMaskUV){
-				MGUI.Space4();
-				MGUI.BoldLabel("Rain Mask");
-				MGUI.PropertyGroup(()=>{
-					me.ShaderProperty(uvRainMask, Tips.uvSetLabel.text);
-					if (uvRainMask.floatValue >= 5)
-						me.ShaderProperty(uvRainMaskSwizzle, Tips.swizzleText);
-					MGUI.TextureSOScroll(me, rainMask, uv5Scroll);
-					me.ShaderProperty(uv5Rot, "Rotation");
-				});
-			}
-			if (needsRimMaskUV){
-				MGUI.Space4();
-				MGUI.BoldLabel("Rim Mask");
-				MGUI.PropertyGroup(()=>{
-					me.ShaderProperty(uvRimMask, Tips.uvSetLabel.text);
-					if (uvRimMask.floatValue >= 5)
-						me.ShaderProperty(uvRimMaskSwizzle, Tips.swizzleText);
-					MGUI.TextureSOScroll(me, rimMask, uvRimMaskScroll);
-					me.ShaderProperty(uvRimMaskRot, "Rotation");
-				});
-			}
-		});
-	}
-
-	void DoRenderingArea(Material mat, bool isLite){
-		MGUI.PropertyGroup(()=>{
-			MGUI.PropertyGroup(() => {
-				me.ShaderProperty(culling, Tips.culling);
-				queueOffset.floatValue = (int)queueOffset.floatValue;
-				me.ShaderProperty(queueOffset, Tips.queueOffset);
-				MGUI.SpaceN1();
-				MGUI.DummyProperty("Render Queue:", mat.renderQueue.ToString());
-			});
-			MGUI.PropertyGroup(()=>{
-				me.ShaderProperty(unityFogToggle, Tips.unityFogToggleText);
-				me.ShaderProperty(vertexBaseColor, Tips.vertexBaseColorText);
-				me.EnableInstancingField();
-			});
-			MGUI.SpaceN2();
-			if (mirrorToggle.floatValue == 1){
-				MGUI.Space2();
-				MGUI.DisplayWarning("Mirror mode requires a VRChat mirror component with this shader selected in the custom shader field. It also requires the mesh be facing forwards on the local Z axis (see default unity quad for example). Lastly, this incurs the same performance cost as any other VRChat mirror, use it very sparingly.");
-			}
-			// me.TexturePropertySingleLine(new GUIContent("RNM0"), _RNM0);
-			// me.TexturePropertySingleLine(new GUIContent("RNM1"), _RNM1);
-			// me.TexturePropertySingleLine(new GUIContent("RNM2"), _RNM2);
-		});
-	}
-
-	void DoLightmappingArea(){
-		MGUI.PropertyGroup(() => {
-			MGUI.PropertyGroup(() => {
-				me.ShaderProperty(_BakeryMode, Tips.bakeryMode);
-				me.ShaderProperty(_BAKERY_SHNONLINEAR, "Bakery Non-Linear SH");
-				me.ShaderProperty(_BAKERY_LMSPEC, "Bakery Lightmap Specular");
-			});
-			MGUI.PropertyGroup(() => {
-				me.ShaderProperty(bicubicLightmap, Tips.bicubicLightmap);
-				me.ShaderProperty(ignoreRealtimeGI, Tips.ignoreRealtimeGIText);
-				me.DoubleSidedGIField();
-			});
-			MGUI.SpaceN2();
-		});
-	}
-
-	void DoFilteringArea(){
-		MGUI.PropertyGroup( () => {
-			me.ShaderProperty(filtering, "Enable");
-			MGUI.ToggleGroup(filtering.floatValue == 0);
-			MGUI.Space2();
-			me.ShaderProperty(hueMode, "Hue Mode");
-			me.ShaderProperty(monoTint, Tips.monoTintText);
-			MGUI.Space2();
-			MGUI.BoldLabel("Global Color");
-			MGUI.PropertyGroup(()=>{
-				me.ShaderProperty(huePost, "Hue");
-				me.ShaderProperty(saturationPost, "Saturation");
-				me.ShaderProperty(brightnessPost, "Brightness");
-				me.ShaderProperty(contrastPost, "Contrast");
-				me.ShaderProperty(acesFilter, Tips.aces);
-			});
-			MGUI.Space4();
-			MGUI.BoldLabel("Base Color");
-			MGUI.PropertyGroup(()=>{
-				me.ShaderProperty(hue, "Hue");
-				me.ShaderProperty(saturation, "Saturation");
-				me.ShaderProperty(brightness, "Brightness");
-				me.ShaderProperty(contrast, "Contrast");
-			});
-			MGUI.Space4();
-			MGUI.BoldLabel("Detail Color");
-			MGUI.PropertyGroup(()=>{
-				me.ShaderProperty(hueDet, "Hue");
-				me.ShaderProperty(saturationDet, "Saturation");
-				me.ShaderProperty(brightnessDet, "Brightness");
-				me.ShaderProperty(contrastDet, "Contrast");
-			});
-			if (emissionEnabled){
-				MGUI.Space4();
-				MGUI.BoldLabel("Emission Color");
-				MGUI.PropertyGroup(()=>{
-					me.ShaderProperty(hueEmiss, "Hue");
-					me.ShaderProperty(saturationEmiss, "Saturation");
-					me.ShaderProperty(brightnessEmiss, "Brightness");
-					me.ShaderProperty(contrastEmiss, "Contrast");
-				});
-			}
-			MGUI.ToggleGroupEnd();
-		});
-	}
-
-	void DoAreaLitArea(){
-		MGUI.PropertyGroup(()=>{
-			me.ShaderProperty(areaLitToggle, "Enable");
-			MGUI.ToggleGroup(areaLitToggle.floatValue == 0);
-			MGUI.PropertyGroup(()=>{
-				me.ShaderProperty(areaLitStrength, "Strength");
-				me.ShaderProperty(areaLitRoughnessMult, "Roughness Multiplier");
-				me.ShaderProperty(opaqueLights, Tips.opaqueLightsText);
-				me.ShaderProperty(reflShadowAreaLit, "Apply Specular Occlusion");
-			});
-			MGUI.PropertyGroup(()=>{
-				var lightMeshText = !lightMesh.textureValue ? Tips.lightMeshText : new GUIContent(
-					Tips.lightMeshText.text + $" (max: {lightMesh.textureValue.height})", Tips.lightMeshText.tooltip
-				);
-				me.TexturePropertySingleLine(lightMeshText, lightMesh);
-				me.TexturePropertySingleLine(Tips.lightTex0Text, lightTex0);
-				MGUI.CheckTrilinear(lightTex0.textureValue, me);
-				me.TexturePropertySingleLine(Tips.lightTex1Text, lightTex1);
-				MGUI.CheckTrilinear(lightTex1.textureValue, me);
-				me.TexturePropertySingleLine(Tips.lightTex2Text, lightTex2);
-				MGUI.CheckTrilinear(lightTex2.textureValue, me);
-				me.TexturePropertySingleLine(Tips.lightTex3Text, lightTex3);
-				MGUI.CheckTrilinear(lightTex3.textureValue, me);
-				me.TexturePropertySingleLine(new GUIContent("Occlusion"), areaLitOcclusion);
-				if (areaLitOcclusion.textureValue){
-					me.ShaderProperty(occlusionUVSet, "UV Set");
-				}
-				MGUI.TextureSO(me, areaLitOcclusion, areaLitOcclusion.textureValue);
-			});
-			MGUI.ToggleGroupEnd();
-			MGUI.DisplayInfo("Note that the AreaLit package files MUST be inside a folder named AreaLit (case sensitive) directly in the Assets folder (Assets/AreaLit)");
-		});
-	}
-
-	void DoLTCGIArea(){
-		MGUI.PropertyGroup(()=>{
-			me.ShaderProperty(ltcgi, "Enable");
-			MGUI.ToggleGroup(ltcgi.floatValue == 0);
-			MGUI.PropertyGroup(()=>{
-				me.ShaderProperty(ltcgiStrength, "Strength");
-				me.ShaderProperty(ltcgiRoughness, "Roughness Multiplier");
-				me.ShaderProperty(ltcgi_spec_off, "Disable Specular");
-				me.ShaderProperty(ltcgi_diffuse_off, "Disable Diffuse");
-			});
-			MGUI.ToggleGroupEnd();
-			MGUI.SpaceN2();
-		});
-	}
-
-	public override void AssignNewShaderToMaterial(Material material, Shader oldShader, Shader newShader){
-		// _Emission property is lost after assigning Standard shader to the material
-		// thus transfer it before assigning the new shader
-		if (material.HasProperty("_Emission")){
-			material.SetColor("_EmissionColor", material.GetColor("_Emission"));
+			MGUI.Space6();
 		}
-		base.AssignNewShaderToMaterial(material, oldShader, newShader);
-		MaterialChanged(material);
 	}
 
-	public static void SetupMaterialWithBlendMode(Material material){
-		int samplingMode = material.GetInt("_SamplingMode");
-		int ssrToggle = material.GetInt("_SSR");
-		bool isLite = MGUI.IsNewLiteVersion(material);
+	void DoRenderSettings(Material mat){
+		if (Foldouts.DoSmallFoldoutBold(foldouts, mat, me, "Render Settings")){
+			MGUI.PropertyGroup(()=>{
+				MGUI.PropertyGroup(() => {
+					me.ShaderProperty(_Culling, Tips.culling);
+					_QueueOffset.floatValue = (int)_QueueOffset.floatValue;
+					me.ShaderProperty(_QueueOffset, Tips.queueOffset);
+					MGUI.SpaceN1();
+					MGUI.DummyProperty("Render Queue:", mat.renderQueue.ToString());
+				});
+				MGUI.PropertyGroup(()=>{
+					me.ShaderProperty(_UnityFogToggle, Tips.unityFogToggleText);
+					me.ShaderProperty(_VertexBaseColor, Tips.vertexBaseColorText);
+					me.EnableInstancingField();
+					me.ShaderProperty(_MaterialDebugMode, "Debug Mode");
+				});
+				MGUI.SpaceN2();
+			});
+			MGUI.Space6();
+		}
+	}
 
-		switch (material.GetInt("_BlendMode")){
+	void DoDebug(Material mat){
+		if (_MaterialDebugMode.floatValue == 1){
+			if (Foldouts.DoSmallFoldoutBold(foldouts, mat, me, "Debug")){
+				MGUI.PropertyGroup(()=>{
+					MGUI.ShaderPropertyBold(me, _DebugEnable, "Debug View");
+					MGUI.PropertyGroup(()=>{
+						me.ShaderProperty(_DebugBaseColor, "Base Color");
+						me.ShaderProperty(_DebugAlpha, "Alpha");
+						me.ShaderProperty(_DebugNormals, "Normals");
+						me.ShaderProperty(_DebugRoughness, "Roughness");
+						me.ShaderProperty(_DebugMetallic, "Metallic");
+						me.ShaderProperty(_DebugOcclusion, "Occlusion");
+						me.ShaderProperty(_DebugHeight, "Height");
+						me.ShaderProperty(_DebugLighting, "Lighting");
+						me.ShaderProperty(_DebugAtten, "Realtime Shadows");
+						me.ShaderProperty(_DebugReflections, "Reflections");
+						me.ShaderProperty(_DebugSpecular, "Specular Highlights");
+						me.ShaderProperty(_DebugVertexColors, "Vertex Colors");
+					});		
+					MGUI.BoldLabel("Default Textures");
+					MGUI.PropertyGroup(()=>{
+						me.TexturePropertySingleLine(Tips.defaultSamplerText, _DefaultSampler);
+						me.TexturePropertySingleLine(new GUIContent("LUT for Filament SM"), _DFG);
+						me.TexturePropertySingleLine(new GUIContent("SSR Noise Texture"), _NoiseTexSSR);
+						me.TexturePropertySingleLine(new GUIContent("Droplet Map"), _DropletMask);
+						me.TexturePropertySingleLine(new GUIContent("Rain Texture Sheet"), _RainSheet);
+						me.ShaderProperty(_RainColumns, "Rain Texture Sheet Columns");
+						me.ShaderProperty(_RainRows, "Rain Texture Sheet Rows");
+					});
+
+					MGUI.BoldLabel("Render Settings");
+					MGUI.PropertyGroup(()=>{
+						me.ShaderProperty(_SrcBlend, "Source Blend Op");
+						me.ShaderProperty(_DstBlend, "Destination Blend Op");
+						me.ShaderProperty(_ZWrite, "ZWrite");
+						me.ShaderProperty(_ZTest, "ZTest");
+					});
+					MGUI.SpaceN2();
+				});
+			}
+		}
+	}
+
+	#endregion
+
+	#region Applying Settings
+
+	void SetKeywords(Material mat){
+		
+		MGUI.ClearKeywords(mat);
+		MaterialEditor.FixupEmissiveFlag(mat);
+		bool isEmissive = (mat.globalIlluminationFlags & MaterialGlobalIlluminationFlags.EmissiveIsBlack) == 0;
+		bool enableParallax = (mat.GetInt("_PrimaryWorkflow") == 0 ? mat.GetTexture("_HeightMap") : mat.GetInt("_PackedHeight") == 1) && mat.GetInt("_PrimarySampleMode") != 3;
+
+		// mat.SetInt("_SampleMetallic", _MetallicMap.textureValue ? 1 : 0);
+		// mat.SetInt("_SampleRoughness", _RoughnessMap.textureValue ? 1 : 0);
+		// mat.SetInt("_SampleOcclusion", _OcclusionMap.textureValue ? 1 : 0);
+
+		MGUI.SetKeyword(mat, "_EMISSION_ON", isEmissive);
+		MGUI.SetKeyword(mat, "_PARALLAX_ON", enableParallax);
+		MGUI.SetKeyword(mat, "_REFLECTIONS_ON", mat.GetInt("_ReflectionsToggle") == 1);
+		MGUI.SetKeyword(mat, "_SPECULAR_HIGHLIGHTS_ON", mat.GetInt("_SpecularHighlightsToggle") == 1);
+		MGUI.SetKeyword(mat, "_WORKFLOW_PACKED_ON", mat.GetInt("_PrimaryWorkflow") == 1);
+		MGUI.SetKeyword(mat, "_WORKFLOW_DETAIL_PACKED_ON", mat.GetInt("_DetailWorkflow") == 1);
+		MGUI.SetKeyword(mat, "_STOCHASTIC_ON", mat.GetInt("_PrimarySampleMode") == 1);
+		MGUI.SetKeyword(mat, "_SUPERSAMPLING_ON", mat.GetInt("_PrimarySampleMode") == 2);
+		MGUI.SetKeyword(mat, "_TRIPLANAR_ON", mat.GetInt("_PrimarySampleMode") == 3);
+		MGUI.SetKeyword(mat, "_STOCHASTIC_DETAIL_ON", mat.GetInt("_DetailSampleMode") == 1);
+		MGUI.SetKeyword(mat, "_SUPERSAMPLING_DETAIL_ON", mat.GetInt("_DetailSampleMode") == 2);
+		MGUI.SetKeyword(mat, "_TRIPLANAR_DETAIL_ON", mat.GetInt("_DetailSampleMode") == 3);
+		MGUI.SetKeyword(mat, "_NORMALMAP_ON", mat.GetTexture("_NormalMap"));
+		MGUI.SetKeyword(mat, "_DETAIL_MAINTEX_ON", mat.GetTexture("_DetailMainTex"));
+		MGUI.SetKeyword(mat, "_DETAIL_NORMAL_ON", mat.GetTexture("_DetailNormalMap"));
+		MGUI.SetKeyword(mat, "_DETAIL_METALLIC_ON", mat.GetTexture("_DetailMetallicMap"));
+		MGUI.SetKeyword(mat, "_DETAIL_ROUGHNESS_ON", mat.GetTexture("_DetailRoughnessMap"));
+		MGUI.SetKeyword(mat, "_DETAIL_OCCLUSION_ON", mat.GetTexture("_DetailOcclusionMap"));
+		MGUI.SetKeyword(mat, "_SSR_ON", mat.GetInt("_SSRToggle") == 1);
+		MGUI.SetKeyword(mat, "_RAIN_DROPLETS_ON", mat.GetInt("_RainMode") == 1);
+		MGUI.SetKeyword(mat, "_RAIN_RIPPLES_ON", mat.GetInt("_RainMode") == 2);
+		MGUI.SetKeyword(mat, "_RAIN_AUTO_ON", mat.GetInt("_RainMode") == 3);
+		MGUI.SetKeyword(mat, "_AUDIOLINK_ON", mat.GetInt("_AudioLinkEmission") > 0 && isEmissive);
+		MGUI.SetKeyword(mat, "_AUDIOLINK_META_ON", mat.GetInt("_AudioLinkEmission") > 0 && mat.GetInt("_AudioLinkEmissionMeta") > 0 && isEmissive);
+		MGUI.SetKeyword(mat, "BAKERY_SH", mat.GetInt("_BakeryMode") == 1);
+		MGUI.SetKeyword(mat, "BAKERY_RNM", mat.GetInt("_BakeryMode") == 2);
+		MGUI.SetKeyword(mat, "BAKERY_MONOSH", mat.GetInt("_BakeryMode") == 3);
+		MGUI.SetKeyword(mat, "BAKERY_LMSPEC", mat.GetInt("_BAKERY_LMSPEC") == 1);
+		MGUI.SetKeyword(mat, "BAKERY_SHNONLINEAR", mat.GetInt("_BAKERY_SHNONLINEAR") == 1);
+		MGUI.SetKeyword(mat, "_BICUBIC_SAMPLING_ON", mat.GetInt("_BicubicSampling") == 1);
+		MGUI.SetKeyword(mat, "_AREALIT_ON", mat.GetInt("_AreaLitToggle") == 1);
+		MGUI.SetKeyword(mat, "LTCGI", mat.GetInt("_LTCGI") == 1);
+	}
+
+	public static void SetBlendMode(Material mat){
+		bool ssrToggle = mat.GetInt("_SSRToggle") == 1;
+		bool isLite = MGUI.IsNewLiteVersion(mat);
+		int blendMode = mat.GetInt("_BlendMode");
+		mat.SetInt("_AlphaToMask", blendMode == 1 ? 1 : 0);	
+
+		switch (blendMode){
 			case 0:
-				material.SetOverrideTag("RenderType", "");
-				material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-				material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
-				if (samplingMode == 4)
-					material.SetInt("_ZWrite", 0);
-				else
-					material.SetInt("_ZWrite", 1);
-				material.DisableKeyword("_ALPHATEST_ON");
-				material.DisableKeyword("_ALPHABLEND_ON");
-				material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-				material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Geometry+material.GetInt("_QueueOffset");
-				if (ssrToggle == 1 && !isLite)
-					material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest+51+material.GetInt("_QueueOffset");
+				mat.SetOverrideTag("RenderType", "Opaque");
+				mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+				mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
+				mat.SetInt("_ZWrite", 1);
+				mat.DisableKeyword("_ALPHATEST_ON");
+				mat.DisableKeyword("_ALPHABLEND_ON");
+				mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+				mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Geometry+mat.GetInt("_QueueOffset");
+				if (ssrToggle && !isLite)
+					mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest+51+mat.GetInt("_QueueOffset");
 				break;
 			case 1:
-				material.SetOverrideTag("RenderType", "TransparentCutout");
-				material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-				material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
-				if (samplingMode == 4)
-					material.SetInt("_ZWrite", 0);
-				else
-					material.SetInt("_ZWrite", 1);
-				material.EnableKeyword("_ALPHATEST_ON");
-				material.DisableKeyword("_ALPHABLEND_ON");
-				material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-				material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest+material.GetInt("_QueueOffset");
-				if (ssrToggle == 1 && !isLite)
-					material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest+51+material.GetInt("_QueueOffset");
+				mat.SetOverrideTag("RenderType", "TransparentCutout");
+				mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+				mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
+				mat.SetInt("_ZWrite", 1);
+				mat.EnableKeyword("_ALPHATEST_ON");
+				mat.DisableKeyword("_ALPHABLEND_ON");
+				mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+				mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest+mat.GetInt("_QueueOffset");
+				if (ssrToggle && !isLite)
+					mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest+51+mat.GetInt("_QueueOffset");
 				break;
 			case 2:
-				material.SetOverrideTag("RenderType", "Transparent");
-				material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-				material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-				material.SetInt("_ZWrite", 0);
-				material.DisableKeyword("_ALPHATEST_ON");
-				material.EnableKeyword("_ALPHABLEND_ON");
-				material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-				material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent+material.GetInt("_QueueOffset");
+				mat.SetOverrideTag("RenderType", "Transparent");
+				mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+				mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+				mat.SetInt("_ZWrite", 0);
+				mat.DisableKeyword("_ALPHATEST_ON");
+				mat.EnableKeyword("_ALPHABLEND_ON");
+				mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+				mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent+mat.GetInt("_QueueOffset");
 				break;
 			case 3:
-				material.SetOverrideTag("RenderType", "Transparent");
-				material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
-				material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-				material.SetInt("_ZWrite", 0);
-				material.DisableKeyword("_ALPHATEST_ON");
-				material.DisableKeyword("_ALPHABLEND_ON");
-				material.EnableKeyword("_ALPHAPREMULTIPLY_ON");
-				material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent+material.GetInt("_QueueOffset");
+				mat.SetOverrideTag("RenderType", "Transparent");
+				mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+				mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+				mat.SetInt("_ZWrite", 0);
+				mat.DisableKeyword("_ALPHATEST_ON");
+				mat.DisableKeyword("_ALPHABLEND_ON");
+				mat.EnableKeyword("_ALPHAPREMULTIPLY_ON");
+				mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent+mat.GetInt("_QueueOffset");
 				break;
 		}
 	}
 
-	static void SetMaterialKeywords(Material material){
 
-		// Note: keywords must be based on Material value not on MaterialProperty due to multi-edit & material animation
-		// (MaterialProperty value might come from renderer material property block)
-		int workflow =  material.GetInt("_Workflow");
-		int detailWorkflow = material.GetInt("_DetailWorkflow");
-		int samplingMode = material.GetInt("_SamplingMode");
-		int blendModeEnum = material.GetInt("_BlendMode");
-		int ltcgiToggle = material.GetInt("_LTCGI");
-		int detailSamplingMode = material.GetInt("_DetailSamplingMode");
-		bool isLite = MGUI.IsNewLiteVersion(material);
-
-		material.SetInt("_ReflCubeToggle", material.GetTexture("_ReflCube") ? 1 : 0);
-		material.SetInt("_ReflCubeOverrideToggle", material.GetTexture("_ReflCubeOverride") ? 1 : 0);
-		MGUI.SetKeyword(material, "_NORMALMAP", material.GetTexture("_BumpMap") || material.GetTexture("_DetailNormalMap"));
-		MGUI.SetKeyword(material, "_WORKFLOW_PACKED_ON", workflow == 1);
-		MGUI.SetKeyword(material, "_DETAIL_WORKFLOW_PACKED_ON", detailWorkflow == 1);
-		MGUI.SetKeyword(material, "_SPECGLOSSMAP", material.GetTexture("_SpecGlossMap"));
-		MGUI.SetKeyword(material, "_METALLICGLOSSMAP", material.GetTexture("_MetallicGlossMap"));
-		MGUI.SetKeyword(material, "_DETAIL_MULX2", material.GetTexture("_DetailAlbedoMap"));
-		MGUI.SetKeyword(material, "_SCREENSPACE_REFLECTIONS_ON", material.GetInt("_SSR") == 1 && !isLite);
-		MGUI.SetKeyword(material, "_SPECULARHIGHLIGHTS_OFF", material.GetInt("_SpecularHighlights") == 0);
-		MGUI.SetKeyword(material, "_GLOSSYREFLECTIONS_OFF", material.GetInt("_GlossyReflections") == 0);
-		MGUI.SetKeyword(material, "_STOCHASTIC_ON",  samplingMode == 1);
-		MGUI.SetKeyword(material, "_TSS_ON", samplingMode == 2);
-		MGUI.SetKeyword(material, "_TRIPLANAR_ON", samplingMode == 3);
-		MGUI.SetKeyword(material, "_DETAIL_STOCHASTIC_ON", detailSamplingMode == 1);
-		MGUI.SetKeyword(material, "_DETAIL_TSS_ON", detailSamplingMode == 2);
-		MGUI.SetKeyword(material, "_DETAIL_TRIPLANAR_ON", detailSamplingMode == 3);
-		MGUI.SetKeyword(material, "_DETAIL_ROUGH_ON", material.GetTexture("_DetailRoughnessMap"));
-		MGUI.SetKeyword(material, "_DETAIL_AO_ON", material.GetTexture("_DetailAOMap"));
-		MGUI.SetKeyword(material, "_DETAIL_METALLIC_ON", material.GetTexture("_DetailMetallicMap"));
-		MGUI.SetKeyword(material, "_AUDIOLINK_ON", material.GetInt("_AudioLinkEmission") > 0);
-		MGUI.SetKeyword(material, "_AUDIOLINK_META_ON", material.GetInt("_AudioLinkEmission") > 0 && material.GetInt("_AudioLinkEmissionMeta") > 0);
-		MGUI.SetKeyword(material, "_ALPHAMASK_ON", blendModeEnum > 0 && material.GetInt("_UseAlphaMask") == 1);
-		MGUI.SetKeyword(material, "_BICUBIC_SAMPLING_ON", material.GetInt("_BicubicLightmap") == 1);
-		MGUI.SetKeyword(material, "BAKERY_SH", material.GetInt("_BakeryMode") == 1);
-		MGUI.SetKeyword(material, "BAKERY_RNM", material.GetInt("_BakeryMode") == 2);
-		MGUI.SetKeyword(material, "BAKERY_MONOSH", material.GetInt("_BakeryMode") == 3);
-		MGUI.SetKeyword(material, "_AREALIT_ON", material.GetInt("_AreaLitToggle") == 1);
-		MGUI.SetKeyword(material, "LTCGI", ltcgiToggle == 1);
-		MGUI.SetKeyword(material, "LTCGI_DIFFUSE_OFF", material.GetInt("_LTCGI_DIFFUSE_OFF") == 1 && ltcgiToggle == 1);
-		MGUI.SetKeyword(material, "LTCGI_SPECULAR_OFF", material.GetInt("_LTCGI_SPECULAR_OFF") == 1 && ltcgiToggle == 1);
-		MGUI.SetKeyword(material, "_MIRROR_ON", material.GetInt("_MirrorToggle") == 1);
-
-		if (samplingMode < 3){
-			if (!material.GetTexture("_PackedMap"))
-				MGUI.SetKeyword(material, "_PARALLAXMAP", material.GetTexture("_ParallaxMap"));
-			else
-				MGUI.SetKeyword(material, "_PARALLAXMAP", material.GetInt("_UseHeight") == 1);
-		}
-		else {
-			MGUI.SetKeyword(material, "_PARALLAXMAP", false);
-		}
-
-		// A material's GI flag internally keeps track of whether emission is enabled at all, it's enabled but has no effect
-		// or is enabled and may be modified at runtime. This state depends on the values of the current flag and emissive color.
-		// The fixup routine makes sure that the material is in the correct state if/when changes are made to the mode or color.
-		MaterialEditor.FixupEmissiveFlag(material);
-		bool shouldEmissionBeEnabled = (material.globalIlluminationFlags & MaterialGlobalIlluminationFlags.EmissiveIsBlack) == 0;
-		MGUI.SetKeyword(material, "_EMISSION", shouldEmissionBeEnabled);
-
-		material.SetShaderPassEnabled("Always", material.GetInt("_SSR") == 1 && !isLite);
+	public override void AssignNewShaderToMaterial(Material mat, Shader oldShader, Shader newShader) {
+		base.AssignNewShaderToMaterial(mat, oldShader, newShader);
+		SetKeywords(mat);
+		SetBlendMode(mat);
 	}
 
-	static void MaterialChanged(Material material){
-		SetupMaterialWithBlendMode(material);
-		SetMaterialKeywords(material);
-	}
+	#endregion 
 
-	static void ApplyStandardPackingFormat(Material mat){
-		mat.SetInt("_Workflow", 1);
-		mat.SetInt("_UseSmoothness", 1);
-		mat.SetInt("_MetallicChannel", 0);
-		mat.SetInt("_RoughnessChannel", 3);
-		mat.SetInt("_OcclusionChannel", 1);
-		mat.SetInt("_HeightChannel", 2);
-		MaterialChanged(mat);
-	}
+	// #region Texture Packing
+
+	// void PackTextures(MaterialProperty metallicMap, MaterialProperty roughnessMap, MaterialProperty occlusionMap, MaterialProperty heightMap, MaterialProperty packedMap){
+	// 	Texture2D[] preparedTextures = PrepareTexturesForPack(metallicMap, roughnessMap, occlusionMap, heightMap);
+	// 	DoPack(preparedTextures, packedMap);
+	// }
+
+	// Texture2D[] PrepareTexturesForPack(MaterialProperty metallicMap, MaterialProperty roughnessMap, MaterialProperty occlusionMap, MaterialProperty heightMap){
+	// 	Texture2D[] preparedTextures = new Texture2D[4];
+	// 	if (_DefaultSampler.textureValue){
+	// 		preparedTextures[0] = metallicMap.textureValue ? (Texture2D)metallicMap.textureValue : (Texture2D)_DefaultSampler.textureValue;
+	// 		preparedTextures[1] = roughnessMap.textureValue ? (Texture2D)roughnessMap.textureValue : (Texture2D)_DefaultSampler.textureValue;
+	// 		preparedTextures[2] = occlusionMap.textureValue ? (Texture2D)occlusionMap.textureValue : (Texture2D)_DefaultSampler.textureValue;
+	// 		preparedTextures[3] = heightMap.textureValue ? (Texture2D)heightMap.textureValue : null;
+	// 	}
+	// 	return preparedTextures;
+	// }
+
+	// void DoPack(Texture2D[] textures, MaterialProperty packedMap){
+	// 	Texture2D red = textures[2];
+	// 	Texture2D green = textures[1];
+	// 	Texture2D blue = textures[0];
+	// 	Texture2D alpha = textures[3];
+	// 	Vector2Int packSize = PoiHelpers.GetMaxSizeFromTextures(red, green, blue, alpha);
+	// 	red = red.GetChannelAsTexture(PoiExtensions.PoiTextureChannel.Green, false);
+	// 	green = green.GetChannelAsTexture(PoiExtensions.PoiTextureChannel.Green, false);
+	// 	blue = blue.GetChannelAsTexture(PoiExtensions.PoiTextureChannel.Green, false);
+	// 	alpha = alpha.GetChannelAsTexture(PoiExtensions.PoiTextureChannel.Green, false);
+
+	// 	Texture2D packResult = PoiHelpers.PackTextures(packSize, red, green, blue, alpha, false, false, false, false);
+
+	// 	int fileNumber = 1;
+	// 	string savePath = "Assets/TexturePacker/Packed/PackedTex";
+	// 	while (File.Exists(savePath + ".png")){
+	// 		savePath =  "Assets/TexturePacker/Packed/PackedTex " + fileNumber;
+	// 		fileNumber++;
+	// 	}
+	// 	savePath += ".png";
+
+	// 	if (packResult){
+	// 		packResult.SaveTextureAsset(savePath, true);
+	// 		PoiHelpers.PingAssetAtPath(savePath);
+	// 	}
+
+	// 	packedMap.textureValue = AssetDatabase.LoadAssetAtPath<Texture2D>(savePath);
+
+	// }
+
+	// #endregion
 }

@@ -6,8 +6,9 @@ namespace Mochie {
 	public static class Tips {
 		
 		// General
+		public static GUIContent baseColorText = new GUIContent("Base Color", "Unshaded base color (RGB) and transparency (A)");
 		public static GUIContent specularHighlightsText = new GUIContent("Specular Highlights", "GGX Specular Highlights.");
-		public static GUIContent cubemapReflectionsText = new GUIContent("Cubemap Reflections", "Cubemap-based reflections, usually from reflection probes.");
+		public static GUIContent cubemapReflectionsText = new GUIContent("Environment Reflections", "Cubemap-based environment reflections from reflection probes.");
 		public static GUIContent ssrText = new GUIContent("Screen Space Reflections", "Screen Space Reflections create reflections on surfaces based on what's visible on screen.");
 		public static GUIContent ssrEdgeFadeText = new GUIContent("Edge Fade", "The distance from the edge of the screen at which screenspace reflections will fade out. This helps mask edges where there is no screen information.");
 		public static GUIContent ssrDepthText = new GUIContent("Depth", "The distance from the surface at which objects will appear in screenspace reflections. Larger values will lose precision for closer objects.");
@@ -15,14 +16,22 @@ namespace Mochie {
 		public static GUIContent smoothnessText = new GUIContent("Smoothness", "How smooth or rough the surface should look. Smoother surfaces scatter less light, making reflections clearer, and specular highlights smaller/sharper.");
 		public static GUIContent metallicText = new GUIContent("Metallic", "How metallic a surface should look. Higher values will decrease visibility of base color in favor of reflective color to simulate the behavior of metal surfaces in real life. Lower values will look more akin to plastic.");
 		public static GUIContent normalMapText = new GUIContent("Normal Map", "Determines the behavior of light on the surface. Primarily used to fake small details or smooth bevels on sharp edges.");
-		public static GUIContent occlusionText = new GUIContent("Ambient Occlusion", "Adds extra shading to simulate contact shadows in crevices or corners where less light reaches (think how the DVD logo almost never perfectly bounces into the corner of the screen). Darker values will add darker shading.");
+		public static GUIContent occlusionText = new GUIContent("Occlusion", "Adds extra shading to simulate contact shadows in crevices or corners where less light reaches (think how the DVD logo almost never perfectly bounces into the corner of the screen). Darker values will add darker shading.");
 		public static GUIContent parallaxHeightText = new GUIContent("Parallax Height", "Uses parallax occlusion mapping to simulate detailed 3d geometry on a surface.");
 		public static GUIContent heightMapText = new GUIContent("Height Map", parallaxHeightText.tooltip);
+		public static GUIContent heightStepsText = new GUIContent("Height Samples", "Number of steps/samples used to calculate parallax height. More samples is more expensive, but looks smoother.");
+		public static GUIContent heightOffset = new GUIContent("Parallax Offset", "Offsets the texture sample up or down in 3D space.");
 		public static GUIContent maskText = new GUIContent("Mask", "Darker parts of the texture will reduce the masked effect, lighter parts will remain closer to base values.");
 		public static GUIContent smoothnessModeText = new GUIContent("Smoothness Mode", "Use smoothness maps/values instead of roughness.");
 		public static GUIContent swizzleText = new GUIContent("Swizzle", "Which two axis should be used as UVs for sampling textures");
 		public static GUIContent texCoordSpaceText = new GUIContent("Texture Coordinate Space", "UV:\nUses the regular UVs baked into the mesh data.\n\nWorld:\nUses the world space coordinates of the mesh as UVs");
-
+		public static GUIContent workflowText = new GUIContent("Workflow", "Separated:\nAll textures are separate and sampled individually. Samples occlusion from the red channel, roughness from the green channel, metallic from the blue channel, and height from the alpha channel.\n\nPacked:\nPBR textures are packed into a single texture sample to improve performance and file size.");
+		public static GUIContent packedHeightText = new GUIContent("Packed Height", "Enable height mapping utilizing whichever channel is selected from the packed texture.");
+		public static GUIContent defaultSamplerText = new GUIContent("DO NOT REMOVE", "Default sampler texture, this should, at all times, be occupied by the 4x4 pixel default white swatch texture in the Mochie folder.");
+		public static GUIContent indirectSpecOccText = new GUIContent("Indirect Specular Occlusion", "How much lightmaps and spherical harmonics shading contribute to specular occlusion.");
+		public static GUIContent realtimeSpecOccText = new GUIContent("Realtime Specular Occlusion", "How much realtime shadows contibute to specular occlusion when available.");
+		public static GUIContent mipRescalingText = new GUIContent("Mip Map Rescaling", "Scales the mip level to prevent the surface from getting clipped to nothing after a certain distance.");
+		public static GUIContent heightmapLightmapText = new GUIContent("Apply Heightmapping", "Apply parallax heightmapping to lightmap UVs.");
 		// Standard
 		public static GUIContent standWorkflow = new GUIContent("Workflow", "Standard:\nDefault packing mode of visually separated texture slots for PBR maps, uses MAHS format.\n\nPacked: \nModular packing mode that combines all PBR texture slots into one and allows channel selection.");
 		public static GUIContent standBlendMode = new GUIContent("Blending Mode", "Opaque:\nDefault blending mode, has no transparency support.\n\nCutout:\nPixels outside the alpha threshold will be discarded and not rendered.\n\nFade:\nCreates a smoothly blended transparency that takes all alpha values from 0-1 into account when determining opacity.\n\nTransparent:\nFunctions similarily to Fade, but maintains reflections and specular behavior on transparent areas (ie. glass).");
@@ -32,6 +41,7 @@ namespace Mochie {
 		public static GUIContent alphaCutoffText = new GUIContent("Alpha Cutoff", "Threshold for alpha cutoff");
 		public static GUIContent metallicPackedText = new GUIContent("Metallic Strength", metallicText.tooltip);
 		public static GUIContent roughnessPackedText = new GUIContent("Roughness Strength", roughnessText.tooltip);
+		public static GUIContent smoothnessPackedText = new GUIContent("Smoothness Strength", smoothnessText.tooltip);
 		public static GUIContent heightMapPackedText = new GUIContent("Height Strength", heightMapText.tooltip);
 		public static GUIContent occlusionPackedText = new GUIContent("Occlusion Strength", occlusionText.tooltip);
 		public static GUIContent emissionText = new GUIContent("Color", "Adds extra color value after all lighting calculations to simulate an emissive effect.");
@@ -40,6 +50,8 @@ namespace Mochie {
 		public static GUIContent detailNormalMapText = new GUIContent("Detail Normal Map", normalMapText.tooltip);
 		public static GUIContent detailRoughnessMapText = new GUIContent("Detail Roughness", roughnessText.tooltip);
 		public static GUIContent detailAOMapText = new GUIContent("Detail Occlusion", occlusionText.tooltip);
+		public static GUIContent detailMetallicMapText = new GUIContent("Detail Metallic", metallicText.tooltip);
+		public static GUIContent detailSmoothnessMapText = new GUIContent("Detail Smoothness", smoothnessText.tooltip);
 		public static GUIContent packedMapText = new GUIContent("Packed Map", "Texture containing roughness, metallic, ambient occlusion and optional height maps in the RGBA channels.");
 		public static GUIContent reflCubeText = new GUIContent("Reflection Fallback", "Replace environment reflections below the luminance threshold with this cubemap");
 		public static GUIContent reflOverrideText = new GUIContent("Reflection Override", "Override the primary reflection probe sample with this cubemap");
@@ -77,7 +89,7 @@ namespace Mochie {
 		public static GUIContent useFresnel = new GUIContent("Fresnel", "The Fresnel effect changes the behavior of specularity (reflections and specular highlights) based on viewing angle. Reflections are more visible on surfaces when viewed from a sharp angle.");
 		public static GUIContent reflVertexColor = new GUIContent("Vertex Color Reflections", "Multiplies reflection color with vertex color. A good use for this is painting black vertex colors on areas of surfaces you don't want to have visible reflections.");
 		public static GUIContent reflShadows = new GUIContent("Specular Occlusion", "Uses shadows from either realtime directional lights or baked lightmaps to occlude reflections and specular highlights.");
-		public static GUIContent gsaa = new GUIContent("Specular Antialiasing", "Increases the roughness on rounded corners of normals to hide sparkly artifacts from specular lighting");
+		public static GUIContent gsaa = new GUIContent("Specular Antialiasing", "Increases the roughness on rounded corners of normals to hide sparkly artifacts from specular lighting.");
 		public static GUIContent bicubicLightmap = new GUIContent("Bicubic Lightmap Sampling", "Samples lightmaps using bicubic filtering to hide aliasing on shadows. Provides a smooth gradient on otherwise low resolution shadows.");
 		public static GUIContent bakeryMode = new GUIContent("Bakery Mode", "Support for the third party lightmapping software Bakery. See Bakery documentation for further details.");
 		public static GUIContent lightMeshText = new GUIContent("Mesh", "Light mesh data");

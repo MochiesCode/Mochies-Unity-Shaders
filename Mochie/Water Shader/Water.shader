@@ -192,6 +192,7 @@ Shader "Mochie/Water" {
 		_RippleStr("Ripple Strength", float) = 1
 		_RippleSize("Ripple Size", Range(2,10)) = 6
 		_RippleDensity("Ripple Density", Float) = 1.57079632679
+		_RippleMask("Ripple Mask", 2D) = "white" {}
 
 		[Toggle(_AREALIT_ON)]_AreaLitToggle("Enable", Int) = 0
 		_AreaLitMask("Mask", 2D) = "white" {}
@@ -217,6 +218,7 @@ Shader "Mochie/Water" {
 		[IntRange]_StencilRef("Stencil Reference", Range(1,255)) = 65
 		[Enum(Opaque,0, Premultiplied,1, Grabpass,2)]_TransparencyMode("Transparency Mode", Int) = 2
 		[Enum(UnityEngine.Rendering.CullMode)]_CullMode("Cull", Int) = 2
+		_QueueOffset("Render Queue Offset", Int) = 0
 		[Enum(Off,0, On,1)]_ZWrite("ZWrite", Int) = 0
 		[Enum(Off,0, On,1)]_DepthEffects("Depth Effects", Int) = 1
 		[Enum(UV,0, World,1)]_TexCoordSpace("Texture Coordinate Space", Int) = 0

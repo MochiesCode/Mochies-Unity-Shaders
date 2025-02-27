@@ -54,7 +54,7 @@ float3 GetFlipbookNormals(v2f i, inout float flipbookBase, float mask){
     float2 origUV = i.uv / float2(_Columns, _Rows) * float2(_XScale, _YScale);
     float4 uvdd = float4(ddx(origUV), ddy(origUV));
 
-    flipbookBase = tex2Dgrad(_RainSheet, flipUV, uvdd.xw, uvdd.zw) * mask;
+    flipbookBase = tex2Dgrad(_RainSheet, flipUV, uvdd.xw, uvdd.zw).g * mask;
 	rainStrength = _Strength * mask;
     return tex2DnormalGlass(_RainSheet, flipUV, uvdd, rainStrength);
 }
@@ -120,7 +120,7 @@ float3 BlurredGrabpassSample(float2 uv, float str){
 }
 
 float3 BoxProjection(float3 dir, float3 pos, float4 cubePos, float3 boxMin, float3 boxMax){
-	#if UNITY_SPECCUBE_BOX_PROJECTION
+	#ifdef UNITY_SPECCUBE_BOX_PROJECTION
 		UNITY_BRANCH
 		if (cubePos.w > 0){
 			float3 factors = ((dir > 0 ? boxMax : boxMin) - pos) / dir;
@@ -137,13 +137,12 @@ float3 GetWorldReflections(float3 reflDir, float3 worldPos, float roughness){
 	reflDir = BoxProjection(reflDir, worldPos, unity_SpecCube0_ProbePosition, unity_SpecCube0_BoxMin, unity_SpecCube0_BoxMax);
 	float4 envSample0 = UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, reflDir, roughness * UNITY_SPECCUBE_LOD_STEPS);
 	float3 p0 = DecodeHDR(envSample0, unity_SpecCube0_HDR);
-	float interpolator = unity_SpecCube0_BoxMin.w;
 	UNITY_BRANCH
-	if (interpolator < 0.99999){
+	if (unity_SpecCube0_BoxMin.w < 0.99999){
 		float3 refDirBlend = BoxProjection(baseReflDir, worldPos, unity_SpecCube1_ProbePosition, unity_SpecCube1_BoxMin, unity_SpecCube1_BoxMax);
 		float4 envSample1 = UNITY_SAMPLE_TEXCUBE_SAMPLER_LOD(unity_SpecCube1, unity_SpecCube0, refDirBlend, roughness * UNITY_SPECCUBE_LOD_STEPS);
 		float3 p1 = DecodeHDR(envSample1, unity_SpecCube1_HDR);
-		p0 = lerp(p1, p0, interpolator);
+		p0 = lerp(p1, p0, unity_SpecCube0_BoxMin.w);
 	}
 	return p0;
 }

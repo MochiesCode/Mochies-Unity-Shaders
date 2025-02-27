@@ -21,6 +21,7 @@
         _RefractionIOR("IOR", Float) = 1.2
 
         // [Toggle(_RAIN_ON)]_RainToggle("Enable", Int) = 0
+        [Enum(Off,0, Droplets,1, Ripples,2, Automatic,3)]_RainMode("Mode", Int) = 0
 		[HideInInspector]_RainSheet("Texture Sheet", 2D) = "black" {}
 		[HideInInspector]_Rows("Rows", Float) = 8
 		[HideInInspector]_Columns("Columns", Float) = 8
@@ -35,7 +36,6 @@
         _RippleDensity("Ripple Density", Float) = 1.57079632679
         _RainThreshold("Threshold", Range(0,1)) = 0.01
         _RainThresholdSize("Threshold Size", Range(0,1)) = 0.01
-        [Enum(Off,0, Droplets,1, Ripples,2, Automatic,3)]_RainMode("Mode", Int) = 0
         _RainMask("Mask", 2D) = "white" {}
         [Enum(Red,0, Green,1, Blue,2, Alpha,0)]_RainMaskChannel("Channel", Int) = 0
         _DropletMask("Rain Droplet Mask", 2D) = "white" {}

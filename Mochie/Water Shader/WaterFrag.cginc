@@ -195,7 +195,9 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
 	#endif
 
 	#if RAIN_ENABLED
-		float3 rainNormal = GetRipplesNormal(i.uv, _RippleScale, _RippleStr, _RippleSpeed, _RippleSize, _RippleDensity);
+		float rainMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_RippleMask, sampler_FlowMap, TRANSFORM_TEX(i.uv, _RippleMask)).g;
+		float rainStr = rainMask * _RippleStr;
+		float3 rainNormal = GetRipplesNormal(i.uv, _RippleScale, rainStr, _RippleSpeed, _RippleSize, _RippleDensity);
 		normalMap = BlendNormals(normalMap, rainNormal);
 	#endif
 
