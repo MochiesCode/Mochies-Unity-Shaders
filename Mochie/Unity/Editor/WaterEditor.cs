@@ -305,11 +305,6 @@ public class WaterEditor : ShaderGUI {
 			SetBlendMode(mat);
 		}
 
-		foreach (var obj in _TransparencyMode.targets){
-			SetKeywords((Material)obj);
-			SetBlendMode((Material)obj);
-		}
-
         EditorGUI.BeginChangeCheck(); {
 			
 			int transMode = mat.GetInt("_TransparencyMode");
@@ -844,11 +839,10 @@ public class WaterEditor : ShaderGUI {
 			Foldouts.Foldout("RENDER SETTINGS", foldouts, renderingTabButtons, mat, me, renderingTabAction);
 
         }
-
-		// me.ShaderProperty(_Test1, "Test 1");
-		// me.ShaderProperty(_Test2, "Test 2");
-		SetKeywords(mat);
-
+		if (EditorGUI.EndChangeCheck()){
+			SetKeywords(mat);
+		}
+		
 		MGUI.DoFooter(versionLabel);
     }
 
