@@ -3,35 +3,35 @@
 
         _GrabpassTint("Grabpass Tint", Color) = (1,1,1,1)
         _SpecularityTint("Specularity Tint", Color) = (1,1,1,1)
-		_BaseColorTint("Base Color Tint", Color) = (1,1,1,1)
+        _BaseColorTint("Base Color Tint", Color) = (1,1,1,1)
 
         _BaseColor("Base Color", 2D) = "black" {}
-		_RoughnessMap("Roughness Map", 2D) = "white" {}
+        _RoughnessMap("Roughness Map", 2D) = "white" {}
         _MetallicMap("Metallic Map", 2D) = "white" {}
         _OcclusionMap("Occlusion Map", 2D) = "white" {}
         _NormalMap("Normal Map", 2D) = "bump" {}
         _Roughness("Roughness", Range(0,1)) = 0
         _Metallic("Metallic", Range(0,1)) = 0
-		_Occlusion("Occlusion", Range(0,1)) = 1
+        _Occlusion("Occlusion", Range(0,1)) = 1
         _NormalStrength("Normal Strength", Float) = 1
         [Enum(Low,0, Medium,1, High,2, Ultra,3)]_BlurQuality("Blur Quality", Int) = 1
-		_Blur("Blur Strength", Float) = 1
+        _Blur("Blur Strength", Float) = 1
         _Refraction("Refraction Strength", Float) = 5
         [ToggleUI]_RefractVertexNormal("Refract Mesh Normals", Int) = 0
         _RefractionIOR("IOR", Float) = 1.2
 
         // [Toggle(_RAIN_ON)]_RainToggle("Enable", Int) = 0
         [Enum(Off,0, Droplets,1, Ripples,2, Automatic,3)]_RainMode("Mode", Int) = 0
-		[HideInInspector]_RainSheet("Texture Sheet", 2D) = "black" {}
-		[HideInInspector]_Rows("Rows", Float) = 8
-		[HideInInspector]_Columns("Columns", Float) = 8
-		_Speed("Speed", Float) = 60
-		_XScale("X Scale", Float) = 1.5
+        [HideInInspector]_RainSheet("Texture Sheet", 2D) = "black" {}
+        [HideInInspector]_Rows("Rows", Float) = 8
+        [HideInInspector]_Columns("Columns", Float) = 8
+        _Speed("Speed", Float) = 60
+        _XScale("X Scale", Float) = 1.5
         _YScale("Y Scale", Float) = 1.5
-		_Strength("Normal Strength", Float) = 0.3
-		_RippleScale("Ripple Scale", Float) = 10
-		_RippleSpeed("Ripple Speed", Float) = 10
-		_RippleStrength("Ripple Strength", Float) = 1
+        _Strength("Normal Strength", Float) = 0.3
+        _RippleScale("Ripple Scale", Float) = 10
+        _RippleSpeed("Ripple Speed", Float) = 10
+        _RippleStrength("Ripple Strength", Float) = 1
         _RippleSize("Ripple Size", Range(2,10)) = 6
         _RippleDensity("Ripple Density", Float) = 1.57079632679
         _RainThreshold("Threshold", Range(0,1)) = 0.01
@@ -43,14 +43,18 @@
         _RainBias("Rain Bias", Float) = -1
         _Test("Test", Float) = 1
 
-        [Toggle(_REFLECTIONS_ON)]_ReflectionsToggle("Reflections", Int) = 1
-        [Toggle(_SPECULAR_HIGHLIGHTS_ON)]_SpecularToggle("Specular Highlights", Int) = 1
+        [ToggleUI]_ReflectionsToggle("Reflections", Int) = 1
+        _ReflectionStrength("Reflection Strength", Float) = 1
+        [ToggleUI]_SpecularToggle("Specular Highlights", Int) = 1
+        _SpecularStrength("Specular Strength", Float) = 1
+        [ToggleUI]_GSAAToggle("Specular Antialiasing", Int) = 0
+        _GSAAStrength("Specular Antialiasing Strength", Float) = 1
         [Toggle(_LIT_BASECOLOR_ON)]_LitBaseColor("Lit Base Color", Int) = 1
         [Enum(Default,0, Stochastic,1)]_SamplingMode("Sampling Mode", Int) = 0
-		[Enum(UnityEngine.Rendering.CullMode)]_Culling("Culling", Int) = 2
+        [Enum(UnityEngine.Rendering.CullMode)]_Culling("Culling", Int) = 2
         [Enum(Grabpass,0, Premultiplied,1, Opaque,2)]_BlendMode("Transparency", Int) = 0
         [Enum(UV,0, World,1)]_TexCoordSpace("Texture Coordinate Space", Int) = 0
-		[Enum(XY,0, XZ,1, YZ,2)]_TexCoordSpaceSwizzle("Swizzle", Int) = 0
+        [Enum(XY,0, XZ,1, YZ,2)]_TexCoordSpaceSwizzle("Swizzle", Int) = 0
         _GlobalTexCoordScale("Global Scale", Float) = 1
         [HideInInspector]_SrcBlend("Src Blend", Int) = 1
         [HideInInspector]_DstBlend("Dst Blend", Int) = 0
@@ -59,23 +63,32 @@
         _QueueOffset("Queue Offset", Int) = 0
 
         [ToggleUI]_AreaLitToggle("Enable", Int) = 0
-		_AreaLitMask("Mask", 2D) = "white" {}
-		_AreaLitStrength("Strength", Float) = 1
-		_AreaLitRoughnessMult("Roughness Multiplier", Float) = 1
-		[NoScaleOffset]_LightMesh("Light Mesh", 2D) = "black" {}
-		[NoScaleOffset]_LightTex0("Light Texture 0", 2D) = "white" {}
-		[NoScaleOffset]_LightTex1("Light Texture 1", 2D) = "black" {}
-		[NoScaleOffset]_LightTex2("Light Texture 2", 2D) = "black" {}
-		[NoScaleOffset]_LightTex3("Light Texture 3", 2DArray) = "black" {}
-		[ToggleOff]_OpaqueLights("Opaque Lights", Float) = 1.0
+        _AreaLitMask("Mask", 2D) = "white" {}
+        _AreaLitStrength("Strength", Float) = 1
+        _AreaLitRoughnessMult("Roughness Multiplier", Float) = 1
+        [NoScaleOffset]_LightMesh("Light Mesh", 2D) = "black" {}
+        [NoScaleOffset]_LightTex0("Light Texture 0", 2D) = "white" {}
+        [NoScaleOffset]_LightTex1("Light Texture 1", 2D) = "black" {}
+        [NoScaleOffset]_LightTex2("Light Texture 2", 2D) = "black" {}
+        [NoScaleOffset]_LightTex3("Light Texture 3", 2DArray) = "black" {}
+        [ToggleOff]_OpaqueLights("Opaque Lights", Float) = 1.0
 
+        [ToggleUI]_LTCGI("LTCGI", Int) = 0
+        _LTCGI_mat("LTC Mat", 2D) = "black" {}
+        _LTCGI_amp("LTC Amp", 2D) = "black" {}
+        _LTCGIStrength("LTCGI Strength", Float) = 1
+        _LTCGIRoughness("LTCGI Roughness", Float) = 1
+        _LTCGI_DiffuseColor ("LTCGI Diffuse Color", Color) = (1,1,1,1)
+        _LTCGI_SpecularColor ("LTCGI Specular Color", Color) = (1,1,1,1)
     }
+    
     SubShader {
         Tags { 
             "RenderType"="Transparent"
             "Queue"="Transparent"
             "ForceNoShadowCaster"="True"
             "IgnoreProjector"="True"
+            "LTCGI"="_LTCGI"
         }
         GrabPass {
             Tags {"LightMode"="Always"}
@@ -103,6 +116,7 @@
             #pragma shader_feature_local _NORMALMAP_ON
             #pragma shader_feature_local _ _RAINMODE_RIPPLE _RAINMODE_AUTO 
             #pragma shader_feature_local _AREALIT_ON
+            #pragma shader_feature_local LTCGI
             #pragma target 5.0
 
             #include "GlassDefines.cginc"
@@ -134,5 +148,5 @@
             ENDCG
         }
     }
-    CustomEditor "GlassEditor"
+    CustomEditor "Mochie.GlassEditor"
 }

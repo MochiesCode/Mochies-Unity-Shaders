@@ -5,8 +5,6 @@ Texture2D _RNM0, _RNM1, _RNM2;
 SamplerState custom_bilinear_clamp_sampler;
 float4 _RNM0_TexelSize;
 
-#define GRAYSCALE float3(0.2125, 0.7154, 0.0721)
-
 #ifndef TEXTURE2D_ARGS
 #define TEXTURE2D_ARGS(textureName, samplerName) Texture2D textureName, SamplerState samplerName
 #define TEXTURE2D_PARAM(textureName, samplerName) textureName, samplerName
@@ -38,6 +36,20 @@ float4 SampleTexture2DBicubicFilter(TEXTURE2D_ARGS(tex, smp), float2 coord, floa
     return lerp(
         lerp(sample3, sample2, sx),
         lerp(sample1, sample0, sx), sy);
+}
+
+float4 SampleShadowMaskBicubic(float2 uv){
+    #ifdef SHADER_API_D3D11
+        float width, height;
+        unity_ShadowMask.GetDimensions(width, height);
+
+        float4 unity_ShadowMask_TexelSize = float4(width, height, 1.0/width, 1.0/height);
+
+        return SampleTexture2DBicubicFilter(TEXTURE2D_PARAM(unity_ShadowMask, samplerunity_ShadowMask),
+            uv, unity_ShadowMask_TexelSize);
+    #else
+        return SAMPLE_TEXTURE2D(unity_ShadowMask, samplerunity_ShadowMask, uv);
+    #endif
 }
 
 float4 SampleLightmapBicubic(float2 uv){
@@ -139,7 +151,7 @@ void BakeryRNMLightmapAndSpecular(inout half3 lightMap, float2 lightmapUV, inout
                 + saturate(dot(rnmBasis1, normalTS)) * rnm1
                 + saturate(dot(rnmBasis2, normalTS)) * rnm2;
 
-    #ifdef BAKERY_LMSPEC
+    #if defined(BAKERY_LMSPEC)
         float3 viewDirT = -normalize(viewDirTS);
         float3 dominantDirT = rnmBasis0 * dot(rnm0, GRAYSCALE) +
                                 rnmBasis1 * dot(rnm1, GRAYSCALE) +
@@ -167,7 +179,7 @@ void BakerySHLightmapAndSpecular(inout half3 lightMap, float2 lightmapUV, inout 
     float3 L1y = nL1y * L0 * 2.0;
     float3 L1z = nL1z * L0 * 2.0;
 
-    #ifdef BAKERY_SHNONLINEAR
+    #if defined(BAKERY_SHNONLINEAR)
         float lumaL0 = dot(L0, float(1));
         float lumaL1x = dot(L1x, float(1));
         float lumaL1y = dot(L1y, float(1));
@@ -181,7 +193,7 @@ void BakerySHLightmapAndSpecular(inout half3 lightMap, float2 lightmapUV, inout 
         lightMap = L0 + normalWS.x * L1x + normalWS.y * L1y + normalWS.z * L1z;
     #endif
 
-    #ifdef BAKERY_LMSPEC
+    #if defined(BAKERY_LMSPEC)
         float3 dominantDir = float3(dot(nL1x, GRAYSCALE), dot(nL1y, GRAYSCALE), dot(nL1z, GRAYSCALE));
         float3 halfDir = Unity_SafeNormalize(normalize(dominantDir) + viewDir);
         half NoH = saturate(dot(normalWS, halfDir));
@@ -202,7 +214,8 @@ void BakeryMonoSH(inout half3 diffuseColor, inout half3 specularColor, float3 do
     float3 L1y = nL1.y * L0 * 2;
     float3 L1z = nL1.z * L0 * 2;
     half3 sh;
-    #ifdef BAKERY_SHNONLINEAR
+
+    #if defined(BAKERY_SHNONLINEAR)
         float lumaL0 = dot(L0, 1);
         float lumaL1x = dot(L1x, 1);
         float lumaL1y = dot(L1y, 1);
@@ -217,7 +230,6 @@ void BakeryMonoSH(inout half3 diffuseColor, inout half3 specularColor, float3 do
         //sh.r = shEvaluateDiffuseL1Geomerics(L0.r, float3(L1x.r, L1y.r, L1z.r), normalWorld);
         //sh.g = shEvaluateDiffuseL1Geomerics(L0.g, float3(L1x.g, L1y.g, L1z.g), normalWorld);
         //sh.b = shEvaluateDiffuseL1Geomerics(L0.b, float3(L1x.b, L1y.b, L1z.b), normalWorld);
-
     #else
         sh = L0 + normalWorld.x * L1x + normalWorld.y * L1y + normalWorld.z * L1z;
     #endif
@@ -225,7 +237,7 @@ void BakeryMonoSH(inout half3 diffuseColor, inout half3 specularColor, float3 do
     diffuseColor = max(sh, 0.0);
 
     specularColor = 0;
-    #ifdef BAKERY_LMSPEC
+    #if defined(BAKERY_LMSPEC)
         dominantDir = nL1;
         float focus = saturate(length(dominantDir));
         half3 halfDir = Unity_SafeNormalize(normalize(dominantDir) + viewDir);

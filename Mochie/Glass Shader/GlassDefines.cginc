@@ -4,9 +4,10 @@
 #include "../Common/Sampling.cginc"
 
 #define AREALIT_ENABLED defined(_AREALIT_ON)
+#define LTCGI_ENABLED defined(LTCGI)
 
 #if AREALIT_ENABLED
-	#include "../../AreaLit/Shader/Lighting.hlsl"
+    #include "../../AreaLit/Shader/Lighting.hlsl"
 #endif
 
 #define EPSILON 1.192092896e-07
@@ -58,6 +59,15 @@ float _GlobalTexCoordScale;
 float _RefractionIOR;
 float _RefractVertexNormal;
 float _Test;
+float _GSAAToggle;
+float _GSAAStrength;
+float _SpecularStrength;
+float _ReflectionStrength;
+
+float4 _LTCGI_DiffuseColor;
+float4 _LTCGI_SpecularColor;
+float _LTCGIStrength;
+float _LTCGIRoughness;
 
 float _AreaLitStrength;
 float _AreaLitRoughnessMult;
@@ -66,28 +76,28 @@ float4 _AreaLitMask_ST;
 float rainStrength;
 
 struct appdata {
-	float4 vertex : POSITION;
-	float4 uv : TEXCOORD0;
-	float3 normal : NORMAL;
-	float4 tangent : TANGENT;
-	UNITY_VERTEX_INPUT_INSTANCE_ID
+    float4 vertex : POSITION;
+    float4 uv : TEXCOORD0;
+    float3 normal : NORMAL;
+    float4 tangent : TANGENT;
+    UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
 struct v2f {
-	float4 pos : SV_POSITION;
-	float4 uv : TEXCOORD0;
-	float4 uvGrab : TEXCOORD1;
-	float3 worldPos : TEXCOORD2;
-	float3 binormal : TEXCOORD3;
-	float4 localPos : TEXCOORD4;
-	float3 cameraPos : TEXCOORD5;
-	float3 normal : NORMAL;
-	float4 tangent: TANGENT;
-	
-	UNITY_FOG_COORDS(10)
-	UNITY_SHADOW_COORDS(11)
-	UNITY_VERTEX_INPUT_INSTANCE_ID 
-	UNITY_VERTEX_OUTPUT_STEREO
+    float4 pos : SV_POSITION;
+    float4 uv : TEXCOORD0;
+    float4 uvGrab : TEXCOORD1;
+    float3 worldPos : TEXCOORD2;
+    float3 binormal : TEXCOORD3;
+    float4 localPos : TEXCOORD4;
+    float3 cameraPos : TEXCOORD5;
+    float3 normal : NORMAL;
+    float4 tangent: TANGENT;
+    
+    UNITY_FOG_COORDS(10)
+    UNITY_SHADOW_COORDS(11)
+    UNITY_VERTEX_INPUT_INSTANCE_ID 
+    UNITY_VERTEX_OUTPUT_STEREO
 };
 
 #include "../Common/Sampling.cginc"

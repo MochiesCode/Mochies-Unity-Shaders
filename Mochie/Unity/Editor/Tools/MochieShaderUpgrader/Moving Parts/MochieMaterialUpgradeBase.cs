@@ -7,29 +7,29 @@ namespace Mochie.ShaderUpgrader
     {
         protected MochieMaterialUpgradeBase()
         {
-            propertyActions.AddRange(AddPropertyActions());
+            propertyActions.AddRange(AddUpgradeActions());
         }
-        
-        readonly List<PropertyActionBase> propertyActions = new List<PropertyActionBase>();
+
+        readonly List<UpgradeActionBase> propertyActions = new List<UpgradeActionBase>();
 
         /// <summary>
         /// Can this material be upgraded? Returning false here will skip this material.
         /// </summary>
         /// <param name="material">Material to be checked</param>
         /// <returns></returns>
-        public abstract bool CanUpgradeMaterial(Material material);
+        public virtual bool CanUpgradeMaterial(Material material) => true;
 
         /// <summary>
         /// Define property actions to be added to the propertyActions list
         /// </summary>
         /// <returns></returns>
-        public abstract List<PropertyActionBase> AddPropertyActions();
-        
+        public abstract List<UpgradeActionBase> AddUpgradeActions();
+
         /// <summary>
         /// Iterate through all properties in propertyActions and run their actions 
         /// </summary>
         /// <param name="material"></param>
-        public void RunUpgrade(Material material)
+        public virtual void RunUpgrade(Material material)
         {
             if(!CanUpgradeMaterial(material))
                 return;

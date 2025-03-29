@@ -1,16 +1,16 @@
 #ifndef STANDARD_SHADOW_INCLUDED
 #define STANDARD_SHADOW_INCLUDED
 
-sampler3D   _DitherMaskLOD;
+sampler3D _DitherMaskLOD;
 
 float ShadowGetOneMinusReflectivity(v2f i){
 
     float metallicity = _MetallicStrength;
-	#if defined(_WORKFLOW_PACKED_ON)
-		metallicity = SamplePackedMap(i.uv0.xy)[_MetallicChannel] * _MetallicStrength;
-	#else
-		metallicity = SampleMetallicMap(i.uv0.xy);
-	#endif
+    #if defined(_WORKFLOW_PACKED_ON)
+        metallicity = SamplePackedMap(i.uv0.xy)[_MetallicChannel] * _MetallicStrength;
+    #else
+        metallicity = SampleMetallicMap(i.uv0.xy);
+    #endif
 
     #if defined(_DETAIL_METALLIC_ON) || defined(_DETAIL_WORKFLOW_PACKED_ON)
         float detailMask = detailMask = _DetailMask.Sample(sampler_DefaultSampler, i.uv1.xy)[_DetailMaskChannel];
@@ -53,21 +53,21 @@ float4 frag (v2f i, UNITY_POSITION(vpos), bool isFrontFace : SV_IsFrontFace) : S
         #endif
         // Use dither mask for alpha blended shadows, based on pixel position xy
         // and alpha level. Our dither texture is 4x4x16.
-        // #ifdef LOD_FADE_CROSSFADE
-        //     #define _LOD_FADE_ON_ALPHA
-        //     alpha *= unity_LODFade.y;
-        // #endif
+        #if defined(LOD_FADE_CROSSFADE)
+            #define _LOD_FADE_ON_ALPHA
+            alpha *= unity_LODFade.y;
+        #endif
         float alphaRef = tex3D(_DitherMaskLOD, float3(vpos.xy*0.25,alpha*0.9375)).a;
         clip (alphaRef - 0.01);
     #endif
 
-    // #ifdef LOD_FADE_CROSSFADE
-    //     #ifdef _LOD_FADE_ON_ALPHA
-    //         #undef _LOD_FADE_ON_ALPHA
-    //     #else
-    //         UnityApplyDitherCrossFade(vpos.xy);
-    //     #endif
-    // #endif
+    #if defined(LOD_FADE_CROSSFADE)
+        #if defined(_LOD_FADE_ON_ALPHA)
+            #undef _LOD_FADE_ON_ALPHA
+        #else
+            UnityApplyDitherCrossFade(vpos.xy);
+        #endif
+    #endif
 
     #if defined(SHADOWS_CUBE) && !defined(SHADOWS_CUBE_IN_DEPTH_TEX)
         return UnityEncodeCubeShadowDepth((length(i.vec) + unity_LightShadowBias.x) * _LightPositionRange.w) + defaultSampler;

@@ -8,15 +8,21 @@ namespace Mochie {
 
         private static string assetPath;
 
-        [MenuItem("Assets/Create/Material (Mochie Standard)", priority = 301)]
-        public static void CreateMochieStandardMaterial(){
-            Shader s = Shader.Find("Mochie/Standard");
+        [MenuItem("Assets/Create/Material (Mochie Standard Mobile)", priority = 301)]
+        public static void CreateMochieStandardMobileMaterial(){
+            Shader s = Shader.Find("Mochie/Standard Mobile");
             CreateMaterialWithShader(s);
         }
 
         [MenuItem("Assets/Create/Material (Mochie Standard Lite)", priority = 301)]
         public static void CreateMochieStandardLiteMaterial(){
             Shader s = Shader.Find("Mochie/Standard Lite");
+            CreateMaterialWithShader(s);
+        }
+
+        [MenuItem("Assets/Create/Material (Mochie Standard)", priority = 301)]
+        public static void CreateMochieStandardMaterial(){
+            Shader s = Shader.Find("Mochie/Standard");
             CreateMaterialWithShader(s);
         }
 

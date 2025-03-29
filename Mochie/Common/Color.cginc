@@ -2,9 +2,9 @@
 #define COLOR_INCLUDED
 
 #ifdef UNITY_COLORSPACE_GAMMA
-	#define mochie_ColorSpaceDouble float3(2.0, 2.0, 2.0)
+    #define mochie_ColorSpaceDouble float3(2.0, 2.0, 2.0)
 #else
-	#define mochie_ColorSpaceDouble float3(4.59479380, 4.59479380, 4.59479380)
+    #define mochie_ColorSpaceDouble float3(4.59479380, 4.59479380, 4.59479380)
 #endif
 
 // ---------------------------
@@ -33,31 +33,31 @@ float3 HSLtoRGB(float3 c) {
 }
 
 float3 RGBtoHSV(float3 c){
-	float4 K = float4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-	float4 p = lerp(float4(c.bg, K.wz), float4(c.gb, K.xy), step(c.b, c.g));
-	float4 q = lerp(float4(p.xyw, c.r), float4(c.r, p.yzx), step(p.x, c.r));
+    float4 K = float4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+    float4 p = lerp(float4(c.bg, K.wz), float4(c.gb, K.xy), step(c.b, c.g));
+    float4 q = lerp(float4(p.xyw, c.r), float4(c.r, p.yzx), step(p.x, c.r));
 
-	float d = q.x - min(q.w, q.y);
-	float e = 1.0e-10;
-	return float3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+    float d = q.x - min(q.w, q.y);
+    float e = 1.0e-10;
+    return float3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
 }
 
 float3 HSVtoRGB(float3 c){
-	float4 K = float4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-	float3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
-	return c.z * lerp(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+    float4 K = float4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+    float3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
+    return c.z * lerp(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 
 float3 HSVShift(float3 col, float hue, float saturation, float value){
-	float3 hsv = float3(hue, saturation, value);
+    float3 hsv = float3(hue, saturation, value);
     float3 hsvCol = RGBtoHSV(col);
     return HSVtoRGB(hsvCol + hsv);
 }
 
 float3 HSVShiftMonoTint(float3 col, float hue, float saturation, float value, float monoTint){
-	float3 hsv = float3(hue, saturation, value);
+    float3 hsv = float3(hue, saturation, value);
     float3 hsvCol = RGBtoHSV(col);
-	hsvCol.x = hsvCol.x * (1-monoTint) + hue;
+    hsvCol.x = hsvCol.x * (1-monoTint) + hue;
     return HSVtoRGB(hsvCol);
 }
 
@@ -106,7 +106,7 @@ float3 HueShiftOklab(float3 color, float shift, float monoTint){
 }
 
 float3 HueShift(float3 col, float hue, float monoTint){
-	return HSVShiftMonoTint(col, hue, 0, 0, monoTint);
+    return HSVShiftMonoTint(col, hue, 0, 0, monoTint);
 }
 
 // sRGB luminance(Y) values
@@ -142,26 +142,26 @@ int GetLum(int r, int g, int b) {
 }
 
 float3 WhitePointAdjust(float3 XYZ, float3 from, float3 to){
-	float3x3 Bradford=float3x3(0.8951,0.2664,-0.1614,
-	-0.7502,1.7135,0.0367,
-	0.0389,-0.0685,1.0296);
+    float3x3 Bradford=float3x3(0.8951,0.2664,-0.1614,
+    -0.7502,1.7135,0.0367,
+    0.0389,-0.0685,1.0296);
 
-	float3x3 BradfordInv=float3x3(0.9869929,-0.1470543,0.1599627,
-	0.4323053,0.5183603,0.0492912,
-	-0.0085287,0.0400428,0.9684867);
+    float3x3 BradfordInv=float3x3(0.9869929,-0.1470543,0.1599627,
+    0.4323053,0.5183603,0.0492912,
+    -0.0085287,0.0400428,0.9684867);
 
 
-	float3 BradFrom= mul(Bradford,from);
-	float3 BradTo= mul(Bradford,to);
+    float3 BradFrom= mul(Bradford,from);
+    float3 BradTo= mul(Bradford,to);
 
-	float3x3 CR=float3x3(BradTo.x/BradFrom.x,0,0,
-	0,BradTo.y/BradFrom.y,0,
-	0,0,BradTo.z/BradFrom.z);
+    float3x3 CR=float3x3(BradTo.x/BradFrom.x,0,0,
+    0,BradTo.y/BradFrom.y,0,
+    0,0,BradTo.z/BradFrom.z);
 
-	float3x3 convBrad= mul(mul(BradfordInv,CR),Bradford);
+    float3x3 convBrad= mul(mul(BradfordInv,CR),Bradford);
 
-	float3 outp=mul(convBrad,XYZ);
-	return outp;
+    float3 outp=mul(convBrad,XYZ);
+    return outp;
 }
 
 // Approximated ACES
@@ -275,7 +275,7 @@ float3 BlendSaturation(float3 s, float3 d){
 }
 
 float3 Desaturate(float3 col){
-	return dot(col, float3(0.3, 0.59, 0.11));
+    return dot(col, float3(0.3, 0.59, 0.11));
 }
 
 float3 BlendLuminosity(float3 s, float3 d){
@@ -286,11 +286,11 @@ float3 BlendLuminosity(float3 s, float3 d){
     float minC = min(min(c.x, c.y), c.z);
     float maxC = max(max(c.x, c.y), c.z);
     if (minC < 0.0) 
-		return sLum + ((c - sLum) * sLum) / (sLum - minC);
+        return sLum + ((c - sLum) * sLum) / (sLum - minC);
     else if (maxC > 1.0) 
-		return sLum + ((c - sLum) * (1.0 - sLum)) / (maxC - sLum);
+        return sLum + ((c - sLum) * (1.0 - sLum)) / (maxC - sLum);
     else 
-		return c;
+        return c;
 }
 
 float3 GetContrast(float3 col, float contrast){
@@ -303,132 +303,132 @@ float3 GetSaturation(float3 col, float interpolator){
 
 // 0 Add, 1 Sub (or alpha), 2 Mul, 3 Mulx2, 4 Overlay, 5 Screen, 6 Lerp
 float3 BlendColors(float3 col0, float3 col1, int blendType){
-	float3 blends[7] = {
-		col0 + col1,
-		col0 - col1,
-		col0 * col1,
-		col0 * col1 * mochie_ColorSpaceDouble,
-		BlendOverlay(col0, col1),
-		BlendScreen(col0, col1),
-		BlendLerp(col0, col1)
-	};
-	return blends[blendType];
+    float3 blends[7] = {
+        col0 + col1,
+        col0 - col1,
+        col0 * col1,
+        col0 * col1 * mochie_ColorSpaceDouble,
+        BlendOverlay(col0, col1),
+        BlendScreen(col0, col1),
+        BlendLerp(col0, col1)
+    };
+    return blends[blendType];
 }
 
 float3 BlendColors(float3 col0, float3 col1, int blendType, float interpolator){
-	float3 blends[7] = {
-		col0 + (col1*interpolator),
-		col0 - (col1*interpolator),
-		col0 * lerp(1, col1, interpolator),
-		col0 * lerp(1, col1 * mochie_ColorSpaceDouble, interpolator),
-		BlendOverlay(col0, col1 * interpolator),
-		BlendScreen(col0, col1 * interpolator),
-		lerp(col0, col1, interpolator)
-	};
-	return blends[blendType];
+    float3 blends[7] = {
+        col0 + (col1*interpolator),
+        col0 - (col1*interpolator),
+        col0 * lerp(1, col1, interpolator),
+        col0 * lerp(1, col1 * mochie_ColorSpaceDouble, interpolator),
+        BlendOverlay(col0, col1 * interpolator),
+        BlendScreen(col0, col1 * interpolator),
+        lerp(col0, col1, interpolator)
+    };
+    return blends[blendType];
 }
 
 float3 BlendColorsAlpha(float3 col0, float3 col1, int blendType, float alpha){
-	float3 blends[7] = {
-		col0 + col1,
-		lerp(col0, col1, alpha),
-		col0 * col1,
-		col0 * col1 * mochie_ColorSpaceDouble,
-		BlendOverlay(col0, col1),
-		BlendScreen(col0, col1),
-		BlendLerp(col0, col1)
-	};
-	return blends[blendType];
+    float3 blends[7] = {
+        col0 + col1,
+        lerp(col0, col1, alpha),
+        col0 * col1,
+        col0 * col1 * mochie_ColorSpaceDouble,
+        BlendOverlay(col0, col1),
+        BlendScreen(col0, col1),
+        BlendLerp(col0, col1)
+    };
+    return blends[blendType];
 }
 
 float3 BlendColorsAlpha(float3 col0, float3 col1, int blendType, float interpolator, float alpha){
-	float3 blends[7] = {
-		col0 + (col1*interpolator),
-		lerp(col0, col1, interpolator*alpha),
-		col0 * lerp(1, col1, interpolator),
-		col0 * lerp(1, col1 * mochie_ColorSpaceDouble, interpolator),
-		BlendOverlay(col0, col1 * interpolator),
-		BlendScreen(col0, col1 * interpolator),
-		lerp(col0, col1, interpolator)
-	};
-	return blends[blendType];
+    float3 blends[7] = {
+        col0 + (col1*interpolator),
+        lerp(col0, col1, interpolator*alpha),
+        col0 * lerp(1, col1, interpolator),
+        col0 * lerp(1, col1 * mochie_ColorSpaceDouble, interpolator),
+        BlendOverlay(col0, col1 * interpolator),
+        BlendScreen(col0, col1 * interpolator),
+        lerp(col0, col1, interpolator)
+    };
+    return blends[blendType];
 }
 
 float BlendScalars(float scalar0, float scalar1, int blendType){
-	float blends[7] = {
-		scalar0 + scalar1,
-		scalar0 - scalar1,
-		scalar0 * scalar1,
-		scalar0 * scalar1 * mochie_ColorSpaceDouble.x,
-		BlendOverlay(scalar0, scalar1),
-		BlendScreen(scalar0, scalar1),
-		BlendLerp(scalar0, scalar1)
-	};
-	return blends[blendType];
+    float blends[7] = {
+        scalar0 + scalar1,
+        scalar0 - scalar1,
+        scalar0 * scalar1,
+        scalar0 * scalar1 * mochie_ColorSpaceDouble.x,
+        BlendOverlay(scalar0, scalar1),
+        BlendScreen(scalar0, scalar1),
+        BlendLerp(scalar0, scalar1)
+    };
+    return blends[blendType];
 }
 
 float BlendScalarsAlpha(float scalar0, float scalar1, int blendType, float alpha){
-	float blends[7] = {
-		scalar0 + scalar1,
-		lerp(scalar0, scalar1, alpha),
-		scalar0 * scalar1,
-		scalar0 * scalar1 * mochie_ColorSpaceDouble.x,
-		BlendOverlay(scalar0, scalar1),
-		BlendScreen(scalar0, scalar1),
-		BlendLerp(scalar0, scalar1)
-	};
-	return blends[blendType];
+    float blends[7] = {
+        scalar0 + scalar1,
+        lerp(scalar0, scalar1, alpha),
+        scalar0 * scalar1,
+        scalar0 * scalar1 * mochie_ColorSpaceDouble.x,
+        BlendOverlay(scalar0, scalar1),
+        BlendScreen(scalar0, scalar1),
+        BlendLerp(scalar0, scalar1)
+    };
+    return blends[blendType];
 }
 
 float BlendScalars(float scalar0, float scalar1, int blendType, float interpolator){
-	float blends[7] = {
-		scalar0 + (scalar1*interpolator),
-		scalar0 - (scalar1*interpolator),
-		scalar0 * lerp(1, scalar1, interpolator),
-		scalar0 * lerp(1, scalar1 * mochie_ColorSpaceDouble.x, interpolator),
-		BlendOverlay(scalar0, scalar1 * interpolator),
-		BlendScreen(scalar0, scalar1 * interpolator),
-		lerp(scalar0, scalar1, interpolator)
-	};
-	return blends[blendType];
+    float blends[7] = {
+        scalar0 + (scalar1*interpolator),
+        scalar0 - (scalar1*interpolator),
+        scalar0 * lerp(1, scalar1, interpolator),
+        scalar0 * lerp(1, scalar1 * mochie_ColorSpaceDouble.x, interpolator),
+        BlendOverlay(scalar0, scalar1 * interpolator),
+        BlendScreen(scalar0, scalar1 * interpolator),
+        lerp(scalar0, scalar1, interpolator)
+    };
+    return blends[blendType];
 }
 
 float BlendScalarsAlpha(float scalar0, float scalar1, int blendType, float interpolator, float alpha){
-	float blends[7] = {
-		scalar0 + (scalar1*interpolator),
-		lerp(scalar0, scalar1, interpolator*alpha),
-		scalar0 * lerp(1, scalar1, interpolator),
-		scalar0 * lerp(1, scalar1 * mochie_ColorSpaceDouble.x, interpolator),
-		BlendOverlay(scalar0, scalar1 * interpolator),
-		BlendScreen(scalar0, scalar1 * interpolator),
-		lerp(scalar0, scalar1, interpolator)
-	};
-	return blends[blendType];
+    float blends[7] = {
+        scalar0 + (scalar1*interpolator),
+        lerp(scalar0, scalar1, interpolator*alpha),
+        scalar0 * lerp(1, scalar1, interpolator),
+        scalar0 * lerp(1, scalar1 * mochie_ColorSpaceDouble.x, interpolator),
+        BlendOverlay(scalar0, scalar1 * interpolator),
+        BlendScreen(scalar0, scalar1 * interpolator),
+        lerp(scalar0, scalar1, interpolator)
+    };
+    return blends[blendType];
 }
 
 // ---------------------------
 // Fake HDR
 // ---------------------------
 float oetf_sRGB_scalar(float L) {
-	float V = 1.055 * (pow(L, 1.0 / 2.4)) - 0.055;
-	if (L <= 0.0031308)
-		V = L * 12.92;
-	return V;
+    float V = 1.055 * (pow(L, 1.0 / 2.4)) - 0.055;
+    if (L <= 0.0031308)
+        V = L * 12.92;
+    return V;
 }
 
 float3 oetf_sRGB(float3 L) {
-	return float3(oetf_sRGB_scalar(L.r), oetf_sRGB_scalar(L.g), oetf_sRGB_scalar(L.b));
+    return float3(oetf_sRGB_scalar(L.r), oetf_sRGB_scalar(L.g), oetf_sRGB_scalar(L.b));
 }
 
 float eotf_sRGB_scalar(float V) {
-	float L = pow((V + 0.055) / 1.055, 2.4);
-	if (V <= oetf_sRGB_scalar(0.0031308))
-		L = V / 12.92;
-	return L;
+    float L = pow((V + 0.055) / 1.055, 2.4);
+    if (V <= oetf_sRGB_scalar(0.0031308))
+        L = V / 12.92;
+    return L;
 }
 
 float3 GetHDR(float3 rgb) {
-	return float3(eotf_sRGB_scalar(rgb.r), eotf_sRGB_scalar(rgb.g), eotf_sRGB_scalar(rgb.b));
+    return float3(eotf_sRGB_scalar(rgb.r), eotf_sRGB_scalar(rgb.g), eotf_sRGB_scalar(rgb.b));
 }
 
 #endif // COLOR_INCLUDED

@@ -1,17 +1,16 @@
 #ifndef STANDARD_LIGHTING_INCLUDED
 #define STANDARD_LIGHTING_INCLUDED
 
-#include "StandardBakery.cginc"
-
 void ApplyLighting(inout InputData id, LightingData ld){
     id.diffuse.rgb *= ld.lightCol;
     id.diffuse.rgb += ld.ltcgiDiffuse;
     id.diffuse.rgb += ld.areaLitDiffuse;
     id.diffuse.rgb += ld.reflectionCol;
     id.diffuse.rgb += ld.specHighlightCol;
+    id.diffuse.rgb += ld.lmSpec;
     id.diffuse.rgb += ld.subsurfaceCol;
     id.diffuse.rgb += id.emission.rgb;
-    id.diffuse.rgb = Filtering(id.diffuse.rgb, _HuePost, _SaturationPost, _BrightnessPost, _ContrastPost, _ACES);
+    id.diffuse.rgb = Filtering(id.diffuse.rgb, _HuePost, _SaturationPost, _BrightnessPost, _ContrastPost, _ACES, true);
 }
 
 void CalculateViewDirection(inout v2f i, out float3 viewDir, out float3 tangentViewDir, out float3x3 tangentToWorld){
@@ -24,19 +23,70 @@ void CalculateViewDirection(inout v2f i, out float3 viewDir, out float3 tangentV
     tangentViewDir.xy /= (tangentViewDir.z + 0.42);
 }
 
-float FadeShadows (float3 worldPos, float atten) {
-    #if HANDLE_SHADOWS_BLENDING_IN_GI
-        float viewZ = dot(_WorldSpaceCameraPos - worldPos, UNITY_MATRIX_V[2].xyz);
-        float shadowFadeDistance = UnityComputeShadowFadeDistance(worldPos, viewZ);
-        float shadowFade = UnityComputeShadowFade(shadowFadeDistance);
-        atten = saturate(atten + shadowFade);
+float SampleBakedOcclusion(float2 lightmapUV, float3 worldPos){
+    #if defined (SHADOWS_SHADOWMASK)
+        #if defined(LIGHTMAP_ON)
+            #if defined(_BICUBIC_SAMPLING_ON)
+                float4 rawOcclusionMask = SampleShadowMaskBicubic(lightmapUV.xy);
+            #else
+                float4 rawOcclusionMask = UNITY_SAMPLE_TEX2D(unity_ShadowMask, lightmapUV.xy);
+            #endif
+        #else
+            float4 rawOcclusionMask = float4(1.0, 1.0, 1.0, 1.0);
+            #if UNITY_LIGHT_PROBE_PROXY_VOLUME
+                if (unity_ProbeVolumeParams.x == 1.0){
+                    rawOcclusionMask = LPPV_SampleProbeOcclusion(worldPos);
+                }
+                else {
+                    #if defined(_BICUBIC_SAMPLING_ON)
+                        rawOcclusionMask = SampleShadowMaskBicubic(lightmapUV.xy);
+                    #else
+                        rawOcclusionMask = UNITY_SAMPLE_TEX2D(unity_ShadowMask, lightmapUV.xy);
+                    #endif
+                }
+            #else
+                #if defined(_BICUBIC_SAMPLING_ON)
+                    rawOcclusionMask = SampleShadowMaskBicubic(lightmapUV.xy);
+                #else
+                    rawOcclusionMask = UNITY_SAMPLE_TEX2D(unity_ShadowMask, lightmapUV.xy);
+                #endif
+            #endif
+        #endif
+        return saturate(dot(rawOcclusionMask, unity_OcclusionMaskSelector));
+
+    #else
+
+        //In forward dynamic objects can only get baked occlusion from LPPV, light probe occlusion is done on the CPU by attenuating the light color.
+        float atten = 1.0f;
+        #if defined(UNITY_INSTANCING_ENABLED) && defined(UNITY_USE_SHCOEFFS_ARRAYS)
+            // ...unless we are doing instancing, and the attenuation is packed into SHC array's .w component.
+            atten = unity_SHC.w;
+        #endif
+
+        #if UNITY_LIGHT_PROBE_PROXY_VOLUME && !defined(LIGHTMAP_ON) && !UNITY_STANDARD_SIMPLE
+            float4 rawOcclusionMask = atten.xxxx;
+            if (unity_ProbeVolumeParams.x == 1.0)
+                rawOcclusionMask = LPPV_SampleProbeOcclusion(worldPos);
+            return saturate(dot(rawOcclusionMask, unity_OcclusionMaskSelector));
+        #endif
+
+        return atten;
+    #endif
+}
+
+float FadeShadows (float3 worldPos, float2 lmuv, float atten) {
+    #if defined(HANDLE_SHADOWS_BLENDING_IN_GI)
+        float bakedAtten = SampleBakedOcclusion(lmuv, worldPos);
+        float zDist = dot(_WorldSpaceCameraPos - worldPos, UNITY_MATRIX_V[2].xyz);
+        float fadeDist = UnityComputeShadowFadeDistance(worldPos, zDist);
+        atten = UnityMixRealtimeAndBakedShadows(atten, bakedAtten, UnityComputeShadowFade(fadeDist));
     #endif
     return atten;
 }
 
 float3 GetSubsurfaceLight(v2f i, InputData id, inout LightingData ld, float3 lightCol, float3 lightDir, float3 viewDir, float3 indirectLight, float atten){
-	ld.thickness = pow(1-SampleTexture(_ThicknessMap, i.uv0.xy), _ThicknessMapPower);
-	float3 subsurfaceColor = _ScatterCol * lerp(1, id.baseColor, _ScatterBaseColorTint);
+    ld.thickness = pow(1-SampleTexture(_ThicknessMap, i.uv0.xy), _ThicknessMapPower);
+    float3 subsurfaceColor = _ScatterCol * lerp(1, id.baseColor, _ScatterBaseColorTint);
     float3 vLTLight = lightDir + id.normal * _ScatterDist;
     float3 fLTDot = pow(saturate(dot(viewDir, -vLTLight)), _ScatterPow) * _ScatterIntensity * 1.0/UNITY_PI; 
     return lerp(1, atten, float(any(_WorldSpaceLightPos0.xyz))) 
@@ -60,12 +110,13 @@ float3 ShadeSHNL(float3 normal) {
     indirect.r = NonlinearSH(unity_SHAr.w, unity_SHAr.xyz, normal);
     indirect.g = NonlinearSH(unity_SHAg.w, unity_SHAg.xyz, normal);
     indirect.b = NonlinearSH(unity_SHAb.w, unity_SHAb.xyz, normal);
-    return max(0, indirect);
+    return indirect;
 }
 
-void GetIndirectLighting(v2f i, float3 viewDir, InputData id, float3 normal, inout float3 indirectCol, inout float3 lmSpec, float3 tangentViewDir, float atten) {
-	indirectCol = 0;
+void GetIndirectLighting(v2f i, InputData id, float3 viewDir, inout float3 indirectCol, inout float3 lmSpec, float3 tangentViewDir, float atten) {
+    indirectCol = 0;
     lmSpec = 0;
+
     #if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
         #if defined(_BICUBIC_SAMPLING_ON)
             indirectCol = DecodeLightmap(SampleLightmapBicubic(i.lightmapUV));
@@ -79,20 +130,21 @@ void GetIndirectLighting(v2f i, float3 viewDir, InputData id, float3 normal, ino
             #endif
         #endif
 
+        float bakeryLMSpecRough = id.roughness * id.roughness; // max(0.001, id.roughness); - looks terrible lol
         #if defined(BAKERY_MONOSH)
-            BakeryMonoSH(indirectCol, lmSpec, lightmapDir, normal, viewDir, id.roughness);
+            BakeryMonoSH(indirectCol, lmSpec, lightmapDir, id.normal, viewDir, bakeryLMSpecRough);
         #elif defined(BAKERY_RNM)
-            BakeryRNMLightmapAndSpecular(indirectCol, i.lightmapUV, lmSpec, id.tsNormal, tangentViewDir, viewDir, id.roughness);
+            BakeryRNMLightmapAndSpecular(indirectCol, i.lightmapUV, lmSpec, id.tsNormal, tangentViewDir, viewDir, bakeryLMSpecRough);
         #elif defined(BAKERY_SH)
-            BakerySHLightmapAndSpecular(indirectCol, i.lightmapUV, lmSpec, normal, viewDir, id.roughness);
+            BakerySHLightmapAndSpecular(indirectCol, i.lightmapUV, lmSpec, id.normal, viewDir, bakeryLMSpecRough);
         #else
             #if defined(DIRLIGHTMAP_COMBINED)
-                indirectCol = DecodeDirectionalLightmap(indirectCol, lightmapDir, normal);
+                indirectCol = DecodeDirectionalLightmap(indirectCol, lightmapDir, id.normal);
             #endif
         #endif
 
         #if defined(LIGHTMAP_SHADOW_MIXING) && !defined(SHADOWS_SHADOWMASK) && defined(SHADOWS_SCREEN)
-            indirectCol = SubtractMainLightWithRealtimeAttenuationFromLightmap(indirectCol, atten, 0, normal);
+            indirectCol = SubtractMainLightWithRealtimeAttenuationFromLightmap(indirectCol, atten, 0, id.normal);
         #endif
 
         #if defined(DYNAMICLIGHTMAP_ON)
@@ -109,17 +161,31 @@ void GetIndirectLighting(v2f i, float3 viewDir, InputData id, float3 normal, ino
                     #else
                         float4 realtimeDirTex = UNITY_SAMPLE_TEX2D_SAMPLER(unity_DynamicDirectionality, unity_DynamicLightmap, i.lightmapUV.zw);
                     #endif
-                    indirectCol += DecodeDirectionalLightmap(realtimeColor, realtimeDirTex, normal);
+                    indirectCol += DecodeDirectionalLightmap(realtimeColor, realtimeDirTex, id.normal);
                 #else
                     indirectCol += realtimeColor;
                 #endif
             }
         #endif
     #else
-        #if defined(BAKERY_SHNONLINEAR)
-            indirectCol = ShadeSHNL(normal);
+        #if UNITY_LIGHT_PROBE_PROXY_VOLUME
+            if (unity_ProbeVolumeParams.x == 1) {
+                indirectCol = SHEvalLinearL0L1_SampleProbeVolume(float4(id.normal, 1), i.worldPos);
+                indirectCol = max(0, indirectCol);
+            }
+            else {
+                #if defined(BAKERY_SHNONLINEAR)
+                    indirectCol = max(0, ShadeSHNL(id.normal));
+                #else
+                    indirectCol = max(0, ShadeSH9(float4(id.normal, 1)));
+                #endif
+            }
         #else
-            indirectCol = ShadeSH9(float4(normal, 1));
+            #if defined(BAKERY_SHNONLINEAR)
+                indirectCol = max(0, ShadeSHNL(id.normal));
+            #else
+                indirectCol = max(0, ShadeSH9(float4(id.normal, 1)));
+            #endif
         #endif
     #endif
 }
@@ -163,7 +229,7 @@ float3 Shade4PointLightsNoPopIn(
 
 float3 GetVertexLightColor(v2f i, InputData id){
     float3 vLightCol = 0;
-    #if defined(UNITY_PASS_FORWARDBASE)
+    #if defined(BASE_PASS)
         if (i.vertexLightOn){
             vLightCol = Shade4PointLightsNoPopIn(unity_4LightPosX0, unity_4LightPosY0, 
                 unity_4LightPosZ0, unity_LightColor[0].rgb, 
@@ -176,27 +242,6 @@ float3 GetVertexLightColor(v2f i, InputData id){
     return vLightCol;
 }
 
-// void CalculateSpecularOcclusion(inout LightingData ld){
-//     float3 specularOcclusion = 1;
-//     #if defined(UNITY_PASS_FORWARDBASE)
-//         #if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
-//             if (_SpecularOcclusionToggle == 1){
-//                 float3 lightmap = ld.indirectCol;
-//                 lightmap = GetContrast(lightmap, _SpecularOcclusionContrast);
-//                 lightmap = lerp(lightmap, GetHDR(lightmap), _SpecularOcclusionHDR);
-//                 lightmap *= _SpecularOcclusionBrightness;
-//                 lightmap *= _SpecularOcclusionTint;
-//                 ld.specularOcclusion = saturate(lerp(1, lightmap, _SpecularOcclusionStrength));
-//             }
-//         #else
-//             if (_SpecularOcclusionToggle == 1){
-//                 ld.specularOcclusion = lerp(1, ld.atten * saturate((ld.VNdotL * ld.VNdotL) + ld.VNdotL), 0.9);
-//                 ld.specularOcclusion = saturate(lerp(1, ld.specularOcclusion, _SpecularOcclusionToggle*_SpecularOcclusionStrength));
-//             }
-//         #endif
-//     #endif
-// }
-
 void InitializeLightingData(v2f i, inout InputData id, inout LightingData ld, float3 viewDir, float3 tangentViewDir, float atten){
 
     float omr = unity_ColorSpaceDielectricSpec.a - id.metallic * unity_ColorSpaceDielectricSpec.a;
@@ -204,20 +249,21 @@ void InitializeLightingData(v2f i, inout InputData id, inout LightingData ld, fl
     float NdotL = saturate(dot(id.normal, lightDir));
     float VNdotL = saturate(dot(id.vNormal, lightDir));
     ld.specularTint = lerp(unity_ColorSpaceDielectricSpec.rgb, id.baseColor, id.metallic);
-    
-    bool isRealtime = any(_WorldSpaceLightPos0.xyz);
-    if (!isRealtime)
+    ld.isRealtime = any(_WorldSpaceLightPos0.xyz);
+    if (ld.isRealtime)
         VNdotL = 1;
 
     float3 vLightCol = GetVertexLightColor(i, id);
     float3 directCol = (_LightColor0 * atten * NdotL) + vLightCol;
     float3 indirectCol = 0;
     
-    #if defined(UNITY_PASS_FORWARDBASE)
-        GetIndirectLighting(i, viewDir, id, id.normal, indirectCol, ld.lmSpec, tangentViewDir, atten);
-        [branch]
-        if (_Subsurface == 1) 
-            ld.subsurfaceCol = GetSubsurfaceLight(i, id, ld, _LightColor0, lightDir, viewDir, indirectCol, atten);
+    #if defined(BASE_PASS)
+        GetIndirectLighting(i, id, viewDir, indirectCol, ld.lmSpec, tangentViewDir, atten);
+        #if !defined(STANDARD_MOBILE)
+            [branch]
+            if (_Subsurface == 1) 
+                ld.subsurfaceCol = GetSubsurfaceLight(i, id, ld, _LightColor0, lightDir, viewDir, indirectCol, atten);
+        #endif
     #endif
     
     ld.directCol = directCol;
@@ -229,10 +275,7 @@ void InitializeLightingData(v2f i, inout InputData id, inout LightingData ld, fl
     ld.VNdotL = VNdotL;
     ld.atten = atten;
     ld.omr = omr;
-    ld.isRealtime = isRealtime;
     ld.specularOcclusion = 1;
-
-    // CalculateSpecularOcclusion(ld);
     
     id.diffuse.rgb = PreMultiplyAlpha(id.diffuse.rgb, id.alpha, ld.omr, id.alpha);
     

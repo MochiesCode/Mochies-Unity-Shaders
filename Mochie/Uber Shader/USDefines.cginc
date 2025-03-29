@@ -13,38 +13,38 @@ MOCHIE_DECLARE_TEX2D(_MainTex);
 float4 _MainTex_ST, _MainTex_TexelSize;
 
 #if defined(SHADOWS_DEPTH) && !defined(SPOT)
-	#define SHADOW_COORDS(idx1) unityShadowCoord2 _ShadowCoord : TEXCOORD##idx1;
+    #define SHADOW_COORDS(idx1) unityShadowCoord2 _ShadowCoord : TEXCOORD##idx1;
 #endif
 
 #ifdef POINT
-	#define POI_LIGHT_ATTENUATION(destName, shadows, input, worldPos) \
-		unityShadowCoord3 lightCoord = mul(unity_WorldToLight, unityShadowCoord4(worldPos, 1)).xyz; \
-		float shadows = UNITY_SHADOW_ATTENUATION(input, worldPos); \
-		float destName = tex2D(_LightTexture0, dot(lightCoord, lightCoord).rr).r;
+    #define POI_LIGHT_ATTENUATION(destName, shadows, input, worldPos) \
+        unityShadowCoord3 lightCoord = mul(unity_WorldToLight, unityShadowCoord4(worldPos, 1)).xyz; \
+        float shadows = UNITY_SHADOW_ATTENUATION(input, worldPos); \
+        float destName = tex2D(_LightTexture0, dot(lightCoord, lightCoord).rr).r;
 #endif
 
 #ifdef POINT_COOKIE
-	#if !defined(UNITY_HALF_PRECISION_FRAGMENT_SHADER_REGISTERS)
-		#define DECLARE_LIGHT_COORD(input, worldPos) unityShadowCoord3 lightCoord = mul(unity_WorldToLight, unityShadowCoord4(worldPos, 1)).xyz
-	#else
-		#define DECLARE_LIGHT_COORD(input, worldPos) unityShadowCoord3 lightCoord = input._LightCoord
-	#endif
-	#define POI_LIGHT_ATTENUATION(destName, shadows, input, worldPos) \
+    #if !defined(UNITY_HALF_PRECISION_FRAGMENT_SHADER_REGISTERS)
+        #define DECLARE_LIGHT_COORD(input, worldPos) unityShadowCoord3 lightCoord = mul(unity_WorldToLight, unityShadowCoord4(worldPos, 1)).xyz
+    #else
+        #define DECLARE_LIGHT_COORD(input, worldPos) unityShadowCoord3 lightCoord = input._LightCoord
+    #endif
+    #define POI_LIGHT_ATTENUATION(destName, shadows, input, worldPos) \
         DECLARE_LIGHT_COORD(input, worldPos); \
         float shadows = UNITY_SHADOW_ATTENUATION(input, worldPos); \
         float destName = tex2D(_LightTextureB0, dot(lightCoord, lightCoord).rr).r * texCUBE(_LightTexture0, lightCoord).w;
 #endif
 
 #ifdef SPOT
-	#if !defined(UNITY_HALF_PRECISION_FRAGMENT_SHADER_REGISTERS)
-		#define DECLARE_LIGHT_COORD(input, worldPos) unityShadowCoord4 lightCoord = mul(unity_WorldToLight, unityShadowCoord4(worldPos, 1))
-	#else
-		#define DECLARE_LIGHT_COORD(input, worldPos) unityShadowCoord4 lightCoord = input._LightCoord
-	#endif
-	#define POI_LIGHT_ATTENUATION(destName, shadows, input, worldPos) \
-		DECLARE_LIGHT_COORD(input, worldPos); \
-		float shadows = UNITY_SHADOW_ATTENUATION(input, worldPos); \
-		float destName = (lightCoord.z > 0) * UnitySpotCookie(lightCoord) * UnitySpotAttenuate(lightCoord.xyz);
+    #if !defined(UNITY_HALF_PRECISION_FRAGMENT_SHADER_REGISTERS)
+        #define DECLARE_LIGHT_COORD(input, worldPos) unityShadowCoord4 lightCoord = mul(unity_WorldToLight, unityShadowCoord4(worldPos, 1))
+    #else
+        #define DECLARE_LIGHT_COORD(input, worldPos) unityShadowCoord4 lightCoord = input._LightCoord
+    #endif
+    #define POI_LIGHT_ATTENUATION(destName, shadows, input, worldPos) \
+        DECLARE_LIGHT_COORD(input, worldPos); \
+        float shadows = UNITY_SHADOW_ATTENUATION(input, worldPos); \
+        float destName = (lightCoord.z > 0) * UnitySpotCookie(lightCoord) * UnitySpotAttenuate(lightCoord.xyz);
 #endif
 
 // PBR Shading
@@ -487,77 +487,79 @@ float3 uvOffsetOut;
 
 struct lighting {
     float NdotL;
-	float NdotV;
-	float NdotH;
-	float TdotH;
-	float BdotH;
-	float LdotH;
-	float VdotL;
-	float VVRdotL;
+    float NdotV;
+    float NdotH;
+    float TdotH;
+    float BdotH;
+    float LdotH;
+    float VdotL;
+    float VVRdotL;
     float3 ao;
-	float3 sRamp;
+    float3 sRamp;
     float worldBrightness;
     float3 directCol;
     float3 indirectCol;
-	float3 vLightCol;
+    float3 vLightCol;
     float3 lightDir;
-	float3 vLightDir; 
+    float3 vLightDir; 
     float3 viewDir;
-	float3 viewDirVR;
+    float3 viewDirVR;
     float3 halfVector; 
     float3 normalDir;
     float3 reflectionDir;
-	float3 normal;
-	float3 normalMesh;
-	float3 binormal;
-	float4 tangent;
-	float2 screenUVs;
-	bool lightEnv;
-	bool lightEnvFull;
+    float3 normal;
+    float3 normalMesh;
+    float3 binormal;
+    float4 tangent;
+    float2 screenUVs;
+    bool lightEnv;
+    bool lightEnvFull;
 };
 
 struct masks {
     float reflectionMask;
     float specularMask;
-	float matcapPrimMask;
-	float shadowMask;
-	float subsurfMask;
-	float diffuseMask;
-	float matcapSecMask;
-	float rimMask;
-	float eRimMask;
-	float detailMask;
-	float dissolveMask;
-	float anisoMask;
-	float filterMask;
-	float emissMask;
-	float emissPulseMask;
-	float refractMask;
-	float refractDissolveMask;
-	float iridescenceMask;
-	float4 teamMask;
+    float matcapPrimMask;
+    float shadowMask;
+    float subsurfMask;
+    float diffuseMask;
+    float matcapSecMask;
+    float rimMask;
+    float eRimMask;
+    float detailMask;
+    float dissolveMask;
+    float anisoMask;
+    float filterMask;
+    float emissMask;
+    float emissPulseMask;
+    float refractMask;
+    float refractDissolveMask;
+    float iridescenceMask;
+    float4 teamMask;
 };
 
 struct audioLinkData {
-	bool textureExists;
-	float bass;
-	float lowMid;
-	float upperMid;
-	float treble;
+    bool textureExists;
+    float bass;
+    float lowMid;
+    float upperMid;
+    float treble;
 };
 
 struct appdata {
     float4 vertex : POSITION;
     float4 uv : TEXCOORD0;
-	float4 uv1 : TEXCOORD1;
-	float4 uv2 : TEXCOORD2;
+    float4 uv1 : TEXCOORD1;
+    float4 uv2 : TEXCOORD2;
     float4 tangent : TANGENT;
     float3 normal : NORMAL;
-	float4 color : COLOR_Centroid;
-	UNITY_VERTEX_INPUT_INSTANCE_ID
+    float4 color : COLOR_Centroid;
+    UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
 #include "USAudioLink.cginc"
+
+int _Screenspace;
 
 #if X_FEATURES
 
@@ -567,7 +569,7 @@ int _WireframeToggle, _WFMode, _WireframeTransparency;
 int _GlitchToggle;
 int _ShatterToggle;
 int _CloneToggle, _ClonePattern, _ClonePosition, _SaturateEP;
-int _Screenspace;
+
 int _DistanceFadeToggle;
 int _ShowInMirror, _ShowBase, _Connected;
 int _DissolveChannel, _DissolveWave, _DissolveBlending;
@@ -595,68 +597,68 @@ float _Visibility, _CloneSize;
 float _AudioLinkTriOffsetStrength;
 
 struct v2g {
-	float4 pos : POSITION;
-	centroid float4 uv : TEXCOORD0;
-	centroid float4 uv1 : TEXCOORD1;
-	centroid float4 uv2 : TEXCOORD2;
-	centroid float4 uv3 : TEXCOORD3;
-	centroid float4 rawUV : TEXCOORD4;
-	float4 worldPos : TEXCOORD5;
-	float3 binormal : TEXCOORD6; 
-	float3 tangentViewDir : TEXCOORD7;
-	float3 cameraPos : TEXCOORD8;
-	float3 objPos : TEXCOORD9;
-	float4 grabPos : TEXCOORD10;
-	bool isReflection : TEXCOORD11;
-	float4 localPos : TEXCOORD12;
-	float roundingMask : TEXCOORD13;
-	float4 screenPos : TEXCOORD14;
-	float thicknessMask : TEXCOORD15;
+    float4 pos : POSITION;
+    centroid float4 uv : TEXCOORD0;
+    centroid float4 uv1 : TEXCOORD1;
+    centroid float4 uv2 : TEXCOORD2;
+    centroid float4 uv3 : TEXCOORD3;
+    centroid float4 rawUV : TEXCOORD4;
+    float4 worldPos : TEXCOORD5;
+    float3 binormal : TEXCOORD6; 
+    float3 tangentViewDir : TEXCOORD7;
+    float3 cameraPos : TEXCOORD8;
+    float3 objPos : TEXCOORD9;
+    float4 grabPos : TEXCOORD10;
+    bool isReflection : TEXCOORD11;
+    float4 localPos : TEXCOORD12;
+    float roundingMask : TEXCOORD13;
+    float4 screenPos : TEXCOORD14;
+    float thicknessMask : TEXCOORD15;
 
-	float4 color : COLOR_Centroid;
-	float4 tangent : TANGENT;
-	float3 normal : NORMAL;
+    float4 color : COLOR_Centroid;
+    float4 tangent : TANGENT;
+    float3 normal : NORMAL;
 
-	UNITY_SHADOW_COORDS(19)
-	UNITY_FOG_COORDS(20)
+    UNITY_SHADOW_COORDS(19)
+    UNITY_FOG_COORDS(20)
 
-	UNITY_VERTEX_INPUT_INSTANCE_ID
-	UNITY_VERTEX_OUTPUT_STEREO
+    UNITY_VERTEX_INPUT_INSTANCE_ID
+    UNITY_VERTEX_OUTPUT_STEREO
 };
 
 struct g2f {
-	float4 pos : SV_POSITION;
-	centroid float4 uv : TEXCOORD0;
-	centroid float4 uv1 : TEXCOORD1;
-	centroid float4 uv2 : TEXCOORD2;
-	centroid float4 uv3 : TEXCOORD3;
-	centroid float4 rawUV : TEXCOORD4;
-	float4 worldPos : TEXCOORD5;
-	float3 binormal : TEXCOORD6; 
-	float3 tangentViewDir : TEXCOORD7;
-	float3 cameraPos : TEXCOORD8;
-	float3 objPos : TEXCOORD9;
-	float3 bCoords : TEXCOORD10;
-	float WFStr : TEXCOORD11;
-	uint instID : TEXCOORD12;
-	float4 grabPos : TEXCOORD13;
-	bool isReflection : TEXCOORD14;
-	float4 localPos : TEXCOORD15;
-	float wfOpac : TEXCOORD16;
-	float4 screenPos : TEXCOORD17;
-	float wfOpacAL : TEXCOORD18;
-	float wfStrAL : TEXCOORD19;
-	float thicknessMask : TEXCOORD20;
+    float4 pos : SV_POSITION;
+    centroid float4 uv : TEXCOORD0;
+    centroid float4 uv1 : TEXCOORD1;
+    centroid float4 uv2 : TEXCOORD2;
+    centroid float4 uv3 : TEXCOORD3;
+    centroid float4 rawUV : TEXCOORD4;
+    float4 worldPos : TEXCOORD5;
+    float3 binormal : TEXCOORD6; 
+    float3 tangentViewDir : TEXCOORD7;
+    float3 cameraPos : TEXCOORD8;
+    float3 objPos : TEXCOORD9;
+    float3 bCoords : TEXCOORD10;
+    float WFStr : TEXCOORD11;
+    uint instID : TEXCOORD12;
+    float4 grabPos : TEXCOORD13;
+    bool isReflection : TEXCOORD14;
+    float4 localPos : TEXCOORD15;
+    float wfOpac : TEXCOORD16;
+    float4 screenPos : TEXCOORD17;
+    float wfOpacAL : TEXCOORD18;
+    float wfStrAL : TEXCOORD19;
+    float thicknessMask : TEXCOORD20;
 
-	float4 color : COLOR_Centroid;
-	float4 tangent : TANGENT;
-	float3 normal : NORMAL;
+    float4 color : COLOR_Centroid;
+    float4 tangent : TANGENT;
+    float3 normal : NORMAL;
 
-	UNITY_SHADOW_COORDS(24)
-	UNITY_FOG_COORDS(25)
+    UNITY_SHADOW_COORDS(24)
+    UNITY_FOG_COORDS(25)
 
-	UNITY_VERTEX_INPUT_INSTANCE_ID
-	UNITY_VERTEX_OUTPUT_STEREO
+    UNITY_VERTEX_INPUT_INSTANCE_ID
+    UNITY_VERTEX_OUTPUT_STEREO
 };
 
 #include "USXFeatures.cginc"
@@ -667,32 +669,32 @@ struct g2f {
 #define g2f v2f
 
 struct v2f {
-	float4 pos : SV_POSITION;
-	centroid float4 uv : TEXCOORD0;
-	centroid float4 uv1 : TEXCOORD1;
-	centroid float4 uv2 : TEXCOORD2;
-	centroid float4 uv3 : TEXCOORD3;
-	centroid float4 rawUV : TEXCOORD4;
-	float4 worldPos : TEXCOORD5;
-	float3 binormal : TEXCOORD6; 
-	float3 tangentViewDir : TEXCOORD7;
-	float3 cameraPos : TEXCOORD8;
-	float3 objPos : TEXCOORD9;
-	float4 grabPos : TEXCOORD10;
-	bool isReflection : TEXCOORD11;
-	float4 localPos : TEXCOORD12;
-	float4 screenPos : TEXCOORD13;
-	float thicknessMask : TEXCOORD14;
+    float4 pos : SV_POSITION;
+    centroid float4 uv : TEXCOORD0;
+    centroid float4 uv1 : TEXCOORD1;
+    centroid float4 uv2 : TEXCOORD2;
+    centroid float4 uv3 : TEXCOORD3;
+    centroid float4 rawUV : TEXCOORD4;
+    float4 worldPos : TEXCOORD5;
+    float3 binormal : TEXCOORD6; 
+    float3 tangentViewDir : TEXCOORD7;
+    float3 cameraPos : TEXCOORD8;
+    float3 objPos : TEXCOORD9;
+    float4 grabPos : TEXCOORD10;
+    bool isReflection : TEXCOORD11;
+    float4 localPos : TEXCOORD12;
+    float4 screenPos : TEXCOORD13;
+    float thicknessMask : TEXCOORD14;
 
-	float4 color : COLOR_Centroid;
-	float4 tangent : TANGENT;
-	float3 normal : NORMAL;
+    float4 color : COLOR_Centroid;
+    float4 tangent : TANGENT;
+    float3 normal : NORMAL;
 
-	UNITY_SHADOW_COORDS(18)
-	UNITY_FOG_COORDS(19)
-	
-	UNITY_VERTEX_INPUT_INSTANCE_ID
-	UNITY_VERTEX_OUTPUT_STEREO
+    UNITY_SHADOW_COORDS(18)
+    UNITY_FOG_COORDS(19)
+    
+    UNITY_VERTEX_INPUT_INSTANCE_ID
+    UNITY_VERTEX_OUTPUT_STEREO
 };
 #endif
 

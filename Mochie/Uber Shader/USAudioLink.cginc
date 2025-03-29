@@ -310,40 +310,40 @@ float4 AudioLinkGetAudioSourcePosition()
 }
 
 float GetAudioLinkBand(audioLinkData al, int band, float remapMin, float remapMax){
-	float4 bands = float4(al.bass, al.lowMid, al.upperMid, al.treble);
-	return Remap(bands[band], _AudioLinkRemapMin, _AudioLinkRemapMax, remapMin, remapMax);
+    float4 bands = float4(al.bass, al.lowMid, al.upperMid, al.treble);
+    return Remap(bands[band], _AudioLinkRemapMin, _AudioLinkRemapMax, remapMin, remapMax);
 }
 
 void GrabExists(inout audioLinkData al, inout float versionBand, inout float versionTime){
-	float width = 0;
-	float height = 0;
-	_AudioTexture.GetDimensions(width, height);
-	if (width > 64){
-		versionBand = 0.0625;
-		versionTime = 0.25;
-	}
-	al.textureExists = width > 16;
+    float width = 0;
+    float height = 0;
+    _AudioTexture.GetDimensions(width, height);
+    if (width > 64){
+        versionBand = 0.0625;
+        versionTime = 0.25;
+    }
+    al.textureExists = width > 16;
 }
 
 float SampleAudioTexture(float time, float band){
-	return MOCHIE_SAMPLE_TEX2D_LOD(_AudioTexture, float2(time,band),0);
+    return MOCHIE_SAMPLE_TEX2D_LOD(_AudioTexture, float2(time,band),0);
 }
 
 void InitializeAudioLink(inout audioLinkData al, float time){
-	float versionBand = 1;
-	float versionTime = 1;
-	GrabExists(al, versionBand, versionTime);
-	if (al.textureExists){
-		time *= versionTime;
-		al.bass = SampleAudioTexture(time, 0.125 * versionBand);
-		al.lowMid = SampleAudioTexture(time, 0.375 * versionBand);
-		al.upperMid = SampleAudioTexture(time, 0.625 * versionBand);
-		al.treble = SampleAudioTexture(time, 0.875 * versionBand);
-	}
+    float versionBand = 1;
+    float versionTime = 1;
+    GrabExists(al, versionBand, versionTime);
+    if (al.textureExists){
+        time *= versionTime;
+        al.bass = SampleAudioTexture(time, 0.125 * versionBand);
+        al.lowMid = SampleAudioTexture(time, 0.375 * versionBand);
+        al.upperMid = SampleAudioTexture(time, 0.625 * versionBand);
+        al.treble = SampleAudioTexture(time, 0.875 * versionBand);
+    }
 }
 
 void ApplyVisualizers(float2 uv, inout float3 col){
-	if (_OscilloscopeStrength > 0){
+    if (_OscilloscopeStrength > 0){
         bool marginL = uv.x > _OscilloscopeMarginLR.x;
         bool marginR = uv.x < _OscilloscopeMarginLR.y;
         bool marginT = uv.y < _OscilloscopeMarginTB.x;
@@ -356,7 +356,7 @@ void ApplyVisualizers(float2 uv, inout float3 col){
             oscilloscope *= _OscilloscopeCol.rgb * _OscilloscopeCol.a * _OscilloscopeStrength * _AudioLinkStrength;
             col += oscilloscope;
         }
-	}
+    }
 }
 
 #endif

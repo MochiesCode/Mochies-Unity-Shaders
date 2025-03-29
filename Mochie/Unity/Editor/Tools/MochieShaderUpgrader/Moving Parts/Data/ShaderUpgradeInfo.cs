@@ -6,16 +6,28 @@ namespace Mochie.ShaderUpgrader
     public class ShaderUpgradeInfo
     {
         public string ShaderName { get; private set; }
-        public string OldShaderGuid { get; private set; }
-        public string NewShaderGuid { get; private set; }
-        
-        private ShaderUpgradeInfo() {}
+        public MochieMaterialUpgradeBase[] Upgrades { get; private set; }
 
-        public ShaderUpgradeInfo(string shaderName, string oldShaderGuid, string newShaderGuid)
+        private ShaderUpgradeInfo() {}
+        
+        public ShaderUpgradeInfo(string shaderName, params MochieMaterialUpgradeBase[] upgrades)
         {
             ShaderName = shaderName;
-            OldShaderGuid = oldShaderGuid;
-            NewShaderGuid = newShaderGuid;
+            Upgrades = upgrades;
+        }
+
+        protected virtual bool IsValidUpgrade(Material material)
+        {
+            return material.shader.name == ShaderName;
+        }
+
+        public virtual void RunUpgrade(Material material)
+        {
+            if(!IsValidUpgrade(material))
+                return;
+            
+            foreach(var upgrade in Upgrades)
+                upgrade.RunUpgrade(material);
         }
     }
 }

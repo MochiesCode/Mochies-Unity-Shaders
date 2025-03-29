@@ -8,6 +8,7 @@
 v2f vert (appdata v){
     v2f o = (v2f)0;
     UNITY_SETUP_INSTANCE_ID(v);
+    UNITY_TRANSFER_INSTANCE_ID(v, o);
     UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
     
     #if defined(META_PASS)
@@ -40,7 +41,7 @@ v2f vert (appdata v){
             }
         #endif
     #else
-        #if defined(UNITY_PASS_FORWARDBASE)
+        #if defined(BASE_PASS)
             o.vertexLightOn = false;
             #if defined(VERTEXLIGHT_ON)
                 o.vertexLightOn = true;

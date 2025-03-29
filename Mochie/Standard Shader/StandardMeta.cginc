@@ -5,12 +5,16 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
     
     InitializeDefaultSampler(defaultSampler);
     
-    localVertexPos = i.localPos;
-    localVertexNormal = i.localNorm;
-
     float3x3 tangentToWorld;
     float3 viewDir, tangentViewDir;
     CalculateViewDirection(i, viewDir, tangentViewDir, tangentToWorld);
+    
+    // For triplanar
+    // Easier to just make these global instead of making a struct and passing them around
+    worldVertexPos = i.worldPos;
+    worldVertexNormal = i.normal;
+    localVertexPos = i.localPos;
+    localVertexNormal = i.localNorm;
 
     InputData id = (InputData)0;
     InitializeInputData(i, id, tangentToWorld, isFrontFace);

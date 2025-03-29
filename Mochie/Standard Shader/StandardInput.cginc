@@ -2,7 +2,7 @@
 #define STANDARD_INPUT_INCLUDED
 
 void InitializeDefaultSampler(out float4 defaultSampler){
-    defaultSampler = _DefaultSampler.Sample(sampler_DefaultSampler, 0) * EPSILON;
+    defaultSampler = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DefaultSampler, sampler_DefaultSampler, 0) * EPSILON;
 }
 
 void DebugView(v2f i, InputData id, LightingData ld, inout float4 diffuse){
@@ -22,45 +22,71 @@ void DebugView(v2f i, InputData id, LightingData ld, inout float4 diffuse){
     }
 }
 
-float3 Filtering(float3 col, float hue, float saturation, float brightness, float contrast, float aces){
-	if (_Filtering == 1){
-		if ((hue > 0 && hue < 1) || _MonoTint == 1){
-			if (_HueMode == 0)
-				col = HueShift(col, hue, _MonoTint);
-			else
-				col = HueShiftOklab(col, hue, _MonoTint);
-		}
-		col = lerp(dot(col, float3(0.3,0.59,0.11)), col, saturation);
-		col = GetContrast(col, contrast);
-		col = lerp(col, ACES(col), aces);
-		col *= brightness;
+// Unused for now
+// Based on https://halisavakis.com/my-take-on-shaders-color-grading-with-look-up-textures-lut/
+#define COLORS 32.0
+void ApplyCustomLUT(inout float3 col){
+    if (_ColorGradingLUTStrength > 0 && _SampleCustomLUT == 1){
+        float maxColor = COLORS - 1.0;
+        float halfColX = 0.5 / _ColorGradingLUT_TexelSize.z;
+        float halfColY = 0.5 / _ColorGradingLUT_TexelSize.w;
+        float threshold = maxColor / COLORS;
+
+        float xOffset = halfColX + col.r * threshold / COLORS;
+        float yOffset = halfColY + col.g * threshold;
+        float cell = floor(col.b * maxColor);
+
+        float2 lutPos = float2(cell / COLORS + xOffset, yOffset);
+        float4 gradedCol = MOCHIE_SAMPLE_TEX2D_SAMPLER(_ColorGradingLUT, sampler_DefaultSampler, lutPos);
+        
+        col = lerp(col, gradedCol, _ColorGradingLUTStrength);
     }
-	return col;
+}
+#undef COLORS
+
+float3 Filtering(float3 col, float hue, float saturation, float brightness, float contrast, float aces, bool isPost){
+    [branch]
+    if (_Filtering == 1){
+        if ((hue > 0 && hue < 1) || _MonoTint == 1){
+            if (_HueMode == 0)
+                col = HueShift(col, hue, _MonoTint);
+            else
+                col = HueShiftOklab(col, hue, _MonoTint);
+        }
+        col = lerp(dot(col, float3(0.3,0.59,0.11)), col, saturation);
+        col = GetContrast(col, contrast);
+        if (isPost){
+            col = lerp(col, ACES(col), aces);
+            // ApplyCustomLUT(col);
+        }
+        col *= brightness;
+    }
+    return col;
 }
 
 float2 SelectUVSet(appdata v, int selection, int swizzle, float3 worldPos, float3 localPos){
-	if (selection < 5){
-		float2 uvs[] = {v.uv0, v.uv1, v.uv2, v.uv3, v.uv4};
-		return uvs[selection];
-	}
-	else if (selection == 5) {
+    if (selection < 5){
+        float2 uvs[] = {v.uv0, v.uv1, v.uv2, v.uv3, v.uv4};
+        return uvs[selection];
+    }
+    else if (selection == 5) {
         worldPos *= 0.2;
         worldPos += 0.5;
-		float2 uvs[] = {-worldPos.xy, -worldPos.xz, -worldPos.yz};
-		return uvs[swizzle];
-	}
+        float2 uvs[] = {-worldPos.xy, -worldPos.xz, -worldPos.yz};
+        return uvs[swizzle];
+    }
     else {
         localPos *= 0.1;
         localPos += 0.5;
         float2 uvs[] = {-localPos.xy, -localPos.xz, -localPos.yz};
         return uvs[swizzle];
     }
-	return 0;
+    return 0;
 }
 
 float2 SelectAreaLitOcclusionUVSet(appdata v, int selection){
-	float2 uvs[] = {v.uv0, v.uv1, v.uv2, v.uv3, v.uv4, v.uv1 * unity_LightmapST.xy + unity_LightmapST.zw};
-	return uvs[selection];
+    float2 uvs[] = {v.uv0, v.uv1, v.uv2, v.uv3, v.uv4, v.uv1 * unity_LightmapST.xy + unity_LightmapST.zw};
+    return uvs[selection];
 }
 
 void InitializeUVs(appdata v, inout v2f o){
@@ -93,10 +119,10 @@ void InitializeUVs(appdata v, inout v2f o){
         o.lightmapUV.zw = v.uv2.xy * unity_DynamicLightmapST.xy + unity_DynamicLightmapST.zw;
     #endif
 
-	#if AREALIT_ENABLED
+    #if AREALIT_ENABLED
         o.uv4.xy = SelectAreaLitOcclusionUVSet(v, _AreaLitOcclusionUVSet);
-		o.uv4.xy = TRANSFORM_TEX(o.uv4.xy, _AreaLitOcclusion);
-	#endif
+        o.uv4.xy = TRANSFORM_TEX(o.uv4.xy, _AreaLitOcclusion);
+    #endif
 
     if (_AlphaSource == 1){
         o.uv4.zw = ScaleOffsetRotateScrollUV(SelectUVSet(v, _UVAlphaMaskSet, _UVAlphaMaskSwizzle, o.worldPos, o.localPos), _AlphaMask_ST.xy, _AlphaMask_ST.zw, _UVAlphaMaskRotation, _UVAlphaMaskScroll);
@@ -108,22 +134,22 @@ void InitializeUVs(appdata v, inout v2f o){
 }
 
 float4 tex2Dtri(Texture2D tex, float4 scaleTransform) {
-	float3 surfaceNormal = _TriplanarCoordSpace == 1 ? abs(worldVertexNormal) : abs(localVertexNormal);
-	float3 pos = _TriplanarCoordSpace == 1 ? worldVertexPos : localVertexPos;
-	float3 projectedNormal = surfaceNormal / (surfaceNormal.x + surfaceNormal.y + surfaceNormal.z);
+    float3 surfaceNormal = _TriplanarCoordSpace == 1 ? abs(worldVertexNormal) : abs(localVertexNormal);
+    float3 pos = _TriplanarCoordSpace == 1 ? worldVertexPos : localVertexPos;
+    float3 projectedNormal = surfaceNormal / (surfaceNormal.x + surfaceNormal.y + surfaceNormal.z);
 
     float3 normalSign = sign(surfaceNormal);
-	float2 uvX = scaleTransform.xy * (pos.zy * float2(normalSign.x, 1)) + scaleTransform.zw;
-	float2 uvY = scaleTransform.xy * (pos.xz * float2(normalSign.y, 1)) + scaleTransform.zw;
-	float2 uvZ = scaleTransform.xy * (pos.xy * float2(-normalSign.z, 1)) + scaleTransform.zw;
+    float2 uvX = scaleTransform.xy * (pos.zy * float2(normalSign.x, 1)) + scaleTransform.zw;
+    float2 uvY = scaleTransform.xy * (pos.xz * float2(normalSign.y, 1)) + scaleTransform.zw;
+    float2 uvZ = scaleTransform.xy * (pos.xy * float2(-normalSign.z, 1)) + scaleTransform.zw;
 
-	float4 sampleX, sampleY, sampleZ;
-	sampleX = sampleY = sampleZ = 0;
-	if (projectedNormal.x > 0) sampleX = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, sampler_DefaultSampler, uvX);
-	if (projectedNormal.y > 0) sampleY = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, sampler_DefaultSampler, uvY);
-	if (projectedNormal.z > 0) sampleZ = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, sampler_DefaultSampler, uvZ);
+    float4 sampleX, sampleY, sampleZ;
+    sampleX = sampleY = sampleZ = 0;
+    if (projectedNormal.x > 0) sampleX = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, sampler_DefaultSampler, uvX);
+    if (projectedNormal.y > 0) sampleY = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, sampler_DefaultSampler, uvY);
+    if (projectedNormal.z > 0) sampleZ = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, sampler_DefaultSampler, uvZ);
 
-	return (sampleX * projectedNormal.x) + (sampleY * projectedNormal.y) + (sampleZ * projectedNormal.z);
+    return (sampleX * projectedNormal.x) + (sampleY * projectedNormal.y) + (sampleZ * projectedNormal.z);
 }
 
 float4 SampleTexture(Texture2D tex, float2 uv){
@@ -158,7 +184,6 @@ float CalcMipLevel(float2 texture_coord){
     float2 dx = ddx(texture_coord);
     float2 dy = ddy(texture_coord);
     float delta_max_sqr = max(dot(dx, dx), dot(dy, dy));
-    
     return max(0.0, 0.5 * log2(delta_max_sqr));
 }
 
@@ -171,18 +196,20 @@ float CutoutAlpha(float alpha, float2 uv){
 
 float4 SampleBaseColor(float2 uv, float2 alphaUV){
     float4 baseColor = SampleTexture(_MainTex, uv) * _Color;
-    if (_AlphaSource == 1)
-        baseColor.a = _AlphaMask.Sample(sampler_DefaultSampler, alphaUV)[_AlphaMaskChannel];
+    #if !defined(STANDARD_MOBILE)
+        if (_AlphaSource == 1)
+            baseColor.a = MOCHIE_SAMPLE_TEX2D_SAMPLER(_AlphaMask, sampler_DefaultSampler, alphaUV)[_AlphaMaskChannel];
+    #endif
     #if defined(_ALPHATEST_ON)
         baseColor.a = CutoutAlpha(baseColor.a, lerp(uv, alphaUV, _AlphaSource));
     #endif
-    baseColor.rgb = Filtering(baseColor.rgb, _Hue, _Saturation, _Brightness, _Contrast, 0);
+    baseColor.rgb = Filtering(baseColor.rgb, _Hue, _Saturation, _Brightness, _Contrast, 0, false);
     return baseColor;
 }
 
 float4 SampleDetailBaseColor(float2 uv){
     float4 detailBaseColor = SampleDetailTexture(_DetailMainTex, uv) * _DetailColor;
-    detailBaseColor.rgb = Filtering(detailBaseColor.rgb, _HueDet, _SaturationDet, _BrightnessDet, _ContrastDet, 0);
+    detailBaseColor.rgb = Filtering(detailBaseColor.rgb, _HueDet, _SaturationDet, _BrightnessDet, _ContrastDet, 0, false);
     return detailBaseColor;
 }
 
@@ -210,9 +237,10 @@ float4 SampleDetailPackedMap(float2 uv){
 
 float4 SampleMetallicMap(float2 uv){
     float4 metallic = _MetallicStrength;
-    // if (_SampleMetallic == 1){
+    [branch]
+    if (_SampleMetallic == 1){
         metallic = SampleTexture(_MetallicMap, uv) * _MetallicStrength;
-    // }
+    }
     return metallic;
 }
 
@@ -222,9 +250,10 @@ float4 SampleDetailMetallicMap(float2 uv){
 
 float4 SampleRoughnessMap(float2 uv){
     float4 roughness = _RoughnessStrength;
-    // if (_SampleRoughness == 1){
+    [branch]
+    if (_SampleRoughness == 1){
         roughness = SampleTexture(_RoughnessMap, uv) * _RoughnessStrength;
-    // }
+    }
     return roughness;
 }
 
@@ -234,9 +263,10 @@ float4 SampleDetailRoughnessMap(float2 uv){
 
 float4 SampleOcclusionMap(float2 uv){
     float4 occlusion = 1;
-    // if (_SampleOcclusion == 1){
+    [branch]
+    if (_SampleOcclusion == 1){
         occlusion = lerp(1, SampleTexture(_OcclusionMap, uv), _OcclusionStrength);
-    // }
+    }
     return occlusion;
 }
 
@@ -246,15 +276,16 @@ float4 SampleDetailOcclusionMap(float2 uv){
 
 float4 SampleEmissionMap(float2 uv){
     float4 emissionMap = SampleTexture(_EmissionMap, uv) * pow(_EmissionColor, 2.2) * _EmissionStrength;
-    emissionMap.rgb = Filtering(emissionMap.rgb, _HueEmiss, _SaturationEmiss, _BrightnessEmiss, _ContrastEmiss, 0);
+    emissionMap.rgb = Filtering(emissionMap.rgb, _HueEmiss, _SaturationEmiss, _BrightnessEmiss, _ContrastEmiss, 0, false);
     return emissionMap;
 }
 
 float4 CalculateEmission(v2f i){
     float4 emissTex = SampleEmissionMap(i.uv0.xy);
-    float emissMask = _EmissionMask.Sample(sampler_DefaultSampler, i.uv3.xy)[_EmissionMaskChannel];
-    emissTex *= GetWave(_EmissionPulseWave, _EmissionPulseSpeed, _EmissionPulseStrength);
-    emissTex *= emissMask;
+    #if !defined(STANDARD_MOBILE)
+        emissTex *= GetWave(_EmissionPulseWave, _EmissionPulseSpeed, _EmissionPulseStrength);
+        emissTex *= MOCHIE_SAMPLE_TEX2D_SAMPLER(_EmissionMask, sampler_DefaultSampler, i.uv3.xy)[_EmissionMaskChannel];
+    #endif
 
     #if defined(META_PASS)
         #if defined(_AUDIOLINK_ON) && defined(_AUDIOLINK_META_ON)
@@ -296,11 +327,12 @@ void CalculateNormals(v2f i, inout InputData id, float3x3 tangentToWorld, float 
         id.normal = id.vNormal;
     #endif
 
-    if (!isFrontFace){
-        id.normal = -id.normal;
-        id.vNormal = -id.vNormal;
-        id.tsNormal = -id.tsNormal;
-    }
+    // This makes backfaces on certain lightmapped geometry black, I'm probably doing this wrong, so skip for now.
+    // if (!isFrontFace){
+    //     id.normal = -id.normal;
+    //     id.vNormal = -id.vNormal;
+    //     id.tsNormal = -id.tsNormal;
+    // }
 }
 
 void ApplyGSAA(float3 normal, inout float4 roughness){
@@ -318,7 +350,7 @@ void InitializeInputData(v2f i, inout InputData id, float3x3 tangentToWorld, boo
 
     float detailMask = 1;
     #if DETAIL_MASK_NEEDED
-        detailMask = _DetailMask.Sample(sampler_DefaultSampler, i.uv1.xy)[_DetailMaskChannel];
+        detailMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailMask, sampler_DefaultSampler, i.uv1.xy)[_DetailMaskChannel];
     #endif
 
     id.baseColor = SampleBaseColor(i.uv0.xy, i.uv4.zw);
@@ -339,9 +371,9 @@ void InitializeInputData(v2f i, inout InputData id, float3x3 tangentToWorld, boo
     
     #if defined(_WORKFLOW_PACKED_ON)
         float4 packedMap = SamplePackedMap(i.uv0.xy);
-        id.metallic = packedMap[_MetallicChannel] * lerp(1, _MetallicStrength, _MetallicMultiplier);
-        id.roughness = packedMap[_RoughnessChannel] * lerp(1, _RoughnessStrength, _RoughnessMultiplier);
-        id.occlusion = lerp(1, packedMap[_OcclusionChannel], lerp(1, _OcclusionStrength, _OcclusionMultiplier));
+        id.metallic = packedMap[_MetallicChannel] * _PackedMetallicStrength;
+        id.roughness = packedMap[_RoughnessChannel] * _PackedRoughnessStrength;
+        id.occlusion = lerp(1, packedMap[_OcclusionChannel], _PackedOcclusionStrength);
     #else
         id.metallic = SampleMetallicMap(i.uv0.xy).g;
         id.roughness = SampleRoughnessMap(i.uv0.xy).g;

@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 1090f65e4e7307941b7844c00b91320a
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures:
+  - _BaseColor: {instanceID: 0}
+  - _RoughnessMap: {instanceID: 0}
+  - _MetallicMap: {instanceID: 0}
+  - _OcclusionMap: {instanceID: 0}
+  - _NormalMap: {instanceID: 0}
+  - _RainSheet: {fileID: 2800000, guid: df89a63673a32f4438fba4fb13f0f640, type: 3}
+  - _RainMask: {instanceID: 0}
+  - _DropletMask: {fileID: 2800000, guid: 76ae1285472e6ce48a2f01ef7905b8fd, type: 3}
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

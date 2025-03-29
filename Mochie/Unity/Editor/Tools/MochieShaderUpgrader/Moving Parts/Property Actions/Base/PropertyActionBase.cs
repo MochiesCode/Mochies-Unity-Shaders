@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Mochie.ShaderUpgrader
 {
-    public abstract class PropertyActionBase
+    public abstract class PropertyActionBase : UpgradeActionBase, IPropertyAction
     {
         public string SourcePropertyName { get; private set; }
         public string TargetPropertyName { get; private set; }
@@ -14,7 +14,5 @@ namespace Mochie.ShaderUpgrader
             TargetPropertyName = targetPropertyName;
             PropertyType = propertyType;
         }
-
-        public abstract void RunAction(MaterialContext materialContext);
     }
 }

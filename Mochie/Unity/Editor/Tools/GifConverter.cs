@@ -13,7 +13,7 @@ using UnityEngine;
 namespace Mochie {
     public class GifImporter{
         [MenuItem("Tools/Mochie/Convert to Flipbook Asset")]
-		[MenuItem("Assets/Convert to Flipbook Asset")]
+        [MenuItem("Assets/Convert to Flipbook Asset")]
         static void GifImport(){
             string path = AssetDatabase.GetAssetPath(Selection.activeObject);
             List<Texture2D> array = GetGifFrames(path);
@@ -24,7 +24,7 @@ namespace Mochie {
         }
 
         [MenuItem("Tools/Mochie/Convert to Flipbook Asset", true)]
-		[MenuItem("Assets/Convert to Flipbook Asset", true,50)]
+        [MenuItem("Assets/Convert to Flipbook Asset", true,50)]
         static bool ValidateGifImport(){
             if (Selection.activeObject == null)
                 return false;
@@ -42,7 +42,7 @@ namespace Mochie {
             }
 
             texture2DArray.anisoLevel = 16;
-			texture2DArray.filterMode = FilterMode.Trilinear;
+            texture2DArray.filterMode = FilterMode.Trilinear;
             texture2DArray.wrapModeU = array[0].wrapModeU;
             texture2DArray.wrapModeV = array[0].wrapModeV;
 

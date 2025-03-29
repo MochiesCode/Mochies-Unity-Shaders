@@ -2,115 +2,115 @@
 // Available at the Unity Asset Store - http://u3d.as/y3X 
 Shader "Hidden/Mochie/TextureUnpacker"
 {
-	Properties
-	{
-		_MainTex("MainTex", 2D) = "white" {}
-		_Mode("Mode", Range( 0 , 3)) = 3
-		_Invert("Invert", Float) = 0
-		[HideInInspector] _texcoord( "", 2D ) = "white" {}
-	}
-	
-	SubShader
-	{
-		Tags { "RenderType"="Opaque" }
-		LOD 100
-		CGINCLUDE
-		#pragma target 3.0
-		ENDCG
-		Blend Off
-		Cull Back
-		ColorMask RGBA
-		ZWrite On
-		ZTest LEqual
-		Offset 0 , 0
-		
-		
+    Properties
+    {
+        _MainTex("MainTex", 2D) = "white" {}
+        _Mode("Mode", Range( 0 , 3)) = 3
+        _Invert("Invert", Float) = 0
+        [HideInInspector] _texcoord( "", 2D ) = "white" {}
+    }
+    
+    SubShader
+    {
+        Tags { "RenderType"="Opaque" }
+        LOD 100
+        CGINCLUDE
+        #pragma target 3.0
+        ENDCG
+        Blend Off
+        Cull Back
+        ColorMask RGBA
+        ZWrite On
+        ZTest LEqual
+        Offset 0 , 0
+        
+        
 
-		Pass
-		{
-			Name "Unlit"
-			CGPROGRAM
-			#pragma vertex vert
-			#pragma fragment frag
-			#pragma multi_compile_instancing
-			#include "UnityCG.cginc"
-			
+        Pass
+        {
+            Name "Unlit"
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #pragma multi_compile_instancing
+            #include "UnityCG.cginc"
+            
 
-			struct appdata
-			{
-				float4 vertex : POSITION;
-				UNITY_VERTEX_INPUT_INSTANCE_ID
-				float4 ase_texcoord : TEXCOORD0;
-			};
-			
-			struct v2f
-			{
-				float4 vertex : SV_POSITION;
-				float4 ase_texcoord : TEXCOORD0;
-				UNITY_VERTEX_OUTPUT_STEREO
-				UNITY_VERTEX_INPUT_INSTANCE_ID
-			};
+            struct appdata
+            {
+                float4 vertex : POSITION;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+                float4 ase_texcoord : TEXCOORD0;
+            };
+            
+            struct v2f
+            {
+                float4 vertex : SV_POSITION;
+                float4 ase_texcoord : TEXCOORD0;
+                UNITY_VERTEX_OUTPUT_STEREO
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
 
-			uniform float _Mode;
-			uniform sampler2D _MainTex;
-			uniform float4 _MainTex_ST;
-			uniform float _Invert;
-			
-			v2f vert ( appdata v )
-			{
-				v2f o;
-				UNITY_SETUP_INSTANCE_ID(v);
-				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
-				UNITY_TRANSFER_INSTANCE_ID(v, o);
+            uniform float _Mode;
+            uniform sampler2D _MainTex;
+            uniform float4 _MainTex_ST;
+            uniform float _Invert;
+            
+            v2f vert ( appdata v )
+            {
+                v2f o;
+                UNITY_SETUP_INSTANCE_ID(v);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+                UNITY_TRANSFER_INSTANCE_ID(v, o);
 
-				o.ase_texcoord.xy = v.ase_texcoord.xy;
-				
-				//setting value to unused interpolator channels and avoid initialization warnings
-				o.ase_texcoord.zw = 0;
-				
-				v.vertex.xyz +=  float3(0,0,0) ;
-				o.vertex = UnityObjectToClipPos(v.vertex);
-				return o;
-			}
-			
-			fixed4 frag (v2f i ) : SV_Target
-			{
-				UNITY_SETUP_INSTANCE_ID(i);
-				fixed4 finalColor;
-				float2 uv_MainTex = i.ase_texcoord.xy * _MainTex_ST.xy + _MainTex_ST.zw;
-				float4 tex2DNode32 = tex2D( _MainTex, uv_MainTex );
-				float ifLocalVar34 = 0;
-				if( _Mode == 0.0 )
-				ifLocalVar34 = tex2DNode32.r;
-				float ifLocalVar35 = 0;
-				if( _Mode == 1.0 )
-				ifLocalVar35 = tex2DNode32.g;
-				float ifLocalVar36 = 0;
-				if( _Mode == 2.0 )
-				ifLocalVar36 = tex2DNode32.b;
-				float ifLocalVar37 = 0;
-				if( _Mode == 3.0 )
-				ifLocalVar37 = tex2DNode32.a;
-				float4 ifLocalVar42 = 0;
-				if( _Mode < 0.0 )
-				ifLocalVar42 = tex2DNode32;
-				float4 ifLocalVar43 = 0;
-				if( _Mode > 3.0 )
-				ifLocalVar43 = tex2DNode32;
-				float4 temp_output_40_0 = ( ifLocalVar34 + ifLocalVar35 + ifLocalVar36 + ifLocalVar37 + ifLocalVar42 + ifLocalVar43 );
-				float4 temp_cast_0 = (_Invert).xxxx;
-				float4 lerpResult46 = lerp( temp_output_40_0 , ( temp_cast_0 - temp_output_40_0 ) , _Invert);
-				
-				
-				finalColor = lerpResult46;
-				return finalColor;
-			}
-			ENDCG
-		}
-	}
-	CustomEditor "ASEMaterialInspector"
-	
-	
+                o.ase_texcoord.xy = v.ase_texcoord.xy;
+                
+                //setting value to unused interpolator channels and avoid initialization warnings
+                o.ase_texcoord.zw = 0;
+                
+                v.vertex.xyz +=  float3(0,0,0) ;
+                o.vertex = UnityObjectToClipPos(v.vertex);
+                return o;
+            }
+            
+            fixed4 frag (v2f i ) : SV_Target
+            {
+                UNITY_SETUP_INSTANCE_ID(i);
+                fixed4 finalColor;
+                float2 uv_MainTex = i.ase_texcoord.xy * _MainTex_ST.xy + _MainTex_ST.zw;
+                float4 tex2DNode32 = tex2D( _MainTex, uv_MainTex );
+                float ifLocalVar34 = 0;
+                if( _Mode == 0.0 )
+                ifLocalVar34 = tex2DNode32.r;
+                float ifLocalVar35 = 0;
+                if( _Mode == 1.0 )
+                ifLocalVar35 = tex2DNode32.g;
+                float ifLocalVar36 = 0;
+                if( _Mode == 2.0 )
+                ifLocalVar36 = tex2DNode32.b;
+                float ifLocalVar37 = 0;
+                if( _Mode == 3.0 )
+                ifLocalVar37 = tex2DNode32.a;
+                float4 ifLocalVar42 = 0;
+                if( _Mode < 0.0 )
+                ifLocalVar42 = tex2DNode32;
+                float4 ifLocalVar43 = 0;
+                if( _Mode > 3.0 )
+                ifLocalVar43 = tex2DNode32;
+                float4 temp_output_40_0 = ( ifLocalVar34 + ifLocalVar35 + ifLocalVar36 + ifLocalVar37 + ifLocalVar42 + ifLocalVar43 );
+                float4 temp_cast_0 = (_Invert).xxxx;
+                float4 lerpResult46 = lerp( temp_output_40_0 , ( temp_cast_0 - temp_output_40_0 ) , _Invert);
+                
+                
+                finalColor = lerpResult46;
+                return finalColor;
+            }
+            ENDCG
+        }
+    }
+    CustomEditor "ASEMaterialInspector"
+    
+    
 }
 /*ASEBEGIN
 Version=15902

@@ -9,19 +9,26 @@
 #include "../Common/Sampling.cginc"
 
 #define LTCGI_ENABLED defined(LTCGI)
-#define AREALIT_ENABLED defined(_AREALIT_ON) && !defined(SHADER_API_MOBILE)
+#define AREALIT_ENABLED defined(_AREALIT_ON)
 #define IS_OPAQUE !defined(_ALPHATEST_ON) && !defined(_ALPHABLEND_ON) && !defined(_ALPHAPREMULTIPLY_ON)
 #define IS_TRANSPARENT defined(_ALPHATEST_ON) || defined(_ALPHABLEND_ON) || defined(_ALPHAPREMULTIPLY_ON)
 #define DETAIL_MASK_NEEDED defined(_DETAIL_MAINTEX_ON) || defined(_DETAIL_NORMAL_ON) || defined(_DETAIL_METALLIC_ON) || defined(_DETAIL_ROUGHNESS_ON) || defined(_DETAIL_OCCLUSION_ON) || defined(_WORKFLOW_DETAIL_PACKED_ON)
 #define RAIN_ENABLED defined(_RAIN_DROPLETS_ON) || defined(_RAIN_RIPPLES_ON) || defined(_RAIN_AUTO_ON)
-#define NEEDS_LIGHTMAP_UV defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON) || LTCGI_ENABLED
+#define NEEDS_LIGHTMAP_UV defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON) || LTCGI_ENABLED || AREALIT_ENABLED
+#define SSR_ENABLED defined(_SSR_ON) && !defined(SHADER_API_MOBILE)
+
 #if defined(SHADOWS_DEPTH) && !defined(SPOT)
-	#define SHADOW_COORDS(idx1) unityShadowCoord2 _ShadowCoord : TEXCOORD##idx1;
+    #define SHADOW_COORDS(idx1) unityShadowCoord2 _ShadowCoord : TEXCOORD##idx1;
 #endif
 
 #define EPSILON 1.192092896e-07
+#define GRAYSCALE float3(0.2125, 0.7154, 0.0721)
 
 // Global stuff
+Texture2D _DefaultSampler;
+SamplerState sampler_DefaultSampler;
+Texture2D _DFG;
+SamplerState sampler_DFG;
 int _BlendMode;
 int _AlphaSource;
 int _MipMapRescaling;
@@ -30,10 +37,6 @@ int _TriplanarCoordSpace;
 int _ApplyHeightOffset;
 float _Cutoff;
 float _MipMapScale;
-Texture2D _DefaultSampler;
-SamplerState sampler_DefaultSampler;
-Texture2D _DFG;
-SamplerState sampler_DFG;
 
 // Base Texture Set
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_MainTex);
@@ -53,8 +56,11 @@ int _UVMainSwizzle;
 
 float4 _Color;
 float _MetallicStrength;
+float _PackedMetallicStrength;
 float _RoughnessStrength;
+float _PackedRoughnessStrength;
 float _OcclusionStrength;
+float _PackedOcclusionStrength;
 float _NormalStrength;
 float _HeightStrength;
 float _HeightOffset;
@@ -174,6 +180,7 @@ int _GSAAToggle;
 int _ShadingModel;
 
 int _SSRToggle;
+int _VRSSR;
 MOCHIE_DECLARE_TEX2D_SCREENSPACE(_CameraDepthTexture);
 MOCHIE_DECLARE_TEX2D_SCREENSPACE(_GrabTexture);
 MOCHIE_DECLARE_TEX2D(_NoiseTexSSR);
@@ -198,6 +205,9 @@ int _ScatterBaseColorTint;
 int _Subsurface;
 
 // Filtering
+MOCHIE_DECLARE_TEX2D_NOSAMPLER(_ColorGradingLUT);
+float4 _ColorGradingLUT_TexelSize;
+int _SampleCustomLUT;
 int _Filtering;
 int _HueMode;
 int _MonoTint;
@@ -218,6 +228,7 @@ float _HuePost;
 float _SaturationPost;
 float _BrightnessPost;
 float _ContrastPost;
+float _ColorGradingLUTStrength;
 
 // Rain
 sampler2D _RainSheet;
@@ -246,6 +257,8 @@ float _RainStrength;
 // Render Settings
 int _UnityFogToggle;
 int _VertexBaseColor;
+int _BAKERY_SHNONLINEAR;
+float _BakeryLMSpecStrength;
 
 // Debug Toggles
 int _MaterialDebugMode;
@@ -369,6 +382,7 @@ struct InputData {
 #include "StandardThirdParty.cginc"
 #include "StandardInput.cginc"
 #include "StandardParallax.cginc"
+#include "StandardBakery.cginc"
 #include "StandardLighting.cginc"
 #include "StandardSSR.cginc"
 #include "StandardBRDF.cginc"
@@ -380,4 +394,5 @@ struct InputData {
 #else
     #include "StandardFrag.cginc"
 #endif
+
 #endif

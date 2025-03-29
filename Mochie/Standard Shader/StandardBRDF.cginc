@@ -38,6 +38,7 @@ float3 GetEnvironmentReflections(float3 reflDir, float3 worldPos, float roughnes
     float3 baseReflDir = reflDir;
     float roughness0 = roughness;
     #ifdef UNITY_SPECCUBE_BOX_PROJECTION
+        [branch]
         if (unity_SpecCube0_ProbePosition.w > 0){
             float projectionDistance0 = EvaluateLight_EnvIntersection(worldPos, baseReflDir, unity_SpecCube0_BoxMin.xyz, unity_SpecCube0_BoxMax.xyz, unity_SpecCube0_ProbePosition.xyz);
             float distanceBasedRoughness0 = ComputeDistanceBaseRoughness(projectionDistance0, length(baseReflDir), roughness0);
@@ -47,11 +48,12 @@ float3 GetEnvironmentReflections(float3 reflDir, float3 worldPos, float roughnes
     roughness0 *= 1.7-0.7*roughness0;
     float4 envSample0 = UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, baseReflDir, roughness0 * UNITY_SPECCUBE_LOD_STEPS);
     float3 p0 = DecodeHDR(envSample0, unity_SpecCube0_HDR);
-    UNITY_BRANCH
+    [branch]
     if (unity_SpecCube0_BoxMin.w < 0.99999){
         float3 blendReflDir = reflDir;
         float roughness1 = roughness;
         #ifdef UNITY_SPECCUBE_BOX_PROJECTION
+            [branch]
             if (unity_SpecCube1_ProbePosition.w > 0){
                 float projectionDistance1 = EvaluateLight_EnvIntersection(worldPos, blendReflDir, unity_SpecCube1_BoxMin.xyz, unity_SpecCube1_BoxMax.xyz, unity_SpecCube1_ProbePosition.xyz);
                 float distanceBasedRoughness1 = ComputeDistanceBaseRoughness(projectionDistance1, length(blendReflDir), roughness1);
@@ -78,10 +80,10 @@ void ApplyDiffuseTerm(inout LightingData ld, InputData id, float diffuseTerm){
 
 float3 GetSpecularOcclusion(LightingData ld){
     float3 specularOcclusion = 1;
-    #if defined(UNITY_PASS_FORWARDBASE)
+    #if defined(BASE_PASS)
         #if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
             if (_SpecularOcclusionToggle == 1){
-                float3 lightmap = ld.indirectCol;
+                float3 lightmap = Desaturate(ld.indirectCol);
                 lightmap = GetContrast(lightmap, _SpecularOcclusionContrast);
                 lightmap = lerp(lightmap, GetHDR(lightmap), _SpecularOcclusionHDR);
                 lightmap *= _SpecularOcclusionBrightness;
@@ -153,7 +155,7 @@ void CalculateBRDF(v2f i, InputData id, inout LightingData ld){
         float surfaceReduction = 1.0 / (roughSq*roughSq + 1.0);
         float grazingTerm = saturate((1-id.roughness) + (1-ld.omr));
         float3 fresnel = FresnelLerp(ld.specularTint, grazingTerm, lerp(1, NdotV, _FresnelStrength*_FresnelToggle));
-        ld.reflAdjust = fresnel * surfaceReduction * horizon * horizon * id.occlusion;
+        ld.reflAdjust = fresnel * surfaceReduction * horizon * horizon;
         ld.specularOcclusion = GetSpecularOcclusion(ld);
     }
 
@@ -162,35 +164,45 @@ void CalculateBRDF(v2f i, InputData id, inout LightingData ld){
 
     #if defined(_REFLECTIONS_ON)
         float3 environmentReflections = GetEnvironmentReflections(reflDir, i.worldPos, id.roughness);
-        ld.reflectionCol += environmentReflections * ld.reflAdjust * ld.specularOcclusion * _ReflectionStrength;
+        ld.reflectionCol += environmentReflections * ld.reflAdjust * ld.specularOcclusion * id.occlusion * _ReflectionStrength;
     #endif
     #if LTCGI_ENABLED
-        ld.reflectionCol += ld.ltcgiSpecularity * ld.reflAdjust * saturate(lerp(1, ld.specularOcclusion, _LTCGISpecularOcclusion));
+        ld.reflectionCol += ld.ltcgiSpecularity * ld.reflAdjust * id.occlusion * saturate(lerp(1, ld.specularOcclusion, _LTCGISpecularOcclusion));
     #endif
     #if AREALIT_ENABLED
         ld.reflectionCol += ld.areaLitSpecularity * saturate(lerp(1, ld.specularOcclusion, _AreaLitSpecularOcclusion));
     #endif
-
-    #if defined(_SSR_ON)
-        float4 ssr = GetSSR(i.worldPos, ld.viewDir, reflDir, id.normal, 1-id.roughness, id.baseColor, id.metallic, i.grabUV);
-        if (_SSREdgeFade == 0)
-            ssr.a = ssr.a > 0 ? 1 : 0;
-        ssr.rgb *= ld.reflAdjust * ld.specularOcclusion;
-        ld.reflectionCol = lerp(ld.reflectionCol, ssr.rgb, ssr.a * saturate(_SSRStrength));
+    #if SSR_ENABLED
+        float4 ssr = 0;
+        [branch]
+        if (((_VRSSR == 0 && IsNotVR()) || _VRSSR == 1) && _SSRStrength > 0){
+            ssr = GetSSR(i.worldPos, ld.viewDir, reflDir, id.normal, 1-id.roughness, id.baseColor, id.metallic, i.grabUV);
+            if (_SSREdgeFade == 0)
+                ssr.a = ssr.a > 0 ? 1 : 0;
+            ssr.rgb *= ld.reflAdjust * ld.specularOcclusion * id.occlusion;
+            ld.reflectionCol = lerp(ld.reflectionCol, ssr.rgb, ssr.a * saturate(_SSRStrength));
+        }
     #endif
     
-    ld.reflectionCol += ld.lmSpec * ld.reflAdjust * UNITY_PI * ld.specularOcclusion;
-
     #if defined(_SPECULAR_HIGHLIGHTS_ON)
-        float3 fresnelTerm = FresnelTerm(ld.specularTint, LdotH) * lerp(1, diffuseTerm, _ShadingModel);
-        float V = SmithJointGGXVisibilityTerm(ld.NdotL, NdotV, roughSq);
-        float D = GGXTerm(NdotH, roughSq);
-        float specularTerm = V * D * UNITY_PI;
-        ld.specHighlightCol = max(0, (ld.directCol - ld.vLightCol)) * fresnelTerm * specularTerm * _SpecularHighlightStrength; //  * ld.specularOcclusion;
-        #if defined(_SSR_ON)
-            ld.specHighlightCol *= (1-ssr.a);
+        #if defined(BASE_PASS)
+        [branch]
+        if (ld.isRealtime){
+        #endif
+            float3 fresnelTerm = FresnelTerm(ld.specularTint, LdotH) * lerp(1, diffuseTerm, _ShadingModel);
+            float V = SmithJointGGXVisibilityTerm(ld.NdotL, NdotV, roughSq);
+            float D = GGXTerm(NdotH, roughSq);
+            float specularTerm = V * D * UNITY_PI;
+            ld.specHighlightCol = max(0, (ld.directCol - ld.vLightCol)) * fresnelTerm * specularTerm * _SpecularHighlightStrength;
+            #if SSR_ENABLED
+                ld.specHighlightCol *= (1-ssr.a);
+            #endif
+        #if defined(BASE_PASS)
+        }
         #endif
     #endif
+    
+    ld.lmSpec *= ld.reflAdjust * UNITY_PI * ld.specularOcclusion * ld.specularTint * _BakeryLMSpecStrength;
 }
 
 #endif

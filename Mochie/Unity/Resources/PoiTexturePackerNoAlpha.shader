@@ -2,122 +2,122 @@
 // Available at the Unity Asset Store - http://u3d.as/y3X 
 Shader "Hidden/Mochie/TexturePacker"
 {
-	Properties
-	{
-		_Invert_Red("Invert_Red", Float) = 0
-		_Invert_Green("Invert_Green", Float) = 0
-		_Invert_Blue("Invert_Blue", Float) = 0
-		_Invert_Alpha("Invert_Alpha", Float) = 0
-		_Red("Red", 2D) = "white" {}
-		_Green("Green", 2D) = "white" {}
-		_Blue("Blue", 2D) = "white" {}
-		_Alpha("Alpha", 2D) = "white" {}
-		[HideInInspector] _texcoord( "", 2D ) = "white" {}
-	}
-	
-	SubShader
-	{
-		Tags { "RenderType"="Opaque" }
-		LOD 100
-		CGINCLUDE
-		#pragma target 3.0
-		ENDCG
-		Blend Off
-		Cull Back
-		ColorMask RGBA
-		ZWrite On
-		ZTest LEqual
-		Offset 0 , 0
-		
-		
+    Properties
+    {
+        _Invert_Red("Invert_Red", Float) = 0
+        _Invert_Green("Invert_Green", Float) = 0
+        _Invert_Blue("Invert_Blue", Float) = 0
+        _Invert_Alpha("Invert_Alpha", Float) = 0
+        _Red("Red", 2D) = "white" {}
+        _Green("Green", 2D) = "white" {}
+        _Blue("Blue", 2D) = "white" {}
+        _Alpha("Alpha", 2D) = "white" {}
+        [HideInInspector] _texcoord( "", 2D ) = "white" {}
+    }
+    
+    SubShader
+    {
+        Tags { "RenderType"="Opaque" }
+        LOD 100
+        CGINCLUDE
+        #pragma target 3.0
+        ENDCG
+        Blend Off
+        Cull Back
+        ColorMask RGBA
+        ZWrite On
+        ZTest LEqual
+        Offset 0 , 0
+        
+        
 
-		Pass
-		{
-			Name "Unlit"
-			CGPROGRAM
-			#pragma vertex vert
-			#pragma fragment frag
-			#pragma multi_compile_instancing
-			#include "UnityCG.cginc"
-			
+        Pass
+        {
+            Name "Unlit"
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #pragma multi_compile_instancing
+            #include "UnityCG.cginc"
+            
 
-			struct appdata
-			{
-				float4 vertex : POSITION;
-				UNITY_VERTEX_INPUT_INSTANCE_ID
-				float4 ase_texcoord : TEXCOORD0;
-			};
-			
-			struct v2f
-			{
-				float4 vertex : SV_POSITION;
-				float4 ase_texcoord : TEXCOORD0;
-				UNITY_VERTEX_OUTPUT_STEREO
-				UNITY_VERTEX_INPUT_INSTANCE_ID
-			};
+            struct appdata
+            {
+                float4 vertex : POSITION;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+                float4 ase_texcoord : TEXCOORD0;
+            };
+            
+            struct v2f
+            {
+                float4 vertex : SV_POSITION;
+                float4 ase_texcoord : TEXCOORD0;
+                UNITY_VERTEX_OUTPUT_STEREO
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
 
-			uniform sampler2D _Red;
-			uniform float4 _Red_ST;
-			uniform float _Invert_Red;
-			uniform sampler2D _Green;
-			uniform float4 _Green_ST;
-			uniform float _Invert_Green;
-			uniform sampler2D _Blue;
-			uniform float4 _Blue_ST;
-			uniform float _Invert_Blue;
-			uniform sampler2D _Alpha;
-			uniform float4 _Alpha_ST;
-			uniform float _Invert_Alpha;
-			
-			v2f vert ( appdata v )
-			{
-				v2f o;
-				UNITY_SETUP_INSTANCE_ID(v);
-				UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
-				UNITY_TRANSFER_INSTANCE_ID(v, o);
+            uniform sampler2D _Red;
+            uniform float4 _Red_ST;
+            uniform float _Invert_Red;
+            uniform sampler2D _Green;
+            uniform float4 _Green_ST;
+            uniform float _Invert_Green;
+            uniform sampler2D _Blue;
+            uniform float4 _Blue_ST;
+            uniform float _Invert_Blue;
+            uniform sampler2D _Alpha;
+            uniform float4 _Alpha_ST;
+            uniform float _Invert_Alpha;
+            
+            v2f vert ( appdata v )
+            {
+                v2f o;
+                UNITY_SETUP_INSTANCE_ID(v);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+                UNITY_TRANSFER_INSTANCE_ID(v, o);
 
-				o.ase_texcoord.xy = v.ase_texcoord.xy;
-				
-				//setting value to unused interpolator channels and avoid initialization warnings
-				o.ase_texcoord.zw = 0;
-				
-				v.vertex.xyz +=  float3(0,0,0) ;
-				o.vertex = UnityObjectToClipPos(v.vertex);
-				return o;
-			}
-			
-			fixed4 frag (v2f i ) : SV_Target
-			{
-				UNITY_SETUP_INSTANCE_ID(i);
-				fixed4 finalColor;
-				float2 uv_Red = i.ase_texcoord.xy * _Red_ST.xy + _Red_ST.zw;
-				float4 tex2DNode28 = tex2D( _Red, uv_Red );
-				float4 temp_cast_0 = (_Invert_Red).xxxx;
-				float4 lerpResult27 = lerp( tex2DNode28 , ( temp_cast_0 - tex2DNode28 ) , _Invert_Red);
-				float2 uv_Green = i.ase_texcoord.xy * _Green_ST.xy + _Green_ST.zw;
-				float4 tex2DNode12 = tex2D( _Green, uv_Green );
-				float4 temp_cast_2 = (_Invert_Green).xxxx;
-				float4 lerpResult20 = lerp( tex2DNode12 , ( temp_cast_2 - tex2DNode12 ) , _Invert_Green);
-				float2 uv_Blue = i.ase_texcoord.xy * _Blue_ST.xy + _Blue_ST.zw;
-				float4 tex2DNode14 = tex2D( _Blue, uv_Blue );
-				float4 temp_cast_4 = (_Invert_Blue).xxxx;
-				float4 lerpResult21 = lerp( tex2DNode14 , ( temp_cast_4 - tex2DNode14 ) , _Invert_Blue);
-				float2 uv_Alpha = i.ase_texcoord.xy * _Alpha_ST.xy + _Alpha_ST.zw;
-				float4 tex2DNode13 = tex2D( _Alpha, uv_Alpha );
-				float4 temp_cast_6 = (_Invert_Alpha).xxxx;
-				float4 lerpResult19 = lerp( tex2DNode13 , ( temp_cast_6 - tex2DNode13 ) , _Invert_Alpha);
-				float4 appendResult30 = (float4(lerpResult27.r , lerpResult20.r , lerpResult21.r , lerpResult19.r));
-				
-				
-				finalColor = appendResult30;
-				return finalColor;
-			}
-			ENDCG
-		}
-	}
-	CustomEditor "ASEMaterialInspector"
-	
-	
+                o.ase_texcoord.xy = v.ase_texcoord.xy;
+                
+                //setting value to unused interpolator channels and avoid initialization warnings
+                o.ase_texcoord.zw = 0;
+                
+                v.vertex.xyz +=  float3(0,0,0) ;
+                o.vertex = UnityObjectToClipPos(v.vertex);
+                return o;
+            }
+            
+            fixed4 frag (v2f i ) : SV_Target
+            {
+                UNITY_SETUP_INSTANCE_ID(i);
+                fixed4 finalColor;
+                float2 uv_Red = i.ase_texcoord.xy * _Red_ST.xy + _Red_ST.zw;
+                float4 tex2DNode28 = tex2D( _Red, uv_Red );
+                float4 temp_cast_0 = (_Invert_Red).xxxx;
+                float4 lerpResult27 = lerp( tex2DNode28 , ( temp_cast_0 - tex2DNode28 ) , _Invert_Red);
+                float2 uv_Green = i.ase_texcoord.xy * _Green_ST.xy + _Green_ST.zw;
+                float4 tex2DNode12 = tex2D( _Green, uv_Green );
+                float4 temp_cast_2 = (_Invert_Green).xxxx;
+                float4 lerpResult20 = lerp( tex2DNode12 , ( temp_cast_2 - tex2DNode12 ) , _Invert_Green);
+                float2 uv_Blue = i.ase_texcoord.xy * _Blue_ST.xy + _Blue_ST.zw;
+                float4 tex2DNode14 = tex2D( _Blue, uv_Blue );
+                float4 temp_cast_4 = (_Invert_Blue).xxxx;
+                float4 lerpResult21 = lerp( tex2DNode14 , ( temp_cast_4 - tex2DNode14 ) , _Invert_Blue);
+                float2 uv_Alpha = i.ase_texcoord.xy * _Alpha_ST.xy + _Alpha_ST.zw;
+                float4 tex2DNode13 = tex2D( _Alpha, uv_Alpha );
+                float4 temp_cast_6 = (_Invert_Alpha).xxxx;
+                float4 lerpResult19 = lerp( tex2DNode13 , ( temp_cast_6 - tex2DNode13 ) , _Invert_Alpha);
+                float4 appendResult30 = (float4(lerpResult27.r , lerpResult20.r , lerpResult21.r , lerpResult19.r));
+                
+                
+                finalColor = appendResult30;
+                return finalColor;
+            }
+            ENDCG
+        }
+    }
+    CustomEditor "ASEMaterialInspector"
+    
+    
 }
 /*ASEBEGIN
 Version=15902

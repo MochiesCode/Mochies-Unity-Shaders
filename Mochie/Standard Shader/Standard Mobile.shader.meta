@@ -1,0 +1,45 @@
+fileFormatVersion: 2
+guid: 7c21c744999237049b529bcf3b0f272a
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures:
+  - _MainTex: {instanceID: 0}
+  - _NormalMap: {instanceID: 0}
+  - _MetallicMap: {instanceID: 0}
+  - _RoughnessMap: {instanceID: 0}
+  - _OcclusionMap: {instanceID: 0}
+  - _HeightMap: {instanceID: 0}
+  - _PackedMap: {instanceID: 0}
+  - _EmissionMap: {instanceID: 0}
+  - _DetailMainTex: {instanceID: 0}
+  - _DetailNormalMap: {instanceID: 0}
+  - _DetailMetallicMap: {instanceID: 0}
+  - _DetailRoughnessMap: {instanceID: 0}
+  - _DetailOcclusionMap: {instanceID: 0}
+  - _DetailPackedMap: {instanceID: 0}
+  - _DetailMask: {instanceID: 0}
+  - _HeightMask: {instanceID: 0}
+  - _RainMask: {instanceID: 0}
+  - _EmissionMask: {instanceID: 0}
+  - _AlphaMask: {instanceID: 0}
+  - _ThicknessMap: {instanceID: 0}
+  - _RainSheet: {fileID: 2800000, guid: df89a63673a32f4438fba4fb13f0f640, type: 3}
+  - _DropletMask: {fileID: 2800000, guid: 76ae1285472e6ce48a2f01ef7905b8fd, type: 3}
+  - _RNM0: {instanceID: 0}
+  - _RNM1: {instanceID: 0}
+  - _RNM2: {instanceID: 0}
+  - _LightMesh: {instanceID: 0}
+  - _LightTex0: {instanceID: 0}
+  - _LightTex1: {instanceID: 0}
+  - _LightTex2: {instanceID: 0}
+  - _LightTex3: {instanceID: 0}
+  - _AreaLitOcclusion: {instanceID: 0}
+  - _LTCGI_mat: {instanceID: 0}
+  - _LTCGI_amp: {instanceID: 0}
+  - _NoiseTexSSR: {fileID: 2800000, guid: b7359cc7e3e84444b88656ff6c166220, type: 3}
+  - _DefaultSampler: {fileID: 2800000, guid: b5f34bbf55503c942821a982c6756e38, type: 3}
+  - _DFG: {fileID: 2800000, guid: a10c95bc318a7a444b0ea3229dd64b50, type: 3}
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

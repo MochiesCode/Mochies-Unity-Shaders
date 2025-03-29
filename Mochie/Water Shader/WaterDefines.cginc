@@ -22,7 +22,7 @@ float4 _CameraDepthTexture_TexelSize;
 #define REFLECTIONS_MANUAL_ENABLED 		defined(_REFLECTIONS_MANUAL_ON)
 #define REFLECTIONS_MIRROR_ENABLED		defined(_REFLECTIONS_MIRROR_ON)
 #define SPECULAR_ENABLED 				defined(_SPECULAR_ON)
-#define PBR_ENABLED 					defined(_REFLECTIONS_ON) || defined(_SPECULAR_ON)
+#define PBR_ENABLED 					defined(_REFLECTIONS_ON) || defined(_SPECULAR_ON) || defined(_AREALIT_ON) || defined(LTCGI)
 #define FLOW_ENABLED 					defined(_FLOW_ON)
 #define NOISE_TEXTURE_ENABLED			defined(_NOISE_TEXTURE_ON)
 #define GERSTNER_ENABLED 				defined(_GERSTNER_WAVES_ON)
@@ -43,6 +43,7 @@ float4 _CameraDepthTexture_TexelSize;
 #define EMISSION_ENABLED				defined(_EMISSION_ON)
 #define EMISS_STOCHASTIC_ENABLED		defined(_EMISSIONMAP_STOCHASTIC_ON)
 #define AREALIT_ENABLED					defined(_AREALIT_ON)
+#define LTCGI_ENABLED                   defined(LTCGI)
 #define DETAIL_NORMAL_ENABLED			defined(_DETAIL_NORMAL_ON)
 #define DETAIL_BASECOLOR_ENABLED		defined(_DETAIL_BASECOLOR_ON)
 #define TRANSPARENCY_PREMUL				defined(_PREMUL_MODE_ON)
@@ -56,6 +57,7 @@ float4 _CameraDepthTexture_TexelSize;
 #define NORMALMAP_FLIPBOOK_STOCH		defined(_NORMALMAP_FLIPBOOK_STOCHASTIC_ON)
 #define BICUBIC_LIGHTMAPPING_ENABLED	defined(_BICUBIC_LIGHTMAPPING_ON)
 #define AUDIOLINK_ENABLED				defined(_AUDIOLINK_ON)
+#define EMISSION_FLOW_ENABLED           defined(_EMISSION_FLOW_ON)
 
 MOCHIE_DECLARE_TEX2D_SCREENSPACE(_MWGrab);
 MOCHIE_DECLARE_TEX2D(_FlowMap);
@@ -224,6 +226,18 @@ int _AudioLinkBand;
 float _AudioLinkStrength;
 float _FoamCrestPower;
 float _CausticsFlipbookDisp;
+float _HorizonAdjustment;
+float _HorizonAdjustmentDistance;
+int _BAKERY_SHNONLINEAR;
+int _IgnoreRealtimeGI;
+float _BakeryLMSpecStrength;
+float _FogContribution;
+float _LightmapDistortion;
+float _IndirectStrength;
+float _IndirectSaturation;
+int _VRSSR;
+int _WireframeVisualization;
+float4 _WireframeColor;
 
 float _Test1, _Test2;
 float _ZeroProp;
@@ -231,59 +245,73 @@ const static float2 jump = float2(0.1, 0.25);
 
 #ifdef TESSELLATION_VARIANT
 struct TessellationControlPoint {
-	float4 vertex : INTERNALTESSPOS;
-	float4 uv : TEXCOORD0;
-	float4 uv1 : TEXCOORD1;
-	float4 uv2 : TEXCOORD2;
-	float4 uv3 : TEXCOORD3;
-	float3 normal : NORMAL;
-	float4 tangent : TANGENT;
-	UNITY_VERTEX_INPUT_INSTANCE_ID
-	UNITY_VERTEX_OUTPUT_STEREO
+    float4 vertex : INTERNALTESSPOS;
+    float4 uv : TEXCOORD0;
+    float4 uv1 : TEXCOORD1;
+    float4 uv2 : TEXCOORD2;
+    float4 uv3 : TEXCOORD3;
+    // float3 barycentricCoordinates : TEXCOORD4;
+    float3 normal : NORMAL;
+    float4 tangent : TANGENT;
+    UNITY_VERTEX_INPUT_INSTANCE_ID
+    UNITY_VERTEX_OUTPUT_STEREO
 };
 #endif
 
 struct appdata {
-	float4 vertex : POSITION;
-	float4 uv : TEXCOORD0;
-	float4 uv1 : TEXCOORD1;
-	float4 uv2 : TEXCOORD2;
-	float4 uv3 : TEXCOORD3;
-	float3 normal : NORMAL;
-	float4 tangent : TANGENT;
-	UNITY_VERTEX_INPUT_INSTANCE_ID
+    float4 vertex : POSITION;
+    float4 uv : TEXCOORD0;
+    float4 uv1 : TEXCOORD1;
+    float4 uv2 : TEXCOORD2;
+    float4 uv3 : TEXCOORD3;
+    float3 normal : NORMAL;
+    float4 tangent : TANGENT;
+    UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
 struct v2f {
-	float4 pos : SV_POSITION;
-	centroid float4 uv : TEXCOORD1;
-	float4 uvGrab : TEXCOORD2;
-	float3 worldPos : TEXCOORD3;
-	float3 normal : TEXCOORD4;
-	centroid float3 cNormal : TEXCOORD5;
-	float3 tangent : TEXCOORD6;
-	float3 binormal : TEXCOORD7;
-	float4 localPos : TEXCOORD9;
-	float3 wave : TEXCOORD10;
-	float3 tangentViewDir : TEXCOORD11;
-	bool isInVRMirror : TEXCOORD12;
-	float2 uvFlow : TEXCOORD13;
-	float4 reflUV : TEXCOORD14;
-	float2 lightmapUV : TEXCOORD15;
-	#ifdef TESSELLATION_VARIANT
-		float offsetMask : TEXCOORD16;
-	#endif
-	UNITY_FOG_COORDS(17)
-	UNITY_SHADOW_COORDS(18)
-	UNITY_VERTEX_INPUT_INSTANCE_ID 
-	UNITY_VERTEX_OUTPUT_STEREO
+    float4 pos : SV_POSITION;
+    centroid float4 uv : TEXCOORD1;
+    float3 worldPos : TEXCOORD3;
+    float4 localPos : TEXCOORD9;
+    bool isInVRMirror : TEXCOORD12;
+    float2 uvFlow : TEXCOORD13;
+    float4 lightmapUV : TEXCOORD15;
+    #ifdef TESSELLATION_VARIANT
+        float offsetMask : TEXCOORD17;
+        // float3 barycentricCoordinates : TEXCOORD22;
+    #endif
+    float3 tangentViewDir : TEXCOORD11;
+    float4 uvGrab : TEXCOORD2;
+
+    #if !defined(META_PASS)
+        float3 cameraPos : TEXCOORD16;
+        float4 reflUV : TEXCOORD14;
+        float3 wave : TEXCOORD10;
+        float3 normal : TEXCOORD4;
+        centroid float3 cNormal : TEXCOORD5;
+        float3 tangent : TEXCOORD6;
+        float3 binormal : TEXCOORD7;
+    #else
+        #if defined(EDITOR_VISUALIZATION)
+            float2 vizUV    : TEXCOORD18;
+            float4 lightCoord   : TEXCOORD19;
+        #endif
+    #endif
+
+    UNITY_FOG_COORDS(20)
+    UNITY_SHADOW_COORDS(21)
+    UNITY_VERTEX_INPUT_INSTANCE_ID 
+    UNITY_VERTEX_OUTPUT_STEREO
 };
 
 #include "WaterSSR.cginc"
+#include "WaterIndirect.cginc"
 #include "WaterFunctions.cginc"
 #include "WaterAudioLink.cginc"
+#include "WaterThirdParty.cginc"
 #if AREALIT_ENABLED
-	#include "../../AreaLit/Shader/Lighting.hlsl"
+    #include "../../AreaLit/Shader/Lighting.hlsl"
 #endif
 
 #endif // WATER_DEFINES_INCLUDED

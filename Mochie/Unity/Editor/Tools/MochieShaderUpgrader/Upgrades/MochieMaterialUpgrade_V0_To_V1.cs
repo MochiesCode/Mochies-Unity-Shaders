@@ -7,17 +7,9 @@ namespace Mochie.ShaderUpgrader
 {
     public class MochieMaterialUpgrade_V0_To_V1 : MochieMaterialUpgradeBase
     {
-        public override bool CanUpgradeMaterial(Material material)
+        public override List<UpgradeActionBase> AddUpgradeActions()
         {
-            // Skip if material doesn't use our any of our shaders
-            if(MochieShaderMaterialAutoUpgrade.ShaderNames.All(name => name != material.shader.name))
-                return false;
-            return true;
-        }
-
-        public override List<PropertyActionBase> AddPropertyActions()
-        {
-            return new List<PropertyActionBase>
+            return new List<UpgradeActionBase>
             {  
                 new CopyFloatPropertyValueAction("_Workflow", "_PrimaryWorkflow"),
                 new CopyFloatPropertyValueAction("_SamplingMode","_PrimarySampleMode"),
@@ -93,7 +85,7 @@ namespace Mochie.ShaderUpgrader
                 
                 new SetPropertyValueAction("_RainSheet", true, new GUID("df89a63673a32f4438fba4fb13f0f640")),
                 new SetPropertyValueAction("_DropletMask", true, new GUID("76ae1285472e6ce48a2f01ef7905b8fd")),
-                new SetPropertyValueAction("_DFG", true, new GUID("a10c95bc318a7a444b0ea3229dd64b50")),
+                new SetPropertyValueAction("_DFG", true, new GUID("f8ddbd1e1d2a4415a10b4d48daeba743")),
                 new SetPropertyValueAction("_DefaultSampler", true, new GUID("b5f34bbf55503c942821a982c6756e38"))
             };
         }

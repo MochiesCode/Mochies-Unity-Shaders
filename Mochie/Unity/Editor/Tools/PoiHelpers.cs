@@ -178,8 +178,8 @@ namespace Mochie
                     if(EditorGUI.EndChangeCheck() && selectedPresetIndex != -1)
                         size = new Vector2Int(presets[selectedPresetIndex], presets[selectedPresetIndex]);
                 }
-				string linkTexPath = EditorGUIUtility.isProSkin ? "linkIcon_Pro" : "linkIcon";
-				Texture2D linkIcon = (Texture2D)Resources.Load(linkTexPath, typeof(Texture2D));
+                string linkTexPath = EditorGUIUtility.isProSkin ? "linkIcon_Pro" : "linkIcon";
+                Texture2D linkIcon = (Texture2D)Resources.Load(linkTexPath, typeof(Texture2D));
                 linked = GUILayout.Toggle(linked, linkIcon, EditorStyles.miniButton, GUILayout.MaxWidth(22), GUILayout.MaxHeight(16));
             }
             EditorGUILayout.EndHorizontal();

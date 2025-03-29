@@ -20,19 +20,25 @@ ShaderImporter:
   - _NoiseTex: {fileID: 2800000, guid: f0f3d4dc7c5a4f74c8417ea2f593fa7b, type: 3}
   - _VertOffsetFlipbook: {fileID: 18700000, guid: f9e27b340e9c5194199078a54772ec10,
       type: 2}
+  - _VertexOffsetMask: {instanceID: 0}
   - _CausticsTex: {fileID: 2800000, guid: 260d71fa929534a49aa9a5efb274f6d3, type: 3}
   - _CausticsTexArray: {fileID: 18700000, guid: c0fa48a763b58a64aa5dbafeb6a4c84a,
       type: 2}
+  - _CausticsShadow: {instanceID: 0}
   - _CausticsDistortionTex: {fileID: 2800000, guid: 4229641ad60880a4a8e7c5614adf58a3,
       type: 3}
   - _FoamTex: {fileID: 2800000, guid: 6c6c8f6678ed78e4eb543b06dcbc5b8a, type: 3}
   - _FoamNoiseTex: {fileID: 2800000, guid: dfbb7eeed695dc14d82b08d887041406, type: 3}
+  - _RippleMask: {instanceID: 0}
   - _AreaLitMask: {instanceID: 0}
   - _LightMesh: {instanceID: 0}
   - _LightTex0: {instanceID: 0}
   - _LightTex1: {instanceID: 0}
   - _LightTex2: {instanceID: 0}
   - _LightTex3: {instanceID: 0}
+  - _RNM0: {instanceID: 0}
+  - _RNM1: {instanceID: 0}
+  - _RNM2: {instanceID: 0}
   - _NoiseTexSSR: {fileID: 2800000, guid: b7359cc7e3e84444b88656ff6c166220, type: 3}
   nonModifiableTextures: []
   userData: 
