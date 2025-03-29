@@ -49,6 +49,9 @@ namespace Mochie.ShaderUpgrader
             material.shader = newShader;
             foreach(var upgrade in Upgrades)
                 upgrade.RunUpgrade(material);
+            
+            var editor = Editor.CreateEditor(material) as MaterialEditor;
+            editor?.SetShader(newShader, false); // Set shader here again so keywords get reset and applied
         }
         
         static Regex YamlGuidExtractor
