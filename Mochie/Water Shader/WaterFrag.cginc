@@ -312,6 +312,8 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
                         caustics = float3(voronoi0, voronoi1, voronoi2);
                         caustics = pow(caustics, _CausticsPower*1.5);
                         caustics = smootherstep(0, 1, caustics);
+                        caustics = saturate(caustics * _CausticsColor * caustFade * _CausticsOpacity * surfaceTint);
+                        col.rgb += caustics;
                     #elif CAUSTICS_TEXTURE
                         float3 causticsOffset = UnpackNormal(tex2Dstoch(_CausticsDistortionTex, sampler_FlowMap, (depthUV*_CausticsDistortionScale*0.1)+_Time.y*_CausticsDistortionSpeed*0.05));
                         float2 causticsUV = (depthUV + uvOffset + (causticsOffset.xy * _CausticsDistortion)) * _CausticsScale;
@@ -328,18 +330,26 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
                         float3 causticsShadow1 = MOCHIE_SAMPLE_TEX2D_SAMPLER(_CausticsShadow, sampler_FlowMap, uvTex0);
                         causticsShadow = min(causticsShadow0, causticsShadow1);
                         causticsShadow = clamp(causticsShadow, 0.7, 0.8);
+                        caustics = saturate(caustics * _CausticsColor * caustFade * _CausticsOpacity * surfaceTint);
+                        col.rgb *= lerp(1, causticsShadow, _CausticsShadowStrength);
+                        col.rgb += caustics;
                     #elif CAUSTICS_FLIPBOOK
                         float2 causticsUV = (depthUV + uvOffset) * _CausticsScale;
                         float causticsR = tex2DflipbookSmooth(_CausticsTexArray, sampler_FlowMap, causticsUV * 0.35, _CausticsFlipbookSpeed).r;
                         float causticsG = tex2DflipbookSmooth(_CausticsTexArray, sampler_FlowMap, causticsUV * 0.35, _CausticsFlipbookSpeed + (0.0005 * _CausticsFlipbookDisp)).g;
                         float causticsB = tex2DflipbookSmooth(_CausticsTexArray, sampler_FlowMap, causticsUV * 0.35, _CausticsFlipbookSpeed + (0.0005 * _CausticsFlipbookDisp * 1.5)).b;
                         caustics = float3(causticsR, causticsG, causticsB);
-                        caustics = smootherstep(0.15, 1, caustics);
+                        caustics = caustics * _CausticsColor * caustFade * surfaceTint;
+                        if (_CausticsFlipbookBlend == 1){
+                            col.rgb = lerp(col.rgb, 2 * BlendOverlay(saturate(col.rgb), caustics), _CausticsOpacity * 0.5);
+                        }
+                        else {
+                            caustics = smootherstep(0.15, 1, caustics);
+                            col.rgb += caustics * _CausticsOpacity;
+                        }
                     #endif
                     // topFade = 1-saturate(pow(caustDepth, _CausticsSurfaceFade) * 2);
-                    caustics = saturate(caustics * _CausticsColor * caustFade * _CausticsOpacity * surfaceTint);
-                    col.rgb *= lerp(1, causticsShadow, _CausticsShadowStrength);
-                    col.rgb += caustics;
+
                 }
             }
         #endif

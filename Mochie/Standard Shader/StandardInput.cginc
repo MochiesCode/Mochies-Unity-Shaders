@@ -64,52 +64,54 @@ float3 Filtering(float3 col, float hue, float saturation, float brightness, floa
     return col;
 }
 
-float2 SelectUVSet(appdata v, int selection, int swizzle, float3 worldPos, float3 localPos){
+float2 SelectUVSet(float2 uvs[5], int selection, int swizzle, float3 worldPos, float3 localPos){
     if (selection < 5){
-        float2 uvs[] = {v.uv0, v.uv1, v.uv2, v.uv3, v.uv4};
         return uvs[selection];
     }
     else if (selection == 5) {
         worldPos *= 0.2;
         worldPos += 0.5;
-        float2 uvs[] = {-worldPos.xy, -worldPos.xz, -worldPos.yz};
-        return uvs[swizzle];
+        float2 worldPositions[] = {-worldPos.xy, -worldPos.xz, -worldPos.yz};
+        return worldPositions[swizzle];
     }
     else {
         localPos *= 0.1;
         localPos += 0.5;
-        float2 uvs[] = {-localPos.xy, -localPos.xz, -localPos.yz};
-        return uvs[swizzle];
+        float2 localPositions[] = {-localPos.xy, -localPos.xz, -localPos.yz};
+        return localPositions[swizzle];
     }
     return 0;
 }
 
-float2 SelectAreaLitOcclusionUVSet(appdata v, int selection){
-    float2 uvs[] = {v.uv0, v.uv1, v.uv2, v.uv3, v.uv4, v.uv1 * unity_LightmapST.xy + unity_LightmapST.zw};
-    return uvs[selection];
+
+float2 SelectAreaLitOcclusionUVSet(float2 uvs[5], float2 lightmapUV, int selection){
+    float2 uvSets[6] = {uvs[0], uvs[1], uvs[2], uvs[3], uvs[4], lightmapUV};
+    return uvSets[selection];
 }
 
 void InitializeUVs(appdata v, inout v2f o){
+
+    float2 uvs[5] = {v.uv0, v.uv1, v.uv2, v.uv3, v.uv4};
     
-    o.uv0.xy = ScaleOffsetRotateScrollUV(SelectUVSet(v, _UVMainSet, _UVMainSwizzle, o.worldPos, o.localPos), _MainTex_ST.xy, _MainTex_ST.zw, _UVMainRotation, _UVMainScroll);
+    o.uv0.xy = ScaleOffsetRotateScrollUV(SelectUVSet(uvs, _UVMainSet, _UVMainSwizzle, o.worldPos, o.localPos), _MainTex_ST.xy, _MainTex_ST.zw, _UVMainRotation, _UVMainScroll);
    
     #if DETAIL_MASK_NEEDED
-        o.uv0.zw = ScaleOffsetRotateScrollUV(SelectUVSet(v, _UVDetailSet, _UVDetailSwizzle, o.worldPos, o.localPos), _DetailMainTex_ST.xy, _DetailMainTex_ST.zw, _UVDetailRotation, _UVDetailScroll);
-        o.uv1.xy = ScaleOffsetRotateScrollUV(SelectUVSet(v, _UVDetailMaskSet, _UVDetailMaskSwizzle, o.worldPos, o.localPos), _DetailMask_ST.xy, _DetailMask_ST.zw, _UVDetailMaskRotation, _UVDetailMaskScroll);
+        o.uv0.zw = ScaleOffsetRotateScrollUV(SelectUVSet(uvs, _UVDetailSet, _UVDetailSwizzle, o.worldPos, o.localPos), _DetailMainTex_ST.xy, _DetailMainTex_ST.zw, _UVDetailRotation, _UVDetailScroll);
+        o.uv1.xy = ScaleOffsetRotateScrollUV(SelectUVSet(uvs, _UVDetailMaskSet, _UVDetailMaskSwizzle, o.worldPos, o.localPos), _DetailMask_ST.xy, _DetailMask_ST.zw, _UVDetailMaskRotation, _UVDetailMaskScroll);
     #endif
 
     #if defined(_PARALLAX_ON)
-        o.uv1.zw = ScaleOffsetRotateScrollUV(SelectUVSet(v, _UVHeightMaskSet, _UVHeightMaskSwizzle, o.worldPos, o.localPos), _HeightMask_ST.xy, _HeightMask_ST.zw, _UVHeightMaskRotation, _UVHeightMaskScroll);
+        o.uv1.zw = ScaleOffsetRotateScrollUV(SelectUVSet(uvs, _UVHeightMaskSet, _UVHeightMaskSwizzle, o.worldPos, o.localPos), _HeightMask_ST.xy, _HeightMask_ST.zw, _UVHeightMaskRotation, _UVHeightMaskScroll);
     #endif
 
     #if RAIN_ENABLED
-        o.uv2.xy = Rotate2DCentered(SelectUVSet(v, _UVRainSet, _UVRainSwizzle, o.worldPos, o.localPos), _UVRainRotation) * _RainScale;
-        o.uv2.zw = ScaleOffsetRotateScrollUV(SelectUVSet(v, _UVRainMaskSet, _UVRainMaskSwizzle, o.worldPos, o.localPos), _RainMask_ST.xy, _RainMask_ST.zw, _UVRainMaskRotation, _UVRainMaskScroll);
-        o.uv3.zw = Rotate2DCentered(SelectUVSet(v, _UVRippleSet, _UVRippleSwizzle, o.worldPos, o.localPos), _UVRippleRotation) * _RippleScale;
+        o.uv2.xy = Rotate2DCentered(SelectUVSet(uvs, _UVRainSet, _UVRainSwizzle, o.worldPos, o.localPos), _UVRainRotation) * _RainScale;
+        o.uv2.zw = ScaleOffsetRotateScrollUV(SelectUVSet(uvs, _UVRainMaskSet, _UVRainMaskSwizzle, o.worldPos, o.localPos), _RainMask_ST.xy, _RainMask_ST.zw, _UVRainMaskRotation, _UVRainMaskScroll);
+        o.uv3.zw = Rotate2DCentered(SelectUVSet(uvs, _UVRippleSet, _UVRippleSwizzle, o.worldPos, o.localPos), _UVRippleRotation) * _RippleScale;
     #endif
 
     #if defined(_EMISSION_ON)
-        o.uv3.xy = ScaleOffsetRotateScrollUV(SelectUVSet(v, _UVEmissionMaskSet, _UVEmissionMaskSwizzle, o.worldPos, o.localPos), _EmissionMask_ST.xy, _EmissionMask_ST.zw, _UVEmissionMaskRotation, _UVEmissionMaskScroll);
+        o.uv3.xy = ScaleOffsetRotateScrollUV(SelectUVSet(uvs, _UVEmissionMaskSet, _UVEmissionMaskSwizzle, o.worldPos, o.localPos), _EmissionMask_ST.xy, _EmissionMask_ST.zw, _UVEmissionMaskRotation, _UVEmissionMaskScroll);
     #endif
 
     #if defined(LIGHTMAP_ON) || LTCGI_ENABLED
@@ -118,19 +120,19 @@ void InitializeUVs(appdata v, inout v2f o){
     #if defined(DYNAMICLIGHTMAP_ON)
         o.lightmapUV.zw = v.uv2.xy * unity_DynamicLightmapST.xy + unity_DynamicLightmapST.zw;
     #endif
-
+    
     #if AREALIT_ENABLED
-        o.uv4.xy = SelectAreaLitOcclusionUVSet(v, _AreaLitOcclusionUVSet);
+        o.uv4.xy = SelectAreaLitOcclusionUVSet(uvs, v.uv1 * unity_LightmapST.xy + unity_LightmapST.zw, _AreaLitOcclusionUVSet);
         o.uv4.xy = TRANSFORM_TEX(o.uv4.xy, _AreaLitOcclusion);
     #endif
 
     if (_AlphaSource == 1){
-        o.uv4.zw = ScaleOffsetRotateScrollUV(SelectUVSet(v, _UVAlphaMaskSet, _UVAlphaMaskSwizzle, o.worldPos, o.localPos), _AlphaMask_ST.xy, _AlphaMask_ST.zw, _UVAlphaMaskRotation, _UVAlphaMaskScroll);
+        o.uv4.zw = ScaleOffsetRotateScrollUV(SelectUVSet(uvs, _UVAlphaMaskSet, _UVAlphaMaskSwizzle, o.worldPos, o.localPos), _AlphaMask_ST.xy, _AlphaMask_ST.zw, _UVAlphaMaskRotation, _UVAlphaMaskScroll);
     }
 
-    #if defined(_SSR_ON)
-        o.grabUV = ComputeGrabScreenPos(o.pos);
-    #endif
+    if (_PuddleToggle == 1){
+        o.uv5.xy = ScaleOffsetRotateScrollUV(SelectUVSet(uvs, _UVPuddleSet, _UVPuddleSwizzle, o.worldPos, o.localPos), _PuddleTexture_ST.xy, _PuddleTexture_ST.zw, _UVPuddleRotation, _UVPuddleScroll);
+    }
 }
 
 float4 tex2Dtri(Texture2D tex, float4 scaleTransform) {
@@ -150,6 +152,36 @@ float4 tex2Dtri(Texture2D tex, float4 scaleTransform) {
     if (projectedNormal.z > 0) sampleZ = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, sampler_DefaultSampler, uvZ);
 
     return (sampleX * projectedNormal.x) + (sampleY * projectedNormal.y) + (sampleZ * projectedNormal.z);
+}
+
+// Unused for now - works but has some quirks
+float4 tex2Dbi(Texture2D tex, float k){
+
+    float3 n = _TriplanarCoordSpace == 1 ? abs(worldVertexNormal) : abs(localVertexNormal);
+    float3 p = _TriplanarCoordSpace == 1 ? worldVertexPos : localVertexPos;
+    float3 dpdx = ddx(p);
+    float3 dpdy = ddy(p);
+
+    // determine major axis (in x; yz are following axis)
+    int3 ma =  (n.x>n.y && n.x>n.z) ? int3(0,1,2) :
+               (n.y>n.z)            ? int3(1,2,0) :
+                                      int3(2,0,1) ;
+    // determine minor axis (in x; yz are following axis)
+    int3 mi =  (n.x<n.y && n.x<n.z) ? int3(0,1,2) :
+               (n.y<n.z)            ? int3(1,2,0) :
+                                      int3(2,0,1) ;
+    // determine median axis (in x;  yz are following axis)
+    int3 me = clamp(3 - mi - ma, 0, 2); 
+    
+    // project+fetch
+    float4 x = MOCHIE_SAMPLE_TEX2D_SAMPLER_GRAD(tex, sampler_DefaultSampler, float2(p[ma.y], p[ma.z]), float2(dpdx[ma.y],dpdx[ma.z]), float2(dpdy[ma.y],dpdy[ma.z]) );
+    float4 y = MOCHIE_SAMPLE_TEX2D_SAMPLER_GRAD(tex, sampler_DefaultSampler, float2(p[me.y], p[me.z]), float2(dpdx[me.y],dpdx[me.z]), float2(dpdy[me.y],dpdy[me.z]) );
+    
+    // blending
+    float2 w = float2(n[ma.x],n[me.x]);
+    w = clamp( (w-0.5773)/(1.0-0.5773), 0.0, 1.0 );
+    w = pow( w, 5/8.0 );
+    return (x*w.x + y*w.y) / (w.x + w.y);
 }
 
 float4 SampleTexture(Texture2D tex, float2 uv){
@@ -280,7 +312,7 @@ float4 SampleEmissionMap(float2 uv){
     return emissionMap;
 }
 
-float4 CalculateEmission(v2f i){
+float4 GetEmission(v2f i){
     float4 emissTex = SampleEmissionMap(i.uv0.xy);
     #if !defined(STANDARD_MOBILE)
         emissTex *= GetWave(_EmissionPulseWave, _EmissionPulseSpeed, _EmissionPulseStrength);
@@ -308,17 +340,26 @@ float4 CalculateEmission(v2f i){
     return emissTex;
 }
 
-void CalculateNormals(v2f i, inout InputData id, float3x3 tangentToWorld, float detailMask, bool isFrontFace){
+void CalculateNormals(v2f i, inout InputData id, float3x3 tangentToWorld, float detailMask){
+
     id.vNormal = i.normal;
     id.tsNormal = id.vNormal;
+
+    _NormalStrength *= 1-id.puddleMask;
+    _DetailNormalStrength *= 1-id.puddleMask;
+
     #if defined(_NORMALMAP_ON) && !defined(_DETAIL_NORMAL_ON)
         id.tsNormal = SampleNormalMap(i.uv0.xy);
     #elif !defined(_NORMALMAP_ON) && defined(_DETAIL_NORMAL_ON)
         id.tsNormal = SampleDetailNormalMap(i.uv0.zw, detailMask);
     #elif defined(_NORMALMAP_ON) && defined(_DETAIL_NORMAL_ON)
-        id.tsNormal = BlendNormals(SampleNormalMap(i.uv0.xy), SampleDetailNormalMap(i.uv0.zw, detailMask));
+        float3 baseNormal = SampleNormalMap(i.uv0.xy);
+        float3 detailNormal = SampleDetailNormalMap(i.uv0.zw, detailMask);
+        float3 blendedNormal0 = BlendNormals(baseNormal, detailNormal);
+        float3 blendedNormal1 = lerp(baseNormal, detailNormal, detailMask);
+        id.tsNormal = lerp(blendedNormal0, blendedNormal1, _DetailMaskMode);
     #endif
-    
+
     ApplyRainNormal(i, id);
 
     #if defined(_NORMALMAP_ON) || defined(_DETAIL_NORMAL_ON) || RAIN_ENABLED
@@ -326,13 +367,6 @@ void CalculateNormals(v2f i, inout InputData id, float3x3 tangentToWorld, float 
     #else
         id.normal = id.vNormal;
     #endif
-
-    // This makes backfaces on certain lightmapped geometry black, I'm probably doing this wrong, so skip for now.
-    // if (!isFrontFace){
-    //     id.normal = -id.normal;
-    //     id.vNormal = -id.vNormal;
-    //     id.tsNormal = -id.tsNormal;
-    // }
 }
 
 void ApplyGSAA(float3 normal, inout float4 roughness){
@@ -348,6 +382,9 @@ void ApplyGSAA(float3 normal, inout float4 roughness){
 
 void InitializeInputData(v2f i, inout InputData id, float3x3 tangentToWorld, bool isFrontFace){
 
+    id.facingAngle = abs(dot(i.normal, float3(0,1,0)));
+    id.isFrontFace = isFrontFace;
+
     float detailMask = 1;
     #if DETAIL_MASK_NEEDED
         detailMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailMask, sampler_DefaultSampler, i.uv1.xy)[_DetailMaskChannel];
@@ -355,19 +392,22 @@ void InitializeInputData(v2f i, inout InputData id, float3x3 tangentToWorld, boo
 
     id.baseColor = SampleBaseColor(i.uv0.xy, i.uv4.zw);
     #if IS_TRANSPARENT
-        id.alpha = id.baseColor.a;
+        id.alpha = saturate(id.baseColor.a);
     #else
         id.alpha = 1;
     #endif
     #if defined(_DETAIL_MAINTEX_ON)
         float4 detailBaseColor = SampleDetailBaseColor(i.uv0.zw);
-        id.baseColor.rgb = lerp(id.baseColor, BlendColorsAlpha(id.baseColor, detailBaseColor, _DetailMainTexBlend, detailBaseColor.a), _DetailMainTexStrength * detailMask);
+        float3 blendedBaseColor = BlendColorsAlpha(id.baseColor, detailBaseColor, _DetailMainTexBlend, detailBaseColor.a);
+        blendedBaseColor = lerp(blendedBaseColor, detailBaseColor, _DetailMaskMode);
+        id.baseColor.rgb = lerp(id.baseColor, blendedBaseColor, _DetailMainTexStrength * detailMask);
     #endif
     if (_VertexBaseColor == 1)
         id.baseColor *= i.color;
-    id.diffuse = id.baseColor;
 
-    CalculateNormals(i, id, tangentToWorld, detailMask, isFrontFace);
+    CalculatePuddleMask(i, id);
+    
+    CalculateNormals(i, id, tangentToWorld, detailMask);
     
     #if defined(_WORKFLOW_PACKED_ON)
         float4 packedMap = SamplePackedMap(i.uv0.xy);
@@ -380,31 +420,52 @@ void InitializeInputData(v2f i, inout InputData id, float3x3 tangentToWorld, boo
         id.occlusion = SampleOcclusionMap(i.uv0.xy).g;
     #endif
 
+    float blendedMetallic, blendedRoughness, blendedOcclusion;
+    blendedMetallic = blendedRoughness = blendedOcclusion = 0;
     #if defined(_WORKFLOW_DETAIL_PACKED_ON)
         float4 detailPackedMap = SampleDetailPackedMap(i.uv0.zw);
-        id.metallic = lerp(id.metallic, saturate(BlendScalars(id.metallic, detailPackedMap[_DetailMetallicChannel], _DetailMetallicBlend)), _DetailMetallicStrength * detailMask);
-        id.roughness = lerp(id.roughness, BlendScalars(id.roughness, detailPackedMap[_DetailRoughnessChannel], _DetailRoughnessBlend), _DetailRoughnessStrength * detailMask);
-        id.occlusion = lerp(id.occlusion, saturate(BlendScalars(id.occlusion, detailPackedMap[_DetailOcclusionChannel], _DetailOcclusionBlend)), _DetailOcclusionStrength * detailMask);
+        if (_DetailMaskMode == 1){
+            blendedMetallic = detailPackedMap[_DetailMetallicChannel];
+            blendedRoughness = detailPackedMap[_DetailRoughnessChannel];
+            blendedOcclusion = detailPackedMap[_DetailOcclusionChannel];
+        }
+        else {
+            blendedMetallic = BlendScalars(id.metallic, detailPackedMap[_DetailMetallicChannel], _DetailMetallicBlend);
+            blendedRoughness = BlendScalars(id.roughness, detailPackedMap[_DetailRoughnessChannel], _DetailRoughnessBlend);
+            blendedOcclusion = BlendScalars(id.occlusion, detailPackedMap[_DetailOcclusionChannel], _DetailOcclusionBlend);
+        }
+        id.metallic = lerp(id.metallic, saturate(blendedMetallic), _DetailMetallicStrength * detailMask);
+        id.roughness = lerp(id.roughness, blendedRoughness, _DetailRoughnessStrength * detailMask);
+        id.occlusion = lerp(id.occlusion, saturate(blendedOcclusion), _DetailOcclusionStrength * detailMask);
     #else
         #if defined(_DETAIL_METALLIC_ON)
             float4 detailMetallic = SampleDetailMetallicMap(i.uv0.zw).b;
-            id.metallic = lerp(id.metallic, saturate(BlendScalarsAlpha(id.metallic, detailMetallic, _DetailMetallicBlend, detailMetallic.a)), _DetailMetallicStrength * detailMask);
+            blendedMetallic = BlendScalarsAlpha(id.metallic, detailMetallic, _DetailMetallicBlend, detailMetallic.a);
+            blendedMetallic = lerp(blendedMetallic, detailMetallic, _DetailMaskMode);
+            id.metallic = lerp(id.metallic, saturate(blendedMetallic), _DetailMetallicStrength * detailMask);
         #endif
         #if defined(_DETAIL_ROUGHNESS_ON)
             float4 detailRoughness = SampleDetailRoughnessMap(i.uv0.zw).g;
-            id.roughness = lerp(id.roughness, BlendScalarsAlpha(id.roughness, detailRoughness, _DetailRoughnessBlend, detailRoughness.a), _DetailRoughnessStrength * detailMask);
+            blendedRoughness = BlendScalarsAlpha(id.roughness, detailRoughness, _DetailRoughnessBlend, detailRoughness.a);
+            blendedRoughness = lerp(blendedRoughness, detailRoughness, _DetailMaskMode);
+            id.roughness = lerp(id.roughness, blendedRoughness, _DetailRoughnessStrength * detailMask);
         #endif
         #if defined(_DETAIL_OCCLUSION_ON)
             float4 detailOcclusion = SampleDetailOcclusionMap(i.uv0.zw).r;
-            id.occlusion = lerp(id.occlusion, saturate(BlendScalarsAlpha(id.occlusion, detailOcclusion, _DetailOcclusionBlend, detailOcclusion.a)), _DetailOcclusionStrength * detailMask);
+            blendedOcclusion = BlendScalarsAlpha(id.occlusion, detailOcclusion, _DetailOcclusionBlend, detailOcclusion.a);
+            blendedOcclusion = lerp(blendedOcclusion, detailOcclusion, _DetailMaskMode);
+            id.occlusion = lerp(id.occlusion, saturate(blendedOcclusion), _DetailOcclusionStrength * detailMask);
         #endif
     #endif
 
-    #if defined(_EMISSION_ON)
-        id.emission = CalculateEmission(i);
-    #endif
-    
     id.roughness = abs(_SmoothnessToggle - id.roughness);
+
+    #if !defined(STANDARD_MOBILE)
+        ApplyPuddles(i, id);
+    #endif
+
+    id.diffuse = id.baseColor;
+
     #if defined(_RAIN_DROPLETS_ON) || defined(_RAIN_AUTO_ON)
         id.rainFlipbook = smoothstep(0, 0.1, id.rainFlipbook);
         id.rainFlipbook *= smoothstep(0, 0.1, rainStrength);
@@ -413,7 +474,14 @@ void InitializeInputData(v2f i, inout InputData id, float3x3 tangentToWorld, boo
         #endif
         id.roughness = saturate(id.roughness-id.rainFlipbook);
     #endif
-    ApplyGSAA(id.vNormal, id.roughness);
+
+    #if !defined(META_PASS)
+        ApplyGSAA(id.vNormal, id.roughness);
+    #endif
+
+    #if defined(_EMISSION_ON)
+        id.emission = GetEmission(i);
+    #endif
 }
 
 #endif

@@ -55,7 +55,7 @@ namespace Mochie {
         }, 0);
 
         string header = "WaterHeader_Pro";
-        string versionLabel = "v1.23";
+        string versionLabel = "v1.24";
 
         MaterialProperty _Color = null;
         MaterialProperty _NonGrabColor = null;
@@ -266,6 +266,7 @@ namespace Mochie {
         MaterialProperty _IndirectStrength = null;
         MaterialProperty _IndirectSaturation = null;
         MaterialProperty _VRSSR = null;
+        MaterialProperty _CausticsFlipbookBlend = null;
         // MaterialProperty _WireframeVisualization = null;
         // MaterialProperty _WireframeColor = null;
 
@@ -640,6 +641,7 @@ namespace Mochie {
                                 }
                                 else if (_CausticsToggle.floatValue == 3){
                                     me.TexturePropertySingleLine(new GUIContent("Caustics Flipbook"), _CausticsTexArray);
+                                    me.ShaderProperty(_CausticsFlipbookBlend, "Blending");
                                 }
                                 me.ShaderProperty(_CausticsColor, "Color");
                                 me.ShaderProperty(_CausticsOpacity, "Strength");
@@ -859,7 +861,11 @@ namespace Mochie {
                     MGUI.Space4();
                     MGUI.PropertyGroup(()=>{
                         _QueueOffset.floatValue = (int)_QueueOffset.floatValue;
+                        EditorGUI.BeginChangeCheck();
                         me.ShaderProperty(_QueueOffset, Tips.queueOffset);
+                        if (EditorGUI.EndChangeCheck()){
+                            SetBlendMode(mat);
+                        }
                         MGUI.SpaceN1();
                         MGUI.DummyProperty("Render Queue:", mat.renderQueue.ToString());
                         me.ShaderProperty(_StencilRef, "Stencil Reference");

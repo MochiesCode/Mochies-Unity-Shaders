@@ -13,12 +13,18 @@ void ApplyLighting(inout InputData id, LightingData ld){
     id.diffuse.rgb = Filtering(id.diffuse.rgb, _HuePost, _SaturationPost, _BrightnessPost, _ContrastPost, _ACES, true);
 }
 
-void CalculateViewDirection(inout v2f i, out float3 viewDir, out float3 tangentViewDir, out float3x3 tangentToWorld){
+float3x3 ConstructTBNMatrix(inout v2f i, bool isFrontFace){
     i.normal = normalize(i.normal);
     float crossSign = (i.tangent.w > 0.0 ? 1.0 : -1.0) * unity_WorldTransformParams.w;
     float3 binormal = cross(i.normal.xyz, i.tangent.xyz) * crossSign;
+    if (!isFrontFace && _FlipBackfaceNormals == 1){
+        i.normal = -i.normal;
+    }
+    return float3x3(i.tangent.xyz, binormal, i.normal.xyz);
+}
+
+void CalculateViewDirection(v2f i, float3x3 tangentToWorld, out float3 viewDir, out float3 tangentViewDir){
     viewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPos);
-    tangentToWorld = float3x3(i.tangent.xyz, binormal, i.normal.xyz);
     tangentViewDir = normalize(mul(tangentToWorld, viewDir));
     tangentViewDir.xy /= (tangentViewDir.z + 0.42);
 }

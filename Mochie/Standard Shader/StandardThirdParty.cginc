@@ -126,8 +126,8 @@ void CalculateAreaLit(v2f i, InputData id, inout LightingData ld){
             AreaLightFragInput ai;
             ai.pos = i.worldPos;
             ai.normal = id.normal;
-            ai.view = -ld.viewDir;
-            ai.roughness = id.roughness * _AreaLitRoughnessMultiplier;
+            ai.view = ld.viewDir;
+            ai.roughness = id.roughness * id.roughness * _AreaLitRoughnessMultiplier;
             ai.occlusion = float4(id.occlusion.xxx, 1) * alOcclusion;
             ai.screenPos = i.pos.xy;
             float4 diffTerm, specTerm;

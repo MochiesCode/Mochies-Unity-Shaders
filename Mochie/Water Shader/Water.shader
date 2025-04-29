@@ -133,7 +133,7 @@ Shader "Mochie/Water" {
         _SubsurfaceBrightness("Subsurface Brightness", Float) = 10
         _SubsurfaceStrength("Subsurface Strength", Range(0,1)) = 0
         
-        [Enum(Off,0, Voronoi,1, Texture,2, Flipbook,3)]_CausticsToggle("Caustics Toggle", Int) = 1
+        [Enum(Off,0, Voronoi,1, Texture,2, Flipbook,3)]_CausticsToggle("Caustics Toggle", Int) = 3
         _CausticsTex("Caustics Texture", 2D) = "black" {}
         _CausticsTexArray("Texture Array", 2DArray) = "black" {}
         _CausticsShadow("Caustics Shadow Tex", 2D) = "white" {}
@@ -154,6 +154,7 @@ Shader "Mochie/Water" {
         _CausticsRotation("Rotation", Vector) = (-20,0,20,0)
         _CausticsSurfaceFade("Surface Fade", Float) = 100
         _CausticsFlipbookSpeed("Flipbook Speed", Float) = 16
+        [Enum(Add,0, Overlay,1)]_CausticsFlipbookBlend("Flipbook Blend", Int) = 1
         
         [Toggle(_DEPTHFOG_ON)]_FogToggle("Enable", Int) = 1
         _FogTint("Color", Color) = (0.11,0.26,0.26,1)

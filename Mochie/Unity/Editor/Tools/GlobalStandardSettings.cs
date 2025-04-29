@@ -55,6 +55,24 @@ namespace Mochie {
         float filteringCont = 1f;
         float filteringACES = 0f;
 
+        // Debug view
+        enum DebugView {
+            Off,
+            Base_Color,
+            Alpha,
+            Normals,
+            Roughness,
+            Metallic,
+            Occlusion,
+            Height,
+            Lighting,
+            Realtime_Shadows,
+            Reflections,
+            Specular_Highlights,
+            Vertex_Colors
+        }
+        DebugView debugView;
+
         // Specularity Settings
         enum SpecularityShadingModel {Unity_Standard, Google_Filament}
         SpecularityShadingModel shadingModel;
@@ -65,8 +83,8 @@ namespace Mochie {
         static void Init(){
             GlobalStandardSettings window = (GlobalStandardSettings)EditorWindow.GetWindow(typeof(GlobalStandardSettings));
             window.titleContent = new GUIContent("Standard Shader Settings");
-            window.minSize = new Vector2(300, 895);
-            window.maxSize = new Vector2(300, 895);
+            window.minSize = new Vector2(300, 919);
+            window.maxSize = new Vector2(300, 919);
             window.Show();
         }
 
@@ -160,6 +178,13 @@ namespace Mochie {
             // }
 
             MGUI.Space8();
+            EditorGUI.BeginChangeCheck();
+            debugView = (DebugView)EditorGUILayout.EnumPopup("Debug View", debugView);
+            if (EditorGUI.EndChangeCheck()){
+                ApplyDebugView();
+            }
+
+            MGUI.Space8();
             MGUI.BoldLabel("Specularity Settings");
             MGUI.PropertyGroup(()=>{
                 shadingModel = (SpecularityShadingModel)EditorGUILayout.EnumPopup("Shading Model", shadingModel);
@@ -198,6 +223,7 @@ namespace Mochie {
             if (MGUI.SimpleButton("Apply", buttonWidth, 0f)){
                 ApplyFilterSettings();
             }
+
             MGUI.Space8();
             MGUI.DisplayWarning("Please note that changes made with this utility cannot be undone, pick your settings carefully!");
         }
@@ -383,6 +409,16 @@ namespace Mochie {
             }
         }
 
+        void ApplyDebugView(){
+            List<Material> materials = new List<Material>();
+            materials.AddRange(standardMaterials);
+            materials.AddRange(standardLiteMaterials);
+            materials.AddRange(standardMobileMaterials);
+            foreach (Material m in materials){
+                HandleDebugView(m);
+            }
+        }
+
         void RestoreDefaultTextures(){
             List<Material> materials = new List<Material>();
             materials.AddRange(standardMaterials);
@@ -461,6 +497,212 @@ namespace Mochie {
                 }
             }
             return assets;
+        }
+
+        void HandleDebugView(Material m){
+            switch(debugView){
+                case DebugView.Off:
+                    ToggleDebugView(m, 0);
+                    m.SetFloat("_DebugBaseColor", 0);
+                    m.SetFloat("_DebugNormals", 0);
+                    m.SetFloat("_DebugRoughness", 0);
+                    m.SetFloat("_DebugMetallic", 0);
+                    m.SetFloat("_DebugOcclusion", 0);
+                    m.SetFloat("_DebugHeight", 0);
+                    m.SetFloat("_DebugAtten", 0);
+                    m.SetFloat("_DebugReflections", 0);
+                    m.SetFloat("_DebugSpecular", 0);
+                    m.SetFloat("_DebugAlpha", 0);
+                    m.SetFloat("_DebugLighting", 0);
+                    m.SetFloat("_DebugVertexColors", 0);
+                    break;
+                case DebugView.Base_Color:
+                    ToggleDebugView(m, 1);
+                    m.SetFloat("_DebugBaseColor", 1);
+                    m.SetFloat("_DebugNormals", 0);
+                    m.SetFloat("_DebugRoughness", 0);
+                    m.SetFloat("_DebugMetallic", 0);
+                    m.SetFloat("_DebugOcclusion", 0);
+                    m.SetFloat("_DebugHeight", 0);
+                    m.SetFloat("_DebugAtten", 0);
+                    m.SetFloat("_DebugReflections", 0);
+                    m.SetFloat("_DebugSpecular", 0);
+                    m.SetFloat("_DebugAlpha", 0);
+                    m.SetFloat("_DebugLighting", 0);
+                    m.SetFloat("_DebugVertexColors", 0);
+                    break;
+                case DebugView.Alpha:
+                    ToggleDebugView(m, 1);
+                    m.SetFloat("_DebugBaseColor", 0);
+                    m.SetFloat("_DebugNormals", 0);
+                    m.SetFloat("_DebugRoughness", 0);
+                    m.SetFloat("_DebugMetallic", 0);
+                    m.SetFloat("_DebugOcclusion", 0);
+                    m.SetFloat("_DebugHeight", 0);
+                    m.SetFloat("_DebugAtten", 0);
+                    m.SetFloat("_DebugReflections", 0);
+                    m.SetFloat("_DebugSpecular", 0);
+                    m.SetFloat("_DebugAlpha", 1);
+                    m.SetFloat("_DebugLighting", 0);
+                    m.SetFloat("_DebugVertexColors", 0);
+                    break;
+                case DebugView.Normals:
+                    ToggleDebugView(m, 1);
+                    m.SetFloat("_DebugBaseColor", 0);
+                    m.SetFloat("_DebugNormals", 1);
+                    m.SetFloat("_DebugRoughness", 0);
+                    m.SetFloat("_DebugMetallic", 0);
+                    m.SetFloat("_DebugOcclusion", 0);
+                    m.SetFloat("_DebugHeight", 0);
+                    m.SetFloat("_DebugAtten", 0);
+                    m.SetFloat("_DebugReflections", 0);
+                    m.SetFloat("_DebugSpecular", 0);
+                    m.SetFloat("_DebugAlpha", 0);
+                    m.SetFloat("_DebugLighting", 0);
+                    m.SetFloat("_DebugVertexColors", 0);
+                    break;
+                case DebugView.Roughness:
+                    ToggleDebugView(m, 1);
+                    m.SetFloat("_DebugBaseColor", 0);
+                    m.SetFloat("_DebugNormals", 0);
+                    m.SetFloat("_DebugRoughness", 1);
+                    m.SetFloat("_DebugMetallic", 0);
+                    m.SetFloat("_DebugOcclusion", 0);
+                    m.SetFloat("_DebugHeight", 0);
+                    m.SetFloat("_DebugAtten", 0);
+                    m.SetFloat("_DebugReflections", 0);
+                    m.SetFloat("_DebugSpecular", 0);
+                    m.SetFloat("_DebugAlpha", 0);
+                    m.SetFloat("_DebugLighting", 0);
+                    m.SetFloat("_DebugVertexColors", 0);
+                    break;
+                case DebugView.Metallic:
+                    ToggleDebugView(m, 1);
+                    m.SetFloat("_DebugBaseColor", 0);
+                    m.SetFloat("_DebugNormals", 0);
+                    m.SetFloat("_DebugRoughness", 0);
+                    m.SetFloat("_DebugMetallic", 1);
+                    m.SetFloat("_DebugOcclusion", 0);
+                    m.SetFloat("_DebugHeight", 0);
+                    m.SetFloat("_DebugAtten", 0);
+                    m.SetFloat("_DebugReflections", 0);
+                    m.SetFloat("_DebugSpecular", 0);
+                    m.SetFloat("_DebugAlpha", 0);
+                    m.SetFloat("_DebugLighting", 0);
+                    m.SetFloat("_DebugVertexColors", 0);
+                    break;
+                case DebugView.Occlusion:
+                    ToggleDebugView(m, 1);
+                    m.SetFloat("_DebugBaseColor", 0);
+                    m.SetFloat("_DebugNormals", 0);
+                    m.SetFloat("_DebugRoughness", 0);
+                    m.SetFloat("_DebugMetallic", 0);
+                    m.SetFloat("_DebugOcclusion", 1);
+                    m.SetFloat("_DebugHeight", 0);
+                    m.SetFloat("_DebugAtten", 0);
+                    m.SetFloat("_DebugReflections", 0);
+                    m.SetFloat("_DebugSpecular", 0);
+                    m.SetFloat("_DebugAlpha", 0);
+                    m.SetFloat("_DebugLighting", 0);
+                    m.SetFloat("_DebugVertexColors", 0);
+                    break;
+                case DebugView.Height:
+                    ToggleDebugView(m, 1);
+                    m.SetFloat("_DebugBaseColor", 0);
+                    m.SetFloat("_DebugNormals", 0);
+                    m.SetFloat("_DebugRoughness", 0);
+                    m.SetFloat("_DebugMetallic", 0);
+                    m.SetFloat("_DebugOcclusion", 0);
+                    m.SetFloat("_DebugHeight", 1);
+                    m.SetFloat("_DebugAtten", 0);
+                    m.SetFloat("_DebugReflections", 0);
+                    m.SetFloat("_DebugSpecular", 0);
+                    m.SetFloat("_DebugAlpha", 0);
+                    m.SetFloat("_DebugLighting", 0);
+                    m.SetFloat("_DebugVertexColors", 0);
+                    break;
+                case DebugView.Lighting:
+                    ToggleDebugView(m, 1);
+                    m.SetFloat("_DebugBaseColor", 0);
+                    m.SetFloat("_DebugNormals", 0);
+                    m.SetFloat("_DebugRoughness", 0);
+                    m.SetFloat("_DebugMetallic", 0);
+                    m.SetFloat("_DebugOcclusion", 0);
+                    m.SetFloat("_DebugHeight", 0);
+                    m.SetFloat("_DebugAtten", 0);
+                    m.SetFloat("_DebugReflections", 0);
+                    m.SetFloat("_DebugSpecular", 0);
+                    m.SetFloat("_DebugAlpha", 0);
+                    m.SetFloat("_DebugLighting", 1);
+                    m.SetFloat("_DebugVertexColors", 0);
+                    break;
+                case DebugView.Realtime_Shadows:
+                    ToggleDebugView(m, 1);
+                    m.SetFloat("_DebugBaseColor", 0);
+                    m.SetFloat("_DebugNormals", 0);
+                    m.SetFloat("_DebugRoughness", 0);
+                    m.SetFloat("_DebugMetallic", 0);
+                    m.SetFloat("_DebugOcclusion", 0);
+                    m.SetFloat("_DebugHeight", 0);
+                    m.SetFloat("_DebugAtten", 1);
+                    m.SetFloat("_DebugReflections", 0);
+                    m.SetFloat("_DebugSpecular", 0);
+                    m.SetFloat("_DebugAlpha", 0);
+                    m.SetFloat("_DebugLighting", 0);
+                    m.SetFloat("_DebugVertexColors", 0);
+                    break;
+                case DebugView.Reflections:
+                    ToggleDebugView(m, 1);
+                    m.SetFloat("_DebugBaseColor", 0);
+                    m.SetFloat("_DebugNormals", 0);
+                    m.SetFloat("_DebugRoughness", 0);
+                    m.SetFloat("_DebugMetallic", 0);
+                    m.SetFloat("_DebugOcclusion", 0);
+                    m.SetFloat("_DebugHeight", 0);
+                    m.SetFloat("_DebugAtten", 0);
+                    m.SetFloat("_DebugReflections", 1);
+                    m.SetFloat("_DebugSpecular", 0);
+                    m.SetFloat("_DebugAlpha", 0);
+                    m.SetFloat("_DebugLighting", 0);
+                    m.SetFloat("_DebugVertexColors", 0);
+                    break;
+                case DebugView.Specular_Highlights:
+                    ToggleDebugView(m, 1);
+                    m.SetFloat("_DebugBaseColor", 0);
+                    m.SetFloat("_DebugNormals", 0);
+                    m.SetFloat("_DebugRoughness", 0);
+                    m.SetFloat("_DebugMetallic", 0);
+                    m.SetFloat("_DebugOcclusion", 0);
+                    m.SetFloat("_DebugHeight", 0);
+                    m.SetFloat("_DebugAtten", 0);
+                    m.SetFloat("_DebugReflections", 0);
+                    m.SetFloat("_DebugSpecular", 1);
+                    m.SetFloat("_DebugAlpha", 0);
+                    m.SetFloat("_DebugLighting", 0);
+                    m.SetFloat("_DebugVertexColors", 0);
+                    break;
+                case DebugView.Vertex_Colors:
+                    ToggleDebugView(m, 1);
+                    m.SetFloat("_DebugBaseColor", 0);
+                    m.SetFloat("_DebugNormals", 0);
+                    m.SetFloat("_DebugRoughness", 0);
+                    m.SetFloat("_DebugMetallic", 0);
+                    m.SetFloat("_DebugOcclusion", 0);
+                    m.SetFloat("_DebugHeight", 0);
+                    m.SetFloat("_DebugAtten", 0);
+                    m.SetFloat("_DebugReflections", 0);
+                    m.SetFloat("_DebugSpecular", 0);
+                    m.SetFloat("_DebugAlpha", 0);
+                    m.SetFloat("_DebugLighting", 0);
+                    m.SetFloat("_DebugVertexColors", 1);
+                    break;
+                default: ToggleDebugView(m, 0); break;
+            }
+        }
+
+        void ToggleDebugView(Material m, int state){
+            m.SetFloat("_MaterialDebugMode", state);
+            m.SetFloat("_DebugEnable", state);
         }
     }
 }

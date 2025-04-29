@@ -16,7 +16,6 @@
 #define RAIN_ENABLED defined(_RAIN_DROPLETS_ON) || defined(_RAIN_RIPPLES_ON) || defined(_RAIN_AUTO_ON)
 #define NEEDS_LIGHTMAP_UV defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON) || LTCGI_ENABLED || AREALIT_ENABLED
 #define SSR_ENABLED defined(_SSR_ON) && !defined(SHADER_API_MOBILE)
-
 #if defined(SHADOWS_DEPTH) && !defined(SPOT)
     #define SHADOW_COORDS(idx1) unityShadowCoord2 _ShadowCoord : TEXCOORD##idx1;
 #endif
@@ -99,6 +98,7 @@ float2 _UVDetailScroll;
 float _UVDetailRotation;
 int _UVDetailSet;
 int _UVDetailSwizzle;
+int _DetailMaskMode;
 
 float4 _DetailColor;
 float _DetailMainTexStrength;
@@ -253,11 +253,38 @@ float _RippleDensity;
 float _RainThreshold;
 float _RainThresholdSize;
 float _RainStrength;
+float _PuddleRippleStrength;
+float _PuddleRippleSpeed;
+float _PuddleRippleSize;
+float _PuddleRippleDensity;
+
+// Puddles
+MOCHIE_DECLARE_TEX2D_NOSAMPLER(_PuddleTexture);
+float4 _PuddleTexture_TexelSize;
+float4 _PuddleTexture_ST;
+float4 _PuddleTint;
+int _PuddleToggle;
+int _UVPuddleSet;
+int _UVPuddleSwizzle;
+int _PuddleUseHeightMap;
+int _PuddleHeightBasedTint;
+float2 _UVPuddleScroll;
+float2 _UVPuddleRotation;
+float _PuddleStrength;
+float _PuddleMetallic;
+float _PuddleOcclusionStrength;
+float _PuddleHeightStrength;
+float _PuddleThresholdMin;
+float _PuddleThresholdMax;
+float _PuddleTintDepth;
+float _RippleHorizonAdjustment;
+float _RippleHorizonAdjustmentDistance;
 
 // Render Settings
 int _UnityFogToggle;
 int _VertexBaseColor;
 int _BAKERY_SHNONLINEAR;
+int _FlipBackfaceNormals;
 float _BakeryLMSpecStrength;
 
 // Debug Toggles
@@ -279,6 +306,8 @@ int _DebugSpecular;
 // Outputs
 float4 defaultSampler;
 float2 parallaxOffset;
+float finalSurfaceHeight;
+float initialSurfaceHeight;
 float flipbookBase;
 float rainThreshold;
 float rainStrength;
@@ -316,17 +345,17 @@ struct v2f {
     float4 uv2 : TEXCOORD2;
     float4 uv3 : TEXCOORD3;
     float4 uv4 : TEXCOORD4;
-    float4 lightmapUV : TEXCOORD5;
-    float3 worldPos : TEXCOORD6;
-    float3 localPos : TEXCOORD7;
-    float3 localNorm : TEXCOORD8;
+    float4 uv5 : TEXCOORD5;
+    float4 lightmapUV : TEXCOORD6;
+    float3 worldPos : TEXCOORD7;
+    float3 localPos : TEXCOORD8;
+    float3 localNorm : TEXCOORD9;
     #if defined(META_PASS)
         #if defined(EDITOR_VISUALIZATION)
-            float2 vizUV    : TEXCOORD9;
-            float4 lightCoord   : TEXCOORD10;
+            float2 vizUV    : TEXCOORD10;
+            float4 lightCoord   : TEXCOORD11;
         #endif
     #else
-        float4 grabUV : TEXCOORD11;
         bool vertexLightOn : TEXCOORD12;
         UNITY_SHADOW_COORDS(13)
         UNITY_FOG_COORDS(14)
@@ -375,7 +404,10 @@ struct InputData {
     float4 emission;
     float4 packedMap;
     float rainFlipbook;
+    float puddleMask;
+    float facingAngle;
     float alpha;
+    bool isFrontFace;
 };
 
 #include "StandardRain.cginc"

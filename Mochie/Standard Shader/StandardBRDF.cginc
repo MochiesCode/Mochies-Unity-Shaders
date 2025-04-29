@@ -176,7 +176,7 @@ void CalculateBRDF(v2f i, InputData id, inout LightingData ld){
         float4 ssr = 0;
         [branch]
         if (((_VRSSR == 0 && IsNotVR()) || _VRSSR == 1) && _SSRStrength > 0){
-            ssr = GetSSR(i.worldPos, ld.viewDir, reflDir, id.normal, 1-id.roughness, id.baseColor, id.metallic, i.grabUV);
+            ssr = GetSSR(i.worldPos, ld.viewDir, reflDir, id.normal, 1-id.roughness, id.baseColor, id.metallic, ComputeGrabScreenPos(i.pos));
             if (_SSREdgeFade == 0)
                 ssr.a = ssr.a > 0 ? 1 : 0;
             ssr.rgb *= ld.reflAdjust * ld.specularOcclusion * id.occlusion;

@@ -238,6 +238,7 @@ float _IndirectSaturation;
 int _VRSSR;
 int _WireframeVisualization;
 float4 _WireframeColor;
+int _CausticsFlipbookBlend;
 
 float _Test1, _Test2;
 float _ZeroProp;

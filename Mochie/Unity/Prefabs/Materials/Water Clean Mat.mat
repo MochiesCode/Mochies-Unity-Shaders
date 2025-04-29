@@ -17,6 +17,7 @@ Material:
   - _DEPTH_EFFECTS_ON
   - _EDGEFADE_ON
   - _FLOW_ON
+  - _FOAM_ON
   - _NORMALMAP_1_ON
   - _NORMALMAP_FLIPBOOK_ON
   - _REFLECTIONS_ON
@@ -82,6 +83,14 @@ Material:
         m_Texture: {fileID: 2800000, guid: 6c6c8f6678ed78e4eb543b06dcbc5b8a, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _LTCGI_amp:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _LTCGI_mat:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _LightMesh:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
@@ -119,7 +128,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _NormalMap0:
-        m_Texture: {fileID: 2800000, guid: 6d095a40a0b25e746a709fedd6a9aae6, type: 3}
+        m_Texture: {fileID: 2800000, guid: 4229641ad60880a4a8e7c5614adf58a3, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _NormalMap1:
@@ -168,7 +177,6 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _ApplyHeightOffset: 0
     - _AreaLitRoughnessMult: 1
     - _AreaLitStrength: 1
     - _AreaLitToggle: 0
@@ -183,16 +191,16 @@ Material:
     - _BaseColorDistortionStrength: 0.1
     - _BaseColorOffset: 0
     - _BaseColorStochasticToggle: 0
-    - _BicubicLightmapping: 1
     - _BicubicSampling: 1
     - _BlendNoiseSource: 0
     - _CausticsDisp: 0.15
     - _CausticsDistortion: 0.5
     - _CausticsDistortionScale: 0.2
-    - _CausticsFade: 10
+    - _CausticsFade: 5
+    - _CausticsFlipbookBlend: 1
     - _CausticsFlipbookDisp: 0.15
     - _CausticsFlipbookSpeed: 16
-    - _CausticsOpacity: 0.5
+    - _CausticsOpacity: 1
     - _CausticsPower: 1
     - _CausticsScale: 1
     - _CausticsShadowStrength: 1
@@ -207,19 +215,18 @@ Material:
     - _DistortionStrength: 0.5
     - _DstBlend: 0
     - _EdgeFadeOffset: 0.5
-    - _EdgeFadePower: 400
+    - _EdgeFadePower: 300
     - _EdgeFadeSSR: 0.1
     - _EdgeFadeToggle: 1
     - _EmissionDistortionStrength: 0
     - _EmissionFlowToggle: 0
     - _EmissionMapStochasticToggle: 0
-    - _EmissionToggle: 0
     - _FlowMapUV: 0
     - _FlowSpeed: 0.25
     - _FlowStrength: 0.3
     - _FlowToggle: 1
     - _FoamCrestPower: 1
-    - _FoamCrestStrength: 0
+    - _FoamCrestStrength: 1.5
     - _FoamCrestThreshold: 0.5
     - _FoamDistortionStrength: 0.1
     - _FoamEdgeStrength: 1.5
@@ -228,11 +235,10 @@ Material:
     - _FoamNormalStrength: 4
     - _FoamNormalToggle: 0
     - _FoamOffset: 0
-    - _FoamOpacity: 3
     - _FoamPower: 200
-    - _FoamRoughness: 0.6
+    - _FoamRoughness: 0.5
     - _FoamStochasticToggle: 0
-    - _FoamToggle: 0
+    - _FoamToggle: 1
     - _FogBrightness: 1
     - _FogBrightness2: 1
     - _FogContribution: 1
@@ -245,8 +251,11 @@ Material:
     - _HorizonAdjustmentDistance: 0.7
     - _IgnoreRealtimeGI: 0
     - _IndirectSaturation: 1
-    - _IndirectStrength: 0.5
+    - _IndirectStrength: 1
     - _InvertNormals: 0
+    - _LTCGI: 0
+    - _LTCGIRoughness: 1
+    - _LTCGIStrength: 1
     - _LightmapDistortion: 1
     - _MaterialResetCheck: 1
     - _Metallic: 0
@@ -255,13 +264,12 @@ Material:
     - _Normal0StochasticToggle: 0
     - _Normal1StochasticToggle: 0
     - _Normal1Toggle: 1
-    - _NormalFlipbookStochasticToggle: 0
     - _NormalMapFlipbookSpeed: 8
     - _NormalMapFlipbookStrength: 0.2
     - _NormalMapMode: 1
     - _NormalMapOffset0: 0
     - _NormalMapOffset1: 0
-    - _NormalStr0: 0.2
+    - _NormalStr0: 0.3
     - _NormalStr1: 0.3
     - _Opacity: 1
     - _OpaqueLights: 1
@@ -279,7 +287,7 @@ Material:
     - _Rotation1: 0
     - _Roughness: 0
     - _SSR: 0
-    - _SSRHeight: 0.1
+    - _SSRHeight: 0.2
     - _SSRStrength: 1
     - _ShadowStrength: 0
     - _SpecStrength: 1
@@ -288,13 +296,12 @@ Material:
     - _StencilRef: 65
     - _SubsurfaceBrightness: 10
     - _SubsurfaceStrength: 0
-    - _SubsurfaceThreshold: 0.5
+    - _SubsurfaceThreshold: 0.4
     - _TessDistMax: 50
     - _TessDistMin: 25
     - _TessMax: 9
     - _TessMin: 1
     - _TessellationOffsetMask: 1
-    - _Test: 10
     - _Test1: 0
     - _Test2: 1
     - _TexCoordSpace: 0
@@ -303,6 +310,7 @@ Material:
     - _Turbulence: 1
     - _TurbulenceScale: 3
     - _TurbulenceSpeed: 0.3
+    - _VRSSR: 1
     - _VertOffsetFlipbookSpeed: 8
     - _VertOffsetFlipbookStrength: 0.2
     - _VertOffsetMode: 0
@@ -324,11 +332,12 @@ Material:
     - _WaveSpeed0: 1
     - _WaveSpeed1: 1.1
     - _WaveSpeed2: 1.2
-    - _WaveSpeedGlobal: 2
+    - _WaveSpeedGlobal: 3
     - _WaveStrength0: 0.1
     - _WaveStrength1: 0.1
     - _WaveStrength2: 0.1
     - _WaveStrengthGlobal: 1.5
+    - _WireframeVisualization: 0
     - _ZWrite: 0
     - _ZeroProp: 0
     m_Colors:
@@ -347,10 +356,12 @@ Material:
     - _FoamColor: {r: 1, g: 1, b: 1, a: 1}
     - _FoamNoiseTexScale: {r: 3, g: 3, b: 0, a: 0}
     - _FoamNoiseTexScroll: {r: 0, g: 0.1, b: 0, a: 0}
-    - _FoamTexScale: {r: 5, g: 5, b: 0, a: 0}
+    - _FoamTexScale: {r: 6, g: 6, b: 0, a: 0}
     - _FoamTexScroll: {r: 0.1, g: -0.1, b: 0, a: 0}
-    - _FogTint: {r: 0.11, g: 0.26, b: 0.26, a: 1}
+    - _FogTint: {r: 0.10999996, g: 0.25999996, b: 0.25999996, a: 1}
     - _FogTint2: {r: 0.054999977, g: 0.12999997, b: 0.12999997, a: 1}
+    - _LTCGI_DiffuseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _LTCGI_SpecularColor: {r: 1, g: 1, b: 1, a: 1}
     - _LightDir: {r: 0, g: 0.75, b: 1, a: 0}
     - _MainTexScroll: {r: 0, g: 0.1, b: 0, a: 0}
     - _NoiseTexScale: {r: 3, g: 3, b: 0, a: 0}
@@ -372,4 +383,5 @@ Material:
     - _VoronoiOffset: {r: 0, g: 1, b: 0, a: 0}
     - _VoronoiScale: {r: 2, g: 2, b: 0, a: 0}
     - _VoronoiScroll: {r: 0, g: -0.25, b: 0, a: 0}
+    - _WireframeColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []

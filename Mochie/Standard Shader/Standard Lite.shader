@@ -65,12 +65,13 @@ Shader "Mochie/Standard Lite" {
         // Detail Textures
         [Enum(Separate,0, Packed,1)]_DetailWorkflow("Detail Workflow", Int) = 0
         [Enum(Default,0, Stochastic,1, Supersampling,2, Triplanar,3)]_DetailSampleMode("Detail Sampling Mode", Int) = 0
+        [Enum(Blend,0, Replace,1)]_DetailMaskMode("Detail Mask Mode", Int) = 0
         _DetailMainTex("Base Color", 2D) = "white" {}
         _DetailColor("Color", Color) = (1,1,1,1)
         _DetailMainTexStrength("Detail Base Color Strength", Range(0,1)) = 1
         [Enum(Add,0, Alpha,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailMainTexBlend("Detail Base Color Blend", Int) = 2
         _DetailNormalMap("Normal Map", 2D) = "bump" {}
-        _DetailNormalStrength("Normal Strength", Float) = 1
+        _DetailNormalStrength("Normal Strength", Range(0,1)) = 1
         _DetailMetallicMap("Metallic Map", 2D) = "white" {}
         _DetailMetallicStrength("Metallic Strength", Range(0,1)) = 0
         [Enum(Add,0, Alpha,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_DetailMetallicBlend("Detail Metallic Blend", Int) = 2
@@ -191,6 +192,30 @@ Shader "Mochie/Standard Lite" {
         _RippleStrength("Ripple Strength", Float) = 1
         _RippleDensity("Ripple Density", Float) = 0.3
         _RippleSize("Ripple Size", Float) = 2
+        _RippleHorizonAdjustment("Horizon Adjustment", Range(0,1)) = 0
+        _RippleHorizonAdjustmentDistance("Horizon Adjustment Distance", Range(0.1, 1)) = 0.7
+        _PuddleRippleStrength("Puddle Ripple Strength", Float) = 1
+        _PuddleRippleSpeed("Puddle Ripple Speed", Float) = 18
+        _PuddleRippleSize("Puddle Ripple Size", Float) = 5
+        _PuddleRippleDensity("Puddle Ripple Density", Float) = 1
+
+        // Puddles
+        [ToggleUI]_PuddleToggle("Puddle Toggle", Int) = 0
+        [ToggleUI]_PuddleUseHeightMap("Puddle Height Map", Int) = 0
+        [ToggleUI]_PuddleHeightBasedTint("Puddle Height Tint", Int) = 0
+        _PuddleTexture("Puddle Texture", 2D) = "black" {}
+        _UVPuddleScroll("Puddle UV Scrolling", Vector) = (0,0,0,0)
+        _UVPuddleRotation("Puddle UV Rotation", Float) = 0
+        [Enum(UV0,0, UV1,1, UV2,2, UV3,3, UV4,4, World,5, Local,6)]_UVPuddleSet("Puddle UVs", Float) = 0
+        [Enum(XY,0, XZ,1, YZ,2)]_UVPuddleSwizzle("Swizzle", Int) = 0
+        _PuddleStrength("Puddle Strength", Range(0,1)) = 1
+        _PuddleMetallic("Puddle Metallic", Range(0,1)) = 0
+        _PuddleOcclusionStrength("Puddle Occlusion", Range(0,1)) = 0
+        _PuddleTint("Puddle Tint", Color) = (0,0,0,0.1)
+        _PuddleTintDepth("Puddle Tint Depth", Range(0,1)) = 0
+        _PuddleHeightStrength("Puddle Height Strength", Range(0,1)) = 1
+        _PuddleThresholdMin("Puddle Threshold Min", Float) = 0
+        _PuddleThresholdMax("Puddle Threshold Max", Float) = 1
 
         // Filtering
         [ToggleUI]_Filtering("Filtering", Int) = 0
@@ -260,6 +285,7 @@ Shader "Mochie/Standard Lite" {
         _QueueOffset("Queue Offset", Int) = 0
         [ToggleUI]_UnityFogToggle("Unity Fog", Int) = 1
         [ToggleUI]_VertexBaseColor("Vertex Base Color", Int) = 0
+        [ToggleUI]_FlipBackfaceNormals("Flip Backface Normals", Int) = 0
         
         // Debug
         [ToggleUI]_DebugEnable("Enable Debug View", Int) = 0

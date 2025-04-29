@@ -76,6 +76,7 @@ float2 GetParallaxOffset(v2f i, Texture2D heightMap, float2 uv, float3 tangentVi
     float prevStepHeight = stepHeight;
     float surfaceHeight = SampleTexture(heightMap, uv)[channel];
     surfaceHeight = clamp(surfaceHeight, 0, 0.999);
+    initialSurfaceHeight = surfaceHeight;
     float prevSurfaceHeight = surfaceHeight;
 
     [unroll(16)]
@@ -88,8 +89,8 @@ float2 GetParallaxOffset(v2f i, Texture2D heightMap, float2 uv, float3 tangentVi
         surfaceHeight = SampleTexture(heightMap, uv+uvOffset)[channel] + _HeightOffset;
     }
     
-    [unroll(3)]
-    for (int k = 0; k < 3; k++) {
+    [unroll(5)]
+    for (int k = 0; k < 5; k++) {
         uvDelta *= 0.5;
         stepSize *= 0.5;
 
@@ -104,13 +105,15 @@ float2 GetParallaxOffset(v2f i, Texture2D heightMap, float2 uv, float3 tangentVi
         surfaceHeight = SampleTexture(heightMap, uv+uvOffset)[channel] + _HeightOffset;
     }
 
+    finalSurfaceHeight = surfaceHeight;
+
     return uvOffset;
 }
 
 void ApplyParallaxHeight(inout v2f i, float3 viewDir, float3 tangentViewDir, float3 vertexNormal, bool isFrontFace){
     #if defined(_PARALLAX_ON)
         if (isFrontFace){
-            float mask = _HeightMask.Sample(sampler_DefaultSampler, i.uv1.zw)[_HeightMaskChannel];
+            float mask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_HeightMask, sampler_DefaultSampler, i.uv1.zw)[_HeightMaskChannel];
             float strength = _HeightStrength * mask;
 
             // Catlike Coding POM
@@ -130,12 +133,10 @@ void ApplyParallaxHeight(inout v2f i, float3 viewDir, float3 tangentViewDir, flo
             i.uv0.xy += parallaxOffset;
             i.uv0.zw += parallaxOffset * (_DetailMainTex_ST.xy / _MainTex_ST.xy);
             i.uv1.xy += parallaxOffset * (_DetailMask_ST.xy / _MainTex_ST.xy);
-            i.uv2.xy += parallaxOffset * (_RainScale / _MainTex_ST.xy);
-            i.uv2.zw += parallaxOffset * (_RainMask_ST.xy / _MainTex_ST.xy);
             i.uv3.xy += parallaxOffset * (_EmissionMask_ST.xy / _MainTex_ST.xy);
-            i.uv3.zw += parallaxOffset * (_RippleScale / _MainTex_ST.xy);
             i.uv4.xy += parallaxOffset * (_AreaLitOcclusion_ST.xy / _MainTex_ST.xy);
             i.uv4.zw += parallaxOffset * (_AlphaMask_ST.xy / _MainTex_ST.xy);
+            i.uv5.xy += parallaxOffset * (_PuddleTexture_ST.xy / _MainTex_ST.xy) * lerp(_PuddleHeightStrength, 1, _PuddleUseHeightMap);
             if (_ApplyHeightOffset == 1){
                 i.lightmapUV.xy += parallaxOffset * (unity_LightmapST.xy / _MainTex_ST.xy) * 0.5;
                 i.lightmapUV.zw += parallaxOffset * (unity_DynamicLightmapST.xy / _MainTex_ST.xy) * 0.5;
