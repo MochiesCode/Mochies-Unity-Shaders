@@ -7,6 +7,7 @@
 #include "../Common/Color.cginc"
 #include "../Common/Utilities.cginc"
 #include "../Common/Noise.cginc"
+#include "../Common/ThirdParty.cginc"
 #include "AutoLight.cginc"
 
 MOCHIE_DECLARE_TEX2D(_MainTex);

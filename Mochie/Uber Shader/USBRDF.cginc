@@ -472,7 +472,7 @@ float DisneyDiffuse(lighting l, masks m, float percepRough) {
     return dd;
 }
 
-float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, float3 specCol, float3 reflCol, float omr, float smoothness, float3 atten){
+float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, float3 specCol, float3 reflCol, float omr, float smoothness, float3 atten, float metallic){
     float percepRough = 1-smoothness;
     float brdfRoughness = percepRough * percepRough;
     brdfRoughness = max(brdfRoughness, 0.002);
@@ -504,6 +504,10 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
                 float sharpSpec = floor(specular * _SharpSpecStr) / _SharpSpecStr;
                 specular = lerp(sharpSpec, specular, 0);
             }
+            [branch]
+            if (_UdonLightVolumeEnabled == 1 && _LightVolumeSpecularity == 1 && _LightVolumeSpecularityStrength > 0){
+                specular += LightVolumeSpecular(albedo, smoothness, metallic, l.normal, i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b) * _LightVolumeSpecularityStrength * m.specularMask;
+            }
         }
         #if !ADDITIVE_PASS
         }
@@ -524,8 +528,7 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
             reflections *= m.reflectionMask * _ReflectionStr;
         }
     #endif
-
-
+    
     environment = specular + reflections;
     if (_Iridescence == 1){
         ApplyIridescence(i, l, m, environment, metallic);

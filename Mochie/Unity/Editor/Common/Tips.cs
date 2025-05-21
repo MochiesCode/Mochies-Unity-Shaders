@@ -38,7 +38,7 @@ namespace Mochie {
         public static GUIContent colorGradingLUTText = new GUIContent("Custom LUT", "Custom LUT for color grading.");
         public static GUIContent splatHeightText = new GUIContent("Height Mapping", "Enables the use of height-based features including Parallax Occlusion, Layer Blending, and Puddles.");
         public static GUIContent flipBackfaceNormalsText = new GUIContent("Flip Normals on Backfaces", "This both causes and fixes issues with backfaces appearing black when lightmapped. It appears to be random which way it goes. We love Unity.");
-
+        public static GUIContent lightVolumeSpecText = new GUIContent("Light Volume Specularity", "Specularity derived from VRC Light Volumes.");
         // Standard
         public static GUIContent standWorkflow = new GUIContent("Workflow", "Standard:\nDefault packing mode of visually separated texture slots for PBR maps, uses MAHS format.\n\nPacked: \nModular packing mode that combines all PBR texture slots into one and allows channel selection.");
         public static GUIContent standBlendMode = new GUIContent("Blending Mode", "Opaque:\nDefault blending mode, has no transparency support.\n\nCutout:\nPixels outside the alpha threshold will be discarded and not rendered.\n\nFade:\nCreates a smoothly blended transparency that takes all alpha values from 0-1 into account when determining opacity.\n\nTransparent:\nFunctions similarily to Fade, but maintains reflections and specular behavior on transparent areas (ie. glass).");

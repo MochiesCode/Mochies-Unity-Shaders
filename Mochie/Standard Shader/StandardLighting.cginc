@@ -8,6 +8,7 @@ void ApplyLighting(inout InputData id, LightingData ld){
     id.diffuse.rgb += ld.reflectionCol;
     id.diffuse.rgb += ld.specHighlightCol;
     id.diffuse.rgb += ld.lmSpec;
+    id.diffuse.rgb += ld.lightVolumeSpecularity;
     id.diffuse.rgb += ld.subsurfaceCol;
     id.diffuse.rgb += id.emission.rgb;
     id.diffuse.rgb = Filtering(id.diffuse.rgb, _HuePost, _SaturationPost, _BrightnessPost, _ContrastPost, _ACES, true);
@@ -91,13 +92,20 @@ float FadeShadows (float3 worldPos, float2 lmuv, float atten) {
 }
 
 float3 GetSubsurfaceLight(v2f i, InputData id, inout LightingData ld, float3 lightCol, float3 lightDir, float3 viewDir, float3 indirectLight, float atten){
-    ld.thickness = pow(1-SampleTexture(_ThicknessMap, i.uv0.xy), _ThicknessMapPower);
-    float3 subsurfaceColor = _ScatterCol * lerp(1, id.baseColor, _ScatterBaseColorTint);
-    float3 vLTLight = lightDir + id.normal * _ScatterDist;
-    float3 fLTDot = pow(saturate(dot(viewDir, -vLTLight)), _ScatterPow) * _ScatterIntensity * 1.0/UNITY_PI; 
-    return lerp(1, atten, float(any(_WorldSpaceLightPos0.xyz))) 
-                * (fLTDot + _ScatterAmbient) * ld.thickness
-                * (lightCol + indirectLight) * subsurfaceColor;           
+    float3 subsurfaceLight = 0;
+    #if defined(BASE_PASS) && !defined(STANDARD_MOBILE)
+        [branch]
+        if (_Subsurface == 1){
+            ld.thickness = pow(1-SampleTexture(_ThicknessMap, i.uv0.xy), _ThicknessMapPower);
+            float3 subsurfaceColor = _ScatterCol * lerp(1, id.baseColor, _ScatterBaseColorTint);
+            float3 vLTLight = lightDir + id.normal * _ScatterDist;
+            float3 fLTDot = pow(saturate(dot(viewDir, -vLTLight)), _ScatterPow) * _ScatterIntensity * 1.0/UNITY_PI; 
+            subsurfaceLight = lerp(1, atten, float(any(_WorldSpaceLightPos0.xyz))) 
+                        * (fLTDot + _ScatterAmbient) * ld.thickness
+                        * (lightCol + indirectLight) * subsurfaceColor; 
+        }
+    #endif
+    return subsurfaceLight;   
 }
 
 float NonlinearSH(float L0, float3 L1, float3 normal) {
@@ -119,79 +127,93 @@ float3 ShadeSHNL(float3 normal) {
     return indirect;
 }
 
+float3 GetSH(v2f i, InputData id){
+    [branch]
+    if (_UdonLightVolumeEnabled == 1){
+        LightVolumeSH(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+        return LightVolumeEvaluate(id.normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+    }
+    else {
+        #if defined(BAKERY_SHNONLINEAR)
+            return max(0, ShadeSHNL(id.normal));
+        #else
+            return max(0, ShadeSH9(float4(id.normal, 1)));
+        #endif
+    }
+}
+
+float3 GetRealtimeIndirectLighting(v2f i, InputData id){
+    float3 indirectCol = 0;
+    #if UNITY_LIGHT_PROBE_PROXY_VOLUME
+        if (unity_ProbeVolumeParams.x == 1){
+            indirectCol = max(0, SHEvalLinearL0L1_SampleProbeVolume(float4(id.normal, 1), i.worldPos));
+        }
+        else {
+            indirectCol = GetSH(i, id);
+        }
+    #else
+        indirectCol = GetSH(i, id);
+    #endif
+    return indirectCol;
+}
+
 void GetIndirectLighting(v2f i, InputData id, float3 viewDir, inout float3 indirectCol, inout float3 lmSpec, float3 tangentViewDir, float atten) {
     indirectCol = 0;
     lmSpec = 0;
 
-    #if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
-        #if defined(_BICUBIC_SAMPLING_ON)
-            indirectCol = DecodeLightmap(SampleLightmapBicubic(i.lightmapUV));
-            #if defined(DIRLIGHTMAP_COMBINED) || defined(BAKERY_MONOSH)
-                float4 lightmapDir = SampleLightmapDirBicubic(i.lightmapUV);
-            #endif
-        #else
-            indirectCol = DecodeLightmap(UNITY_SAMPLE_TEX2D(unity_Lightmap, i.lightmapUV));
-            #if defined(DIRLIGHTMAP_COMBINED) || defined(BAKERY_MONOSH)
-                float4 lightmapDir = UNITY_SAMPLE_TEX2D_SAMPLER(unity_LightmapInd, unity_Lightmap, i.lightmapUV);
-            #endif
-        #endif
-
-        float bakeryLMSpecRough = id.roughness * id.roughness; // max(0.001, id.roughness); - looks terrible lol
-        #if defined(BAKERY_MONOSH)
-            BakeryMonoSH(indirectCol, lmSpec, lightmapDir, id.normal, viewDir, bakeryLMSpecRough);
-        #elif defined(BAKERY_RNM)
-            BakeryRNMLightmapAndSpecular(indirectCol, i.lightmapUV, lmSpec, id.tsNormal, tangentViewDir, viewDir, bakeryLMSpecRough);
-        #elif defined(BAKERY_SH)
-            BakerySHLightmapAndSpecular(indirectCol, i.lightmapUV, lmSpec, id.normal, viewDir, bakeryLMSpecRough);
-        #else
-            #if defined(DIRLIGHTMAP_COMBINED)
-                indirectCol = DecodeDirectionalLightmap(indirectCol, lightmapDir, id.normal);
-            #endif
-        #endif
-
-        #if defined(LIGHTMAP_SHADOW_MIXING) && !defined(SHADOWS_SHADOWMASK) && defined(SHADOWS_SCREEN)
-            indirectCol = SubtractMainLightWithRealtimeAttenuationFromLightmap(indirectCol, atten, 0, id.normal);
-        #endif
-
-        #if defined(DYNAMICLIGHTMAP_ON)
-            if (_IgnoreRealtimeGI != 1){
-                #if defined(_BICUBIC_SAMPLING_ON)
-                    float4 realtimeColorTex = SampleDynamicLightmapBicubic(i.lightmapUV.zw);
-                #else
-                    float4 realtimeColorTex = UNITY_SAMPLE_TEX2D(unity_DynamicLightmap, i.lightmapUV.zw);
+    #if defined(BASE_PASS)
+        #if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
+            #if defined(_BICUBIC_SAMPLING_ON)
+                indirectCol = DecodeLightmap(SampleLightmapBicubic(i.lightmapUV));
+                #if defined(DIRLIGHTMAP_COMBINED) || defined(BAKERY_MONOSH)
+                    float4 lightmapDir = SampleLightmapDirBicubic(i.lightmapUV);
                 #endif
-                float3 realtimeColor = DecodeRealtimeLightmap(realtimeColorTex);
-                #if defined(DIRLIGHTMAP_COMBINED)
-                    #if defined(_BICUBIC_SAMPLING_ON)
-                        float4 realtimeDirTex = SampleDynamicLightmapDirBicubic(i.lightmapUV.zw);
-                    #else
-                        float4 realtimeDirTex = UNITY_SAMPLE_TEX2D_SAMPLER(unity_DynamicDirectionality, unity_DynamicLightmap, i.lightmapUV.zw);
-                    #endif
-                    indirectCol += DecodeDirectionalLightmap(realtimeColor, realtimeDirTex, id.normal);
-                #else
-                    indirectCol += realtimeColor;
-                #endif
-            }
-        #endif
-    #else
-        #if UNITY_LIGHT_PROBE_PROXY_VOLUME
-            if (unity_ProbeVolumeParams.x == 1) {
-                indirectCol = SHEvalLinearL0L1_SampleProbeVolume(float4(id.normal, 1), i.worldPos);
-                indirectCol = max(0, indirectCol);
-            }
-            else {
-                #if defined(BAKERY_SHNONLINEAR)
-                    indirectCol = max(0, ShadeSHNL(id.normal));
-                #else
-                    indirectCol = max(0, ShadeSH9(float4(id.normal, 1)));
-                #endif
-            }
-        #else
-            #if defined(BAKERY_SHNONLINEAR)
-                indirectCol = max(0, ShadeSHNL(id.normal));
             #else
-                indirectCol = max(0, ShadeSH9(float4(id.normal, 1)));
+                indirectCol = DecodeLightmap(UNITY_SAMPLE_TEX2D(unity_Lightmap, i.lightmapUV));
+                #if defined(DIRLIGHTMAP_COMBINED) || defined(BAKERY_MONOSH)
+                    float4 lightmapDir = UNITY_SAMPLE_TEX2D_SAMPLER(unity_LightmapInd, unity_Lightmap, i.lightmapUV);
+                #endif
             #endif
+
+            float bakeryLMSpecRough = id.roughness * id.roughness; // max(0.001, id.roughness); - looks terrible lol
+            #if defined(BAKERY_MONOSH)
+                BakeryMonoSH(indirectCol, lmSpec, lightmapDir, id.normal, viewDir, bakeryLMSpecRough);
+            #elif defined(BAKERY_RNM)
+                BakeryRNMLightmapAndSpecular(indirectCol, i.lightmapUV, lmSpec, id.tsNormal, tangentViewDir, viewDir, bakeryLMSpecRough);
+            #elif defined(BAKERY_SH)
+                BakerySHLightmapAndSpecular(indirectCol, i.lightmapUV, lmSpec, id.normal, viewDir, bakeryLMSpecRough);
+            #else
+                #if defined(DIRLIGHTMAP_COMBINED)
+                    indirectCol = DecodeDirectionalLightmap(indirectCol, lightmapDir, id.normal);
+                #endif
+            #endif
+
+            #if defined(LIGHTMAP_SHADOW_MIXING) && !defined(SHADOWS_SHADOWMASK) && defined(SHADOWS_SCREEN)
+                indirectCol = SubtractMainLightWithRealtimeAttenuationFromLightmap(indirectCol, atten, 0, id.normal);
+            #endif
+
+            #if defined(DYNAMICLIGHTMAP_ON)
+                if (_IgnoreRealtimeGI != 1){
+                    #if defined(_BICUBIC_SAMPLING_ON)
+                        float4 realtimeColorTex = SampleDynamicLightmapBicubic(i.lightmapUV.zw);
+                    #else
+                        float4 realtimeColorTex = UNITY_SAMPLE_TEX2D(unity_DynamicLightmap, i.lightmapUV.zw);
+                    #endif
+                    float3 realtimeColor = DecodeRealtimeLightmap(realtimeColorTex);
+                    #if defined(DIRLIGHTMAP_COMBINED)
+                        #if defined(_BICUBIC_SAMPLING_ON)
+                            float4 realtimeDirTex = SampleDynamicLightmapDirBicubic(i.lightmapUV.zw);
+                        #else
+                            float4 realtimeDirTex = UNITY_SAMPLE_TEX2D_SAMPLER(unity_DynamicDirectionality, unity_DynamicLightmap, i.lightmapUV.zw);
+                        #endif
+                        indirectCol += DecodeDirectionalLightmap(realtimeColor, realtimeDirTex, id.normal);
+                    #else
+                        indirectCol += realtimeColor;
+                    #endif
+                }
+            #endif
+        #else
+            indirectCol = GetRealtimeIndirectLighting(i, id);
         #endif
     #endif
 }
@@ -263,14 +285,8 @@ void InitializeLightingData(v2f i, inout InputData id, inout LightingData ld, fl
     float3 directCol = (_LightColor0 * atten * NdotL) + vLightCol;
     float3 indirectCol = 0;
     
-    #if defined(BASE_PASS)
-        GetIndirectLighting(i, id, viewDir, indirectCol, ld.lmSpec, tangentViewDir, atten);
-        #if !defined(STANDARD_MOBILE)
-            [branch]
-            if (_Subsurface == 1) 
-                ld.subsurfaceCol = GetSubsurfaceLight(i, id, ld, _LightColor0, lightDir, viewDir, indirectCol, atten);
-        #endif
-    #endif
+    GetIndirectLighting(i, id, viewDir, indirectCol, ld.lmSpec, tangentViewDir, atten);
+    ld.subsurfaceCol = GetSubsurfaceLight(i, id, ld, _LightColor0, lightDir, viewDir, indirectCol, atten);
     
     ld.directCol = directCol;
     ld.indirectCol = indirectCol;

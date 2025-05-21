@@ -131,6 +131,13 @@ Shader "Mochie/Standard Lite" {
         _UVAlphaMaskScroll("Scroll Speed", Vector) = (0,0,0,0)
         _UVAlphaMaskRotation("Rotation", Float) = 0
         
+        _VertexMask("Vertex Mask", 2D) = "white" {}
+        [Enum(Red,0, Green,1, Blue,2, Alpha,3)]_VertexMaskChannel("Alpha Mask Channel", Int) = 0
+        [Enum(UV0,0, UV1,1, UV2,2, UV3,3, UV4,4)]_UVVertexMaskSet("UV Set for Alpha mask", Int) = 0
+        [Enum(XY,0, XZ,1, YZ,2)]_UVVertexMaskSwizzle("Swizzle", Int) = 0
+        _UVVertexMaskScroll("Scroll Speed", Vector) = (0,0,0,0)
+        _UVVertexMaskRotation("Rotation", Float) = 0
+
         // Specularity
         [Enum(Unity Standard,0, Google Filament,1)]_ShadingModel("Specular Model", Int) = 0
         [ToggleUI]_ReflectionsToggle("Reflections", Int) = 1
@@ -155,6 +162,15 @@ Shader "Mochie/Standard Lite" {
         _GSAAStrength("GSAA Strength", Float) = 1
         _IndirectSpecularOcclusionStrength("Baked Spec Occlusion Strength", Range(0,1)) = 0.2
         _RealtimeSpecularOcclusionStrength("Realtime Spec Occlusion Strength", Range(0,1)) = 0
+        [ToggleUI]_LightVolumeSpecularity("Light Volume Specularity", Int) = 0
+        _LightVolumeSpecularityStrength("Light Volume Specularity Strength", Float) = 1
+        
+        // Vertex Manipulation
+        [ToggleUI]_VertexManipulationToggle("Vertex Manipulation Toggle", Int) = 0
+        _VertexRotationStatic("Static Rotation", Vector) = (0,0,0,0)
+        _VertexRotationAnimated("Animated Rotation", Vector) = (0,0,0,0)
+        _VertexOffset("Vertex Offset", Vector) = (0,0,0,0)
+        _VertexWave("Vertex Wave", Float) = 0
 
         // Subsurface Scattering
         [ToggleUI]_Subsurface("Subsurface Scattering", Int) = 0
@@ -356,6 +372,7 @@ Shader "Mochie/Standard Lite" {
             #pragma shader_feature_local _OPAQUELIGHTS_OFF
             #pragma shader_feature_local _AUDIOLINK_ON
             #pragma shader_feature_local _BICUBIC_SAMPLING_ON
+            // #pragma shader_feature_local _VERTEX_MANIPULATION_ON
             #pragma shader_feature_local LTCGI
             #pragma shader_feature_local BAKERY_LMSPEC
             #pragma shader_feature_local BAKERY_SHNONLINEAR
@@ -390,6 +407,7 @@ Shader "Mochie/Standard Lite" {
             #pragma shader_feature_local _NORMALMAP_ON
             #pragma shader_feature_local _DETAIL_MAINTEX_ON
             #pragma shader_feature_local _DETAIL_NORMAL_ON
+            // #pragma shader_feature_local _VERTEX_MANIPULATION_ON
             // #pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma multi_compile_fog
             #pragma multi_compile_fwdadd_fullshadows
@@ -408,6 +426,7 @@ Shader "Mochie/Standard Lite" {
             #pragma shader_feature_local _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
             #pragma shader_feature_local _ _STOCHASTIC_ON _TRIPLANAR_ON _SUPERSAMPLING_ON
             #pragma shader_feature_local _WORKFLOW_PACKED_ON
+            // #pragma shader_feature_local _VERTEX_MANIPULATION_ON
             // #pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma multi_compile_instancing
             #pragma multi_compile_shadowcaster

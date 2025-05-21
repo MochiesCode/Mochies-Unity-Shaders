@@ -7,6 +7,7 @@
 #include "../Common/Utilities.cginc"
 #include "../Common/Color.cginc"
 #include "../Common/Sampling.cginc"
+#include "../Common/ThirdParty.cginc"
 
 #define LTCGI_ENABLED defined(LTCGI)
 #define AREALIT_ENABLED defined(_AREALIT_ON)
@@ -160,6 +161,14 @@ int _UVAlphaMaskSet;
 int _UVAlphaMaskSwizzle;
 int _AlphaMaskChannel;
 
+MOCHIE_DECLARE_TEX2D(_VertexMask);
+float4 _VertexMask_ST;
+float2 _UVVertexMaskScroll;
+float _UVVertexMaskRotation;
+int _UVVertexMaskSet;
+int _UVVertexMaskSwizzle;
+int _VertexMaskChannel;
+
 // Specularity
 float3 _SpecularOcclusionTint;
 float _ReflectionStrength;
@@ -190,6 +199,12 @@ float4 _NoiseTexSSR_TexelSize;
 float _SSRStrength;
 float _SSRHeight;
 float _SSREdgeFade;
+
+// Vertex Manipulation
+float3 _VertexRotationStatic;
+float3 _VertexRotationAnimated;
+float3 _VertexOffset;
+float _VertexWave;
 
 // Subsurface Scattering
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_ThicknessMap);
@@ -388,6 +403,7 @@ struct LightingData {
     float3 areaLitDiffuse;
     float3 ltcgiSpecularity;
     float3 ltcgiDiffuse;
+    float3 lightVolumeSpecularity;
     bool isRealtime;
 };
 

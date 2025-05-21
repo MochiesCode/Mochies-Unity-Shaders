@@ -139,6 +139,20 @@ float4 frag (g2f i, bool frontFace : SV_IsFrontFace) : SV_Target {
         UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos.xyz);
     #endif
 
+    #if defined(UNITY_PASS_FORWARDBASE)
+        UNITY_BRANCH
+        if (_UdonLightVolumeEnabled == 1){
+            LightVolumeSH(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+            unity_SHAr = float4(lightVolumeL1r, lightVolumeL0.r);
+            unity_SHAg = float4(lightVolumeL1g, lightVolumeL0.g);
+            unity_SHAb = float4(lightVolumeL1b, lightVolumeL0.b);
+            unity_SHBr = 0;
+            unity_SHBg = 0;
+            unity_SHBb = 0;
+            unity_SHC = 0;
+        }
+    #endif
+
     atten = FadeShadows(i, atten);
     masks m = GetMasks(i);
     lighting l = GetLighting(i, m, atten, frontFace);
@@ -178,7 +192,7 @@ float4 frag (g2f i, bool frontFace : SV_IsFrontFace) : SV_Target {
             diffuse = PremultiplyAlpha(diffuse, omr);
         #endif
 
-        diffuse.rgb = GetMochieBRDF(i, l, m, diffuse, albedo, specularTint, reflCol, omr, smoothness, shadowCol);
+        diffuse.rgb = GetMochieBRDF(i, l, m, diffuse, albedo, specularTint, reflCol, omr, smoothness, shadowCol, metallic);
         
         #if FORWARD_PASS && RIM_ENABLED
             ApplyRimLighting(i, l, m, al, diffuse.rgb);	
@@ -452,7 +466,7 @@ float4 frag(g2f i) : SV_Target {
     if (_ApplyOutlineLighting == 1){
         #if SHADING_ENABLED
             shadowCol = GetForwardRamp(i, l, m, atten);
-            diffuse.rgb = GetMochieBRDF(i, l, m, diffuse, albedo, specularTint, 0, omr, smoothness, shadowCol);
+            diffuse.rgb = GetMochieBRDF(i, l, m, diffuse, albedo, specularTint, 0, omr, smoothness, shadowCol, metallic);
         #else
             diffuse = GetDiffuse(l, albedo, 1);
         #endif

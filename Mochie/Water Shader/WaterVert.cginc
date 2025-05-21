@@ -125,10 +125,20 @@ v2f vert (
         v.vertex.xyz += o.wave;
         o.wave.y = (o.wave.y + 1) * 0.5;
     #elif VERT_FLIPBOOK_ENABLED
-        // Based on https://github.com/Error-mdl/ErrorWater/blob/master/shaders/cginc/water_vert.cginc#L36
         float2 flipbookUV = v.uv * _NormalMapFlipbookScale;
+        float2 uvFlow = 0;
+        float2 worldCoords = 0;
+        if (_TexCoordSpace == 1){
+            float3 wPos = mul(unity_ObjectToWorld, v.vertex);
+            _GlobalTexCoordScaleWorld = abs(_GlobalTexCoordScaleWorld);
+            float2 worldCoordSelect[3] = {-wPos.xy, -wPos.xz, -wPos.yz}; 
+            worldCoords = worldCoordSelect[_TexCoordSpaceSwizzle] * _GlobalTexCoordScaleWorld;
+            flipbookUV = worldCoords * _NormalMapFlipbookScale;
+            uvFlow = worldCoords;
+        }
         #if FLOW_ENABLED
-            float2 uvFlow = ScaleUV(o.uvFlow, _FlowMapScale, 0);
+            if (_TexCoordSpace == 0)
+                uvFlow = ScaleUV(o.uvFlow, _FlowMapScale, 0);
             float4 flowMap = MOCHIE_SAMPLE_TEX2D_LOD(_FlowMap, uvFlow, 0);
             float blendNoise = flowMap.a;
             if (_BlendNoiseSource == 1){

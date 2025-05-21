@@ -131,6 +131,13 @@ Shader "Mochie/Standard Mobile" {
         _UVAlphaMaskScroll("Scroll Speed", Vector) = (0,0,0,0)
         _UVAlphaMaskRotation("Rotation", Float) = 0
         
+        _VertexMask("Vertex Mask", 2D) = "white" {}
+        [Enum(Red,0, Green,1, Blue,2, Alpha,3)]_VertexMaskChannel("Alpha Mask Channel", Int) = 0
+        [Enum(UV0,0, UV1,1, UV2,2, UV3,3, UV4,4)]_UVVertexMaskSet("UV Set for Alpha mask", Int) = 0
+        [Enum(XY,0, XZ,1, YZ,2)]_UVVertexMaskSwizzle("Swizzle", Int) = 0
+        _UVVertexMaskScroll("Scroll Speed", Vector) = (0,0,0,0)
+        _UVVertexMaskRotation("Rotation", Float) = 0
+
         // Specularity
         [Enum(Unity Standard,0, Google Filament,1)]_ShadingModel("Specular Model", Int) = 0
         [ToggleUI]_ReflectionsToggle("Reflections", Int) = 1
@@ -155,6 +162,15 @@ Shader "Mochie/Standard Mobile" {
         _GSAAStrength("GSAA Strength", Float) = 1
         _IndirectSpecularOcclusionStrength("Baked Spec Occlusion Strength", Range(0,1)) = 0.2
         _RealtimeSpecularOcclusionStrength("Realtime Spec Occlusion Strength", Range(0,1)) = 0
+        [ToggleUI]_LightVolumeSpecularity("Light Volume Specularity", Int) = 0
+        _LightVolumeSpecularityStrength("Light Volume Specularity Strength", Float) = 1
+        
+        // Vertex Manipulation
+        [ToggleUI]_VertexManipulationToggle("Vertex Manipulation Toggle", Int) = 0
+        _VertexRotationStatic("Static Rotation", Vector) = (0,0,0,0)
+        _VertexRotationAnimated("Animated Rotation", Vector) = (0,0,0,0)
+        _VertexOffset("Vertex Offset", Vector) = (0,0,0,0)
+        _VertexWave("Vertex Wave", Float) = 0
 
         // Subsurface Scattering
         [ToggleUI]_Subsurface("Subsurface Scattering", Int) = 0

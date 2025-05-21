@@ -183,7 +183,7 @@ void CalculateBRDF(v2f i, InputData id, inout LightingData ld){
             ld.reflectionCol = lerp(ld.reflectionCol, ssr.rgb, ssr.a * saturate(_SSRStrength));
         }
     #endif
-    
+
     #if defined(_SPECULAR_HIGHLIGHTS_ON)
         #if defined(BASE_PASS)
         [branch]
@@ -201,7 +201,14 @@ void CalculateBRDF(v2f i, InputData id, inout LightingData ld){
         }
         #endif
     #endif
-    
+        
+    #if defined(BASE_PASS)
+        [branch]
+        if (_UdonLightVolumeEnabled == 1 && _LightVolumeSpecularity == 1 && _LightVolumeSpecularityStrength > 0){
+            ld.lightVolumeSpecularity = LightVolumeSpecularDominant(id.baseColor, 1-id.roughness, id.metallic, id.normal, i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b) * _LightVolumeSpecularityStrength * ld.specularOcclusion;
+        }
+    #endif
+
     ld.lmSpec *= ld.reflAdjust * UNITY_PI * ld.specularOcclusion * ld.specularTint * _BakeryLMSpecStrength;
 }
 

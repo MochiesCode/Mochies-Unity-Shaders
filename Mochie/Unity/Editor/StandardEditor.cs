@@ -12,6 +12,7 @@ namespace Mochie {
             "Shader Variant",
             "Primary Textures",
             "UVs",
+            "Vertex Manipulation",
             "Subsurface Scattering",
             "Filtering",
             "Render Settings",
@@ -24,7 +25,7 @@ namespace Mochie {
             "Debug"
         }, 1);
 
-        string versionLabel = "v2.2";
+        string versionLabel = "v2.3";
 
         // Variant Settings
         MaterialProperty _BlendMode = null;
@@ -146,6 +147,13 @@ namespace Mochie {
         MaterialProperty _UVAlphaMaskScroll = null;
         MaterialProperty _UVAlphaMaskRotation = null;
 
+        // MaterialProperty _VertexMask = null;
+        // MaterialProperty _VertexMaskChannel = null;
+        // MaterialProperty _UVVertexMaskSet = null;
+        // MaterialProperty _UVVertexMaskSwizzle = null;
+        // MaterialProperty _UVVertexMaskScroll = null;
+        // MaterialProperty _UVVertexMaskRotation = null;
+
         // Specularity
         MaterialProperty _ShadingModel = null;
         MaterialProperty _ReflectionsToggle = null;
@@ -170,6 +178,15 @@ namespace Mochie {
         MaterialProperty _GSAAStrength = null;
         MaterialProperty _IndirectSpecularOcclusionStrength = null;
         MaterialProperty _RealtimeSpecularOcclusionStrength = null;
+        MaterialProperty _LightVolumeSpecularity = null;
+        MaterialProperty _LightVolumeSpecularityStrength = null;
+
+        // Vertex Manipulation
+        // MaterialProperty _VertexManipulationToggle = null;
+        // MaterialProperty _VertexRotationStatic = null;
+        // MaterialProperty _VertexRotationAnimated = null;
+        // MaterialProperty _VertexOffset = null;
+        // MaterialProperty _VertexWave = null;
 
         // Subsurface Scattering
         MaterialProperty _Subsurface = null;
@@ -322,6 +339,7 @@ namespace Mochie {
         bool firstTimeApply = true;
         bool isHeightmapped = false;
 
+        #region OnGUI
         public override void OnGUI(MaterialEditor materialEditor, MaterialProperty[] props) {
             me = materialEditor;
             
@@ -366,6 +384,7 @@ namespace Mochie {
                     DoDetailTexturesLite();
                 DoSpecularity(isLite);
                 if (!isMobile){
+                    // DoVertexManipulation(mat);
                     DoSubsurface(mat);
                     DoRain(mat);
                     DoPuddles(mat);
@@ -386,9 +405,9 @@ namespace Mochie {
             MGUI.Space10();
             MGUI.DoFooter(versionLabel);
         }
+        #endregion
 
-        #region Layouts
-
+        #region Variant Settings
         void DoVariant(bool isLite, bool isMobile){
             MGUI.BoldLabel("Shader Variant");
             MGUI.PropertyGroup(()=>{
@@ -427,7 +446,9 @@ namespace Mochie {
             });
             MGUI.Space6();
         }
+        #endregion
 
+        #region Primary Tex
         void DoPrimaryTextures(Material mat, bool isLite, bool isMobile){
             MGUI.BoldLabel("Primary Textures");
             MGUI.PropertyGroup(()=>{
@@ -515,7 +536,9 @@ namespace Mochie {
             });
             MGUI.Space6();
         }
-        
+        #endregion
+
+        #region Emission
         void DoEmission(bool isMobile){
             if (me.EmissionEnabledProperty()){
                 emissionEnabled = true;
@@ -553,7 +576,9 @@ namespace Mochie {
                 emissionEnabled = false;
             }
         }
+        #endregion
 
+        #region Detail Tex
         void DoDetailTextures(){
             MGUI.BoldLabel("Detail Textures");
             MGUI.PropertyGroup(()=>{
@@ -621,7 +646,9 @@ namespace Mochie {
             });
             MGUI.Space6();
         }
+        #endregion
 
+        #region Detail Tex Lite
         void DoDetailTexturesLite(){
             MGUI.BoldLabel("Detail Textures");
             MGUI.PropertyGroup(()=>{
@@ -648,17 +675,23 @@ namespace Mochie {
             });
             MGUI.Space6();
         }
+        #endregion
 
+        #region Specularity
         void DoSpecularity(bool isLite){
             MGUI.ShaderPropertyBold(me, _ShadingModel, "Specularity");
             MGUI.PropertyGroup(()=>{
                 MGUI.PropertyGroup(()=>{
                     MGUI.ToggleFloat(me, Tips.specularHighlightsText, _SpecularHighlightsToggle, _SpecularHighlightStrength);
                     MGUI.ToggleFloat(me, Tips.cubemapReflectionsText, _ReflectionsToggle, _ReflectionStrength);
-                    if (!isLite){
+                    MGUI.ToggleFloat(me, Tips.lightVolumeSpecText, _LightVolumeSpecularity, _LightVolumeSpecularityStrength);
+                    if (!isLite)
+                    {
                         MGUI.ToggleFloat(me, Tips.ssrText, _SSRToggle, _SSRStrength);
-                        if (_SSRToggle.floatValue == 1){
-                            MGUI.PropertyGroup(()=>{
+                        if (_SSRToggle.floatValue == 1)
+                        {
+                            MGUI.PropertyGroup(() =>
+                            {
                                 me.ShaderProperty(_SSREdgeFade, Tips.ssrEdgeFadeText);
                                 me.ShaderProperty(_SSRHeight, Tips.ssrDepthText);
                                 me.ShaderProperty(_VRSSR, "Enable in VR");
@@ -697,7 +730,30 @@ namespace Mochie {
             });
             MGUI.Space6();
         }
+        #endregion
 
+        // #region Vertex Manip
+        // void DoVertexManipulation(Material mat){
+        //     if (Foldouts.DoSmallFoldoutBold(foldouts, mat, me, "Vertex Manipulation")){
+        //         MGUI.PropertyGroup(()=>{
+        //             me.ShaderProperty(_VertexManipulationToggle, "Enable");
+        //             MGUI.ToggleGroup(_VertexManipulationToggle.floatValue == 0);
+        //             MGUI.PropertyGroup(()=>{
+        //                 me.TexturePropertySingleLine(Tips.maskText, _VertexMask, _VertexMask.textureValue ? _VertexMaskChannel : null);
+        //                 MGUI.Vector3Field(_VertexRotationStatic, "Static Rotation", false);
+        //                 MGUI.Vector3Field(_VertexRotationAnimated, "Animated Rotation", false);
+        //                 MGUI.Vector3Field(_VertexOffset, "Offset", false);
+        //                 me.ShaderProperty(_VertexWave, "Wave");
+        //             });
+        //             MGUI.ToggleGroupEnd();
+        //             MGUI.SpaceN2();
+        //         });
+        //         MGUI.Space6();
+        //     }
+        // }
+        // #endregion
+        
+        #region Subsurface
         void DoSubsurface(Material mat){
             if (Foldouts.DoSmallFoldoutBold(foldouts, mat, me, "Subsurface Scattering")){
                 MGUI.PropertyGroup(()=>{
@@ -721,7 +777,9 @@ namespace Mochie {
                 MGUI.Space6();
             }
         }
+        #endregion
 
+        #region Rain
         void DoRain(Material mat){
             if (Foldouts.DoSmallFoldoutBold(foldouts, mat, me, "Rain")){
                 MGUI.PropertyGroup(()=>{
@@ -802,7 +860,9 @@ namespace Mochie {
                 me.ShaderProperty(_RainThresholdSize, "Threshold Blend");
             });
         }
+        #endregion
 
+        #region Puddles
         void DoPuddles(Material mat){
             if (Foldouts.DoSmallFoldoutBold(foldouts, mat, me, "Puddles")){
                 MGUI.PropertyGroup(()=>{
@@ -843,7 +903,9 @@ namespace Mochie {
                 MGUI.Space6();
             }
         }
+        #endregion
 
+        #region Filtering
         void DoFiltering(Material mat){
             if (Foldouts.DoSmallFoldoutBold(foldouts, mat, me, "Filtering")){
                 MGUI.PropertyGroup(()=>{
@@ -894,7 +956,9 @@ namespace Mochie {
                 MGUI.Space6();
             }
         }
+        #endregion
 
+        #region UVs
         void DoUVs(Material mat, bool isMobile){
 
             bool needsHeightMaskUV = isHeightmapped && _HeightMask.textureValue && !isMobile;
@@ -902,8 +966,9 @@ namespace Mochie {
             bool needsRainMaskUV = _RainMode.floatValue > 0 && _RainMask.textureValue;
             bool needsEmissionMaskUV = emissionEnabled && _EmissionMask.textureValue && !isMobile;
             bool needsAlphaMaskUV = _AlphaMask.textureValue && _AlphaSource.floatValue == 1 && _BlendMode.floatValue > 0;
+            // bool needsVertexMaskUV = _VertexManipulationToggle.floatValue == 1 && _VertexMask.textureValue && !isMobile;
 
-            if (needsHeightMaskUV || needsDetailMaskUV || needsRainMaskUV || needsEmissionMaskUV || needsAlphaMaskUV){
+            if (needsHeightMaskUV || needsDetailMaskUV || needsRainMaskUV || needsEmissionMaskUV || needsAlphaMaskUV){ // || needsVertexMaskUV){
                 if (Foldouts.DoSmallFoldoutBold(foldouts, mat, me, "UVs")){
                     MGUI.PropertyGroup(()=>{
                         if (needsDetailMaskUV){
@@ -912,7 +977,7 @@ namespace Mochie {
                                 me.ShaderProperty(_UVDetailMaskSet, Tips.uvSetLabel.text);
                                 if (_UVDetailMaskSet.floatValue >= 5)
                                     me.ShaderProperty(_UVDetailMaskSwizzle, Tips.swizzleText);
-                                MGUI.TextureSOScroll(me, _UVDetailMaskSet, _UVDetailMaskScroll);
+                                MGUI.TextureSOScroll(me, _DetailMask, _UVDetailMaskScroll);
                                 me.ShaderProperty(_UVDetailMaskRotation, "Rotation");
                             });
                         }
@@ -968,13 +1033,27 @@ namespace Mochie {
                             });
                         }
 
+                        // if (needsVertexMaskUV){
+                        //     MGUI.Space4();
+                        //     MGUI.BoldLabel("Vertex Manipulation Mask");
+                        //     MGUI.PropertyGroup(()=>{
+                        //         me.ShaderProperty(_UVVertexMaskSet, Tips.uvSetLabel.text);
+                        //         if (_UVVertexMaskSet.floatValue >= 5)
+                        //             me.ShaderProperty(_UVVertexMaskSwizzle, Tips.swizzleText);
+                        //         MGUI.TextureSOScroll(me, _VertexMask, _UVVertexMaskScroll);
+                        //         me.ShaderProperty(_UVVertexMaskRotation, "Rotation");
+                        //     });
+                        // }
+
                         MGUI.SpaceN2();
                     });
                     MGUI.Space6();
                 }
             }
         }
+        #endregion
 
+        #region LTCGI
         void DoLTCGI(Material mat){
             if (Shader.Find("LTCGI/Blur Prefilter") != null){
                 LTCGILayout(mat);
@@ -1007,7 +1086,9 @@ namespace Mochie {
                 MGUI.Space6();
             }
         }
+        #endregion
 
+        #region AreaLit
         void DoAreaLit(Material mat){
             if (Shader.Find("AreaLit/Standard") != null){
                 AreaLitLayout(mat);
@@ -1077,7 +1158,9 @@ namespace Mochie {
                 MGUI.Space6();
             }
         }
+        #endregion
 
+        #region Lightmap Settings
         void DoLightmapSettings(Material mat){
             if (Foldouts.DoSmallFoldoutBold(foldouts, mat, me, "Lightmap Settings")){
                 MGUI.PropertyGroup(()=>{
@@ -1103,7 +1186,9 @@ namespace Mochie {
                 MGUI.Space6();
             }
         }
+        #endregion
 
+        #region Render Settings
         void DoRenderSettings(Material mat){
             if (Foldouts.DoSmallFoldoutBold(foldouts, mat, me, "Render Settings")){
                 MGUI.PropertyGroup(()=>{
@@ -1126,7 +1211,9 @@ namespace Mochie {
                 MGUI.Space6();
             }
         }
+        #endregion
 
+        #region Debug Menu
         void DoDebug(Material mat){
             if (_MaterialDebugMode.floatValue == 1){
                 if (Foldouts.DoSmallFoldoutBold(foldouts, mat, me, "Debug")){
@@ -1169,11 +1256,9 @@ namespace Mochie {
                 }
             }
         }
-
         #endregion
 
-        #region Applying Settings
-
+        #region Keywords & Other
         void SetProperties(Material mat){
             mat.SetInt("_SampleMetallic", mat.GetTexture("_MetallicMap") ? 1 : 0);
             mat.SetInt("_SampleRoughness", mat.GetTexture("_RoughnessMap") ? 1 : 0);
@@ -1224,8 +1309,11 @@ namespace Mochie {
             MGUI.SetKeyword(mat, "_BICUBIC_SAMPLING_ON", mat.GetInt("_BicubicSampling") == 1);
             MGUI.SetKeyword(mat, "_AREALIT_ON", mat.GetInt("_AreaLitToggle") == 1);
             MGUI.SetKeyword(mat, "LTCGI", mat.GetInt("_LTCGI") == 1);
+            MGUI.SetKeyword(mat, "_VERTEX_MANIPULATION_ON", mat.GetInt("_VertexManipulationToggle") == 1);
         }
+        #endregion
 
+        #region Blend Mode
         public static void SetBlendMode(Material mat){
             bool ssrToggle = mat.GetInt("_SSRToggle") == 1;
             bool isLite = MGUI.IsNewLiteVersion(mat);
@@ -1280,7 +1368,9 @@ namespace Mochie {
                     break;
             }
         }
+        #endregion
 
+        #region Utilities
         void TransferStandardTextures(Material mat, Shader oldShader){
             if (oldShader == Shader.Find("Standard") || oldShader == Shader.Find("Autodesk Interactive") || oldShader == Shader.Find("Standard (Specular setup)")){
                 mat.SetTexture("_NormalMap", mat.GetTexture("_BumpMap"));
@@ -1304,7 +1394,6 @@ namespace Mochie {
             SetProperties(mat);
             // SetKeywords(mat); - this spams errors from properties not found when called from here, idk why
         }
-
         #endregion 
     }
 }

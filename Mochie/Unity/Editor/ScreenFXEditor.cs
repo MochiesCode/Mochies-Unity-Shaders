@@ -57,7 +57,7 @@ namespace Mochie {
 
         // Texture file names
         string header = "SFXHeader_Pro";
-        string versionLabel = "v1.20";
+        string versionLabel = "v1.20.1";
         
         // Commonly used strings
         string modeLabel = "Mode";

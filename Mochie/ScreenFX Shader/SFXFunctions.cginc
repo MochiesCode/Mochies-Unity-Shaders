@@ -386,7 +386,6 @@ void ApplyRGBDitherBlur(v2f i, inout float3 col, audioLinkData ald){
         _BlurStr *= audioLinkMultiplier;
     #endif
     float3 noise = GetNoiseRGB(i.uv, _BlurStr);
-    i.uv.xy /= i.uv.w;
     #if BLUR_Y_ENABLED
         float2 redUV = float2(i.uv.x, i.uv.y+(noise.r*0.3333));
         float2 greenUV = float2(i.uv.x, i.uv.y+(noise.g*0.6666));

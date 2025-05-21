@@ -221,7 +221,9 @@ Shader "Mochie/Uber (Outline)" {
         [ToggleUI]_FresnelToggle("tog", Int) = 1
         _FresnelStrength("fl", Float) = 1
         [ToggleUI]_LitCubemap("tog", Int) = 0
-
+        [ToggleUI]_LightVolumeSpecularity("tog", Int) = 0
+        _LightVolumeSpecularityStrength("fl", Float) = 1
+        
         // SPECULAR
         [Enum(Off,0, GGX,1, Anisotropic,2, Combined,3)]_Specular("en4", Int) = 0
         [Enum(UV0,0, UV1,1, UV2,2)]_UVAniso("en3", Int) = 0

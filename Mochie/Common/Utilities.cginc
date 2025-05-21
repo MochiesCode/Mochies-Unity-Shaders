@@ -382,15 +382,6 @@ float3 GetForwardVector(){
     return normalize(p2 - p1);
 }
 
-float2x2 GetRotationMatrix(float axis){
-    float c, s, ang;
-    ang = (axis+90) * (UNITY_PI/180.0);
-    sincos(ang, c, s);
-    float2x2 mat = float2x2(c,-s,s,c);
-    mat = ((mat*0.5)+0.5)*2-1;
-    return mat;
-}
-
 float2 GetPolarCoords(float2 uv, float2 center, float radialScale, float lengthScale) {
     float2 delta = uv - center;
     float radius = length(delta) * 2 * radialScale;
@@ -398,11 +389,51 @@ float2 GetPolarCoords(float2 uv, float2 center, float radialScale, float lengthS
     return float2(radius, angle);
 }
 
+float2x2 GetRotationMatrix(float axis){
+    float c, s, ang;
+    ang = (axis+90) * (UNITY_PI/180.0);
+    sincos(ang, c, s);
+    return float2x2(c,-s,s,c);
+}
+
 float3 Rotate3D(float3 coords, float3 axis){
-    coords.xy = mul(GetRotationMatrix(axis.x), coords.xy);
-    coords.xz = mul(GetRotationMatrix(axis.y), coords.xz);
-    coords.yz = mul(GetRotationMatrix(axis.z), coords.yz);
+    if (any(axis)){
+        coords.xy = mul(GetRotationMatrix(axis.x), coords.xy);
+        coords.xz = mul(GetRotationMatrix(axis.y), coords.xz);
+        coords.yz = mul(GetRotationMatrix(axis.z), coords.yz);
+    }
     return coords;
+}
+
+void Rotate3D2(inout float3 coords0, inout float3 coords1, float3 axis){
+    if (any(axis)){
+        float2x2 rotMatX = GetRotationMatrix(axis.x);
+        float2x2 rotMatY = GetRotationMatrix(axis.y);
+        float2x2 rotMatZ = GetRotationMatrix(axis.z);
+        coords0.xy = mul(rotMatX, coords0.xy);
+        coords0.xz = mul(rotMatY, coords0.xz);
+        coords0.yz = mul(rotMatZ, coords0.yz);
+        coords1.xy = mul(rotMatX, coords1.xy);
+        coords1.xz = mul(rotMatY, coords1.xz);
+        coords1.yz = mul(rotMatZ, coords1.yz);
+    }
+}
+
+void Rotate3D3(inout float3 coords0, inout float3 coords1, inout float3 coords2, float3 axis){
+    if (any(axis)){
+        float2x2 rotMatX = GetRotationMatrix(axis.x);
+        float2x2 rotMatY = GetRotationMatrix(axis.y);
+        float2x2 rotMatZ = GetRotationMatrix(axis.z);
+        coords0.xy = mul(rotMatX, coords0.xy);
+        coords0.xz = mul(rotMatY, coords0.xz);
+        coords0.yz = mul(rotMatZ, coords0.yz);
+        coords1.xy = mul(rotMatX, coords1.xy);
+        coords1.xz = mul(rotMatY, coords1.xz);
+        coords1.yz = mul(rotMatZ, coords1.yz);
+        coords2.xy = mul(rotMatX, coords2.xy);
+        coords2.xz = mul(rotMatY, coords2.xz);
+        coords2.yz = mul(rotMatZ, coords2.yz);
+    }
 }
 
 float3 GetNoiseRGB(float2 p, float3 str) {

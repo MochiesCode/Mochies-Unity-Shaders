@@ -55,7 +55,7 @@ namespace Mochie {
         }, 0);
 
         string header = "WaterHeader_Pro";
-        string versionLabel = "v1.24";
+        string versionLabel = "v1.24.1";
 
         MaterialProperty _Color = null;
         MaterialProperty _NonGrabColor = null;

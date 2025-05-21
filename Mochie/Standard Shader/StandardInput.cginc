@@ -83,7 +83,6 @@ float2 SelectUVSet(float2 uvs[5], int selection, int swizzle, float3 worldPos, f
     return 0;
 }
 
-
 float2 SelectAreaLitOcclusionUVSet(float2 uvs[5], float2 lightmapUV, int selection){
     float2 uvSets[6] = {uvs[0], uvs[1], uvs[2], uvs[3], uvs[4], lightmapUV};
     return uvSets[selection];

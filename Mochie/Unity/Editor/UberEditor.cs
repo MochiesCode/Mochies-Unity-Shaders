@@ -165,7 +165,7 @@ namespace Mochie {
 
         static readonly string unityFolderPath = "Assets/Mochie/Unity";
         string header = "Header_Pro";
-        string versionLabel = "v1.32";
+        string versionLabel = "v1.33";
         // β
         
         MaterialProperty _RenderMode = null; 
@@ -715,6 +715,8 @@ namespace Mochie {
         MaterialProperty _HueMode = null;
         MaterialProperty _MonoTint = null;
         MaterialProperty _LitCubemap = null;
+        MaterialProperty _LightVolumeSpecularity = null;
+        MaterialProperty _LightVolumeSpecularityStrength = null;
 
         MaterialProperty _VRCFallback = null;
         MaterialProperty _NaNLmao = null;
@@ -1314,6 +1316,7 @@ namespace Mochie {
                                 me.ShaderProperty(_SpecCol, "Tint");
                                 if (_Specular.floatValue == 1){
                                     me.ShaderProperty(_SpecStr, "Strength");
+                                    MGUI.ToggleFloat(me, "Light Volume Specularity", _LightVolumeSpecularity, _LightVolumeSpecularityStrength);
                                     MGUI.ToggleSlider(me, "Manual Roughness", _SpecUseRough, _SpecRough);
                                     MGUI.ToggleSlider(me, Tips.specBiasOverride, _SpecBiasOverrideToggle, _SpecBiasOverride);
                                     MGUI.ToggleIntSlider(me, "Stepping", _SharpSpecular, _SharpSpecStr);
@@ -1322,6 +1325,7 @@ namespace Mochie {
                                 }
                                 else if (_Specular.floatValue == 2){
                                     me.ShaderProperty(_AnisoStr, "Strength");
+                                    MGUI.ToggleFloat(me, "Light Volume Specularity", _LightVolumeSpecularity, _LightVolumeSpecularityStrength);
                                     me.ShaderProperty(_RealtimeSpec, Tips.realtimeSpec);
                                     MGUI.ToggleIntSlider(me, "Stepping", _SharpSpecular, _AnisoSteps);
                                     MGUI.SpaceN1();
@@ -1329,6 +1333,7 @@ namespace Mochie {
                                 else {
                                     me.ShaderProperty(_SpecStr, "GGX Strength");
                                     me.ShaderProperty(_AnisoStr, "Aniso Strength");
+                                    MGUI.ToggleFloat(me, "Light Volume Specularity", _LightVolumeSpecularity, _LightVolumeSpecularityStrength);
                                     me.ShaderProperty(_RealtimeSpec, Tips.realtimeSpec);
                                     me.ShaderProperty(_ManualSpecBright, Tips.manualSpecBright);
                                     me.ShaderProperty(_SharpSpecular, "Stepping");
