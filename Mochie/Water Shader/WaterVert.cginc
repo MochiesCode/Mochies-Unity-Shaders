@@ -177,6 +177,9 @@ v2f vert (
     o.worldPos = mul(unity_ObjectToWorld, v.vertex);
     o.uvGrab = ComputeGrabScreenPos(o.pos);
     o.reflUV = ComputeNonStereoScreenPos(o.pos);
+    o.depthUV = GetScreenPosition(o.pos);
+    o.depthUV.z = -mul(UNITY_MATRIX_V, float4(mul(unity_ObjectToWorld, float4(v.vertex.xyz, 1.0)).xyz, 1.0)).z;
+    
     #if defined(LIGHTMAP_ON)
         o.lightmapUV.xy = v.uv1 * unity_LightmapST.xy + unity_LightmapST.zw;
     #endif

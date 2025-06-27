@@ -14,35 +14,26 @@ namespace Mochie {
         GUIContent tex2Label = new GUIContent("Secondary Color");
         GUIContent normalLabel = new GUIContent("Normal Map");
         GUIContent applyStreamsText = new GUIContent("Fix Vertex Streams", "Apply the vertex stream layout to all Particle Systems using this material");
-        Dictionary<Action, GUIContent> baseTabButtons = new Dictionary<Action, GUIContent>();
-        Dictionary<Action, GUIContent> filterTabButtons = new Dictionary<Action, GUIContent>();
-        Dictionary<Action, GUIContent> distortTabButtons = new Dictionary<Action, GUIContent>();
-        Dictionary<Action, GUIContent> pulseTabButtons = new Dictionary<Action, GUIContent>();
-        Dictionary<Action, GUIContent> falloffTabButtons = new Dictionary<Action, GUIContent>();
-        Dictionary<Action, GUIContent> audiolinkTabButtons = new Dictionary<Action, GUIContent>();
-        Dictionary<Action, GUIContent> renderingTabButtons = new Dictionary<Action, GUIContent>();
 
         static Dictionary<Material, Toggles> foldouts = new Dictionary<Material, Toggles>();
         Toggles toggles = new Toggles(new string[] {
-                "BASE", 
-                "FILTERING", 
-                "DISTORTION", 
-                "PULSE", 
-                "FALLOFF",
-                "AUDIO LINK",
-                "Filtering 1",
-                "Distortion 1",
-                "Opacity 1",
-                "Cutout 1",
+                "Base", 
+                "Filtering", 
+                "Distortion", 
+                "Pulse", 
+                "Falloff",
+                "Audio Link",
+                "Filtering ",
+                "Distortion ",
+                "Opacity",
+                "Cutout",
                 "RENDER SETTINGS"
         }, 0);
 
-        string header = "ParticleHeader_Pro";
         string versionLabel = "v2.2.1";
 
         // Render Settings
         MaterialProperty _BlendMode = null;
-        MaterialProperty _SrcBlend = null;
         MaterialProperty _DstBlend = null;
         MaterialProperty _Culling = null;
         MaterialProperty _ZTest = null;
@@ -50,9 +41,12 @@ namespace Mochie {
         MaterialProperty _IsCutout = null;
         MaterialProperty _Cutoff = null;
         MaterialProperty _FlipbookBlending = null;
+        MaterialProperty _LightingToggle = null;
 
         // Color
         MaterialProperty _MainTex = null;
+        MaterialProperty _NormalMapLighting = null;
+        MaterialProperty _NormalMapLightingScale = null;
         MaterialProperty _SecondTex = null;
         MaterialProperty _SecondTexScroll = null;
         MaterialProperty _TexBlendMode = null;
@@ -121,14 +115,9 @@ namespace Mochie {
         List<ParticleSystemRenderer> m_RenderersUsingThisMaterial = new List<ParticleSystemRenderer>();
         bool m_FirstTimeApply = true;
 
-        bool displayKeywords = false;
-        List<string> keywordsList = new List<string>();
-
         public override void OnGUI(MaterialEditor me, MaterialProperty[] props) {
             if (!me.isVisible)
                 return;
-
-            ClearDictionaries();
 
             foreach (var property in GetType().GetFields(bindingFlags)){
                 if (property.FieldType == typeof(MaterialProperty))
@@ -141,22 +130,10 @@ namespace Mochie {
                 m_FirstTimeApply = false;
             }
 
-            header = "ParticleHeader_Pro";
-            if (!EditorGUIUtility.isProSkin){
-                header = "ParticleHeader";
-            }
-
             if (mat.GetInt("_MaterialResetCheck") == 0){
                 mat.SetInt("_MaterialResetCheck", 1);
                 ApplyMaterialSettings(mat);
-                SetBlendMode(mat);
             }
-
-            Texture2D headerTex = (Texture2D)Resources.Load(header, typeof(Texture2D));
-            Texture2D collapseIcon = (Texture2D)Resources.Load("CollapseIcon", typeof(Texture2D));
-
-            GUILayout.Label(headerTex);
-            MGUI.Space4();
             
             List<ParticleSystemVertexStream> streams = new List<ParticleSystemVertexStream>();
             streams.Add(ParticleSystemVertexStream.Position);
@@ -166,6 +143,8 @@ namespace Mochie {
             streams.Add(ParticleSystemVertexStream.Custom1XYZ);
             streams.Add(ParticleSystemVertexStream.Center);
             streams.Add(ParticleSystemVertexStream.Color);
+            streams.Add(ParticleSystemVertexStream.Tangent);
+            streams.Add(ParticleSystemVertexStream.Normal);
 
             string warnings = "";
             List<ParticleSystemVertexStream> rendererStreams = new List<ParticleSystemVertexStream>();
@@ -176,6 +155,8 @@ namespace Mochie {
                     if (!streamsValid) warnings += "  " + renderer.name + "\n";
                 }
             }
+
+            MGUI.DoHeader("PARTICLES");
 
             EditorGUI.BeginChangeCheck(); {
 
@@ -201,149 +182,143 @@ namespace Mochie {
                 }
 
                 // Base
-                baseTabButtons.Add(()=>{Toggles.CollapseFoldouts(mat, foldouts, 1);}, MGUI.collapseLabel);
-                baseTabButtons.Add(()=>{ResetBase();}, MGUI.resetLabel);
-                Action baseTabAction = ()=>{
-                    MGUI.PropertyGroup( () => {
-                        me.ShaderProperty(_Opacity, "Opacity");
-                        MGUI.ToggleSlider(me, "Cutout", _IsCutout, _Cutoff);
-                        MGUI.ToggleSlider(me, Tips.softening, _Softening, _SoftenStr);
-                        me.ShaderProperty(_FlipbookBlending, Tips.flipbookBlending);
+                bool baseToggle = Foldouts.DoFoldout(foldouts, mat, "Base", 1, Foldouts.Style.StandardButton);
+                if (Foldouts.DoFoldoutButton(MGUI.collapseLabel, 11)) Toggles.CollapseFoldouts(mat, foldouts, 1);
+                if (baseToggle) {
+                    MGUI.PropertyGroupParent(()=>{
+                        MGUI.PropertyGroup(() =>{
+                            me.ShaderProperty(_BlendMode, "Blending Mode");
+                            me.ShaderProperty(_Opacity, "Opacity");
+                            MGUI.ToggleSlider(me, "Cutout", _IsCutout, _Cutoff);
+                            MGUI.ToggleSlider(me, Tips.softening, _Softening, _SoftenStr);
+                            me.ShaderProperty(_FlipbookBlending, Tips.flipbookBlending);
+                            me.ShaderProperty(_LightingToggle, "Lighting");
+                        });
+                        MGUI.PropertyGroup( () => {
+                            me.TexturePropertySingleLine(texLabel, _MainTex, _Color);
+                            me.TexturePropertySingleLine(Tips.normalMapText, _NormalMapLighting, _NormalMapLighting.textureValue ? _NormalMapLightingScale : null);
+                            me.TexturePropertySingleLine(tex2Label, _SecondTex, _SecondColor, _TexBlendMode);
+                            MGUI.TexPropLabel("Blending", 113, true);
+                            if (_SecondTex.textureValue){
+                                MGUI.TextureSOScroll(me, _SecondTex, _SecondTexScroll);
+                            }
+                        });
                     });
-                    MGUI.PropertyGroup( () => {
-                        me.TexturePropertySingleLine(texLabel, _MainTex, _Color);
-                        me.TexturePropertySingleLine(tex2Label, _SecondTex, _SecondColor, _TexBlendMode);
-                        MGUI.TexPropLabel("Blending", 113, true);
-                        if (_SecondTex.textureValue){
-                            MGUI.TextureSOScroll(me, _SecondTex, _SecondTexScroll);
-                        }
-                    });
-                };
-                Foldouts.Foldout("BASE", foldouts, baseTabButtons, mat, me, baseTabAction);
+                }
 
                 // Filtering
-                filterTabButtons.Add(()=>{ResetFiltering();}, MGUI.resetLabel);
-                Action filterTabAction = ()=>{
-                    me.ShaderProperty(_Filtering, "Enable");
-                    MGUI.Space4();
-                    MGUI.PropertyGroup( () => {
+                if (Foldouts.DoFoldout(foldouts, mat, me, _Filtering, "Filtering", Foldouts.Style.StandardToggle)) {
+                    MGUI.PropertyGroupParent(()=>{
                         MGUI.ToggleGroup(_Filtering.floatValue == 0);
-                        me.ShaderProperty(_AutoShift, Tips.autoShift);
-                        if (_AutoShift.floatValue == 1)
-                            me.ShaderProperty(_AutoShiftSpeed, "Speed");
-                        else
-                            me.ShaderProperty(_Hue, "Hue");
-                        me.ShaderProperty(_Saturation, "Saturation");
-                        me.ShaderProperty(_Brightness, "Brightness");
-                        me.ShaderProperty(_Contrast, "Contrast");
-                        me.ShaderProperty(_HDR, "HDR");
+                        MGUI.PropertyGroup(()=>{
+                            me.ShaderProperty(_AutoShift, Tips.autoShift);
+                            if (_AutoShift.floatValue == 1)
+                                me.ShaderProperty(_AutoShiftSpeed, "Speed");
+                            else
+                                me.ShaderProperty(_Hue, "Hue");
+                            me.ShaderProperty(_Saturation, "Saturation");
+                            me.ShaderProperty(_Brightness, "Brightness");
+                            me.ShaderProperty(_Contrast, "Contrast");
+                            me.ShaderProperty(_HDR, "HDR");
+                        });
                         MGUI.ToggleGroupEnd();
                     });
-                };
-                Foldouts.Foldout("FILTERING", foldouts, filterTabButtons, mat, me, filterTabAction);
+                }
 
                 // Distortion
-                distortTabButtons.Add(()=>{ResetDistortion();}, MGUI.resetLabel);
-                Action distortTabAction = ()=>{
-                    me.ShaderProperty(_Distortion, "Enable");
-                    MGUI.Space4();
-                    MGUI.ToggleGroup(_Distortion.floatValue == 0);
-                    MGUI.PropertyGroup( () => {
-                        me.TexturePropertySingleLine(normalLabel, _NormalMap, _DistortMainTex);
-                        MGUI.TexPropLabel("Distort UVs", 124, false);
-                        MGUI.Vector2Field(_NormalMapScale, "Scale");
-                        MGUI.SpaceN3();
-                        MGUI.Vector2Field(_DistortionSpeed, "Scrolling");
-                        me.ShaderProperty(_DistortionStr, "Strength");
-                        me.ShaderProperty(_DistortionBlend, "Blend");
-                        MGUI.ToggleGroupEnd();
+                if (Foldouts.DoFoldout(foldouts, mat, me, _Distortion, "Distortion", Foldouts.Style.StandardToggle)) {
+                    MGUI.PropertyGroupParent(()=>{
+                        MGUI.ToggleGroup(_Distortion.floatValue == 0);
+                        MGUI.PropertyGroup(()=>{
+                            me.TexturePropertySingleLine(normalLabel, _NormalMap, _DistortMainTex);
+                            MGUI.TexPropLabel("Distort UVs", 124, false);
+                            MGUI.Vector2Field(_NormalMapScale, "Scale");
+                            MGUI.SpaceN3();
+                            MGUI.Vector2Field(_DistortionSpeed, "Scrolling");
+                            me.ShaderProperty(_DistortionStr, "Strength");
+                            me.ShaderProperty(_DistortionBlend, "Blend");
+                            MGUI.ToggleGroupEnd();
+                        });
+                        MGUI.DisplayInfo("Please note that when utilizing texture sheet animation the normal map used for distortion must also be a texture sheet and be matching the dimensions/tiles set for the base color in the particle system settings.");
                     });
-                };
-                Foldouts.Foldout("DISTORTION", foldouts, distortTabButtons, mat, me, distortTabAction);
+                }
 
                 // Pulse
-                pulseTabButtons.Add(()=>{ResetPulse();}, MGUI.resetLabel);
-                Action pulseTabAction = ()=>{
-                    me.ShaderProperty(_Pulse, "Enable");
-                    MGUI.Space4();
-                    MGUI.PropertyGroup( () => {
+                if (Foldouts.DoFoldout(foldouts, mat, me, _Pulse, "Pulse", Foldouts.Style.StandardToggle)) {
+                    MGUI.PropertyGroupParent(()=>{
                         MGUI.ToggleGroup(_Pulse.floatValue == 0);
-                        me.ShaderProperty(_Waveform, "Waveform");
-                        me.ShaderProperty(_PulseStr, "Strength");
-                        me.ShaderProperty(_PulseSpeed, "Speed");
+                        MGUI.PropertyGroup(()=>{
+                            me.ShaderProperty(_Waveform, "Waveform");
+                            me.ShaderProperty(_PulseStr, "Strength");
+                            me.ShaderProperty(_PulseSpeed, "Speed");
+                        });
                         MGUI.ToggleGroupEnd();
                     });
-                };
-                Foldouts.Foldout("PULSE", foldouts, pulseTabButtons, mat, me, pulseTabAction);
+                }
 
                 // Falloff
-                falloffTabButtons.Add(()=>{ResetFalloff();}, MGUI.resetLabel);
-                Action falloffTabAction = ()=>{
-                    me.ShaderProperty(_Falloff, "Enable");
-                    MGUI.Space4();
-                    MGUI.PropertyGroup( () => {
+                if (Foldouts.DoFoldout(foldouts, mat, me, _Falloff, "Falloff", Foldouts.Style.StandardToggle)) {
+                    MGUI.PropertyGroupParent(()=>{
                         MGUI.ToggleGroup(_Falloff.floatValue == 0);
-                        me.ShaderProperty(_FalloffMode, Tips.falloffMode);
-                        MGUI.Space4();
-                        me.ShaderProperty(_MinRange, "Far Min Range");
-                        me.ShaderProperty(_MaxRange, "Far Max Range");
-                        MGUI.Space4();
-                        me.ShaderProperty(_NearMinRange, "Near Min Range");
-                        me.ShaderProperty(_NearMaxRange, "Near Max Range");
+                        MGUI.PropertyGroup(()=>{
+                            me.ShaderProperty(_FalloffMode, Tips.falloffMode);
+                            MGUI.Space4();
+                            me.ShaderProperty(_MinRange, "Far Min Range");
+                            me.ShaderProperty(_MaxRange, "Far Max Range");
+                            MGUI.Space4();
+                            me.ShaderProperty(_NearMinRange, "Near Min Range");
+                            me.ShaderProperty(_NearMaxRange, "Near Max Range");
+                        });
                         MGUI.ToggleGroupEnd();
                     });
-                };
-                Foldouts.Foldout("FALLOFF", foldouts, falloffTabButtons, mat, me, falloffTabAction);
+                }
+
+                // Audio Link
+                if (Foldouts.DoFoldout(foldouts, mat, me, _AudioLink, "Audio Link", Foldouts.Style.StandardToggle)) {
+                    MGUI.PropertyGroupParent(()=>{
+                        MGUI.ToggleGroup(_AudioLink.floatValue == 0);
+                        me.ShaderProperty(_AudioLinkStrength, "Global Strength");
+                        MGUI.SliderMinMax01(_AudioLinkRemapMin, _AudioLinkRemapMax, "Global Remap", 1);
+                        MGUI.Space4();
+                        MGUI.BoldLabel("Filtering");
+                        MGUI.PropertyGroup(()=>{
+                            me.ShaderProperty(_AudioLinkFilterBand, "Band");
+                            me.ShaderProperty(_AudioLinkFilterStrength, "Strength");
+                            MGUI.SliderMinMax01(_AudioLinkRemapFilterMin, _AudioLinkRemapFilterMax, "Remap", 1);
+                        });
+                        MGUI.BoldLabel("Distortion");
+                        MGUI.PropertyGroup(()=>{
+                            me.ShaderProperty(_AudioLinkDistortionBand, "Band");
+                            me.ShaderProperty(_AudioLinkDistortionStrength, "Strength");
+                            MGUI.SliderMinMax01(_AudioLinkRemapDistortionMin, _AudioLinkRemapDistortionMax, "Remap", 1);
+                        });
+                        MGUI.BoldLabel("Opacity");
+                        MGUI.PropertyGroup(()=>{
+                            me.ShaderProperty(_AudioLinkOpacityBand, "Band");
+                            me.ShaderProperty(_AudioLinkOpacityStrength, "Strength");
+                            MGUI.SliderMinMax01(_AudioLinkRemapOpacityMin, _AudioLinkRemapOpacityMax, "Remap", 1);
+                        });
+                        MGUI.BoldLabel("Cutout");
+                        MGUI.PropertyGroup(()=>{
+                            me.ShaderProperty(_AudioLinkCutoutBand, "Band");
+                            me.ShaderProperty(_AudioLinkCutoutStrength, "Strength");
+                            MGUI.SliderMinMax01(_AudioLinkRemapCutoutMin, _AudioLinkRemapCutoutMax, "Remap", 1);
+                        });
+                        MGUI.ToggleGroupEnd();
+                    });
+                }
+
+                // Rendering
+                if (Foldouts.DoFoldout(foldouts, mat, "Render Settings", Foldouts.Style.Standard)) {
+                    MGUI.PropertyGroupParent(()=>{
+                        MGUI.PropertyGroup(()=>{
+                            me.RenderQueueField();
+                            me.ShaderProperty(_Culling, "Culling");
+                            me.ShaderProperty(_ZTest, "ZTest");
+                        });
+                    });
+                }
             }
-
-            // Audio Link
-            audiolinkTabButtons.Add(()=>{ResetAudioLink();}, MGUI.resetLabel);
-            Action audiolinkTabAction = ()=>{
-                me.ShaderProperty(_AudioLink, "Enable");
-                MGUI.Space4();
-                MGUI.ToggleGroup(_AudioLink.floatValue == 0);
-                me.ShaderProperty(_AudioLinkStrength, "Global Strength");
-                MGUI.SliderMinMax01(_AudioLinkRemapMin, _AudioLinkRemapMax, "Global Remap", 1);
-                MGUI.Space4();
-                MGUI.BoldLabel("Filtering");
-                MGUI.PropertyGroup( () => {
-                    me.ShaderProperty(_AudioLinkFilterBand, "Band");
-                    me.ShaderProperty(_AudioLinkFilterStrength, "Strength");
-                    MGUI.SliderMinMax01(_AudioLinkRemapFilterMin, _AudioLinkRemapFilterMax, "Remap", 1);
-                });
-                MGUI.BoldLabel("Distortion");
-                MGUI.PropertyGroup( () => {
-                    me.ShaderProperty(_AudioLinkDistortionBand, "Band");
-                    me.ShaderProperty(_AudioLinkDistortionStrength, "Strength");
-                    MGUI.SliderMinMax01(_AudioLinkRemapDistortionMin, _AudioLinkRemapDistortionMax, "Remap", 1);
-                });
-                MGUI.BoldLabel("Opacity");
-                MGUI.PropertyGroup( () => {
-                    me.ShaderProperty(_AudioLinkOpacityBand, "Band");
-                    me.ShaderProperty(_AudioLinkOpacityStrength, "Strength");
-                    MGUI.SliderMinMax01(_AudioLinkRemapOpacityMin, _AudioLinkRemapOpacityMax, "Remap", 1);
-                });
-                MGUI.BoldLabel("Cutout");
-                MGUI.PropertyGroup( () => {
-                    me.ShaderProperty(_AudioLinkCutoutBand, "Band");
-                    me.ShaderProperty(_AudioLinkCutoutStrength, "Strength");
-                    MGUI.SliderMinMax01(_AudioLinkRemapCutoutMin, _AudioLinkRemapCutoutMax, "Remap", 1);
-                });
-                MGUI.ToggleGroupEnd();
-            };
-            Foldouts.Foldout("AUDIO LINK", foldouts, audiolinkTabButtons, mat, me, audiolinkTabAction);
-
-            // Rendering
-            renderingTabButtons.Add(()=>{ResetRendering();}, MGUI.resetLabel);
-            Action renderingTabAction = ()=>{
-                MGUI.PropertyGroup( () => {
-                    me.RenderQueueField();
-                    me.ShaderProperty(_BlendMode, "Blending Mode");
-                    me.ShaderProperty(_Culling, "Culling");
-                    me.ShaderProperty(_ZTest, "ZTest");
-                });
-            };
-            Foldouts.Foldout("RENDER SETTINGS", foldouts, renderingTabButtons, mat, me, renderingTabAction);
 
             MGUI.DoFooter(versionLabel);
         }
@@ -425,6 +400,8 @@ namespace Mochie {
             bool cutout = mat.GetInt("_IsCutout") == 1;
             bool filtering = mat.GetInt("_Filtering") == 1;
             bool audiolink = mat.GetInt("_AudioLink") == 1;
+            bool lighting = mat.GetInt("_LightingToggle") == 1;
+            bool normalMap = mat.GetTexture("_NormalMapLighting") && lighting;
 
             MGUI.SetKeyword(mat, "_ALPHATEST_ON", cutout);
             MGUI.SetKeyword(mat, "_FADING_ON", softening);
@@ -436,6 +413,8 @@ namespace Mochie {
             MGUI.SetKeyword(mat, "_FLIPBOOK_BLENDING_ON", flipbook);
             MGUI.SetKeyword(mat, "_FILTERING_ON", filtering);
             MGUI.SetKeyword(mat, "_AUDIOLINK_ON", audiolink);
+            MGUI.SetKeyword(mat, "_LIGHTING_ON", lighting);
+            MGUI.SetKeyword(mat, "_NORMALMAP_ON", normalMap);
             mat.SetShaderPassEnabled("Always", distortion);
             SetBlendMode(mat);
         }
@@ -454,116 +433,6 @@ namespace Mochie {
                 if (renderer.sharedMaterial == material)
                     m_RenderersUsingThisMaterial.Add(renderer);
             }
-        }
-
-        void ListKeywords(Material mat, GUIContent label, float buttonSize){
-            keywordsList.Clear();
-            foreach (string s in mat.shaderKeywords)
-                keywordsList.Add(s);
-            
-            if (MGUI.LinkButton(label, buttonSize, buttonSize, (MGUI.GetInspectorWidth()/2.0f)-11.0f))
-                displayKeywords = !displayKeywords;
-            
-            if (displayKeywords){
-                MGUI.Space8();
-                string infoString = "";
-                if (keywordsList.Capacity == 0){
-                    infoString = "NO KEYWORDS FOUND";
-                }
-                else {
-                    infoString = "\nKeywords Used:\n\n";
-                    foreach (string s in keywordsList){
-                        infoString += " " + s + "\n";
-                    }
-                }
-                MGUI.DisplayText(infoString);
-                MGUI.SpaceN8();
-            }
-            GUILayout.Space(buttonSize-10);
-        }
-
-        void ResetBase(){
-            _FlipbookBlending.floatValue = 0f;
-            _Color.colorValue = Color.white;
-            _TexBlendMode.floatValue = 0f;
-            _SecondTex.textureValue = null;
-            _SecondColor.colorValue = Color.white;
-            _Opacity.floatValue = 1f;
-            _Cutoff.floatValue = 0.5f;
-            _IsCutout.floatValue = 0f;
-            _Softening.floatValue = 0f;
-            _SoftenStr.floatValue = 0f;
-        }
-
-        void ResetFiltering(){
-            _AutoShift.floatValue = 0f;
-            _AutoShiftSpeed.floatValue = 0.25f;
-            _Hue.floatValue = 0f;
-            _Saturation.floatValue = 1f;
-            _HDR.floatValue = 0f;
-            _Contrast.floatValue = 1f;
-            _Brightness.floatValue = 1f;
-        }
-
-        void ResetDistortion(){
-            _DistortMainTex.floatValue = 0f;
-            _DistortionStr.floatValue = 0f;
-            _DistortionBlend.floatValue = 0.5f;
-            _DistortionSpeed.vectorValue = new Vector4(0,0,0,0);
-        }
-
-        void ResetPulse(){
-            _Waveform.floatValue = 0f;
-            _PulseStr.floatValue = 0.5f;
-            _PulseSpeed.floatValue = 1f;
-        }
-
-        void ResetFalloff(){
-            _MinRange.floatValue = 8f;
-            _MaxRange.floatValue = 15f;
-            _NearMinRange.floatValue = 1f;
-            _NearMaxRange.floatValue = 5f;
-        }
-
-        void ResetAudioLink(){
-            _AudioLink.floatValue = 0f;
-            _AudioLinkStrength.floatValue = 1f;
-            _AudioLinkRemapMin.floatValue = 0f;
-            _AudioLinkRemapMax.floatValue = 1f;
-            _AudioLinkFilterBand.floatValue = 0f;
-            _AudioLinkFilterStrength.floatValue = 0f;
-            _AudioLinkRemapFilterMin.floatValue = 0f;
-            _AudioLinkRemapFilterMax.floatValue = 1f;
-            _AudioLinkDistortionBand.floatValue = 0f;
-            _AudioLinkDistortionStrength.floatValue = 0f;
-            _AudioLinkRemapDistortionMin.floatValue = 0f;
-            _AudioLinkRemapDistortionMax.floatValue = 1f;
-            _AudioLinkOpacityBand.floatValue = 0f;
-            _AudioLinkOpacityStrength.floatValue = 0f;
-            _AudioLinkRemapOpacityMin.floatValue = 0f;
-            _AudioLinkRemapOpacityMax.floatValue = 1f;
-            _AudioLinkCutoutBand.floatValue = 0f;
-            _AudioLinkCutoutStrength.floatValue = 0f;
-            _AudioLinkRemapCutoutMin.floatValue = 0f;
-            _AudioLinkRemapCutoutMax.floatValue = 1f;
-        }
-
-        void ResetRendering(){
-            _BlendMode.floatValue = 1f;
-            _Culling.floatValue = 2f;
-            _ZTest.floatValue = 4f;
-            _SrcBlend.floatValue = 1f;
-            _DstBlend.floatValue = 10f;
-        }
-
-        void ClearDictionaries(){
-            baseTabButtons.Clear();
-            filterTabButtons.Clear();
-            distortTabButtons.Clear();
-            pulseTabButtons.Clear();
-            falloffTabButtons.Clear();
-            renderingTabButtons.Clear();
-            audiolinkTabButtons.Clear();
         }
     }
 }

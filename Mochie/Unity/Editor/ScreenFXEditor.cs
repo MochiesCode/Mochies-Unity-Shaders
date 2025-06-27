@@ -20,47 +20,44 @@ namespace Mochie {
         public static Dictionary<Material, Toggles> foldouts = new Dictionary<Material, Toggles>();
 
         Toggles toggles = new Toggles(new string[] {
-                "GENERAL",
-                "FILTERING",
-                "Filtering 1",
-                "SHAKE",
-                "Shake 1",
-                "DISTORTION",
-                "Distortion 1",
-                "BLUR",
-                "Blur 1",
-                "ZOOM",
-                "Zoom 1",
-                "IMAGE OVERLAY",
-                "FOG",
-                "Fog 1",
-                "TRIPLANAR",
-                "Triplanar 1",
-                "OUTLINE",
-                "Outline 1",
-                "MISC",
-                "Misc 1",
+                "General",
+                "Filtering",
+                "Filtering ",
+                "Shake",
+                "Shake ",
+                "Distortion",
+                "Distortion ",
+                "Blur",
+                "Blur ",
+                "Zoom",
+                "Zoom ",
+                "Image Overlay",
+                "Fog",
+                "Fog ",
+                "Triplanar",
+                "Triplanar ",
+                "Outline",
+                "Outline ",
+                "Misc",
+                "Misc ",
                 "Letterbox",
                 "Deep Fry",
                 "Pulse",
                 "UV Manipulation",
                 "Rounding",
-                "Normal Map",
+                "Normal Map Filter",
                 "Depth Buffer",
                 "Safe Zone",
-                "NOISE",
-                "Noise 1",
-                "AUDIO LINK",
-                "Image Overlay 1",
+                "Noise",
+                "Noise ",
+                "Audio Link",
+                "Image Overlay ",
                 "Sobel Filter",
         }, 0);
 
-        // Texture file names
-        string header = "SFXHeader_Pro";
-        string versionLabel = "v1.20.1";
+        string versionLabel = "v1.20.2";
         
         // Commonly used strings
-        string modeLabel = "Mode";
         string strengthLabel = "Strength";
         string fadeLabel = "Fade";
         string radiusLabel = "Radius";
@@ -75,8 +72,6 @@ namespace Mochie {
 
         // General
         MaterialProperty _BlendMode = null;
-        MaterialProperty _SrcBlend = null;
-        MaterialProperty _DstBlend = null;
         MaterialProperty _MinRange = null;
         MaterialProperty _MaxRange = null;
         MaterialProperty _Opacity = null;
@@ -100,7 +95,6 @@ namespace Mochie {
         MaterialProperty _Hue = null;
         MaterialProperty _Saturation = null;
         MaterialProperty _Brightness = null;
-        MaterialProperty _Value = null;
         MaterialProperty _SaturationR = null;
         MaterialProperty _SaturationB = null;
         MaterialProperty _SaturationG = null;
@@ -361,13 +355,13 @@ namespace Mochie {
                     Vector3 position = meshRenderer.transform.position;
                     Toggles toggles = foldouts[material];
 
-                    if (toggles.GetState("GENERAL")){
+                    if (toggles.GetState("General")){
                         Gizmos.color = Color.yellow;
                         Gizmos.DrawWireSphere(position, material.GetFloat("_MinRange"));
                         Gizmos.color = new Color(0.9f, 0.9f, 0.3f, 1f);
                         Gizmos.DrawWireSphere(position, material.GetFloat("_MaxRange"));
                     }
-                    if (toggles.GetState("FILTERING")){
+                    if (toggles.GetState("Filtering")){
                         if (material.GetFloat("_FilterModel") > 0 && material.GetFloat("_ColorUseGlobal") == 0) {
                             Gizmos.color = Color.white;
                             Gizmos.DrawWireSphere(position, material.GetFloat("_ColorMinRange"));
@@ -375,7 +369,7 @@ namespace Mochie {
                             Gizmos.DrawWireSphere(position, material.GetFloat("_ColorMaxRange"));
                         }
                     }
-                    if (toggles.GetState("SHAKE")){
+                    if (toggles.GetState("Shake")){
                         if (material.GetFloat("_ShakeModel") > 0 && material.GetFloat("_ShakeUseGlobal") == 0) {
                             Gizmos.color = Color.white;
                             Gizmos.DrawWireSphere(position, material.GetFloat("_ShakeMinRange"));
@@ -383,7 +377,7 @@ namespace Mochie {
                             Gizmos.DrawWireSphere(position, material.GetFloat("_ShakeMaxRange"));
                         }
                     }
-                    if (toggles.GetState("DISTORTION")){
+                    if (toggles.GetState("Distortion")){
                         if (material.GetFloat("_DistortionModel") > 0 && material.GetFloat("_DistortionUseGlobal") == 0) {
                             Gizmos.color = Color.white;
                             Gizmos.DrawWireSphere(position, material.GetFloat("_DistortionMinRange"));
@@ -391,7 +385,7 @@ namespace Mochie {
                             Gizmos.DrawWireSphere(position, material.GetFloat("_DistortionMaxRange"));
                         }
                     }
-                    if (toggles.GetState("BLUR")){
+                    if (toggles.GetState("Blur")){
                         if (material.GetFloat("_BlurModel") > 0 && material.GetFloat("_BlurUseGlobal") == 0) {
                             Gizmos.color = Color.white;
                             Gizmos.DrawWireSphere(position, material.GetFloat("_BlurMinRange"));
@@ -399,7 +393,7 @@ namespace Mochie {
                             Gizmos.DrawWireSphere(position, material.GetFloat("_BlurMaxRange"));
                         }
                     }
-                    if (toggles.GetState("NOISE")){
+                    if (toggles.GetState("Noise")){
                         if (material.GetFloat("_NoiseMode") > 0 && material.GetFloat("_NoiseUseGlobal") == 0) {
                             Gizmos.color = Color.white;
                             Gizmos.DrawWireSphere(position, material.GetFloat("_NoiseMinRange"));
@@ -407,7 +401,7 @@ namespace Mochie {
                             Gizmos.DrawWireSphere(position, material.GetFloat("_NoiseMaxRange"));
                         }
                     }
-                    if (toggles.GetState("ZOOM")){
+                    if (toggles.GetState("Zoom")){
                         if (material.GetFloat("_Zoom") > 0 && material.GetFloat("_ZoomUseGlobal") == 0) {
                             Gizmos.color = Color.white;
                             Gizmos.DrawWireSphere(position, material.GetFloat("_ZoomMinRange"));
@@ -415,7 +409,7 @@ namespace Mochie {
                             Gizmos.DrawWireSphere(position, material.GetFloat("_ZoomMaxRange"));
                         }
                     }
-                    if (toggles.GetState("IMAGE OVERLAY")){
+                    if (toggles.GetState("Image Overlay")){
                         if (material.GetFloat("_SST") > 0 && material.GetFloat("_SSTUseGlobal") == 0) {
                             Gizmos.color = Color.white;
                             Gizmos.DrawWireSphere(position, material.GetFloat("_SSTMinRange"));
@@ -423,7 +417,7 @@ namespace Mochie {
                             Gizmos.DrawWireSphere(position, material.GetFloat("_SSTMaxRange"));
                         }
                     }
-                    if (toggles.GetState("FOG")){
+                    if (toggles.GetState("Fog")){
                         if (material.GetFloat("_Fog") > 0 && material.GetFloat("_FogUseGlobal") == 0) {
                             Gizmos.color = Color.white;
                             Gizmos.DrawWireSphere(position, material.GetFloat("_FogMinRange"));
@@ -431,7 +425,7 @@ namespace Mochie {
                             Gizmos.DrawWireSphere(position, material.GetFloat("_FogMaxRange"));
                         }
                     }
-                    if (toggles.GetState("TRIPLANAR")){
+                    if (toggles.GetState("Triplanar")){
                         if (material.GetFloat("_Triplanar") > 0 && material.GetFloat("_TPUseGlobal") == 0) {
                             Gizmos.color = Color.white;
                             Gizmos.DrawWireSphere(position, material.GetFloat("_TPMinRange"));
@@ -439,7 +433,7 @@ namespace Mochie {
                             Gizmos.DrawWireSphere(position, material.GetFloat("_TPMaxRange"));
                         }
                     }
-                    if (toggles.GetState("OUTLINE")){
+                    if (toggles.GetState("Outline")){
                         if (material.GetFloat("_OutlineType") > 0 && material.GetFloat("_OLUseGlobal") == 0) {
                             Gizmos.color = new Color(1f, 0.647f, 0f, 1f);
                             Gizmos.DrawWireSphere(position, material.GetFloat("_OLMinRange"));
@@ -463,63 +457,48 @@ namespace Mochie {
 
             bool isSFXX = MGUI.IsXVersion(mat);
 
-            if (isSFXX){
-                header = "SFXHeaderX_Pro";
-                if (!EditorGUIUtility.isProSkin){
-                    header = "SFXHeaderX";
-                }
-            }
-            else {
-                header = "SFXHeader_Pro";
-                if (!EditorGUIUtility.isProSkin){
-                    header = "SFXHeader";
-                }
-            }
-
             // Add mat to foldout dictionary if it isn't in there yet
-            
             if (!foldouts.ContainsKey(mat))
                 foldouts.Add(mat, toggles);
 
             ApplyMaterialSettings(mat);
             SetBlendMode(mat);
-            
-            Texture2D headerTex = (Texture2D)Resources.Load(header, typeof(Texture2D));
 
-            GUILayout.Label(headerTex);
-            MGUI.Space4();
+            string headerText = "SCREEN FX";
+            if (isSFXX) headerText += " X";
+            MGUI.DoHeader(headerText);
 
             EditorGUI.BeginChangeCheck(); {
 
                 // Global
-                Dictionary<Action, GUIContent> generalTabButtons = new Dictionary<Action, GUIContent>();
-                generalTabButtons.Add(()=>{Toggles.CollapseFoldouts(mat, foldouts, 1);}, MGUI.collapseLabel);
-                generalTabButtons.Add(()=>{ResetRendering();}, MGUI.resetLabel);
-                Action generalTabAction = ()=>{
-                    me.ShaderProperty(_DisplayGlobalGizmo, "Display Range Gizmos");
-                    me.RenderQueueField();
-                    EditorGUI.BeginChangeCheck();
-                    me.ShaderProperty(_BlendMode, "Blending Mode");
-                    MGUI.Space4();
-                    if (EditorGUI.EndChangeCheck())
-                        SetBlendMode(mat);
-                    if (_BlendMode.floatValue > 0)
-                        me.ShaderProperty(_Opacity, "Opacity");
-                    if (_BlendMode.floatValue > 1)
-                        MGUI.DisplayInfo("Blend modes other than opaque and alpha use the global falloff to fade out the entire material. This is because these blend modes change screen values by default and need to falloff based on something, even when no effects are enabled.");
-                    GUILayout.Label("Global Falloff", EditorStyles.boldLabel);
-                    MGUI.SpaceN2();
-                    me.ShaderProperty(_MinRange, minLabel);
-                    me.ShaderProperty(_MaxRange, maxLabel);
-                };
-                Foldouts.Foldout("GENERAL", foldouts, generalTabButtons, mat, me, generalTabAction);
+                bool generalToggle = Foldouts.DoFoldout(foldouts, mat, "General", 1, Foldouts.Style.StandardButton);
+                if (Foldouts.DoFoldoutButton(MGUI.collapseLabel, 11)) Toggles.CollapseFoldouts(mat, foldouts, 1);
+                if (generalToggle) {
+                    MGUI.PropertyGroupParent(()=>{
+                        MGUI.PropertyGroup(()=>{
+                        me.ShaderProperty(_DisplayGlobalGizmo, "Display Range Gizmos");
+                        me.RenderQueueField();
+                        EditorGUI.BeginChangeCheck();
+                        me.ShaderProperty(_BlendMode, "Blending Mode");
+                        MGUI.Space4();
+                        if (EditorGUI.EndChangeCheck())
+                            SetBlendMode(mat);
+                        if (_BlendMode.floatValue > 0)
+                            me.ShaderProperty(_Opacity, "Opacity");
+                        if (_BlendMode.floatValue > 1)
+                            MGUI.DisplayInfo("Blend modes other than opaque and alpha use the global falloff to fade out the entire material. This is because these blend modes change screen values by default and need to falloff based on something, even when no effects are enabled.");
+                        GUILayout.Label("Global Falloff", EditorStyles.boldLabel);
+                        MGUI.SpaceN2();
+                        me.ShaderProperty(_MinRange, minLabel);
+                        me.ShaderProperty(_MaxRange, maxLabel);
+                        });
+                    });
+                }
 
                 // Filtering
-                Dictionary<Action, GUIContent> filterTabButtons = new Dictionary<Action, GUIContent>();
-                filterTabButtons.Add(()=>{ResetColor();}, MGUI.resetLabel);
-                Action filterTabAction = ()=>{
-                    me.ShaderProperty(_FilterModel, modeLabel);
-                    if (_FilterModel.floatValue > 0){
+                if (Foldouts.DoFoldout(foldouts, mat, me, _FilterModel, "Filtering", Foldouts.Style.StandardToggle)) {
+                    MGUI.PropertyGroupParent(()=>{
+                        MGUI.ToggleGroup(_FilterModel.floatValue == 0);
                         me.ShaderProperty(_FilterStrength, "Opacity");
                         me.ShaderProperty(_ColorUseGlobal, ugfLabel);
                         if (_ColorUseGlobal.floatValue == 0){
@@ -558,17 +537,14 @@ namespace Mochie {
                             me.ShaderProperty(_InvertG, "Green Inversion");
                             me.ShaderProperty(_InvertB, "Blue Inversion");
                         });
-                    }
-                };
-                Foldouts.Foldout("FILTERING", foldouts, filterTabButtons, mat, me, filterTabAction);
+                        MGUI.ToggleGroupEnd();
+                    });
+                }
 
                 // Shake
-                Dictionary<Action, GUIContent> shakeTabButtons = new Dictionary<Action, GUIContent>();
-                shakeTabButtons.Add(()=>{ResetShake();}, MGUI.resetLabel);
-                Action shakeTabAction = ()=>{
-                    me.ShaderProperty(_ShakeModel, modeLabel);
-                    if (_ShakeModel.floatValue > 0){
-                        MGUI.Space6();
+                if (Foldouts.DoFoldout(foldouts, mat, me, _ShakeModel, "Shake", Foldouts.Style.StandardToggle)) {
+                    MGUI.PropertyGroupParent(()=>{
+                        MGUI.ToggleGroup(_ShakeModel.floatValue == 0);
                         me.ShaderProperty(_ShakeUseGlobal, ugfLabel);
                         if (_ShakeUseGlobal.floatValue == 0){
                             MGUI.PropertyGroup(()=>{
@@ -576,9 +552,8 @@ namespace Mochie {
                                 me.ShaderProperty(_ShakeMaxRange, maxLabel);
                             });
                         }
-                        else MGUI.Space6();
                         MGUI.PropertyGroup(()=>{
-                            if (_ShakeModel.floatValue == 1 || _ShakeModel.floatValue == 2){
+                            if (_ShakeModel.floatValue < 3){
                                 me.ShaderProperty(_Amplitude, "Amplitude");
                                 me.ShaderProperty(_ShakeSpeedX, speedXLabel);
                                 me.ShaderProperty(_ShakeSpeedY, speedYLabel);
@@ -589,17 +564,14 @@ namespace Mochie {
                                 me.ShaderProperty(_ShakeSpeedXY, speedLabel);
                             }
                         });
-                    }
-                };
-                Foldouts.Foldout("SHAKE", foldouts, shakeTabButtons, mat, me, shakeTabAction);
+                        MGUI.ToggleGroupEnd();
+                    });
+                }
 
                 // Distortion
-                Dictionary<Action, GUIContent> distTabButtons = new Dictionary<Action, GUIContent>();
-                distTabButtons.Add(()=>{ResetDistortion();}, MGUI.resetLabel);
-                Action distTabAction = ()=>{
-                    me.ShaderProperty(_DistortionModel, modeLabel);
-                    if (_DistortionModel.floatValue > 0){
-                        MGUI.Space6();
+                if (Foldouts.DoFoldout(foldouts, mat, me, _DistortionModel, "Distortion", Foldouts.Style.StandardToggle)) {
+                    MGUI.PropertyGroupParent(()=>{
+                        MGUI.ToggleGroup(_DistortionModel.floatValue == 0);
                         me.ShaderProperty(_DistortionUseGlobal, ugfLabel);
                         if (_DistortionUseGlobal.floatValue == 0){
                             MGUI.PropertyGroup(()=>{
@@ -607,7 +579,6 @@ namespace Mochie {
                                 me.ShaderProperty(_DistortionMaxRange, maxLabel);
                             });
                         }
-                        else MGUI.Space6();
                         MGUI.PropertyGroup(()=>{
                             me.TexturePropertySingleLine(normalMapLabel, _NormalMap);
                             me.TextureScaleOffsetProperty(_NormalMap);
@@ -622,16 +593,14 @@ namespace Mochie {
                                 me.ShaderProperty(_DistortionP2O, p2oLabel);
                             });
                         }
-                    }
-                };
-                Foldouts.Foldout("DISTORTION", foldouts, distTabButtons, mat, me, distTabAction);
+                        MGUI.ToggleGroupEnd();
+                    });
+                }
 
                 // Blur
-                Dictionary<Action, GUIContent> blurTabButtons = new Dictionary<Action, GUIContent>();
-                blurTabButtons.Add(()=>{ResetBlur();}, MGUI.resetLabel);
-                Action blurTabAction = ()=>{
-                    me.ShaderProperty(_BlurModel, modeLabel);
-                    if (_BlurModel.floatValue > 0){
+                if (Foldouts.DoFoldout(foldouts, mat, me, _BlurModel, "Blur", Foldouts.Style.StandardToggle)) {
+                    MGUI.PropertyGroupParent(()=>{
+                        MGUI.ToggleGroup(_BlurModel.floatValue == 0);
                         if (_BlurModel.floatValue == 1){
                             me.ShaderProperty(_PixelBlurSamples, "Sample Count");
                             if (_PixelBlurSamples.floatValue > 43){
@@ -639,7 +608,6 @@ namespace Mochie {
                                 MGUI.DisplayWarning("High sample counts can be very laggy! If your strength value is low please consider staying at or below 43 samples.");
                             }
                         }
-                        MGUI.Space6();
                         me.ShaderProperty(_BlurUseGlobal, ugfLabel);
                         if (_BlurUseGlobal.floatValue == 0){
                             MGUI.PropertyGroup(()=>{
@@ -647,7 +615,6 @@ namespace Mochie {
                                 me.ShaderProperty(_BlurMaxRange, maxLabel);
                             });
                         }
-                        else MGUI.Space6();
                         MGUI.PropertyGroup(()=>{
                             me.ShaderProperty(_BlurOpacity, "Opacity");
                             me.ShaderProperty(_BlurStr, strengthLabel);
@@ -660,7 +627,7 @@ namespace Mochie {
                             if (_BlurModel.floatValue == 3){
                                 me.ShaderProperty(_DoF, "Depth of Field");
                                 if (_DoF.floatValue == 1){
-                                    MGUI.PropertyGroupLayer(()=>{
+                                    MGUI.PropertyGroup(()=>{
                                         MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
                                         me.ShaderProperty(_DoFRadius, radiusLabel);
                                         me.ShaderProperty(_DoFFade, fadeLabel);
@@ -673,7 +640,7 @@ namespace Mochie {
                             if (_BlurModel.floatValue != 3){
                                 me.ShaderProperty(_DoF, "Depth of Field");
                                 if (_DoF.floatValue == 1){
-                                    MGUI.PropertyGroupLayer(()=>{
+                                    MGUI.PropertyGroup(()=>{
                                         MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
                                         me.ShaderProperty(_DoFRadius, radiusLabel);
                                         me.ShaderProperty(_DoFFade, fadeLabel);
@@ -686,16 +653,14 @@ namespace Mochie {
                             if (_BlurModel.floatValue == 1)
                                 me.ShaderProperty(_CrushBlur, "Crush");
                         });
-                    }
-                };
-                Foldouts.Foldout("BLUR", foldouts, blurTabButtons, mat, me, blurTabAction);
+                        MGUI.ToggleGroupEnd();
+                    });
+                }
 
                 // Noise
-                Dictionary<Action, GUIContent> noiseTabButtons = new Dictionary<Action, GUIContent>();
-                noiseTabButtons.Add(()=>{ResetNoise();}, MGUI.resetLabel);
-                Action noiseTabAction = ()=>{
-                    me.ShaderProperty(_NoiseMode, "Mode");
-                    if (_NoiseMode.floatValue > 0){
+                if (Foldouts.DoFoldout(foldouts, mat, me, _NoiseMode, "Noise", Foldouts.Style.StandardToggle)) {
+                    MGUI.PropertyGroupParent(()=>{
+                        MGUI.ToggleGroup(_NoiseMode.floatValue == 0);
                         me.ShaderProperty(_NoiseStrength, "Opacity");
                         MGUI.Space6();
                         me.ShaderProperty(_NoiseUseGlobal, ugfLabel);
@@ -710,22 +675,19 @@ namespace Mochie {
                             me.ShaderProperty(_Noise, "Noise (Grayscale)");
                             MGUI.Vector3FieldRGB(_NoiseRGB, "Noise (RGB)");
                             me.ShaderProperty(_ScanLine, "Scan Lines");
-                            MGUI.PropertyGroupLayer(()=>{
+                            MGUI.PropertyGroup(()=>{
                                 me.ShaderProperty(_ScanLineThick, "Bar Thickness");
                                 me.ShaderProperty(_ScanLineSpeed, "Scroll Speed");
                             });
                         });
-                    }
-                };
-                Foldouts.Foldout("NOISE", foldouts, noiseTabButtons, mat, me, noiseTabAction);
+                        MGUI.ToggleGroupEnd();
+                    });
+                }
 
                 if (isSFXX){
-                    Dictionary<Action, GUIContent> zoomTabButtons = new Dictionary<Action, GUIContent>();
-                    zoomTabButtons.Add(()=>{ResetZoom();}, MGUI.resetLabel);
-                    Action zoomTabAction = ()=>{
-                        me.ShaderProperty(_Zoom, modeLabel);
-                        if (_Zoom.floatValue > 0){
-                            MGUI.Space6();
+                    if (Foldouts.DoFoldout(foldouts, mat, me, _Zoom, "Zoom", Foldouts.Style.StandardToggle)) {
+                        MGUI.PropertyGroupParent(()=>{
+                            MGUI.ToggleGroup(_Zoom.floatValue == 0);
                             me.ShaderProperty(_ZoomUseGlobal, ugfLabel);
                             if (_ZoomUseGlobal.floatValue == 0){
                                 MGUI.PropertyGroup(()=>{
@@ -733,7 +695,6 @@ namespace Mochie {
                                     me.ShaderProperty(_ZoomMaxRange, maxLabel);
                                 });
                             }
-                            else MGUI.Space6();
                             MGUI.PropertyGroup(()=>{
                                 if (_Zoom.floatValue == 2){
                                     me.ShaderProperty(_ZoomStrR, "Red");
@@ -742,17 +703,14 @@ namespace Mochie {
                                 }
                                 else me.ShaderProperty(_ZoomStr, strengthLabel);
                             });
-                        }
-                    };
-                    Foldouts.Foldout("ZOOM", foldouts, zoomTabButtons, mat, me, zoomTabAction);
+                            MGUI.ToggleGroupEnd();
+                        });
+                    }
                     
                     // Screenspace Texture Overlay
-                    Dictionary<Action, GUIContent> sstTabButtons = new Dictionary<Action, GUIContent>();
-                    sstTabButtons.Add(()=>{ResetSST();}, MGUI.resetLabel);
-                    Action sstTabAction = ()=>{
-                        me.ShaderProperty(_SST, modeLabel);
-                        if (_SST.floatValue > 0){
-                            MGUI.Space6();
+                    if (Foldouts.DoFoldout(foldouts, mat, me, _SST, "Image Overlay", Foldouts.Style.StandardToggle)) {
+                        MGUI.PropertyGroupParent(()=>{
+                            MGUI.ToggleGroup(_SST.floatValue == 0);
                             me.ShaderProperty(_SSTUseGlobal, ugfLabel);
                             if (_SSTUseGlobal.floatValue == 0){
                                 MGUI.PropertyGroup(()=>{
@@ -785,58 +743,14 @@ namespace Mochie {
                                 me.ShaderProperty(_SSTLR, "Left / Right");
                                 me.ShaderProperty(_SSTUD, "Down / Up");
                             });
-                        }
-                    };
-                    Foldouts.Foldout("IMAGE OVERLAY", foldouts, sstTabButtons, mat, me, sstTabAction);
-
-                    // Fog
-                    Dictionary<Action, GUIContent> fogTabButtons = new Dictionary<Action, GUIContent>();
-                    fogTabButtons.Add(()=>{ResetFog();}, MGUI.resetLabel);
-                    Action fogTabAction = ()=>{
-                        me.ShaderProperty(_Fog, modeLabel);
-                        if (_Fog.floatValue == 1){
-                            MGUI.Space6();
-                            me.ShaderProperty(_FogUseGlobal, ugfLabel);
-                            if (_FogUseGlobal.floatValue == 0){
-                                MGUI.PropertyGroup(()=>{
-                                    me.ShaderProperty(_FogMinRange, minLabel);
-                                    me.ShaderProperty(_FogMaxRange, maxLabel);
-                                });
-                            }
-                            else MGUI.Space6();
-                            MGUI.PropertyGroup(()=>{
-                                MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
-                                me.ShaderProperty(_FogColor, colorLabel);
-                                me.ShaderProperty(_FogRadius, radiusLabel);
-                                me.ShaderProperty(_FogFade, fadeLabel);
-                                me.ShaderProperty(_FogP2O, p2oLabel);
-                                me.ShaderProperty(_FogSafeZone, "Safe Zone");
-                                if (_FogSafeZone.floatValue == 1){
-                                    MGUI.PropertyGroupLayer(()=>{	
-                                        me.ShaderProperty(_FogSafeRadius, "Vision Radius");
-                                        me.ShaderProperty(_FogSafeMaxRange, "Outer Perimeter");
-                                        me.ShaderProperty(_FogSafeOpacity, "Opacity");
-                                    });
-                                }
-                                // me.ShaderProperty(_HeightFalloff, "Height Falloff");
-                                // if (_HeightFalloff.floatValue == 1){
-                                // 	MGUI.PropertyGroupLayer(()=>{
-                                // 		me.ShaderProperty(_FogHeightMin, "Min Height");
-                                // 		me.ShaderProperty(_FogHeightMax, "Max Height");
-                                // 	});
-                                // }
-                            });
-                        }
-                    };
-                    Foldouts.Foldout("FOG", foldouts, fogTabButtons, mat, me, fogTabAction);
+                            MGUI.ToggleGroupEnd();
+                        });
+                    }
 
                     // Triplanar Mapping
-                    Dictionary<Action, GUIContent> triplanarTabButtons = new Dictionary<Action, GUIContent>();
-                    triplanarTabButtons.Add(()=>{ResetTriplanar();}, MGUI.resetLabel);
-                    Action triplanarTabAction = ()=>{
-                        me.ShaderProperty(_Triplanar, modeLabel);
-                        if (_Triplanar.floatValue > 0){				
-                            MGUI.Space6();
+                    if (Foldouts.DoFoldout(foldouts, mat, me, _Triplanar, "Triplanar", Foldouts.Style.StandardToggle)) {
+                        MGUI.PropertyGroupParent(()=>{
+                            MGUI.ToggleGroup(_Triplanar.floatValue == 0);
                             me.ShaderProperty(_TPUseGlobal, ugfLabel);
                             if (_TPUseGlobal.floatValue == 0){
                                 MGUI.PropertyGroup(()=>{
@@ -844,20 +758,19 @@ namespace Mochie {
                                     me.ShaderProperty(_TPMaxRange, maxLabel);
                                 });
                             }
-                            else MGUI.Space6();
                             MGUI.PropertyGroup(()=>{
                                 MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
                                 me.TexturePropertySingleLine(tpTexLabel, _TPTexture, _TPColor);
                                 if (_TPTexture.textureValue){
                                     MGUI.TextureSO(me, _TPTexture);
-                                    MGUI.SpaceN5();
+                                    MGUI.SpaceN2();
                                     MGUI.Vector3Field(_TPScroll, "Scroll Speed", false);
                                     MGUI.Space4();
                                 }
                                 me.TexturePropertySingleLine(tpNoiseTexLabel, _TPNoiseTex);
                                 if (_TPNoiseTex.textureValue){          
                                     MGUI.TextureSO(me, _TPNoiseTex);
-                                    MGUI.SpaceN5();
+                                    MGUI.SpaceN2();
                                     MGUI.Vector3Field(_TPNoiseScroll, "Scroll Speed", false);
                                 }
                             });
@@ -871,34 +784,30 @@ namespace Mochie {
                                 else me.ShaderProperty(_TPFade, fadeLabel);
                                 me.ShaderProperty(_TPP2O, p2oLabel);
                             });
-                        }
-                    };
-                    Foldouts.Foldout("TRIPLANAR", foldouts, triplanarTabButtons, mat, me, triplanarTabAction);
+                            MGUI.ToggleGroupEnd();
+                        });
+                    }
 
                     // Outline
-                    Dictionary<Action, GUIContent> outlineTabButtons = new Dictionary<Action, GUIContent>();
-                    outlineTabButtons.Add(()=>{ResetOutline();}, MGUI.resetLabel);
-                    Action outlineTabAction = ()=>{
-                        me.ShaderProperty(_OutlineType, modeLabel);
-                        if (_OutlineType.floatValue > 0){
-                            me.ShaderProperty(_OutlineCubeToggle, "Color Source");
-                            MGUI.Space6();
-                            me.ShaderProperty(_OLUseGlobal, ugfLabel);
-                            if (_OLUseGlobal.floatValue == 0){
+                    if (Foldouts.DoFoldout(foldouts, mat, me, _OutlineType, "Outline", Foldouts.Style.StandardToggle)) {
+                        MGUI.PropertyGroupParent(()=>{
+                            MGUI.ToggleGroup(_OutlineType.floatValue == 0);
+                                me.ShaderProperty(_OutlineCubeToggle, "Color Source");
+                                me.ShaderProperty(_OLUseGlobal, ugfLabel);
+                                if (_OLUseGlobal.floatValue == 0){
+                                    MGUI.PropertyGroup(()=>{
+                                        me.ShaderProperty(_OLMinRange, minLabel);
+                                        me.ShaderProperty(_OLMaxRange, maxLabel);
+                                    });
+                                }
+                                MGUI.DisplayInfo("This feature requires a \"Depth Light\" prefab be present in the scene.\n(Found in: Assets/Mochie/Unity/Prefabs)");
+                                if (_OutlineType.floatValue == 1){
+                                    MGUI.PropertyGroup(()=>{
+                                        me.ShaderProperty(_OutlineAltEnable, "Enable Mix Tint");
+                                        me.ShaderProperty(_SobelClearInner, "Remove Inner Shading");
+                                    });
+                                }
                                 MGUI.PropertyGroup(()=>{
-                                    me.ShaderProperty(_OLMinRange, minLabel);
-                                    me.ShaderProperty(_OLMaxRange, maxLabel);
-                                });
-                            }
-                            else MGUI.Space6();
-                            MGUI.DisplayInfo("This feature requires a \"Depth Light\" prefab be present in the scene.\n(Found in: Assets/Mochie/Unity/Prefabs)");
-                            if (_OutlineType.floatValue == 1){
-                                MGUI.PropertyGroup(()=>{
-                                    me.ShaderProperty(_OutlineAltEnable, "Enable Mix Tint");
-                                    me.ShaderProperty(_SobelClearInner, "Remove Inner Shading");
-                                });
-                            }
-                            MGUI.PropertyGroup(()=>{
                                 if (_OutlineType.floatValue == 2)
                                     me.ShaderProperty(_AuraSampleCount, "Sample Count");
                                 me.ShaderProperty(_OutlineHueShiftAuto, "Auto Hue Shift");
@@ -916,7 +825,7 @@ namespace Mochie {
                                 else {
                                     me.TexturePropertySingleLine(new GUIContent("Base Cubemap"), _OutlineCube, _OutlineCol);
                                     if (_OutlineCube.textureValue){
-                                        MGUI.PropertyGroupLayer(()=>{
+                                        MGUI.PropertyGroup(()=>{
                                             MGUI.SpaceN2();
                                             MGUI.Vector3Field(_CubeRotate, _AutoRotate.floatValue == 1 ? "Speed" : "Rotation", false);
                                             me.ShaderProperty(_AutoRotate, "Auto Rotate");
@@ -934,7 +843,7 @@ namespace Mochie {
                                     else {
                                         me.TexturePropertySingleLine(new GUIContent("Mix Cubemap"), _OutlineCubeAlt, _OutlineColAlt);
                                         if (_OutlineCubeAlt.textureValue){
-                                            MGUI.PropertyGroupLayer(()=>{
+                                            MGUI.PropertyGroup(()=>{
                                                 MGUI.SpaceN2();
                                                 MGUI.Vector3Field(_CubeRotateAlt, _AutoRotateAlt.floatValue == 1 ? "Speed" : "Rotation", false);
                                                 me.ShaderProperty(_AutoRotateAlt, "Auto Rotate");
@@ -950,7 +859,7 @@ namespace Mochie {
                                 else {
                                     me.TexturePropertySingleLine(new GUIContent("Background Cubemap"), _OutlineBackgroundCube, _BackgroundCol);
                                     if (_OutlineBackgroundCube.textureValue){
-                                        MGUI.PropertyGroupLayer(()=>{
+                                        MGUI.PropertyGroup(()=>{
                                             MGUI.SpaceN2();
                                             MGUI.Vector3Field(_CubeRotateBG, _AutoRotateBG.floatValue == 1 ? "Speed" : "Rotation", false);
                                             me.ShaderProperty(_AutoRotateBG, "Auto Rotate");
@@ -971,310 +880,311 @@ namespace Mochie {
                                     me.ShaderProperty(_AuraFade, "Fade");
                                 }
                             });
-                        }
-                    };
-                    Foldouts.Foldout("OUTLINE", foldouts, outlineTabButtons, mat, me, outlineTabAction);
+                            MGUI.ToggleGroupEnd();
+                        });
+                    }
 
-                    // Extras
-                    Dictionary<Action, GUIContent> miscTabButtons = new Dictionary<Action, GUIContent>();
-                    miscTabButtons.Add(()=>{ResetExtras();}, MGUI.resetLabel);
-                    Action miscTabAction = ()=>{
-                        Action letterboxTabAction = ()=>{
+                    // Fog
+                    if (Foldouts.DoFoldout(foldouts, mat, me, _Fog, "Fog", Foldouts.Style.StandardToggle)) {
+                        MGUI.PropertyGroupParent(()=>{
+                            MGUI.ToggleGroup(_Fog.floatValue == 0);
+                            me.ShaderProperty(_FogUseGlobal, ugfLabel);
+                            if (_FogUseGlobal.floatValue == 0){
+                                MGUI.PropertyGroup(()=>{
+                                    me.ShaderProperty(_FogMinRange, minLabel);
+                                    me.ShaderProperty(_FogMaxRange, maxLabel);
+                                });
+                            }
                             MGUI.PropertyGroup(()=>{
+                                MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
+                                me.ShaderProperty(_FogColor, colorLabel);
+                                me.ShaderProperty(_FogRadius, radiusLabel);
+                                me.ShaderProperty(_FogFade, fadeLabel);
+                                me.ShaderProperty(_FogP2O, p2oLabel);
+                                me.ShaderProperty(_FogSafeZone, "Safe Zone");
+                                if (_FogSafeZone.floatValue == 1){
+                                    MGUI.PropertyGroup(()=>{	
+                                        me.ShaderProperty(_FogSafeRadius, "Vision Radius");
+                                        me.ShaderProperty(_FogSafeMaxRange, "Outer Perimeter");
+                                        me.ShaderProperty(_FogSafeOpacity, "Opacity");
+                                    });
+                                }
+                                // me.ShaderProperty(_HeightFalloff, "Height Falloff");
+                                // if (_HeightFalloff.floatValue == 1){
+                                // 	MGUI.PropertyGroup(()=>{
+                                // 		me.ShaderProperty(_FogHeightMin, "Min Height");
+                                // 		me.ShaderProperty(_FogHeightMax, "Max Height");
+                                // 	});
+                                // }
+                            });
+                            MGUI.ToggleGroupEnd();
+                        });
+                    }
+
+                    // Misc
+                    if (Foldouts.DoFoldout(foldouts, mat, "Misc", Foldouts.Style.Standard)) {
+                        MGUI.Space6();
+                        if (Foldouts.DoFoldout(foldouts, mat, me, _Letterbox, "Letterbox", Foldouts.Style.ThinToggle)){
+                            MGUI.PropertyGroupParent(()=>{
                                 MGUI.ToggleGroup(_Letterbox.floatValue == 0);
-                                me.ShaderProperty(_UseZoomFalloff, "Use Zoom Falloff");
-                                me.ShaderProperty(_LetterboxStr, "Bar Width");
+                                MGUI.PropertyGroup(()=>{
+                                    me.ShaderProperty(_UseZoomFalloff, "Use Zoom Falloff");
+                                    me.ShaderProperty(_LetterboxStr, "Bar Width");
+                                });
                                 MGUI.ToggleGroupEnd();
                             });
-                        };
-                        Foldouts.SubFoldout("Letterbox", foldouts, null, mat, me, letterboxTabAction, _Letterbox);
+                        }
 
-                        Action pulseTabAction = ()=>{
-                            MGUI.PropertyGroup(()=>{
+                        if (Foldouts.DoFoldout(foldouts, mat, me, _Pulse, "Pulse", Foldouts.Style.ThinToggle)){
+                            MGUI.PropertyGroupParent(()=>{
                                 MGUI.ToggleGroup(_Pulse.floatValue == 0);
-                                me.ShaderProperty(_WaveForm, "Waveform");
-                                MGUI.ToggleGroup(_WaveForm.floatValue == 0);
-                                me.ShaderProperty(_PulseColor, "Include Filtering");
-                                me.ShaderProperty(_PulseSpeed, speedLabel);
-                                MGUI.ToggleGroupEnd();
+                                MGUI.PropertyGroup(()=>{
+                                    me.ShaderProperty(_WaveForm, "Waveform");
+                                    MGUI.ToggleGroup(_WaveForm.floatValue == 0);
+                                    me.ShaderProperty(_PulseColor, "Include Filtering");
+                                    me.ShaderProperty(_PulseSpeed, speedLabel);
+                                    MGUI.ToggleGroupEnd();
+                                });
                                 MGUI.ToggleGroupEnd();
                             });
-                        };
-                        Foldouts.SubFoldout("Pulse", foldouts, null, mat, me, pulseTabAction, _Pulse);
+                        }
 
-                        Action uvManipTabAction = ()=>{
-                            MGUI.PropertyGroup(()=>{
+                        if (Foldouts.DoFoldout(foldouts, mat, me, _Shift, "UV Manipulation", Foldouts.Style.ThinToggle)){
+                            MGUI.PropertyGroupParent(()=>{
                                 MGUI.ToggleGroup(_Shift.floatValue == 0);
-                                me.ShaderProperty(_InvertX, "Invert X");
-                                me.ShaderProperty(_InvertY, "Invert Y");
-                                me.ShaderProperty(_ShiftX, "Shift X");
-                                me.ShaderProperty(_ShiftY, "Shift Y");
+                                MGUI.PropertyGroup(()=>{
+                                    me.ShaderProperty(_InvertX, "Invert X");
+                                    me.ShaderProperty(_InvertY, "Invert Y");
+                                    me.ShaderProperty(_ShiftX, "Shift X");
+                                    me.ShaderProperty(_ShiftY, "Shift Y");
+                                });
                                 MGUI.ToggleGroupEnd();
                             });
-                        };
-                        Foldouts.SubFoldout("UV Manipulation", foldouts, null, mat, me, uvManipTabAction, _Shift);
+                        }
 
-                        Action roundingTabAction = ()=>{
-                            MGUI.PropertyGroup(()=>{
+                        if (Foldouts.DoFoldout(foldouts, mat, me, _RoundingToggle, "Rounding", Foldouts.Style.ThinToggle)){
+                            MGUI.PropertyGroupParent(()=>{
                                 MGUI.ToggleGroup(_RoundingToggle.floatValue == 0);
-                                me.ShaderProperty(_RoundingOpacity, "Opacity");
-                                me.ShaderProperty(_Rounding, "Precision");
+                                MGUI.PropertyGroup(()=>{
+                                    me.ShaderProperty(_RoundingOpacity, "Opacity");
+                                    me.ShaderProperty(_Rounding, "Precision");
+                                });
                                 MGUI.ToggleGroupEnd();
                             });
-                        };
-                        Foldouts.SubFoldout("Rounding", foldouts, null, mat, me, roundingTabAction, _RoundingToggle);
+                        }
 
-                        Action nmTabAction = ()=>{
-                            MGUI.PropertyGroup(()=>{
+                        if (Foldouts.DoFoldout(foldouts, mat, me, _NMFToggle, "Normal Map Filter", Foldouts.Style.ThinToggle)){
+                            MGUI.PropertyGroupParent(()=>{
                                 MGUI.ToggleGroup(_NMFToggle.floatValue == 0);
-                                me.ShaderProperty(_NMFOpacity, "Opacity");
-                                me.ShaderProperty(_NormalMapFilter, "Strength");
+                                MGUI.PropertyGroup(()=>{
+                                    me.ShaderProperty(_NMFOpacity, "Opacity");
+                                    me.ShaderProperty(_NormalMapFilter, "Strength");
+                                });
                                 MGUI.ToggleGroupEnd();
                             });
-                        };
-                        Foldouts.SubFoldout("Normal Map", foldouts, null, mat, me, nmTabAction, _NMFToggle);
+                        }
 
-                        Action depthTabAction = ()=>{					
+                        if (Foldouts.DoFoldout(foldouts, mat, me, _DepthBufferToggle, "Depth Buffer", Foldouts.Style.ThinToggle)){
                             if (_DepthBufferToggle.floatValue == 1){
                                 MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
                             }
-                            MGUI.PropertyGroup(()=>{
+                            MGUI.PropertyGroupParent(()=>{
                                 MGUI.ToggleGroup(_DepthBufferToggle.floatValue == 0);
-                                me.ShaderProperty(_DBOpacity, "Opacity");
-                                me.ShaderProperty(_DBColor, "Tint");
+                                MGUI.PropertyGroup(()=>{
+                                    me.ShaderProperty(_DBOpacity, "Opacity");
+                                    me.ShaderProperty(_DBColor, "Tint");
+                                });
                                 MGUI.ToggleGroupEnd();
                             });
-                        };
-                        Foldouts.SubFoldout("Depth Buffer", foldouts, null, mat, me, depthTabAction, _DepthBufferToggle);
-                        Action sobelFilterTabAction = ()=>{					
-                            MGUI.PropertyGroup(()=>{
+                        }
+
+                        if (Foldouts.DoFoldout(foldouts, mat, me, _SobelFilterToggle, "Sobel Filter", Foldouts.Style.ThinToggle)){
+                            MGUI.PropertyGroupParent(()=>{
                                 MGUI.ToggleGroup(_SobelFilterToggle.floatValue == 0);
-                                me.ShaderProperty(_SobelFilterColor, "Line Color");
-                                me.ShaderProperty(_SobelFilterBackgroundColor, "Background Color");
-                                me.ShaderProperty(_SobelFilterOpacity, "Opacity");
+                                MGUI.PropertyGroup(()=>{
+                                    me.ShaderProperty(_SobelFilterColor, "Line Color");
+                                    me.ShaderProperty(_SobelFilterBackgroundColor, "Background Color");
+                                    me.ShaderProperty(_SobelFilterOpacity, "Opacity");
+                                });
                                 MGUI.ToggleGroupEnd();
                             });
-                        };
-                        Foldouts.SubFoldout("Sobel Filter", foldouts, null, mat, me, sobelFilterTabAction, _SobelFilterToggle);
-                    };
-                    Foldouts.Foldout("MISC", foldouts, miscTabButtons, mat, me, miscTabAction);
+                        }
+                        MGUI.Space6();
+                    }
                 }
-
+    
                 // Audio Link
-                Dictionary<Action, GUIContent> audioLinkTabButtons = new Dictionary<Action, GUIContent>();
-                audioLinkTabButtons.Add(()=>{ResetAudioLink();}, MGUI.resetLabel);
-                Action audioLinkTabAction = ()=>{
-                    MGUI.ToggleSlider(me, Tips.audioLinkEmission, _AudioLinkToggle, _AudioLinkStrength);
+                if (Foldouts.DoFoldout(foldouts, mat, me, _AudioLinkToggle, "Audio Link", Foldouts.Style.StandardToggle)) {
                     MGUI.ToggleGroup(_AudioLinkToggle.floatValue == 0);
-                    MGUI.SliderMinMax(_AudioLinkMin, _AudioLinkMax, 0f, 2f, "Remap", 1);
-                    MGUI.Space6();
-
-                    Dictionary<Action, GUIContent> alFilteringTabButtons = new Dictionary<Action, GUIContent>();
-                    alFilteringTabButtons.Add(()=>{ResetALFiltering();}, MGUI.resetLabel);
-                    Action alFilteringTabAction = ()=>{
+                    MGUI.PropertyGroupParent(()=>{
                         MGUI.PropertyGroup(()=>{
+                            me.ShaderProperty(_AudioLinkStrength, "Strength");
+                            MGUI.SliderMinMax(_AudioLinkMin, _AudioLinkMax, 0f, 2f, "Remap", 1);
+                        });
+                    });
+
+                    if (Foldouts.DoFoldout(foldouts, mat, "Filtering ", Foldouts.Style.Thin)){
+                        MGUI.PropertyGroupParent(()=>{
                             me.ShaderProperty(_AudioLinkFilteringBand, "Band");
                             me.ShaderProperty(_AudioLinkFilteringStrength, "Strength");
                             MGUI.SliderMinMax(_AudioLinkFilteringMin, _AudioLinkFilteringMax, 0f, 2f, "Remap", 1);
                         });
-                    };
-                    Foldouts.SubFoldout("Filtering 1", foldouts, alFilteringTabButtons, mat, me, alFilteringTabAction);
+                    }
 
-                    Dictionary<Action, GUIContent> alShakeTabButtons = new Dictionary<Action, GUIContent>();
-                    alShakeTabButtons.Add(()=>{ResetALShake();}, MGUI.resetLabel);
-                    Action alShakeTabAction = ()=>{
-                        MGUI.PropertyGroup(()=>{
-                            me.ShaderProperty(_AudioLinkShakeBand, "Band");
-                            me.ShaderProperty(_AudioLinkShakeStrength, "Strength");
-                            MGUI.SliderMinMax(_AudioLinkShakeMin, _AudioLinkShakeMax, 0f, 2f, "Remap", 1);
+                    if (Foldouts.DoFoldout(foldouts, mat, "Shake ", Foldouts.Style.Thin)){
+                        MGUI.PropertyGroupParent(()=>{
+                            MGUI.PropertyGroup(()=>{
+                                me.ShaderProperty(_AudioLinkShakeBand, "Band");
+                                me.ShaderProperty(_AudioLinkShakeStrength, "Strength");
+                                MGUI.SliderMinMax(_AudioLinkShakeMin, _AudioLinkShakeMax, 0f, 2f, "Remap", 1);
+                            });
                         });
-                    };
-                    Foldouts.SubFoldout("Shake 1", foldouts, alShakeTabButtons, mat, me, alShakeTabAction);
+                    }
 
-                    Dictionary<Action, GUIContent> alDistortionTabButtons = new Dictionary<Action, GUIContent>();
-                    alDistortionTabButtons.Add(()=>{ResetALDistortion();}, MGUI.resetLabel);
-                    Action alDistortionTabAction = ()=>{
-                        MGUI.PropertyGroup(()=>{
-                            me.ShaderProperty(_AudioLinkDistortionBand, "Band");
-                            me.ShaderProperty(_AudioLinkDistortionStrength, "Strength");
-                            MGUI.SliderMinMax(_AudioLinkDistortionMin, _AudioLinkDistortionMax, 0f, 2f, "Remap", 1);
+                    if (Foldouts.DoFoldout(foldouts, mat, "Distortion ", Foldouts.Style.Thin)){
+                        MGUI.PropertyGroupParent(()=>{
+                            MGUI.PropertyGroup(()=>{
+                                me.ShaderProperty(_AudioLinkDistortionBand, "Band");
+                                me.ShaderProperty(_AudioLinkDistortionStrength, "Strength");
+                                MGUI.SliderMinMax(_AudioLinkDistortionMin, _AudioLinkDistortionMax, 0f, 2f, "Remap", 1);
+                            });
                         });
-                    };
-                    Foldouts.SubFoldout("Distortion 1", foldouts, alDistortionTabButtons, mat, me, alDistortionTabAction);
+                    }
 
-                    Dictionary<Action, GUIContent> alBlurTabButtons = new Dictionary<Action, GUIContent>();
-                    alBlurTabButtons.Add(()=>{ResetALBlur();}, MGUI.resetLabel);
-                    Action alBlurTabAction = ()=>{
-                        MGUI.PropertyGroup(()=>{
-                            me.ShaderProperty(_AudioLinkBlurBand, "Band");
-                            me.ShaderProperty(_AudioLinkBlurStrength, "Strength");
-                            MGUI.SliderMinMax(_AudioLinkBlurMin, _AudioLinkBlurMax, 0f, 2f, "Remap", 1);
+                    if (Foldouts.DoFoldout(foldouts, mat, "Blur ", Foldouts.Style.Thin)){
+                        MGUI.PropertyGroupParent(()=>{
+                            MGUI.PropertyGroup(()=>{
+                                me.ShaderProperty(_AudioLinkBlurBand, "Band");
+                                me.ShaderProperty(_AudioLinkBlurStrength, "Strength");
+                                MGUI.SliderMinMax(_AudioLinkBlurMin, _AudioLinkBlurMax, 0f, 2f, "Remap", 1);
+                            });
                         });
-                    };
-                    Foldouts.SubFoldout("Blur 1", foldouts, alBlurTabButtons, mat, me, alBlurTabAction);
+                    }
 
-                    Dictionary<Action, GUIContent> alNoiseTabButtons = new Dictionary<Action, GUIContent>();
-                    alNoiseTabButtons.Add(()=>{ResetALNoise();}, MGUI.resetLabel);
-                    Action alNoiseTabAction = ()=>{
-                        MGUI.PropertyGroup(()=>{
-                            me.ShaderProperty(_AudioLinkNoiseBand, "Band");
-                            me.ShaderProperty(_AudioLinkNoiseStrength, "Strength");
-                            MGUI.SliderMinMax(_AudioLinkNoiseMin, _AudioLinkNoiseMax, 0f, 2f, "Remap", 1);
+                    if (Foldouts.DoFoldout(foldouts, mat, "Noise ", Foldouts.Style.Thin)){
+                        MGUI.PropertyGroupParent(()=>{
+                            MGUI.PropertyGroup(()=>{
+                                me.ShaderProperty(_AudioLinkNoiseBand, "Band");
+                                me.ShaderProperty(_AudioLinkNoiseStrength, "Strength");
+                                MGUI.SliderMinMax(_AudioLinkNoiseMin, _AudioLinkNoiseMax, 0f, 2f, "Remap", 1);
+                            });
                         });
-                    };
-                    Foldouts.SubFoldout("Noise 1", foldouts, alNoiseTabButtons, mat, me, alNoiseTabAction);
+                    }
 
                     if (isSFXX){
-                        Dictionary<Action, GUIContent> alZoomTabButtons = new Dictionary<Action, GUIContent>();
-                        alZoomTabButtons.Add(()=>{ResetALZoom();}, MGUI.resetLabel);
-                        Action alZoomTabAction = ()=>{
-                            MGUI.PropertyGroup(()=>{
-                                me.ShaderProperty(_AudioLinkZoomBand, "Band");
-                                me.ShaderProperty(_AudioLinkZoomStrength, "Strength");
-                                MGUI.SliderMinMax(_AudioLinkZoomMin, _AudioLinkZoomMax, 0f, 2f, "Remap", 1);
+                        if (Foldouts.DoFoldout(foldouts, mat, "Zoom ", Foldouts.Style.Thin)){
+                            MGUI.PropertyGroupParent(()=>{
+                                MGUI.PropertyGroup(()=>{
+                                    me.ShaderProperty(_AudioLinkZoomBand, "Band");
+                                    me.ShaderProperty(_AudioLinkZoomStrength, "Strength");
+                                    MGUI.SliderMinMax(_AudioLinkZoomMin, _AudioLinkZoomMax, 0f, 2f, "Remap", 1);
+                                });
                             });
-                        };
-                        Foldouts.SubFoldout("Zoom 1", foldouts, alZoomTabButtons, mat, me, alZoomTabAction);
+                        }
 
-                        Dictionary<Action, GUIContent> alSSTTabButtons = new Dictionary<Action, GUIContent>();
-                        alSSTTabButtons.Add(()=>{ResetALSST();}, MGUI.resetLabel);
-                        Action alSSTTabAction = ()=>{
-                            MGUI.PropertyGroup(()=>{
-                                me.ShaderProperty(_AudioLinkSSTBand, "Band");
-                                me.ShaderProperty(_AudioLinkSSTStrength, "Strength");
-                                MGUI.SliderMinMax(_AudioLinkSSTMin, _AudioLinkSSTMax, 0f, 2f, "Remap", 1);
+                        if (Foldouts.DoFoldout(foldouts, mat, "Image Overlay ", Foldouts.Style.Thin)){
+                            MGUI.PropertyGroupParent(()=>{
+                                MGUI.PropertyGroup(()=>{
+                                    me.ShaderProperty(_AudioLinkSSTBand, "Band");
+                                    me.ShaderProperty(_AudioLinkSSTStrength, "Strength");
+                                    MGUI.SliderMinMax(_AudioLinkSSTMin, _AudioLinkSSTMax, 0f, 2f, "Remap", 1);
+                                });
                             });
-                        };
-                        Foldouts.SubFoldout("Image Overlay 1", foldouts, alSSTTabButtons, mat, me, alSSTTabAction);
+                        }
 
-                        Dictionary<Action, GUIContent> alFogTabButtons = new Dictionary<Action, GUIContent>();
-                        alFogTabButtons.Add(()=>{ResetALFog();}, MGUI.resetLabel);
-                        Action alFogTabAction = ()=>{
-                            MGUI.PropertyGroup(()=>{
-                                me.ShaderProperty(_AudioLinkFogBand, "Band");
-                                me.ShaderProperty(_AudioLinkFogOpacity, "Opacity");
-                                me.ShaderProperty(_AudioLinkFogRadius, "Radius");
-                                MGUI.SliderMinMax(_AudioLinkFogMin, _AudioLinkFogMax, 0f, 2f, "Remap", 1);
+                        if (Foldouts.DoFoldout(foldouts, mat, "Fog ", Foldouts.Style.Thin)){
+                            MGUI.PropertyGroupParent(()=>{
+                                MGUI.PropertyGroup(()=>{
+                                    me.ShaderProperty(_AudioLinkFogBand, "Band");
+                                    me.ShaderProperty(_AudioLinkFogOpacity, "Opacity");
+                                    me.ShaderProperty(_AudioLinkFogRadius, "Radius");
+                                    MGUI.SliderMinMax(_AudioLinkFogMin, _AudioLinkFogMax, 0f, 2f, "Remap", 1);
+                                });
                             });
-                        };
-                        Foldouts.SubFoldout("Fog 1", foldouts, alFogTabButtons, mat, me, alFogTabAction);
+                        }
 
-                        Dictionary<Action, GUIContent> alTriplanarTabButtons = new Dictionary<Action, GUIContent>();
-                        alTriplanarTabButtons.Add(()=>{ResetALTriplanar();}, MGUI.resetLabel);
-                        Action alTriplanarTabAction = ()=>{
-                            MGUI.PropertyGroup(()=>{
-                                me.ShaderProperty(_AudioLinkTriplanarBand, "Band");
-                                me.ShaderProperty(_AudioLinkTriplanarOpacity, "Opacity");
-                                me.ShaderProperty(_AudioLinkTriplanarRadius, "Radius");
-                                MGUI.SliderMinMax(_AudioLinkTriplanarMin, _AudioLinkTriplanarMax, 0f, 2f, "Remap", 1);
+                        if (Foldouts.DoFoldout(foldouts, mat, "Triplanar ", Foldouts.Style.Thin)){
+                            MGUI.PropertyGroupParent(()=>{
+                                MGUI.PropertyGroup(()=>{
+                                    me.ShaderProperty(_AudioLinkTriplanarBand, "Band");
+                                    me.ShaderProperty(_AudioLinkTriplanarOpacity, "Opacity");
+                                    me.ShaderProperty(_AudioLinkTriplanarRadius, "Radius");
+                                    MGUI.SliderMinMax(_AudioLinkTriplanarMin, _AudioLinkTriplanarMax, 0f, 2f, "Remap", 1);
+                                });
                             });
-                        };
-                        Foldouts.SubFoldout("Triplanar 1", foldouts, alTriplanarTabButtons, mat, me, alTriplanarTabAction);
+                        }
 
-                        Dictionary<Action, GUIContent> alOutlineTabButtons = new Dictionary<Action, GUIContent>();
-                        alOutlineTabButtons.Add(()=>{ResetALOutline();}, MGUI.resetLabel);
-                        Action alOutlineTabAction = ()=>{
-                            MGUI.BoldLabel("Thickness");
-                            MGUI.PropertyGroup(()=>{
-                                me.ShaderProperty(_AudioLinkOutlineBand, "Band");
-                                me.ShaderProperty(_AudioLinkOutlineStrength, "Strength");
-                                MGUI.SliderMinMax(_AudioLinkOutlineMin, _AudioLinkOutlineMax, 0f, 2f, "Remap", 1);
+                        if (Foldouts.DoFoldout(foldouts, mat, "Outline ", Foldouts.Style.Thin)){
+                            MGUI.PropertyGroupParent(()=>{
+                                MGUI.BoldLabel("Thickness");
+                                MGUI.PropertyGroup(()=>{
+                                    me.ShaderProperty(_AudioLinkOutlineBand, "Band");
+                                    me.ShaderProperty(_AudioLinkOutlineStrength, "Strength");
+                                    MGUI.SliderMinMax(_AudioLinkOutlineMin, _AudioLinkOutlineMax, 0f, 2f, "Remap", 1);
+                                });
+                                MGUI.BoldLabel("Base Line Opacity");
+                                MGUI.PropertyGroup(()=>{
+                                    me.ShaderProperty(_AudioLinkOutlineColBand, "Band");
+                                    me.ShaderProperty(_AudioLinkOutlineColStrength, "Strength");
+                                    MGUI.SliderMinMax(_AudioLinkOutlineColMin, _AudioLinkOutlineColMax, 0f, 2f, "Remap", 1);
+                                });
+                                MGUI.BoldLabel("Mix Line Opacity");
+                                MGUI.PropertyGroup(()=>{
+                                    me.ShaderProperty(_AudioLinkOutlineMixBand, "Band");
+                                    me.ShaderProperty(_AudioLinkOutlineMixStrength, "Strength");
+                                    MGUI.SliderMinMax(_AudioLinkOutlineMixMin, _AudioLinkOutlineMixMax, 0f, 2f, "Remap", 1);
+                                });
                             });
-                            MGUI.BoldLabel("Base Line Opacity");
-                            MGUI.PropertyGroup(()=>{
-                                me.ShaderProperty(_AudioLinkOutlineColBand, "Band");
-                                me.ShaderProperty(_AudioLinkOutlineColStrength, "Strength");
-                                MGUI.SliderMinMax(_AudioLinkOutlineColMin, _AudioLinkOutlineColMax, 0f, 2f, "Remap", 1);
-                            });
-                            MGUI.BoldLabel("Mix Line Opacity");
-                            MGUI.PropertyGroup(()=>{
-                                me.ShaderProperty(_AudioLinkOutlineMixBand, "Band");
-                                me.ShaderProperty(_AudioLinkOutlineMixStrength, "Strength");
-                                MGUI.SliderMinMax(_AudioLinkOutlineMixMin, _AudioLinkOutlineMixMax, 0f, 2f, "Remap", 1);
-                            });
-                        };
-                        Foldouts.SubFoldout("Outline 1", foldouts, alOutlineTabButtons, mat, me, alOutlineTabAction);
+                        }
 
-                        Dictionary<Action, GUIContent> alMiscTabButtons = new Dictionary<Action, GUIContent>();
-                        alMiscTabButtons.Add(()=>{ResetALMisc();}, MGUI.resetLabel);
-                        Action alMiscTabAction = ()=>{
-                            MGUI.PropertyGroup(()=>{
-                                me.ShaderProperty(_AudioLinkMiscBand, "Band");
-                                me.ShaderProperty(_AudioLinkMiscStrength, "Strength");
-                                MGUI.SliderMinMax(_AudioLinkMiscMin, _AudioLinkMiscMax, 0f, 2f, "Remap", 1);
+                        if (Foldouts.DoFoldout(foldouts, mat, "Misc ", Foldouts.Style.Thin)){
+                            MGUI.PropertyGroupParent(()=>{
+                                MGUI.PropertyGroup(()=>{
+                                    me.ShaderProperty(_AudioLinkMiscBand, "Band");
+                                    me.ShaderProperty(_AudioLinkMiscStrength, "Strength");
+                                    MGUI.SliderMinMax(_AudioLinkMiscMin, _AudioLinkMiscMax, 0f, 2f, "Remap", 1);
+                                });
                             });
-                        };
-                        Foldouts.SubFoldout("Misc 1", foldouts, alMiscTabButtons, mat, me, alMiscTabAction);
+                        }
                     }
                     MGUI.ToggleGroupEnd();
-                };
-                Foldouts.Foldout("AUDIO LINK", foldouts, audioLinkTabButtons, mat, me, audioLinkTabAction);
+                }
             }
             MGUI.DoFooter(versionLabel);
         }
 
         void ApplyMaterialSettings(Material mat){
-            int filterMode = mat.GetInt("_FilterModel");
-            int shakeMode = mat.GetInt("_ShakeModel");
-            int distMode = mat.GetInt("_DistortionModel");
-            int blurMode = mat.GetInt("_BlurModel");
-            int blurY = mat.GetInt("_BlurY");
-            int blurChrom = mat.GetInt("_RGBSplit");
-            int dof = mat.GetInt("_DoF");
-            int fogMode = mat.GetInt("_Fog");
             int zoomMode = mat.GetInt("_Zoom");
             int sstMode = mat.GetInt("_SST");
-            int tpMode = mat.GetInt("_Triplanar");
-            int outlineMode = mat.GetInt("_OutlineType");
-            int noiseMode = mat.GetInt("_NoiseMode");
             int letterboxMode = mat.GetInt("_Letterbox");
-            int audioLink = mat.GetInt("_AudioLinkToggle");
-            int sobelFilter = mat.GetInt("_SobelFilterToggle");
 
             bool isXVersion = MGUI.IsXVersion(mat);
-            bool filteringEnabled = filterMode > 0;
-            bool shakeEnabled = shakeMode > 0;
-            bool distortionEnabled = distMode == 1;
-            bool distortionTriEnabled = distMode == 2;
-            bool blurPixelEnabled = blurMode == 1;
-            bool blurDitherEnabled = blurMode == 2;
-            bool blurRadEnabled = blurMode == 3;
-            bool blurYEnabled = blurY == 1;
-            bool blurChromEnabled = blurChrom == 1;
-            bool blurEnabled = blurMode > 0;
-            bool noiseEnabled = noiseMode == 1;
-            bool dofEnabled = dof == 1;
-            bool fogEnabled = fogMode == 1 && isXVersion;
             bool zoomEnabled = zoomMode == 1 && isXVersion;
             bool zoomRGBEnabled = zoomMode == 2 && isXVersion;
             bool sstEnabled = sstMode < 3 && sstMode > 0 && isXVersion;
             bool sstDistEnabled = sstMode == 3 && isXVersion;
-            bool tpEnabled = tpMode > 0 && isXVersion;
-            bool outlineEnabled = outlineMode > 0 && isXVersion;
             bool letterboxEnabled = letterboxMode > 0 && isXVersion;
-            bool audioLinkEnabled = audioLink == 1;
-            bool sobelFilterEnabled = sobelFilter == 1;
             
-            MGUI.SetKeyword(mat, "_COLOR_ON", filteringEnabled);
-            MGUI.SetKeyword(mat, "_SHAKE_ON", shakeEnabled);
-            MGUI.SetKeyword(mat, "_DISTORTION_ON", distortionEnabled);
-            MGUI.SetKeyword(mat, "_DISTORTION_WORLD_ON", distortionTriEnabled);
-            MGUI.SetKeyword(mat, "_BLUR_PIXEL_ON", blurPixelEnabled);
-            MGUI.SetKeyword(mat, "_BLUR_DITHER_ON", blurDitherEnabled);
-            MGUI.SetKeyword(mat, "_BLUR_RADIAL_ON", blurRadEnabled);
-            MGUI.SetKeyword(mat, "_BLUR_Y_ON", blurYEnabled);
-            MGUI.SetKeyword(mat, "_CHROMATIC_ABBERATION_ON", blurChromEnabled);
-            MGUI.SetKeyword(mat, "_DOF_ON", dofEnabled);
-            MGUI.SetKeyword(mat, "_ZOOM_ON", zoomEnabled);
-            MGUI.SetKeyword(mat, "_ZOOM_RGB_ON", zoomRGBEnabled);
-            MGUI.SetKeyword(mat, "_IMAGE_OVERLAY_ON", sstEnabled);
-            MGUI.SetKeyword(mat, "_IMAGE_OVERLAY_DISTORTION_ON", sstDistEnabled);
-            MGUI.SetKeyword(mat, "_FOG_ON", fogEnabled);
-            MGUI.SetKeyword(mat, "_TRIPLANAR_ON", tpEnabled);
-            MGUI.SetKeyword(mat, "_OUTLINE_ON", outlineEnabled);
-            MGUI.SetKeyword(mat, "_NOISE_ON", noiseEnabled);
-            MGUI.SetKeyword(mat, "_AUDIOLINK_ON", audioLinkEnabled);
-            MGUI.SetKeyword(mat, "_SOBEL_FILTER_ON", sobelFilterEnabled);
+            MGUI.SetKeyword(mat, "_COLOR_ON", mat.GetInt("_FilterModel") > 0);
+            MGUI.SetKeyword(mat, "_SHAKE_ON", mat.GetInt("_ShakeModel") > 0);
+            MGUI.SetKeyword(mat, "_DISTORTION_ON", mat.GetInt("_DistortionModel") == 1);
+            MGUI.SetKeyword(mat, "_DISTORTION_WORLD_ON", mat.GetInt("_DistortionModel") == 2);
+            MGUI.SetKeyword(mat, "_BLUR_PIXEL_ON", mat.GetInt("_BlurModel") == 1);
+            MGUI.SetKeyword(mat, "_BLUR_DITHER_ON", mat.GetInt("_BlurModel") == 2);
+            MGUI.SetKeyword(mat, "_BLUR_RADIAL_ON", mat.GetInt("_BlurModel") == 3);
+            MGUI.SetKeyword(mat, "_BLUR_Y_ON", mat.GetInt("_BlurY") == 1);
+            MGUI.SetKeyword(mat, "_CHROMATIC_ABBERATION_ON", mat.GetInt("_RGBSplit") == 1);
+            MGUI.SetKeyword(mat, "_DOF_ON", mat.GetInt("_DoF") == 1);
+            MGUI.SetKeyword(mat, "_ZOOM_ON", zoomMode == 1 && isXVersion);
+            MGUI.SetKeyword(mat, "_ZOOM_RGB_ON", zoomMode == 2 && isXVersion);
+            MGUI.SetKeyword(mat, "_IMAGE_OVERLAY_ON", sstMode < 3 && sstMode > 0 && isXVersion);
+            MGUI.SetKeyword(mat, "_IMAGE_OVERLAY_DISTORTION_ON", sstMode == 3 && isXVersion);
+            MGUI.SetKeyword(mat, "_FOG_ON", mat.GetInt("_Fog") == 1 && isXVersion);
+            MGUI.SetKeyword(mat, "_TRIPLANAR_ON", mat.GetInt("_Triplanar") > 0 && isXVersion);
+            MGUI.SetKeyword(mat, "_OUTLINE_ON", mat.GetInt("_OutlineType") > 0 && isXVersion);
+            MGUI.SetKeyword(mat, "_NOISE_ON", mat.GetInt("_NoiseMode") == 1);
+            MGUI.SetKeyword(mat, "_AUDIOLINK_ON", mat.GetInt("_AudioLinkToggle") == 2);
+            MGUI.SetKeyword(mat, "_SOBEL_FILTER_ON", mat.GetInt("_SobelFilterToggle") == 1);
 
             mat.SetShaderPassEnabled("Always", zoomEnabled || zoomRGBEnabled || sstEnabled || sstDistEnabled ||  letterboxEnabled);
         }
@@ -1311,302 +1221,6 @@ namespace Mochie {
                     mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.SrcColor);
                     break;
             }
-        }
-
-        void ResetRendering(){
-            _BlendMode.floatValue = 0f;
-            _SrcBlend.floatValue = 1f;
-            _DstBlend.floatValue = 0f;
-            _Opacity.floatValue = 1f;
-            _MinRange.floatValue = 8f;
-            _MaxRange.floatValue = 15f;
-        }
-
-        void ResetColor(){
-            _ColorUseGlobal.floatValue = 1f;
-            _ColorMinRange.floatValue = 8f;
-            _ColorMaxRange.floatValue = 15f;
-            _AutoShift.floatValue = 0f;
-            _Color.colorValue = Color.white;
-            _AutoShiftSpeed.floatValue = 0.25f;
-            _Hue.floatValue = 0f;
-            _Saturation.floatValue = 1f;
-            _Value.floatValue = 0f;
-            _Brightness.floatValue = 1f;
-            _HDR.floatValue = 0f;
-            _Contrast.floatValue = 1f;
-            _Invert.floatValue = 0f;
-            _InvertR.floatValue = 0f;
-            _InvertG.floatValue = 0f;
-            _InvertB.floatValue = 0f;
-            _SaturationR.floatValue = 1f;
-            _SaturationG.floatValue = 1f;
-            _SaturationB.floatValue = 1f;
-            _ClampToggle.floatValue = 0f;
-            _ClampMax.floatValue = 1f;
-            _HueMode.floatValue = 0f;
-            _MonoTint.floatValue = 0f;
-        }
-
-        void ResetShake(){
-            _ShakeUseGlobal.floatValue = 1f;
-            _ShakeMinRange.floatValue = 8f;
-            _ShakeMaxRange.floatValue = 15f;
-            _Amplitude.floatValue = 0f;
-            _ShakeSpeedX.floatValue = 0.5234375f;
-            _ShakeSpeedY.floatValue = 0.78125f;
-            _ShakeSpeedXY.floatValue = 5f;
-        }
-        
-        void ResetDistortion(){
-            _DistortionUseGlobal.floatValue = 1f;
-            _DistortionMinRange.floatValue = 8f;
-            _DistortionMaxRange.floatValue = 15f;
-            _DistortionStr.floatValue = 0.5f;
-            _DistortionSpeed.floatValue = 0f;
-            _DistortionRadius.floatValue = 2f;
-            _DistortionFade.floatValue = 1f;
-            _DistortionP2O.floatValue = 1f;
-        }
-
-        void ResetBlur(){
-            _PixelBlurSamples.floatValue = 43f;
-            _BlurUseGlobal.floatValue = 1f;
-            _BlurMinRange.floatValue = 8f;
-            _BlurMaxRange.floatValue = 15f;
-            _BlurY.floatValue = 0f;
-            _RGBSplit.floatValue = 0f;
-            _DoF.floatValue = 0f;
-            _DoFRadius.floatValue = 2f;
-            _DoFFade.floatValue = 1f;
-            _DoFP2O.floatValue = 1f;
-            _BlurOpacity.floatValue = 1f;
-            _BlurStr.floatValue = 0f;
-            _BlurRadius.floatValue = 1f;
-            _PixelationStr.floatValue = 0f;
-            _RippleGridStr.floatValue = 0f;
-            _BlurSamples.floatValue = 10f;
-            _CrushBlur.floatValue = 0f;
-        }
-
-        void ResetNoise(){
-            _NoiseMode.floatValue = 0f;
-            _Noise.floatValue = 0f;
-            _NoiseRGB.vectorValue = Vector4.zero;
-            _ScanLine.floatValue = 0f;
-            _ScanLineThick.floatValue = 1f;
-            _ScanLineSpeed.floatValue = 1f;
-            _NoiseUseGlobal.floatValue = 1f;
-            _NoiseMinRange.floatValue = 8f;
-            _NoiseMaxRange.floatValue = 15f;
-        }
-        void ResetFog(){
-            _FogUseGlobal.floatValue = 0f;
-            _FogMinRange.floatValue = 15f;
-            _FogMaxRange.floatValue = 20f;
-            _FogColor.colorValue = new Color(0.75f, 0.75f, 0.75f, 1f);
-            _FogRadius.floatValue = 2f;
-            _FogFade.floatValue = 1f;
-            _FogP2O.floatValue = 0f;
-            _FogSafeZone.floatValue = 0f;
-            _FogSafeRadius.floatValue = 4f;
-            _FogSafeMaxRange.floatValue = 6f;
-            _FogSafeOpacity.floatValue = 1f;
-        }
-
-        void ResetZoom(){
-            _ZoomStr.floatValue = 0f;
-            _ZoomStrR.floatValue = 0f;
-            _ZoomStrG.floatValue = 0f;
-            _ZoomStrB.floatValue = 0f;
-            _ZoomUseGlobal.floatValue = 0f;
-            _ZoomMinRange.floatValue = 3f;
-            _ZoomMaxRange.floatValue = 4.5f;
-        }
-
-        void ResetSST(){
-            _SSTBlend.floatValue = 0f;
-            _SSTUseGlobal.floatValue = 1f;
-            _SSTMinRange.floatValue = 8f;
-            _SSTMaxRange.floatValue = 15f;
-            _ScreenTex.textureValue = null;
-            _SSTColor.colorValue = Color.white;
-            _SSTScale.floatValue = 2f;
-            _SSTWidth.floatValue = 1f;
-            _SSTHeight.floatValue = 1f;
-            _SSTLR.floatValue = 0f;
-            _SSTUD.floatValue = 0f;
-            _SSTColumnsX.floatValue = 2f;
-            _SSTRowsY.floatValue = 2f;
-            _SSTAnimationSpeed.floatValue = 60f;
-            _ScrubPos.floatValue = 0f;
-            _ManualScrub.floatValue = 0f;
-        }
-
-        void ResetTriplanar(){
-            _TPUseGlobal.floatValue = 1f;
-            _TPColor.colorValue = Color.white;
-            _TPMinRange.floatValue = 8f;
-            _TPMaxRange.floatValue = 15f;
-            _TPRadius.floatValue = 2f;
-            _TPFade.floatValue = 0.5f;
-            _TPP2O.floatValue = 1f;
-            _TPScroll.vectorValue = new Vector4(0,0,0,0);
-            _TPNoiseScroll.vectorValue = new Vector4(0,0,0,0);
-            _TPThickness.floatValue = 0.4f;
-            _TPNoise.floatValue = 0f;
-            _TPScanFade.floatValue = 0.1f;
-        }
-
-        void ResetOutline(){
-            _AuraSampleCount.floatValue = 43f;
-            _OutlineCol.colorValue = new Color(0,0,0,1);
-            _BackgroundCol.colorValue = new Color(1,1,1,0);
-            _OutlineThresh.floatValue = 100f;
-            _OutlineThiccS.floatValue = 0.49f;
-            _AuraFade.floatValue = 0.5f;
-            _AuraStr.floatValue = 0.25f;
-            _OLUseGlobal.floatValue = 1f;
-            _OLMinRange.floatValue = 8f;
-            _OLMaxRange.floatValue = 15f;
-            _SobelClearInner.floatValue = 1f;
-            _OutlineHueShift.floatValue = 0f;
-            _OutlineHueShiftAuto.floatValue = 0f;
-            _OutlineHueShiftSpeed.floatValue = 1f;
-            _OutlineColAlt.colorValue = Color.white;
-            _OutlineThreshAlt.floatValue = 100f;
-            _OutlineAltEnable.floatValue = 0f;
-            _OutlineCubeToggle.floatValue = 0f;
-            _CubeRotate.vectorValue = new Vector4(180f,0f,0f,0f);
-            _CubeRotateAlt.vectorValue = new Vector4(180f,0f,0f,0f);
-            _CubeRotateBG.vectorValue = new Vector4(180f,0f,0f,0f);
-            _AutoRotate.floatValue = 0f;
-            _AutoRotateAlt.floatValue = 0f;
-            _AutoRotateBG.floatValue = 0f;
-        }
-
-        void ResetAudioLink(){
-            _AudioLinkToggle.floatValue = 0f;
-            _AudioLinkStrength.floatValue = 0f;
-            _AudioLinkMin.floatValue = 0f;
-            _AudioLinkMax.floatValue = 1f;
-            ResetALFiltering();
-            ResetALShake();
-            ResetALDistortion();
-            ResetALBlur();
-            ResetALNoise();
-            ResetALZoom();
-            ResetALSST();
-            ResetALFog();
-            ResetALTriplanar();
-            ResetALOutline();
-            ResetALMisc();
-        }
-
-        void ResetALFiltering(){
-            _AudioLinkFilteringStrength.floatValue = 0f;
-            _AudioLinkFilteringBand.floatValue = 0f;
-            _AudioLinkFilteringMin.floatValue = 0f;
-            _AudioLinkFilteringMax.floatValue = 1f;
-        }
-
-        void ResetALShake(){
-            _AudioLinkShakeStrength.floatValue = 0f;
-            _AudioLinkShakeBand.floatValue = 0f;
-            _AudioLinkShakeMin.floatValue = 0f;
-            _AudioLinkShakeMax.floatValue = 1f;
-        }
-
-        void ResetALDistortion(){
-            _AudioLinkDistortionStrength.floatValue = 0f;
-            _AudioLinkDistortionBand.floatValue = 0f;
-            _AudioLinkDistortionMin.floatValue = 0f;
-            _AudioLinkDistortionMax.floatValue = 1f;
-        }
-
-        void ResetALBlur(){
-            _AudioLinkBlurStrength.floatValue = 0f;
-            _AudioLinkBlurBand.floatValue = 0f;
-            _AudioLinkBlurMin.floatValue = 0f;
-            _AudioLinkBlurMax.floatValue = 1f;
-        }
-
-        void ResetALNoise(){
-            _AudioLinkNoiseStrength.floatValue = 0f;
-            _AudioLinkNoiseBand.floatValue = 0f;
-            _AudioLinkNoiseMin.floatValue = 0f;
-            _AudioLinkNoiseMax.floatValue = 1f;
-        }
-
-        void ResetALZoom(){
-            _AudioLinkZoomStrength.floatValue = 0f;
-            _AudioLinkZoomBand.floatValue = 0f;
-            _AudioLinkZoomMin.floatValue = 0f;
-            _AudioLinkZoomMax.floatValue = 1f;
-        }
-
-        void ResetALSST(){
-            _AudioLinkSSTStrength.floatValue = 0f;
-            _AudioLinkSSTBand.floatValue = 0f;
-            _AudioLinkSSTMin.floatValue = 0f;
-            _AudioLinkSSTMax.floatValue = 1f;
-        }
-
-        void ResetALFog(){
-            _AudioLinkFogOpacity.floatValue = 0f;
-            _AudioLinkFogRadius.floatValue = 0f;
-            _AudioLinkFogBand.floatValue = 0f;
-            _AudioLinkFogMin.floatValue = 0f;
-            _AudioLinkFogMax.floatValue = 1f;
-        }
-
-        void ResetALTriplanar(){
-            _AudioLinkTriplanarOpacity.floatValue = 0f;
-            _AudioLinkTriplanarBand.floatValue = 0f;
-            _AudioLinkTriplanarMin.floatValue = 0f;
-            _AudioLinkTriplanarMax.floatValue = 1f;
-            _AudioLinkTriplanarRadius.floatValue = 0f;
-        }
-
-        void ResetALOutline(){
-            _AudioLinkOutlineStrength.floatValue = 0f;
-            _AudioLinkOutlineBand.floatValue = 0f;
-            _AudioLinkOutlineMin.floatValue = 0f;
-            _AudioLinkOutlineMax.floatValue = 1f;
-        }
-
-        void ResetALMisc(){
-            _AudioLinkMiscStrength.floatValue = 0f;
-            _AudioLinkMiscBand.floatValue = 0f;
-            _AudioLinkMiscMin.floatValue = 0f;
-            _AudioLinkMiscMax.floatValue = 1f;
-        }
-        
-        void ResetExtras(){
-            _Letterbox.floatValue = 0f;
-            _UseZoomFalloff.floatValue = 0f;
-            _LetterboxStr.floatValue = 0f;
-            _Pulse.floatValue = 0f;
-            _PulseColor.floatValue = 0f;
-            _PulseSpeed.floatValue = 1f;
-            _WaveForm.floatValue = 0f;
-            _Shift.floatValue = 0f;
-            _InvertX.floatValue = 0f;
-            _InvertY.floatValue = 0f;
-            _ShiftX.floatValue = 0f;
-            _ShiftY.floatValue = 0f;
-            _RoundingToggle.floatValue = 0f;
-            _Rounding.floatValue = 1f;
-            _RoundingOpacity.floatValue = 1f;
-            _NormalMapFilter.floatValue = 0.74f;
-            _NMFToggle.floatValue = 0f;
-            _NMFOpacity.floatValue = 1f;
-            _DBColor.colorValue = Color.white;
-            _DepthBufferToggle.floatValue = 0f;
-            _SobelFilterColor.colorValue = Color.white;
-            _SobelFilterBackgroundColor.colorValue = new Color(0,0,0,1);
-            _SobelFilterToggle.floatValue = 0f;
-            _SobelFilterOpacity.floatValue = 1f;
         }
     }
 }

@@ -93,7 +93,7 @@ float FadeShadows (float3 worldPos, float2 lmuv, float atten) {
 
 float3 GetSubsurfaceLight(v2f i, InputData id, inout LightingData ld, float3 lightCol, float3 lightDir, float3 viewDir, float3 indirectLight, float atten){
     float3 subsurfaceLight = 0;
-    #if defined(BASE_PASS) && !defined(STANDARD_MOBILE)
+    #if defined(BASE_PASS) && !defined(STANDARD_MOBILE) && !defined(STANDARD_LITE)
         [branch]
         if (_Subsurface == 1){
             ld.thickness = pow(1-SampleTexture(_ThicknessMap, i.uv0.xy), _ThicknessMapPower);
@@ -106,6 +106,12 @@ float3 GetSubsurfaceLight(v2f i, InputData id, inout LightingData ld, float3 lig
         }
     #endif
     return subsurfaceLight;   
+}
+
+float3 DecodeDirectionalLightmap(float3 color, float4 dirTex, float3 normalWorld, float strength){
+    float halfLambert = dot(normalWorld, dirTex.xyz - 0.5) + 0.5;
+    halfLambert /= max(1e-4h, dirTex.w);
+    return color * lerp(1, halfLambert, strength);
 }
 
 float NonlinearSH(float L0, float3 L1, float3 normal) {
@@ -130,7 +136,7 @@ float3 ShadeSHNL(float3 normal) {
 float3 GetSH(v2f i, InputData id){
     [branch]
     if (_UdonLightVolumeEnabled == 1){
-        LightVolumeSH(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+        LightVolumeSH(i.worldPos+i.normal*_LightVolumeBias, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
         return LightVolumeEvaluate(id.normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
     }
     else {
@@ -184,7 +190,7 @@ void GetIndirectLighting(v2f i, InputData id, float3 viewDir, inout float3 indir
                 BakerySHLightmapAndSpecular(indirectCol, i.lightmapUV, lmSpec, id.normal, viewDir, bakeryLMSpecRough);
             #else
                 #if defined(DIRLIGHTMAP_COMBINED)
-                    indirectCol = DecodeDirectionalLightmap(indirectCol, lightmapDir, id.normal);
+                    indirectCol = DecodeDirectionalLightmap(indirectCol, lightmapDir, id.normal, 1.5);
                 #endif
             #endif
 
@@ -206,12 +212,19 @@ void GetIndirectLighting(v2f i, InputData id, float3 viewDir, inout float3 indir
                         #else
                             float4 realtimeDirTex = UNITY_SAMPLE_TEX2D_SAMPLER(unity_DynamicDirectionality, unity_DynamicLightmap, i.lightmapUV.zw);
                         #endif
-                        indirectCol += DecodeDirectionalLightmap(realtimeColor, realtimeDirTex, id.normal);
+                        indirectCol += DecodeDirectionalLightmap(realtimeColor, realtimeDirTex, id.normal, 1.5);
                     #else
                         indirectCol += realtimeColor;
                     #endif
                 }
             #endif
+            
+            [branch]
+            if (_UdonLightVolumeEnabled == 1 && _AdditiveLightVolumesToggle == 1){
+                LightVolumeAdditiveSH(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+                indirectCol += LightVolumeEvaluate(id.normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+            }
+
         #else
             indirectCol = GetRealtimeIndirectLighting(i, id);
         #endif

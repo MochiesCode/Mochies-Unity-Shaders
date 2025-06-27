@@ -10,6 +10,15 @@ namespace Mochie {
         
     public class GlassEditor : ShaderGUI {
 
+        public static Dictionary<Material, Toggles> foldouts = new Dictionary<Material, Toggles>();
+        Toggles toggles = new Toggles(new string[] {
+            "Surface",
+            "Rain",
+            "LTCGI",
+            "AreaLit",
+            "Render Settings"
+        }, 5);
+
         string versionLabel = "v1.9";
 
         // Surface
@@ -97,86 +106,87 @@ namespace Mochie {
             Material mat = (Material)me.target;
             bool isTwoPass = mat.shader.name.Contains("(Two Pass)"); 
 
+            if (!foldouts.ContainsKey(mat))
+                foldouts.Add(mat, toggles);
+
             if (mat.GetInt("_MaterialResetCheck") == 0){
                 mat.SetInt("_MaterialResetCheck", 1);
                 SetKeywords(mat);
                 SetBlendMode(mat);
             }
 
+            MGUI.DoHeader(isTwoPass ? "TWO PASS GLASS" : "GLASS");
+
             EditorGUI.BeginChangeCheck(); {
                 
                 // Surface
-                MGUI.BoldLabel("Surface");
-                MGUI.PropertyGroup(()=>{
-                    MGUI.PropertyGroup(()=>{
-                        me.ShaderProperty(_BlendMode, "Transparency");
-                        if (_BlendMode.floatValue == 0)
-                            me.ShaderProperty(_GrabpassTint, "Grabpass Tint");
-                        me.ShaderProperty(_SpecularityTint, "Specularity Tint");
-                        me.ShaderProperty(_BaseColorTint, "Base Color Tint");
-                    });
-                    MGUI.PropertyGroup(()=>{
-                        me.TexturePropertySingleLine(Tips.baseColorLabel, _BaseColor, _LitBaseColor);
-                        MGUI.TexPropLabel(Tips.litBaseColorText, 100, false);
-                        MGUI.TextureSO(me, _BaseColor, _BaseColor.textureValue);
-                        me.TexturePropertySingleLine(Tips.metallicText, _MetallicMap, _Metallic);
-                        MGUI.TextureSO(me, _MetallicMap, _MetallicMap.textureValue);
-                        me.TexturePropertySingleLine(Tips.roughnessTexLabel, _RoughnessMap, _Roughness);
-                        MGUI.TextureSO(me, _RoughnessMap, _RoughnessMap.textureValue);
-                        me.TexturePropertySingleLine(Tips.occlusionTexLabel, _OcclusionMap, _OcclusionMap.textureValue ? _Occlusion : null);
-                        MGUI.TextureSO(me, _OcclusionMap, _OcclusionMap.textureValue);
-                        me.TexturePropertySingleLine(Tips.normalMapText, _NormalMap, _NormalMap.textureValue ? _NormalStrength : null);
-                        MGUI.TextureSO(me, _NormalMap, _NormalMap.textureValue);
-                    });
-                    if (_BlendMode.floatValue == 0){
+                if (Foldouts.DoFoldout(foldouts, mat, "Surface", Foldouts.Style.Standard)) {
+                    MGUI.PropertyGroupParent(()=>{
                         MGUI.PropertyGroup(()=>{
-                            me.ShaderProperty(_BlurQuality, "Blur Quality");
-                            me.ShaderProperty(_Blur, "Blur Strength");
-                            me.ShaderProperty(_Refraction, Tips.normalRefractionText);
-                            if (!isTwoPass)
-                                MGUI.ToggleFloat(me, Tips.meshRefractionText, _RefractVertexNormal, _RefractionIOR);
+                            me.ShaderProperty(_BlendMode, "Transparency");
+                            if (_BlendMode.floatValue == 0)
+                                me.ShaderProperty(_GrabpassTint, "Grabpass Tint");
+                            me.ShaderProperty(_SpecularityTint, "Specularity Tint");
+                            me.ShaderProperty(_BaseColorTint, "Base Color Tint");
                         });
-                    }
-                    MGUI.SpaceN2();
-                });
-                MGUI.Space10();
+                        MGUI.PropertyGroup(()=>{
+                            me.TexturePropertySingleLine(Tips.baseColorLabel, _BaseColor, _LitBaseColor);
+                            MGUI.TexPropLabel(Tips.litBaseColorText, 100, false);
+                            MGUI.TextureSO(me, _BaseColor, _BaseColor.textureValue);
+                            me.TexturePropertySingleLine(Tips.metallicText, _MetallicMap, _Metallic);
+                            MGUI.TextureSO(me, _MetallicMap, _MetallicMap.textureValue);
+                            me.TexturePropertySingleLine(Tips.roughnessTexLabel, _RoughnessMap, _Roughness);
+                            MGUI.TextureSO(me, _RoughnessMap, _RoughnessMap.textureValue);
+                            me.TexturePropertySingleLine(Tips.occlusionTexLabel, _OcclusionMap, _OcclusionMap.textureValue ? _Occlusion : null);
+                            MGUI.TextureSO(me, _OcclusionMap, _OcclusionMap.textureValue);
+                            me.TexturePropertySingleLine(Tips.normalMapText, _NormalMap, _NormalMap.textureValue ? _NormalStrength : null);
+                            MGUI.TextureSO(me, _NormalMap, _NormalMap.textureValue);
+                        });
+                        if (_BlendMode.floatValue == 0){
+                            MGUI.PropertyGroup(()=>{
+                                me.ShaderProperty(_BlurQuality, "Blur Quality");
+                                me.ShaderProperty(_Blur, "Blur Strength");
+                                me.ShaderProperty(_Refraction, Tips.normalRefractionText);
+                                if (!isTwoPass)
+                                    MGUI.ToggleFloat(me, Tips.meshRefractionText, _RefractVertexNormal, _RefractionIOR);
+                            });
+                        }
+                    });
+                }
 
                 // Rain
-                MGUI.BoldLabel("Rain");
-                MGUI.PropertyGroup(()=>{
-                    me.ShaderProperty(_RainMode, Tips.rainModeText);
-                    if (_RainMode.floatValue == 0 || _RainMode.floatValue == 1){
-                        RainDroplets(me);
-                    }
-                    else if (_RainMode.floatValue == 2){
-                        RainRipples(me);
-                    }
-                    else if (_RainMode.floatValue == 3){
-                        MGUI.BoldLabel("Droplets");
-                        RainDroplets(me);
-                        MGUI.BoldLabel("Ripples");
-                        RainRipples(me);
-                        MGUI.BoldLabel("Both");
-                        RainBoth(me);
-                    }
-                    MGUI.SpaceN2();
-                });
-                MGUI.Space10();
+                if (Foldouts.DoFoldout(foldouts, mat, me, _RainMode, "Rain", Foldouts.Style.StandardToggle)) {
+                    MGUI.PropertyGroupParent(()=>{
+                        if (_RainMode.floatValue == 0 || _RainMode.floatValue == 1){
+                            RainDroplets(me);
+                        }
+                        else if (_RainMode.floatValue == 2){
+                            RainRipples(me);
+                        }
+                        else if (_RainMode.floatValue == 3){
+                            MGUI.BoldLabel("Droplets");
+                            RainDroplets(me);
+                            MGUI.BoldLabel("Ripples");
+                            RainRipples(me);
+                            MGUI.BoldLabel("Both");
+                            RainBoth(me);
+                        }
+                    });
+                }
 
                 // LTCGI
                 if (Shader.Find("LTCGI/Blur Prefilter") != null){
-                    MGUI.ShaderPropertyBold(me, _LTCGI, "LTCGI");
-                    MGUI.PropertyGroup(()=>{
-                        MGUI.ToggleGroup(_LTCGI.floatValue == 0);
-                        MGUI.PropertyGroup(()=>{
-                            me.ShaderProperty(_LTCGIStrength, "Strength");
-                            me.ShaderProperty(_LTCGIRoughness, "Roughness Multiplier");
-                            me.ShaderProperty(_LTCGI_SpecularColor, "Tint");
+                    if (Foldouts.DoFoldout(foldouts, mat, me, _LTCGI, "LTCGI", Foldouts.Style.StandardToggle)) {
+                        MGUI.PropertyGroupParent(()=>{
+                            MGUI.ToggleGroup(_LTCGI.floatValue == 0);
+                            MGUI.PropertyGroup(()=>{
+                                me.ShaderProperty(_LTCGIStrength, "Strength");
+                                me.ShaderProperty(_LTCGIRoughness, "Roughness Multiplier");
+                                me.ShaderProperty(_LTCGI_SpecularColor, "Tint");
+                            });
+                            MGUI.ToggleGroupEnd();
                         });
-                        MGUI.ToggleGroupEnd();
-                        MGUI.SpaceN2();
-                    });
-                    MGUI.Space10();
+                    }
                 }
                 else {
                     _LTCGI.floatValue = 0;
@@ -186,68 +196,67 @@ namespace Mochie {
 
                 // AreaLit
                 if (Shader.Find("AreaLit/Standard") != null){
-                    MGUI.ShaderPropertyBold(me, _AreaLitToggle, "AreaLit");
-                    MGUI.PropertyGroup(()=>{
-                        MGUI.ToggleGroup(_AreaLitToggle.floatValue == 0);
-                        MGUI.PropertyGroup(()=>{
-                            me.TexturePropertySingleLine(Tips.maskText, _AreaLitMask);
-                            MGUI.TextureSO(me, _AreaLitMask, _AreaLitMask.textureValue);
-                            me.ShaderProperty(_AreaLitStrength, "Strength");
-                            me.ShaderProperty(_AreaLitRoughnessMult, "Roughness Multiplier");
-                            me.ShaderProperty(_OpaqueLights, Tips.opaqueLightsText);
+                    if (Foldouts.DoFoldout(foldouts, mat, me, _AreaLitToggle, "AreaLit", Foldouts.Style.StandardToggle)) {
+                        MGUI.PropertyGroupParent(()=>{
+                            MGUI.ToggleGroup(_AreaLitToggle.floatValue == 0);
+                            MGUI.PropertyGroup(()=>{
+                                me.TexturePropertySingleLine(Tips.maskText, _AreaLitMask);
+                                MGUI.TextureSO(me, _AreaLitMask, _AreaLitMask.textureValue);
+                                me.ShaderProperty(_AreaLitStrength, "Strength");
+                                me.ShaderProperty(_AreaLitRoughnessMult, "Roughness Multiplier");
+                                me.ShaderProperty(_OpaqueLights, Tips.opaqueLightsText);
+                            });
+                            MGUI.PropertyGroup(()=>{
+                                var lightMeshText = !_LightMesh.textureValue ? Tips.lightMeshText : new GUIContent(
+                                    Tips.lightMeshText.text + $" (max: {_LightMesh.textureValue.height})", Tips.lightMeshText.tooltip
+                                );
+                                me.TexturePropertySingleLine(lightMeshText, _LightMesh);
+                                me.TexturePropertySingleLine(Tips.lightTex0Text, _LightTex0);
+                                MGUI.CheckTrilinear(_LightTex0.textureValue, me);
+                                me.TexturePropertySingleLine(Tips.lightTex1Text, _LightTex1);
+                                MGUI.CheckTrilinear(_LightTex1.textureValue, me);
+                                me.TexturePropertySingleLine(Tips.lightTex2Text, _LightTex2);
+                                MGUI.CheckTrilinear(_LightTex2.textureValue, me);
+                                me.TexturePropertySingleLine(Tips.lightTex3Text, _LightTex3);
+                                MGUI.CheckTrilinear(_LightTex3.textureValue, me);
+                            });
+                            MGUI.DisplayInfo("Note that the AreaLit package files MUST be inside a folder named AreaLit (case sensitive) directly in the Assets folder (Assets/AreaLit)");
+                            MGUI.ToggleGroupEnd();
                         });
-                        MGUI.PropertyGroup(()=>{
-                            var lightMeshText = !_LightMesh.textureValue ? Tips.lightMeshText : new GUIContent(
-                                Tips.lightMeshText.text + $" (max: {_LightMesh.textureValue.height})", Tips.lightMeshText.tooltip
-                            );
-                            me.TexturePropertySingleLine(lightMeshText, _LightMesh);
-                            me.TexturePropertySingleLine(Tips.lightTex0Text, _LightTex0);
-                            MGUI.CheckTrilinear(_LightTex0.textureValue, me);
-                            me.TexturePropertySingleLine(Tips.lightTex1Text, _LightTex1);
-                            MGUI.CheckTrilinear(_LightTex1.textureValue, me);
-                            me.TexturePropertySingleLine(Tips.lightTex2Text, _LightTex2);
-                            MGUI.CheckTrilinear(_LightTex2.textureValue, me);
-                            me.TexturePropertySingleLine(Tips.lightTex3Text, _LightTex3);
-                            MGUI.CheckTrilinear(_LightTex3.textureValue, me);
-                        });
-                        MGUI.DisplayInfo("Note that the AreaLit package files MUST be inside a folder named AreaLit (case sensitive) directly in the Assets folder (Assets/AreaLit)");
-                        MGUI.ToggleGroupEnd();
-                    });
+                    }
                 }
                 else {
                     _AreaLitToggle.floatValue = 0f;
                     mat.SetInt("_AreaLitToggle", 0);
                     mat.DisableKeyword("_AREALIT_ON");
                 }
-                MGUI.Space10();
 
                 // Render Settings
-                MGUI.BoldLabel("Render Settings");
-                MGUI.PropertyGroup(()=>{
-                    MGUI.PropertyGroup(()=>{
-                        MGUI.ToggleFloat(me, Tips.cubemapReflectionsText, _ReflectionsToggle, _ReflectionStrength);
-                        MGUI.ToggleFloat(me, Tips.specularHighlightsText, _SpecularToggle, _SpecularStrength);
-                        MGUI.ToggleFloat(me, Tips.gsaa, _GSAAToggle, _GSAAStrength);
+                if (Foldouts.DoFoldout(foldouts, mat, "Render Settings", Foldouts.Style.Standard)) {
+                    MGUI.PropertyGroupParent(()=>{
+                        MGUI.PropertyGroup(()=>{
+                            MGUI.ToggleFloat(me, Tips.cubemapReflectionsText, _ReflectionsToggle, _ReflectionStrength);
+                            MGUI.ToggleFloat(me, Tips.specularHighlightsText, _SpecularToggle, _SpecularStrength);
+                            MGUI.ToggleFloat(me, Tips.gsaa, _GSAAToggle, _GSAAStrength);
+                        });
+                        MGUI.PropertyGroup(()=>{
+                            me.ShaderProperty(_SamplingMode, Tips.samplingModeText);
+                            me.ShaderProperty(_TexCoordSpace, Tips.texCoordSpaceText);
+                            if (_TexCoordSpace.floatValue == 1f){
+                                me.ShaderProperty(_TexCoordSpaceSwizzle, Tips.swizzleText);
+                            }
+                            me.ShaderProperty(_GlobalTexCoordScale, "Texture Coordinate Scale");
+                        });
+                        MGUI.PropertyGroup(()=>{
+                            MGUI.SpaceN1();
+                            _QueueOffset.floatValue = (int)_QueueOffset.floatValue;
+                            MGUI.DummyProperty("Render Queue:", mat.renderQueue.ToString());
+                            me.ShaderProperty(_QueueOffset, Tips.queueOffset);
+                            if (!isTwoPass)
+                                me.ShaderProperty(_Culling, "Culling Mode");
+                        });
                     });
-                    MGUI.PropertyGroup(()=>{
-                        me.ShaderProperty(_SamplingMode, Tips.samplingModeText);
-                        me.ShaderProperty(_TexCoordSpace, Tips.texCoordSpaceText);
-                        if (_TexCoordSpace.floatValue == 1f){
-                            me.ShaderProperty(_TexCoordSpaceSwizzle, Tips.swizzleText);
-                        }
-                        me.ShaderProperty(_GlobalTexCoordScale, "Texture Coordinate Scale");
-                    });
-                    MGUI.PropertyGroup(()=>{
-                        MGUI.SpaceN1();
-                        _QueueOffset.floatValue = (int)_QueueOffset.floatValue;
-                        MGUI.DummyProperty("Render Queue:", mat.renderQueue.ToString());
-                        me.ShaderProperty(_QueueOffset, Tips.queueOffset);
-                        if (!isTwoPass)
-                            me.ShaderProperty(_Culling, "Culling Mode");
-                    });
-                    MGUI.SpaceN2();
-                });
-                MGUI.ToggleGroupEnd();
+                }
             }
             if (EditorGUI.EndChangeCheck()){
                 SetKeywords(mat);

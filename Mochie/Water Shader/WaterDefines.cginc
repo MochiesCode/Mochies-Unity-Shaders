@@ -239,6 +239,9 @@ int _VRSSR;
 int _WireframeVisualization;
 float4 _WireframeColor;
 int _CausticsFlipbookBlend;
+float4 _HorizonTint;
+float _HorizonTintDistance;
+float _HorizonTintStrength;
 
 float _Test1, _Test2;
 float _ZeroProp;
@@ -284,6 +287,7 @@ struct v2f {
     #endif
     float3 tangentViewDir : TEXCOORD11;
     float4 uvGrab : TEXCOORD2;
+    float4 depthUV : TEXCOORD20;
 
     #if !defined(META_PASS)
         float3 cameraPos : TEXCOORD16;
@@ -300,8 +304,8 @@ struct v2f {
         #endif
     #endif
 
-    UNITY_FOG_COORDS(20)
-    UNITY_SHADOW_COORDS(21)
+    UNITY_FOG_COORDS(21)
+    UNITY_SHADOW_COORDS(22)
     UNITY_VERTEX_INPUT_INSTANCE_ID 
     UNITY_VERTEX_OUTPUT_STEREO
 };

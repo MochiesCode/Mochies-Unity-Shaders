@@ -64,18 +64,20 @@ float3 GetManualReflections(float3 reflDir, float roughness){
     return DecodeHDR(envSample0, _ReflCube_HDR);
 }
 
-// Unused
-float SampleDepthCorrected(float2 screenUV){
-    float2 texSize = _CameraDepthTexture_TexelSize.xy;
-    float d0 = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, screenUV);
-    float d1 = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, screenUV + float2(1.0, 0.0) * texSize);
-    float d2 = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, screenUV + float2(-1.0, 0.0) * texSize);
-    float d3 = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, screenUV + float2(0.0, 1.0) * texSize);
-    float d4 = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, screenUV + float2(0.0, -1.0) * texSize);
-    return min(d0, min(d1, min(d2, min(d3, d4))));
+float4 GetScreenPosition(float4 positionCS){
+    float4 ndc = positionCS * 0.5f;
+    ndc.xy = float2(ndc.x, ndc.y * _ProjectionParams.x) + ndc.w;
+    ndc.zw = positionCS.zw;
+
+    ndc.xy = TransformStereoScreenSpaceTex(ndc.xy, ndc.w);
+    return ndc;
 }
 
-float GetDepth(v2f i, float2 screenUV){
+float GetDepth(float2 uv){
+    return MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uv).r;
+}
+
+float GetCorrectionDepth(v2f i, float2 screenUV){
     #if UNITY_UV_STARTS_AT_TOP
         if (_CameraDepthTexture_TexelSize.y < 0) {
             screenUV.y = 1 - screenUV.y;
@@ -142,11 +144,11 @@ float3 GerstnerWave(float4 wave, float3 vertex, float speed, float rotation, ino
 // _UVRimMaskScroll("Scrolling", Vector) = (0,0,0,0)
 // _UVRimMaskRotate("Rotation", Float) = 0
 
-float GetHorizonAdjustment(float3 worldPos, float3 normal, float3 cameraPos){
+float GetHorizonAdjustment(float3 worldPos, float3 normal, float3 cameraPos, float distance){
     float3 viewDir = normalize(cameraPos - worldPos);
     float vdn = abs(dot(viewDir, normal));
     float rim = saturate(1-pow(1-vdn, 5));
-    rim = smoothstep(0, 1-_HorizonAdjustmentDistance, rim);
+    rim = smoothstep(0, 1-distance, rim);
     return rim;
 }
 

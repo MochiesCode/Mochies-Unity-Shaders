@@ -34,10 +34,13 @@ void InitializeAudioLink(inout audioLinkData al, float time){
     }
 }
 
-float4 ApplyLayeredTex(v2f i, float4 texCol){
+float4 ApplyLayeredTex(v2f i, float4 texCol, float3 indirectCol){
     float alpha = _BlendMode == 1 ? texCol.a : 1;
     float2 secondTexUV = TRANSFORM_TEX(i.uv0, _SecondTex) + (_Time.y * _SecondTexScroll);
     float4 secondTexCol = tex2D(_SecondTex, secondTexUV) * _SecondColor;
+    #if LIGHTING_ENABLED
+        secondTexCol.rgb *= indirectCol;
+    #endif
     switch (_TexBlendMode){
         case 0: texCol = lerp(secondTexCol*alpha, texCol, texCol.a); break;
         case 1: texCol.rgb += secondTexCol.rgb*alpha; break;
@@ -57,7 +60,14 @@ void ApplyDistortion(inout v2f i, float alpha, audioLinkData al){
     #endif
     float2 duv = i.uv0.xy - (_Time.y*_DistortionSpeed);
     duv *= _NormalMapScale;
-    float2 normal = UnpackNormal(tex2D(_NormalMap, duv)).rg;
+    float4 normalMap = tex2D(_NormalMap, duv);
+    #if FLIPBOOK_BLEND_ENABLED
+        float2 duv2 = i.uv0.zw;
+        duv2 *= _NormalMapScale;
+        float4 normalMap2 = tex2D(_NormalMap, duv2);
+        normalMap = lerp(normalMap, normalMap2, i.animBlend.x);
+    #endif
+    float2 normal = UnpackNormal(normalMap).rg;
     float2 offset = normal * alpha * _DistortionStr * ((i.color.r + i.color.b + i.color.g)/3.0);
     #if FADING_ENABLED
         offset *= fade;
@@ -70,7 +80,6 @@ void ApplyDistortion(inout v2f i, float alpha, audioLinkData al){
         i.uv0.zw += offset;
     #endif
 }
-
 
 float3 GetHSVFilter(float4 col, audioLinkData al){
     float3 baseCol = col;
@@ -103,7 +112,7 @@ void Softening(v2f i, inout float fade){
         fade = saturate((1-_SoftenStr) * (sceneZ-partZ));
 }
 
-float4 GetTexture(v2f i, audioLinkData al){ 
+float4 GetTexture(v2f i, audioLinkData al, float3 indirectCol){ 
 
     #if DISTORTION_ENABLED
         float4 texCol = tex2D(_MainTex, i.uv0.xy);
@@ -111,15 +120,27 @@ float4 GetTexture(v2f i, audioLinkData al){
         #if DISTORTION_UV_ENABLED
             texCol = tex2D(_MainTex, i.uv0.xy);
         #endif
+        #if LIGHTING_ENABLED
+            texCol.rgb *= indirectCol;
+        #endif
         i.uv1.xy /= i.uv1.w;
         float4 grabCol = float4(MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MPSGrab, i.uv1.xy).rgb, texCol.a);
         texCol = lerp(texCol, grabCol*lerp(1,texCol.a,_BlendMode == 1), _DistortionBlend);
     #else
         float4 texCol = tex2D(_MainTex, i.uv0.xy);
+        #if LIGHTING_ENABLED
+            texCol.rgb *= indirectCol;
+        #endif
     #endif
 
     #if FLIPBOOK_BLEND_ENABLED
         float4 blendedTex = tex2D(_MainTex, i.uv0.zw);
+        #if LIGHTING_ENABLED
+            blendedTex.rgb *= indirectCol;
+        #endif
+        #if DISTORTION_ENABLED
+            blendedTex = lerp(blendedTex, grabCol*lerp(1,blendedTex.a,_BlendMode == 1), _DistortionBlend);
+        #endif
         texCol = lerp(texCol, blendedTex, i.animBlend.x);
     #endif
 
@@ -135,7 +156,7 @@ float4 GetTexture(v2f i, audioLinkData al){
     #endif
 
     #if LAYERED_TEX_ENABLED
-        texCol = ApplyLayeredTex(i, texCol);
+        texCol = ApplyLayeredTex(i, texCol, indirectCol);
     #endif
 
     return texCol;
@@ -179,6 +200,37 @@ float GetPulse(){
     return lerp(1, pulse, _PulseStr);
 }
 
+float3 GetIndirectLighting(float3 worldPos, float3 normal){
+    [branch]
+    if (_UdonLightVolumeEnabled == 1){
+        LightVolumeSH(worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+        return LightVolumeEvaluate(normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+    }
+    else {
+        return max(0, ShadeSH9(float4(normal, 1)));
+    }
+}
+
+float3x3 ConstructTBNMatrix(v2f i, float3 normal){
+    float crossSign = (i.tangent.w > 0.0 ? 1.0 : -1.0) * unity_WorldTransformParams.w;
+    float3 binormal = cross(normal, i.tangent.xyz) * crossSign;
+    return float3x3(i.tangent.xyz, binormal, normal);
+}
+
+float3 Unity_SafeNormalize(float3 inVec){
+    float dp3 = max(0.001f, dot(inVec, inVec));
+    return inVec * rsqrt(dp3);
+}
+
+float3 GetNormal(v2f i, float3x3 tbn){
+    float3 normalMap = UnpackScaleNormal(tex2D(_NormalMapLighting, i.uv0.xy), _NormalMapLightingScale);
+    #if FLIPBOOK_BLEND_ENABLED
+        float3 blendedTex = UnpackScaleNormal(tex2D(_NormalMapLighting, i.uv0.zw), _NormalMapLightingScale);
+        normalMap = lerp(normalMap, blendedTex, i.animBlend.x);
+    #endif
+    return Unity_SafeNormalize(mul(normalMap, tbn));
+}
+
 float4 GetColor(v2f i){
 
     #if defined(_FADING_ON) && defined(SOFTPARTICLES_ON)
@@ -194,10 +246,20 @@ float4 GetColor(v2f i){
             _Opacity *= lerp(1, alOpacity, _AudioLinkOpacityStrength * _AudioLinkStrength);
         }
     #endif
+    
+    float3 indirectCol = 1;
+    #if LIGHTING_ENABLED
+        float3 normal = normalize(i.normal);
+        #if NORMALMAP_ENABLED
+            float3x3 tbn = ConstructTBNMatrix(i, normal);
+            normal = GetNormal(i, tbn);
+        #endif
+        indirectCol = GetIndirectLighting(i.worldPos, normal);
+    #endif
 
     i.color.a *= _Opacity;
     float4 col = 1;
-    float4 tex = GetTexture(i, al);
+    float4 tex = GetTexture(i, al, indirectCol);
     float falloff = 1;
     float pulse = 1;
     #if FALLOFF_ENABLED
@@ -236,7 +298,10 @@ float4 GetColor(v2f i){
     #if FILTERING_ENABLED
         col.rgb = GetHSVFilter(col, al);
     #endif
-
+    
+    #if LIGHTING_ENABLED
+        col.rgb *= indirectCol;
+    #endif
     return col;
 }
 

@@ -38,7 +38,7 @@ float3x3 AngleAxis3x3(float angle, float3 axis){
 }
 
 float2 ScaleOffsetScrollUV(float2 uv, float2 scale, float2 offset, float2 scroll){
-    return (uv + offset + (frac(_Time.y * scroll) * 0.1)) * scale;
+    return (uv + offset + (frac(_Time.y * scroll * 0.1))) * scale;
 }
 
 float2 ScaleOffsetUV(float2 uv, float2 scale, float2 offset){
@@ -132,6 +132,22 @@ float4 Pow5 (float4 x){
     return x*x * x*x * x;
 }
 #endif
+
+// By d4rkpl4y3r
+bool IsOutsideClipPlanes(float3 pos, float boundingRadius){
+    // bool insideClipPlanes = true;
+    uint outsideClipPlanes = 0u;
+    [unroll]
+    for (int i = 0; i < 6; i++)
+    {
+        float4 plane = unity_CameraWorldClipPlanes[i];
+        // insideClipPlanes = insideClipPlanes && dot(plane.xyz, pos + plane.xyz * (plane.w + boundingRadius)) > 0;
+        // we can skip the comparison by just or-ing the results as the sign bit is what we want
+        outsideClipPlanes |= asuint(dot(plane.xyz, pos + plane.xyz * (plane.w + boundingRadius)));
+    }
+    // return !insideClipPlanes;
+    return outsideClipPlanes & 0x80000000u;
+}
 
 // ---------------------------
 // Remapping/Interpolation

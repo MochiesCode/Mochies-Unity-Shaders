@@ -10,9 +10,12 @@ Shader "Mochie/Particles" {
         [ToggleUI]_ZWrite("", Int) = 0
         [Enum(UnityEngine.Rendering.CullMode)]_Culling("", Int) = 2
         [ToggleUI]_FlipbookBlending("", Int) = 0
+        [ToggleUI]_LightingToggle("Lighting", Int) = 0
 
         _MainTex("", 2D) = "white" {}
         [HDR]_Color("", Color) = (1,1,1,1)
+        _NormalMapLighting("Normal Map", 2D) = "bump" {}
+        _NormalMapLightingScale("Normal Map Scale", Float) = 1
         [ToggleUI]_Layering("", Int) = 0
         [Enum(Lerp,0, Add,1, Sub,2, Mult,3)]_TexBlendMode("", Int) = 0
         _SecondTex("", 2D) = "white" {}
@@ -117,8 +120,11 @@ Shader "Mochie/Particles" {
             #pragma shader_feature_local _FLIPBOOK_BLENDING_ON
             #pragma shader_feature_local _FADING_ON
             #pragma shader_feature_local _AUDIOLINK_ON
+            #pragma shader_feature_local _LIGHTING_ON
+            #pragma shader_feature_local _NORMALMAP_ON
             #pragma multi_compile _ SOFTPARTICLES_ON
             #pragma multi_compile_instancing
+            #pragma multi_compile_fwdbase
             #include "PSDefines.cginc"
 
             v2f vert (appdata v){
@@ -132,6 +138,10 @@ Shader "Mochie/Particles" {
                 o.uv0 = v.uv0;
                 o.color = v.color;
                 o.projPos = GetProjPos(v.vertex.xyzz, o.pos);
+                o.worldPos = mul(unity_ObjectToWorld, v.vertex);
+                o.normal = UnityObjectToWorldNormal(v.normal);
+                o.tangent.xyz = UnityObjectToWorldDir(v.tangent.xyz);
+                o.tangent.w = v.tangent.w;
 
                 #if FLIPBOOK_BLEND_ENABLED
                     o.animBlend = v.animBlend;

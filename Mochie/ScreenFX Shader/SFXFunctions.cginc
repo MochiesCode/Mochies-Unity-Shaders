@@ -366,7 +366,7 @@ void ApplyPixelBlur(v2f i, inout float3 blurCol, audioLinkData ald){
 
 void ApplyDitherBlur(inout v2f i, audioLinkData ald){
     #if BLUR_DITHER_ENABLED && !CHROM_ABB_ENABLED
-        _BlurStr *= 0.01;
+        _BlurStr *= 0.01 * i.blurF;
         #if AUDIOLINK_ENABLED
             float audioLinkMultiplier = GetAudioLinkBand(ald, _AudioLinkBlurStrength, _AudioLinkBlurBand, _AudioLinkBlurMin, _AudioLinkBlurMax);	
             _BlurStr *= audioLinkMultiplier;

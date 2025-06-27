@@ -3,11 +3,16 @@
 
 #include "../Common/Sampling.cginc"
 #include "PSKeyDefines.cginc"
-#include "UnityCG.cginc"
+#include "UnityStandardUtils.cginc"
+#include "../Common/ThirdParty.cginc"
+#include "AutoLight.cginc"
+
 
 MOCHIE_DECLARE_TEX2D_SCREENSPACE(_CameraDepthTexture);
 float4 _CameraDepthTexture_TexelSize;
 sampler2D _MainTex;
+sampler2D _NormalMapLighting;
+float _NormalMapLightingScale;
 float4 _Color, _SecondColor;
 int _Falloff, _IsCutout, _BlendMode, _Softening, _Pulse, _Waveform, _FlipbookBlending;
 int _FalloffMode;
@@ -55,6 +60,8 @@ struct appdata {
     float4 animBlend : TEXCOORD1;
     float3 center : TEXCOORD2;
     float4 color : COLOR;
+    float4 tangent : TANGENT;
+    float4 normal : NORMAL;
     UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
@@ -77,7 +84,10 @@ struct v2f {
         float pulse : TEXCOORD7;
     #endif
     float4 color : COLOR;
-    UNITY_FOG_COORDS(8)
+    float3 worldPos : TEXCOORD8;
+    float3 normal : TEXCOORD9;
+    float4 tangent : TEXCOORD10;
+    UNITY_FOG_COORDS(11)
     UNITY_VERTEX_INPUT_INSTANCE_ID
     UNITY_VERTEX_OUTPUT_STEREO
 };

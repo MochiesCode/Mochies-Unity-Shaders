@@ -29,9 +29,10 @@ namespace Mochie {
         // Bakery settings
         enum BakeryMode {None, SH, RNM, MonoSH}
         BakeryMode dirMode;
-        bool bicubicSampling = false;
+        bool bicubicSampling = true;
         bool nonLinearSH = false;
         bool lightmapSpecular = false;
+        bool additiveLightVolumes = true;
 
         // Workflow settings
         // enum Workflow {Standard, Packed}
@@ -83,8 +84,8 @@ namespace Mochie {
         static void Init(){
             GlobalStandardSettings window = (GlobalStandardSettings)EditorWindow.GetWindow(typeof(GlobalStandardSettings));
             window.titleContent = new GUIContent("Standard Shader Settings");
-            window.minSize = new Vector2(300, 919);
-            window.maxSize = new Vector2(300, 919);
+            window.minSize = new Vector2(300, 939);
+            window.maxSize = new Vector2(300, 939);
             window.Show();
         }
 
@@ -202,6 +203,7 @@ namespace Mochie {
                 bicubicSampling = EditorGUILayout.Toggle("Bicubic Sampling", bicubicSampling);
                 nonLinearSH = EditorGUILayout.Toggle("Non-Linear SH", nonLinearSH);
                 lightmapSpecular = EditorGUILayout.Toggle("Lightmap Specular", lightmapSpecular);
+                additiveLightVolumes = EditorGUILayout.Toggle("Additive Light Volumes", additiveLightVolumes);
             });
             if (MGUI.SimpleButton("Apply", buttonWidth, 0f)){
                 ApplyBakerySettings();
@@ -333,6 +335,9 @@ namespace Mochie {
                 // Lightmapped Specular
                 m.SetInt("_BAKERY_LMSPEC", lightmapSpecular ? 1 : 0);
                 MGUI.SetKeyword(m, "BAKERY_LMSPEC", lightmapSpecular);
+
+                // Additive light volumes
+                m.SetInt("_AdditiveLightVolumesToggle", additiveLightVolumes ? 1 : 0);
             }
         }
 

@@ -8,7 +8,7 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
     float3 viewDir, tangentViewDir;
     float3x3 tangentToWorld = ConstructTBNMatrix(i, isFrontFace);
     CalculateViewDirection(i, tangentToWorld, viewDir, tangentViewDir);
-    ApplyParallaxHeight(i, viewDir, tangentViewDir, i.normal, isFrontFace);
+    ApplyParallaxHeight(i, viewDir, tangentViewDir, isFrontFace);
     
     // For triplanar
     // Easier to just make these global instead of making a struct and passing them around

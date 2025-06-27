@@ -65,6 +65,8 @@ float _NormalStrength;
 float _HeightStrength;
 float _HeightOffset;
 float _HeightSteps;
+float _MaxHeightSteps;
+float _MinHeightSteps;
 
 int _SampleMetallic;
 int _SampleOcclusion;
@@ -300,7 +302,9 @@ int _UnityFogToggle;
 int _VertexBaseColor;
 int _BAKERY_SHNONLINEAR;
 int _FlipBackfaceNormals;
+int _AdditiveLightVolumesToggle;
 float _BakeryLMSpecStrength;
+float _LightVolumeBias;
 
 // Debug Toggles
 int _MaterialDebugMode;

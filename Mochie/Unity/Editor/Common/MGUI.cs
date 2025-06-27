@@ -120,6 +120,21 @@ namespace Mochie {
             }
         }
         
+        public static void DoHeader(string header){
+            Rect headerRect = EditorGUILayout.GetControlRect();
+            headerRect.x -= 10f;
+            GUIStyle formatting = new GUIStyle();
+            formatting.fontSize = 24;
+            formatting.font = (Font)Resources.Load("Header_Font", typeof(Font));
+            if (EditorGUIUtility.isProSkin){
+                Color proCol = new Color(0.8f, 0.8f, 0.8f, 1);
+                formatting.normal.textColor = proCol;
+                formatting.hover.textColor = proCol;
+            }
+            GUI.Label(headerRect, header, formatting);
+            GUILayout.Space(16);
+        }
+
         public static void DoFooter(string versionLabel){
             GUILayout.Space(20);
             float buttonSize = 35f;
@@ -150,18 +165,22 @@ namespace Mochie {
 
         public static void DisplayError(string message){
             EditorGUILayout.HelpBox(message, MessageType.Error);
+            Space2();
         }
 
         public static void DisplayWarning(string message){
             EditorGUILayout.HelpBox(message, MessageType.Warning);
+            Space2();
         }
 
         public static void DisplayInfo(string message){
             EditorGUILayout.HelpBox(message, MessageType.Info);
+            Space2();
         }
         
         public static void DisplayText(string message){
             EditorGUILayout.HelpBox(message, MessageType.None);
+            Space2();
         }
 
         public static void DummyProperty(string label, string property){
@@ -208,6 +227,13 @@ namespace Mochie {
             buttonRect.width = width;
             buttonRect.x += xPos;
             return GUI.Button(buttonRect, tex);
+        }
+
+        public static bool SimpleButton(GUIContent content, float width, float xPos){
+            Rect buttonRect = EditorGUILayout.GetControlRect();
+            buttonRect.width = width;
+            buttonRect.x += xPos;
+            return GUI.Button(buttonRect, content);
         }
 
         public static bool PropertyButton(String label){
@@ -853,12 +879,11 @@ namespace Mochie {
         }
 
         public static void PropertyGroup(Action action){
+            Space1();
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-            Space1();
             action();
-            Space1();
             EditorGUILayout.EndVertical();
-            Space2();
+            Space1();
         }
 
         public static void PropertyGroup(bool shouldDisplay, Action action){
@@ -872,15 +897,12 @@ namespace Mochie {
             }
         }
 
-        public static void PropertyGroupLayer(Action action){
-            Color col = GUI.backgroundColor;
-            GUI.backgroundColor = new Color(col.r * 0.3f, col.g * 0.3f, col.b * 0.3f);
+        public static void PropertyGroupParent(Action action){
+            Space6();
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-            GUI.backgroundColor = col;
-            Space4();
             action();
-            Space4();
             EditorGUILayout.EndVertical();
+            Space6();
         }
 
         // Replace invalid windows characters with underscores
@@ -994,7 +1016,8 @@ namespace Mochie {
         public static void SpaceN24(){ GUILayout.Space(-24); }
         public static void SpaceN22(){ GUILayout.Space(-22); }
         public static void SpaceN20(){ GUILayout.Space(-20); }
-        public static void SpaceN18(){ GUILayout.Space(-18); }
+        public static void SpaceN19(){ GUILayout.Space(-19); }
+        public static void SpaceN18() { GUILayout.Space(-18); }
         public static void SpaceN16(){ GUILayout.Space(-16); }
         public static void SpaceN14(){ GUILayout.Space(-14); }
         public static void SpaceN12(){ GUILayout.Space(-12); }

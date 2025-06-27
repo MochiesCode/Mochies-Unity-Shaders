@@ -214,7 +214,7 @@ Material:
     - _DetailTextureMode: 0
     - _DistortionStrength: 0.5
     - _DstBlend: 0
-    - _EdgeFadeOffset: 0.5
+    - _EdgeFadeOffset: 1
     - _EdgeFadePower: 300
     - _EdgeFadeSSR: 0.1
     - _EdgeFadeToggle: 1
@@ -256,7 +256,7 @@ Material:
     - _LTCGI: 0
     - _LTCGIRoughness: 1
     - _LTCGIStrength: 1
-    - _LightmapDistortion: 1
+    - _LightmapDistortion: 0.1
     - _MaterialResetCheck: 1
     - _Metallic: 0
     - _MirrorNormalOffsetSwizzle: 1

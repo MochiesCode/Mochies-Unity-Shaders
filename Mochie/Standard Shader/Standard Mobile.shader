@@ -33,7 +33,9 @@ Shader "Mochie/Standard Mobile" {
         _HeightStrength("Height Strength", Range(0,0.2)) = 0.02
         _HeightOffset("Height Offset", Range(-1, 1)) = 0
         [IntRange]_HeightSteps("Height Steps", Range(1,16)) = 8
-
+        [IntRange]_MaxHeightSteps("Max Height Steps", Range(16,64)) = 16
+        [IntRange]_MinHeightSteps("Min Height Steps", Range(8, 16)) = 8
+        
         _PackedMap("Packed Map", 2D) = "white" {}
         [Enum(Off,0, On,1)]_PackedHeight("Packed Height", Int) = 0
         _PackedRoughnessStrength("Packed Roughness Strength", Range(0,1)) = 1
@@ -268,6 +270,8 @@ Shader "Mochie/Standard Mobile" {
         [ToggleUI]_ApplyHeightOffset("Apply Height Offset", Int) = 0
         [Enum(None, 0, SH, 1, RNM, 2, MONOSH, 3)] _BakeryMode ("Bakery Mode", Int) = 0
         [ToggleUI]_IgnoreRealtimeGI("Ignore Realtime GI", Int) = 0
+        [ToggleUI]_AdditiveLightVolumesToggle("Additive Light Volumes", Int) = 1
+        _LightVolumeBias("Light Volume Bias", Float) = 0
         _RNM0("RNM0", 2D) = "black" {}
         _RNM1("RNM1", 2D) = "black" {}
         _RNM2("RNM2", 2D) = "black" {}

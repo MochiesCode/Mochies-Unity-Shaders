@@ -48,7 +48,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
     }
 
     if (_HorizonAdjustment > 0){
-        float adjustment = GetHorizonAdjustment(i.worldPos, i.normal, i.cameraPos);
+        float adjustment = GetHorizonAdjustment(i.worldPos, i.normal, i.cameraPos, _HorizonAdjustmentDistance);
         adjustment = lerp(1, adjustment, _HorizonAdjustment);
         _NormalStr0 *= adjustment; 
         _NormalStr1 *= adjustment;
@@ -57,6 +57,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
         _NormalMapFlipbookStrength *= adjustment;
     }
 
+    
     #if VERT_OFFSET_ENABLED
         i.wave.y = saturate(i.wave.y);
     #endif
@@ -238,7 +239,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
     #if DEPTH_EFFECTS_ENABLED
         if (!IsInMirror()){
             screenUV = AlignWithGrabTexel((i.uvGrab.xy + uvOffset) / proj);
-            if (GetDepth(i, screenUV) < 0){
+            if (GetCorrectionDepth(i, screenUV) < 0){
                 screenUV = AlignWithGrabTexel(i.uvGrab.xy / proj);
             }
         }
@@ -250,16 +251,26 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
     float2 baseUV = i.uvGrab.xy/proj;
     float2 mainTexUV = TRANSFORM_TEX(i.uv, _MainTex) + _Time.y * 0.1 * _MainTexScroll;
     mainTexUV += normalMap.xy * _BaseColorDistortionStrength;
+
+    float horizonAdjustmentTint = 1-GetHorizonAdjustment(i.worldPos, i.normal, i.cameraPos, _HorizonTintDistance);
+    // float dist = distance(i.cameraPos, i.worldPos);
+    // float factor = smoothstep(0, _HorizonTintDistance, dist);
+    // float horizonAdjustmentTint = saturate(factor*0.5);
     float4 surfaceTint = 0;
     #if TRANSPARENCY_OPAQUE || TRANSPARENCY_PREMUL
+        float4 nonGrabColWithHorizonTint = lerp(_NonGrabColor, _HorizonTint, horizonAdjustmentTint);
+        _NonGrabColor = lerp(_NonGrabColor, nonGrabColWithHorizonTint, _HorizonTintStrength);
         surfaceTint = _NonGrabColor;
         if (!isFrontFace)
             surfaceTint = _NonGrabBackfaceTint;
     #else
+        float4 colWithHorizonTint = lerp(_Color, _HorizonTint, horizonAdjustmentTint);
+        _Color = lerp(_Color, colWithHorizonTint, _HorizonTintStrength);
         surfaceTint = _Color;
         if (!isFrontFace)
             surfaceTint = _BackfaceTint;
     #endif
+
     float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPos);
     if (isFrontFace){
         float NdotVert = abs(dot(earlyNormal, viewDir));
@@ -281,14 +292,18 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
     #if TRANSPARENCY_GRABPASS
         float4 baseCol = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MWGrab, baseUV);
         float4 col = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MWGrab, screenUV) * mainTex;
-        float depth = saturate(1-GetDepth(i, screenUV));
-        float rawDepth = saturate(1-GetDepth(i, baseUV));
+        // float sceneZ = LinearEyeDepth(GetDepth(i.depthUV.xy / i.depthUV.w));
+        // float depth = saturate(1-(sceneZ - i.depthUV.z));
+        float depth = saturate(1-GetCorrectionDepth(i, screenUV));
+        float rawDepth = saturate(1-GetCorrectionDepth(i, baseUV));
     #else
         float4 baseCol = mainTex;
         float4 col = mainTex;
         float depth = 1;
         float rawDepth = 1;
     #endif
+
+    float3 returnCaustFade = 0;
 
     #if DEPTH_EFFECTS_ENABLED
         #if CAUSTICS_ENABLED
@@ -337,7 +352,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
                         float2 causticsUV = (depthUV + uvOffset) * _CausticsScale;
                         float causticsR = tex2DflipbookSmooth(_CausticsTexArray, sampler_FlowMap, causticsUV * 0.35, _CausticsFlipbookSpeed).r;
                         float causticsG = tex2DflipbookSmooth(_CausticsTexArray, sampler_FlowMap, causticsUV * 0.35, _CausticsFlipbookSpeed + (0.0005 * _CausticsFlipbookDisp)).g;
-                        float causticsB = tex2DflipbookSmooth(_CausticsTexArray, sampler_FlowMap, causticsUV * 0.35, _CausticsFlipbookSpeed + (0.0005 * _CausticsFlipbookDisp * 1.5)).b;
+                        float causticsB = tex2DflipbookSmooth(_CausticsTexArray, sampler_FlowMap, causticsUV * 0.35, _CausticsFlipbookSpeed + (0.00075 * _CausticsFlipbookDisp)).b;
                         caustics = float3(causticsR, causticsG, causticsB);
                         caustics = caustics * _CausticsColor * caustFade * surfaceTint;
                         if (_CausticsFlipbookBlend == 1){
@@ -347,6 +362,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
                             caustics = smootherstep(0.15, 1, caustics);
                             col.rgb += caustics * _CausticsOpacity;
                         }
+                        returnCaustFade = float3(depthUV,0);
                     #endif
                     // topFade = 1-saturate(pow(caustDepth, _CausticsSurfaceFade) * 2);
 
@@ -603,28 +619,6 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
             }
         #endif
     #endif
-
-    #if !(TRANSPARENCY_OPAQUE)
-        float2 opacityUV = ScaleOffsetScrollUV(i.uv, _OpacityMask_ST.xy, _OpacityMask_ST.zw, _OpacityMaskScroll);
-        _Opacity *= MOCHIE_SAMPLE_TEX2D_SAMPLER(_OpacityMask, sampler_FlowMap, opacityUV);
-    #endif
-
-    #if defined(UNITY_PASS_FORWARDADD)
-        #if DEPTH_EFFECTS_ENABLED
-            #if EDGEFADE_ENABLED
-                col = lerp(0, col, edgeFadeDepth);
-            #endif
-        #endif
-        col.rgb *= _LightColor0 * atten;
-        col = lerp(0, col, _Opacity);
-    #else
-        #if DEPTH_EFFECTS_ENABLED
-            #if EDGEFADE_ENABLED
-                col = lerp(baseCol, col, edgeFadeDepth);
-            #endif
-        #endif
-        col = lerp(baseCol, col, _Opacity);
-    #endif
     
     #if TRANSPARENCY_OPAQUE
         col.rgb *= lerp(1, atten, _ShadowStrength);
@@ -648,13 +642,13 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
     i.lightmapUV.xy += normalMap.xy * _LightmapDistortion * 0.05;
     i.lightmapUV.zw += normalMap.xy * _LightmapDistortion * 0.05;
     GetIndirectLighting(indirectCol, lmSpec, i.lightmapUV, normalDir, normalMap, i.worldPos, viewDir, i.tangentViewDir, indirectRough, atten);
-    #if DEPTH_EFFECTS_ENABLED
-        #if EDGEFADE_ENABLED
-            float indirectEdgeFade = linearstep(0, 0.5, edgeFadeDepth);
-            indirectCol = lerp(1, indirectCol, indirectEdgeFade);
-            lmSpec *= indirectEdgeFade;
-        #endif
-    #endif
+    // #if DEPTH_EFFECTS_ENABLED
+    //     #if EDGEFADE_ENABLED
+    //         float indirectEdgeFade = linearstep(0, 0.5, edgeFadeDepth);
+    //         indirectCol = lerp(1, indirectCol, indirectEdgeFade);
+    //         lmSpec *= indirectEdgeFade;
+    //     #endif
+    // #endif
     #if PBR_ENABLED
         lmSpec *= reflAdjust * specularTint * _BakeryLMSpecStrength * lerp(20, 0.5, metallic);
     #else
@@ -710,7 +704,29 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
     #if TRANSPARENCY_OPAQUE
         col.a = 1;
     #endif
-    
+
+    #if !(TRANSPARENCY_OPAQUE)
+        float2 opacityUV = ScaleOffsetScrollUV(i.uv, _OpacityMask_ST.xy, _OpacityMask_ST.zw, _OpacityMaskScroll);
+        _Opacity *= MOCHIE_SAMPLE_TEX2D_SAMPLER(_OpacityMask, sampler_FlowMap, opacityUV);
+    #endif
+
+    #if defined(UNITY_PASS_FORWARDADD)
+        #if DEPTH_EFFECTS_ENABLED
+            #if EDGEFADE_ENABLED
+                col = lerp(0, col, edgeFadeDepth);
+            #endif
+        #endif
+        col.rgb *= _LightColor0 * atten;
+        col = lerp(0, col, _Opacity);
+    #else
+        #if DEPTH_EFFECTS_ENABLED
+            #if EDGEFADE_ENABLED
+                col = lerp(baseCol, col, edgeFadeDepth);
+            #endif
+        #endif
+        col = lerp(baseCol, col, _Opacity);
+    #endif
+
     UNITY_APPLY_FOG(i.fogCoord, col);
     
     // #ifdef TESSELLATION_VARIANT
@@ -724,6 +740,8 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
     //         col.rgb = lerp(_WireframeColor, col.rgb, minBary);
     //     }
     // #endif
+
+    // return float4(returnCaustFade, 1) + flowMap;
 
     return col + flowMap;
 }

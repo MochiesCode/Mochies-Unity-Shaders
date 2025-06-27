@@ -66,19 +66,22 @@ float2 GetParallaxOffset(Texture2D heightMap, float2 uvs, float3 normalWorld, fl
 }
 
 // Catlike Coding POM
-float2 GetParallaxOffset(v2f i, Texture2D heightMap, float2 uv, float3 tangentViewDir, float strength, int channel){
+float2 GetParallaxOffset(Texture2D heightMap, float2 uv, float3 tangentViewDir, float strength, int channel){
     float2 uvOffset = 0;
-    float2 prevUVOffset = 0;
+    // int numSteps = lerp(_MaxHeightSteps, _MinHeightSteps, saturate(tangentViewDir.z));
     float stepSize = 1.0/_HeightSteps;
-    float stepHeight = 1;
     tangentViewDir.xy = Rotate2DCentered(tangentViewDir.xy, _UVMainRotation);
     float2 uvDelta = tangentViewDir.xy * stepSize * strength;
-    float prevStepHeight = stepHeight;
+    
+    float stepHeight = 1;
     float surfaceHeight = SampleTexture(heightMap, uv)[channel];
     surfaceHeight = clamp(surfaceHeight, 0, 0.999);
     initialSurfaceHeight = surfaceHeight;
-    float prevSurfaceHeight = surfaceHeight;
 
+    float2 prevUVOffset = uvOffset;
+    float prevStepHeight = stepHeight;
+    float prevSurfaceHeight = surfaceHeight;
+    
     [unroll(16)]
     for (int j = 1; j <= _HeightSteps && stepHeight > surfaceHeight; j++){
         prevUVOffset = uvOffset;
@@ -110,7 +113,7 @@ float2 GetParallaxOffset(v2f i, Texture2D heightMap, float2 uv, float3 tangentVi
     return uvOffset;
 }
 
-void ApplyParallaxHeight(inout v2f i, float3 viewDir, float3 tangentViewDir, float3 vertexNormal, bool isFrontFace){
+void ApplyParallaxHeight(inout v2f i, float3 viewDir, float3 tangentViewDir, bool isFrontFace){
     #if defined(_PARALLAX_ON)
         if (isFrontFace){
             float mask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_HeightMask, sampler_DefaultSampler, i.uv1.zw)[_HeightMaskChannel];
@@ -118,16 +121,16 @@ void ApplyParallaxHeight(inout v2f i, float3 viewDir, float3 tangentViewDir, flo
 
             // Catlike Coding POM
             #if defined(_WORKFLOW_PACKED_ON)
-                parallaxOffset = GetParallaxOffset(i, _PackedMap, i.uv0.xy, tangentViewDir, strength, _HeightChannel);
+                parallaxOffset = GetParallaxOffset(_PackedMap, i.uv0.xy, tangentViewDir, strength, _HeightChannel);
             #else
-                parallaxOffset = GetParallaxOffset(i, _HeightMap, i.uv0.xy, tangentViewDir, strength, 1);
+                parallaxOffset = GetParallaxOffset(_HeightMap, i.uv0.xy, tangentViewDir, strength, 1);
             #endif
 
             // Amplify POM
             // #if defined(_WORKFLOW_PACKED_ON)
-            // 	parallaxOffset = GetParallaxOffset(_PackedMap, i.uv0.xy, vertexNormal, viewDir, tangentViewDir, strength, 8, 16, _HeightChannel);
+            // 	parallaxOffset = GetParallaxOffset(_PackedMap, i.uv0.xy, i.normal, viewDir, tangentViewDir, strength, 8, 16, _HeightChannel);
             // #else
-            // 	parallaxOffset = GetParallaxOffset(_HeightMap, i.uv0.xy, vertexNormal, viewDir, tangentViewDir, strength, 8, 16, 1);
+            // 	parallaxOffset = GetParallaxOffset(_HeightMap, i.uv0.xy, i.normal, viewDir, tangentViewDir, strength, 8, 16, 1);
             // #endif
 
             i.uv0.xy += parallaxOffset;

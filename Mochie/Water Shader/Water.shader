@@ -7,6 +7,9 @@ Shader "Mochie/Water" {
         _NonGrabColor("Non Grabpass Color", Color) = (0,0,0,0)
         _AngleTint("Angle Tint", Color) = (1,1,1,1)
         _BackfaceTint("Backface Tint", Color) = (1,1,1,1)
+        _HorizonTint("Horizon Tint", Color) = (1,1,1,1)
+        _HorizonTintDistance("Horizon Tint Distance", Range(0,1)) = 0.7
+        _HorizonTintStrength("Horizon Tint Strength", Range(0,1)) = 1
         _NonGrabBackfaceTint("Non Grabpass Backface Tint", Color) = (0,0,0,0)
         _MainTex("Base Color", 2D) = "white" {}
         _MainTexScroll("Scrolling", Vector) = (0,0.1,0,0)
@@ -137,7 +140,7 @@ Shader "Mochie/Water" {
         _CausticsTex("Caustics Texture", 2D) = "black" {}
         _CausticsTexArray("Texture Array", 2DArray) = "black" {}
         _CausticsShadow("Caustics Shadow Tex", 2D) = "white" {}
-        _CausticsShadowStrength("Caustics Shadow Strength", Float) = 1
+        _CausticsShadowStrength("Caustics Shadow Strength", Float) = 0
         _CausticsDisp("Dispersion", Float) = 0.15
         _CausticsFlipbookDisp("Dispersion", Float) = 0.15
         _CausticsDistortion("Distortion", Float) = 0.5
@@ -188,7 +191,7 @@ Shader "Mochie/Water" {
 
         [Toggle(_EDGEFADE_ON)]_EdgeFadeToggle("Enable", Int) = 1
         _EdgeFadePower("Power", Float) = 300
-        _EdgeFadeOffset("Offset", Float) = 0.5
+        _EdgeFadeOffset("Offset", Float) = 1
 
         [Toggle(_RAIN_ON)]_RainToggle("Enable", Int) = 0
         _RippleScale("Ripple Scale", float) = 40
@@ -239,7 +242,7 @@ Shader "Mochie/Water" {
         _IndirectSaturation("Indirect Saturation", Range(0,1)) = 1
         [ToggleUI] _BAKERY_SHNONLINEAR ("Non-Linear SH", Float) = 0
         [ToggleUI]_BicubicSampling("Bicubic Sampling", Int) = 1
-        _LightmapDistortion("Distortion", Float) = 1
+        _LightmapDistortion("Distortion", Float) = 0.1
         [Enum(None, 0, SH, 1, RNM, 2, MONOSH, 3)] _BakeryMode ("Bakery Mode", Int) = 0
         [ToggleUI]_IgnoreRealtimeGI("Ignore Realtime GI", Int) = 0
         _RNM0("RNM0", 2D) = "black" {}
