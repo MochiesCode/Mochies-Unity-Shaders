@@ -689,7 +689,7 @@ namespace Mochie {
 
         #region Specularity
         void DoSpecularity(Material mat, bool isLite){
-            if (Foldouts.DoFoldout(foldouts, mat, "Specularity", Foldouts.Style.Standard)) {
+            if (Foldouts.DoFoldout(foldouts, mat, me, _ShadingModel, "Specularity", Foldouts.Style.StandardToggle)) {
                 MGUI.PropertyGroupParent(()=>{
                     MGUI.PropertyGroup(()=>{
                         MGUI.ToggleFloat(me, Tips.specularHighlightsText, _SpecularHighlightsToggle, _SpecularHighlightStrength);
