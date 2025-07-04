@@ -189,7 +189,7 @@ namespace Mochie {
         MaterialProperty _VertexRotationStatic = null;
         MaterialProperty _VertexRotationAnimated = null;
         MaterialProperty _VertexOffset = null;
-        MaterialProperty _VertexWave = null;
+        // MaterialProperty _VertexWave = null;
 
         // Subsurface Scattering
         MaterialProperty _Subsurface = null;
@@ -695,13 +695,10 @@ namespace Mochie {
                         MGUI.ToggleFloat(me, Tips.specularHighlightsText, _SpecularHighlightsToggle, _SpecularHighlightStrength);
                         MGUI.ToggleFloat(me, Tips.cubemapReflectionsText, _ReflectionsToggle, _ReflectionStrength);
                         MGUI.ToggleFloat(me, Tips.lightVolumeSpecText, _LightVolumeSpecularity, _LightVolumeSpecularityStrength);
-                        if (!isLite)
-                        {
+                        if (!isLite){
                             MGUI.ToggleFloat(me, Tips.ssrText, _SSRToggle, _SSRStrength);
-                            if (_SSRToggle.floatValue == 1)
-                            {
-                                MGUI.PropertyGroup(() =>
-                                {
+                            if (_SSRToggle.floatValue == 1){
+                                MGUI.PropertyGroup(()=>{
                                     me.ShaderProperty(_SSREdgeFade, Tips.ssrEdgeFadeText);
                                     me.ShaderProperty(_SSRHeight, Tips.ssrDepthText);
                                     me.ShaderProperty(_VRSSR, "Enable in VR");
@@ -748,7 +745,7 @@ namespace Mochie {
                         MGUI.Vector3Field(_VertexRotationStatic, "Static Rotation", false);
                         MGUI.Vector3Field(_VertexRotationAnimated, "Animated Rotation", false);
                         MGUI.Vector3Field(_VertexOffset, "Offset", false);
-                        me.ShaderProperty(_VertexWave, "Wave");
+                        // me.ShaderProperty(_VertexWave, "Wave");
                     });
                     MGUI.ToggleGroupEnd();
                 });

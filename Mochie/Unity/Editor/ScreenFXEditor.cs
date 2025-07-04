@@ -1183,7 +1183,7 @@ namespace Mochie {
             MGUI.SetKeyword(mat, "_TRIPLANAR_ON", mat.GetInt("_Triplanar") > 0 && isXVersion);
             MGUI.SetKeyword(mat, "_OUTLINE_ON", mat.GetInt("_OutlineType") > 0 && isXVersion);
             MGUI.SetKeyword(mat, "_NOISE_ON", mat.GetInt("_NoiseMode") == 1);
-            MGUI.SetKeyword(mat, "_AUDIOLINK_ON", mat.GetInt("_AudioLinkToggle") == 2);
+            MGUI.SetKeyword(mat, "_AUDIOLINK_ON", mat.GetInt("_AudioLinkToggle") == 1);
             MGUI.SetKeyword(mat, "_SOBEL_FILTER_ON", mat.GetInt("_SobelFilterToggle") == 1);
 
             mat.SetShaderPassEnabled("Always", zoomEnabled || zoomRGBEnabled || sstEnabled || sstDistEnabled ||  letterboxEnabled);
