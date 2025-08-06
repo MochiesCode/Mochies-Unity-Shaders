@@ -337,6 +337,37 @@ float3 ShadeSHNL(float3 normal) {
     return indirect;
 }
 
+float3 GetSH(float3 worldPos, float3 normal){
+    [branch]
+    if (_UdonLightVolumeEnabled == 1){
+        LightVolumeSH(worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+        return LightVolumeEvaluate(normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+    }
+    else {
+        return 1;
+        // #if defined(BAKERY_SHNONLINEAR)
+        //     return max(0, ShadeSHNL(normal));
+        // #else
+        //     return max(0, ShadeSH9(float4(normal, 1)));
+        // #endif
+    }
+}
+
+float3 GetRealtimeIndirectLighting(float3 worldPos, float3 normal){
+    float3 indirectCol = 0;
+    #if UNITY_LIGHT_PROBE_PROXY_VOLUME
+        if (unity_ProbeVolumeParams.x == 1){
+            indirectCol = max(0, SHEvalLinearL0L1_SampleProbeVolume(float4(normal, 1), worldPos));
+        }
+        else {
+            indirectCol = GetSH(worldPos, normal);
+        }
+    #else
+        indirectCol = GetSH(worldPos, normal);
+    #endif
+    return indirectCol;
+}
+
 void GetIndirectLighting(out float3 indirectCol, out float3 lmSpec, float4 lightmapUV, float3 normal, float3 normalts, float3 worldPos, float3 viewDir, float3 tangentViewDir, float roughness, float atten) {
     indirectCol = 1;
     lmSpec = 0;
@@ -392,26 +423,7 @@ void GetIndirectLighting(out float3 indirectCol, out float3 lmSpec, float4 light
             }
         #endif
     #else
-        // SH too hard to work in, might figure this out later
-        // #if UNITY_LIGHT_PROBE_PROXY_VOLUME
-        //     if (unity_ProbeVolumeParams.x == 1) {
-        //         indirectCol = SHEvalLinearL0L1_SampleProbeVolume(float4(normal, 1), worldPos);
-        //         indirectCol = max(0, indirectCol);
-        //     }
-        //     else {
-        //         [branch]
-        //         if (_BAKERY_SHNONLINEAR == 1)
-        //             indirectCol = max(0, ShadeSHNL(normal));
-        //         else
-        //             indirectCol = max(0, ShadeSH9(float4(normal, 1)));
-        //     }
-        // #else
-        //     [branch]
-        //     if (_BAKERY_SHNONLINEAR == 1)
-        //         indirectCol = max(0, ShadeSHNL(normal));
-        //     else
-        //         indirectCol = max(0, ShadeSH9(float4(normal, 1)));
-        // #endif
+        indirectCol = GetRealtimeIndirectLighting(worldPos, normal);
     #endif
 }
 

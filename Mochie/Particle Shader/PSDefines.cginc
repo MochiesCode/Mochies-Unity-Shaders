@@ -4,7 +4,7 @@
 #include "../Common/Sampling.cginc"
 #include "PSKeyDefines.cginc"
 #include "UnityStandardUtils.cginc"
-#include "../Common/ThirdParty.cginc"
+#include "../Common/LightVolumes.cginc"
 #include "AutoLight.cginc"
 
 

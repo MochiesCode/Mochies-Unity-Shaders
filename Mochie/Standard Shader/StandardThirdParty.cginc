@@ -91,10 +91,7 @@ void CalculateAreaLit(v2f i, InputData id, inout LightingData ld){
 // AUDIOLINK
 //--------------
 
-#if !defined(AUDIOLINK_CGINC_INCLUDED)
-    Texture2D _AudioTexture;
-    SamplerState sampler_AudioTexture;
-#endif
+#include "../Common/AudioLink.cginc"
 int _AudioLinkEmission;
 int _AudioLinkEmissionMeta;
 float _AudioLinkEmissionStrength;
@@ -114,31 +111,15 @@ float GetAudioLinkBand(audioLinkData al, int band){
     return bands[band-1];
 }
 
-void GrabExists(inout audioLinkData al, inout float versionBand, inout float versionTime){
-    float width = 0;
-    float height = 0;
-    _AudioTexture.GetDimensions(width, height);
-    if (width > 64){
-        versionBand = 0.0625;
-        versionTime = 0.25;
-    }
-    al.textureExists = width > 16;
-}
-
-float SampleAudioTexture(float time, float band){
-    return MOCHIE_SAMPLE_TEX2D_LOD(_AudioTexture, float2(time,band),0);
-}
-
 void InitializeAudioLink(inout audioLinkData al, float time){
     float versionBand = 1;
     float versionTime = 1;
-    GrabExists(al, versionBand, versionTime);
+    al.textureExists = AudioLinkIsAvailable();
     if (al.textureExists){
-        time *= versionTime;
-        al.bass = SampleAudioTexture(time, 0.125 * versionBand);
-        al.lowMid = SampleAudioTexture(time, 0.375 * versionBand);
-        al.upperMid = SampleAudioTexture(time, 0.625 * versionBand);
-        al.treble = SampleAudioTexture(time, 0.875 * versionBand);
+        al.bass = AudioLinkData(ALPASS_AUDIOBASS);
+        al.lowMid = AudioLinkData(ALPASS_AUDIOLOWMIDS);
+        al.upperMid = AudioLinkData(ALPASS_AUDIOHIGHMIDS);
+        al.treble = AudioLinkData(ALPASS_AUDIOTREBLE);
     }
 }
 

@@ -14,6 +14,7 @@ float4 _CameraDepthTexture_TexelSize;
 #include "../Common/Color.cginc"
 #include "../Common/Utilities.cginc"
 #include "../Common/Noise.cginc"
+#include "../Common/LightVolumes.cginc"
 
 #define BASE_PASS 						defined(UNITY_PASS_FORWARDBASE)
 #define ADD_PASS 						defined(UNITY_PASS_FORWARDADD)

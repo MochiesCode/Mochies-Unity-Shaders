@@ -57,7 +57,6 @@ float _PixelationStr, _RippleGridStr;
 float _BlurRadius;
 
 // Audio Link
-MOCHIE_DECLARE_TEX2D(_AudioTexture);
 float _AudioLinkStrength;
 float _AudioLinkMin, _AudioLinkMax;
 

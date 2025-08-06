@@ -376,8 +376,9 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
                 float fogDepth0 = saturate(pow(fogDepth, _FogPower*0.5));
                 _FogTint.rgb *= _FogBrightness;
                 _FogTint.rgb *= surfaceTint.rgb;
-                col.rgb = lerp(col.rgb, lerp(_FogTint.rgb, col.rgb, fogDepth), _FogTint.a);
-                col.rgb = lerp(col.rgb, lerp(_FogTint.rgb*0.5, col.rgb, fogDepth0), _FogTint.a);
+                // float3 fogcol = lerp(_FogTint.rgb col.rgb, fogDepth);
+                // col.rgb = lerp(col.rgb, lerp(_FogTint.rgb, col.rgb, fogDepth), _FogTint.a);
+                col.rgb = lerp(col.rgb, lerp(_FogTint.rgb, col.rgb, fogDepth0), _FogTint.a);
 
                 // float fogDepth0 = saturate(pow(depth, _FogPower));
                 // float fogDepth1 = saturate(pow(depth, _FogPower2));

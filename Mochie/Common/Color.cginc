@@ -109,6 +109,10 @@ float3 HueShift(float3 col, float hue, float monoTint){
     return HSVShiftMonoTint(col, hue, 0, 0, monoTint);
 }
 
+float3 HueShift(float3 col, float hue){
+    return HSVShift(col, hue, 0, 0);
+}
+
 // sRGB luminance(Y) values
 const float rY = 0.212655;
 const float gY = 0.715158;

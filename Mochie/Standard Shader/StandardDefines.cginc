@@ -7,7 +7,7 @@
 #include "../Common/Utilities.cginc"
 #include "../Common/Color.cginc"
 #include "../Common/Sampling.cginc"
-#include "../Common/ThirdParty.cginc"
+#include "../Common/LightVolumes.cginc"
 
 #define LTCGI_ENABLED defined(LTCGI)
 #define AREALIT_ENABLED defined(_AREALIT_ON)

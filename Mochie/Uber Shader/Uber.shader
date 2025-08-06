@@ -350,6 +350,7 @@ Shader "Mochie/Uber" {
 
         // IRIDESCENCE
         [ToggleUI]_Iridescence("tog", Int) = 0
+        [Enum(Hue Shift,0, Color Ramp,1)]_IridescenceMode("tog", Int) = 0
         _IridescenceStrength("ra", Range(0,1)) = 1
         _IridescenceHue("ra", Range(0,1)) = 0
         _IridescenceWidth("ra", Range(0,1)) = 0.7
@@ -357,6 +358,7 @@ Shader "Mochie/Uber" {
         _IridescenceMask("tex", 2D) = "white" {}
         _IridescenceCurl("ra", Range(0,1)) = 1
         _IridescenceCurlScale("fl", Float) = 1
+        _IridescenceRamp("tex", 2D) = "white" {}
 
         // NORMALS
         [ToggleUI]_HardenNormals("tog", Int) = 0

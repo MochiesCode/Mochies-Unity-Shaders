@@ -1,6 +1,16 @@
 #ifndef USBRDF_INCLUDED
 #define USBRDF_INCLUDED
 
+float3 FresnelLerp(float3 specCol, float3 grazingTerm, float NdotV){
+    float t = Pow5(1 - NdotV);
+    return lerp(specCol, grazingTerm, t);
+}
+
+float3 FresnelTerm(float3 specCol, float LdotH){
+    float t = Pow5(1 - LdotH);
+    return specCol + (1-specCol) * t;
+}
+
 float GetDetailRough(g2f i, float roughIn){
     float4 detailRough = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailRoughnessMap, sampler_MainTex, i.uv2.xy);
     return BlendScalarsAlpha(roughIn, detailRough, _DetailRoughBlending, detailRough.a);
@@ -100,16 +110,23 @@ void ApplyRefraction(g2f i, lighting l, masks m, inout float3 albedo){
 
 #if SHADING_ENABLED
 
-float GetFresnel(float VdotL, float width, float edge){
-    float rim = pow((1-VdotL), (1-width) * 10);
+float GetFresnel(float NdotV, float width, float edge){
+    float rim = pow((1-NdotV), (1-width) * 10);
     return smoothstep(edge, 1-edge, rim);
 }
 
 void ApplyIridescence(g2f i, lighting l, masks m, inout float3 col, float multiplier){
-    float fresnel = GetFresnel(l.VdotL, _IridescenceWidth, _IridescenceEdge);
-    float shiftMultiplier = multiplier*m.iridescenceMask*_IridescenceStrength;
-    float hue = (fresnel + (_IridescenceHue * fresnel))*shiftMultiplier;
-    col = HSVShift(col, frac(hue),0,0);
+    float3 shiftedCol = col;
+    if (_IridescenceMode == 0){
+        float fresnel = GetFresnel(l.NdotV, _IridescenceWidth, _IridescenceEdge);
+        shiftedCol = HueShift(col, frac(fresnel));
+    }
+    else {
+        float3 rampCol = MOCHIE_SAMPLE_TEX2D(_IridescenceRamp, float2(clamp(1-l.NdotV, 0.0045, 1), 0.5));
+        shiftedCol = col * rampCol;
+    }
+    float strength = multiplier*m.iridescenceMask*_IridescenceStrength;
+    col = lerp(col, shiftedCol, strength);
 }
 
 float GSAARoughness(float3 normal, float roughness){
@@ -211,7 +228,7 @@ float3 GetERimReflections(g2f i, lighting l, float roughness){
 void ApplyERimLighting(g2f i, lighting l, masks m, inout float3 diffuse, float roughness){
     if (m.eRimMask > 0){
         float3 reflCol = GetERimReflections(i, l, roughness);
-        float rim = GetFresnel(l.VdotL, _ERimWidth, _ERimEdge) * m.eRimMask;
+        float rim = GetFresnel(l.NdotV, _ERimWidth, _ERimEdge) * m.eRimMask;
         float3 rimCol = reflCol * _ERimTint.rgb;
         float interpolator = rim*_ERimStr;
         diffuse = BlendColors(diffuse, rimCol, _ERimBlending, interpolator);
@@ -343,17 +360,6 @@ float3 GetSubsurfaceLight(g2f i, lighting l, masks m, float3 albedo, float3 atte
         }
     #endif
     return sss; 
-}
-
-float3 FresnelLerp(float3 specCol, float3 grazingTerm, float NdotV){
-    float t = Pow5(1 - NdotV);
-    return lerp(specCol, grazingTerm, t);
-}
-
-
-float3 FresnelTerm(float3 specCol, float LdotH){
-    float t = Pow5(1 - LdotH);
-    return specCol + (1-specCol) * t;
 }
 
 // Implementation from Google Filament

@@ -7,7 +7,7 @@
 #include "../Common/Color.cginc"
 #include "../Common/Utilities.cginc"
 #include "../Common/Noise.cginc"
-#include "../Common/ThirdParty.cginc"
+#include "../Common/LightVolumes.cginc"
 #include "AutoLight.cginc"
 
 MOCHIE_DECLARE_TEX2D(_MainTex);
@@ -120,6 +120,7 @@ MOCHIE_DECLARE_TEX2D_NOSAMPLER(_IridescenceMask);
 MOCHIE_DECLARE_TEX2D(_EmissionMap);
 MOCHIE_DECLARE_TEX2D(_EmissionMap2);
 MOCHIE_DECLARE_TEX2D(_ShadowRamp);
+MOCHIE_DECLARE_TEX2D(_IridescenceRamp);
 MOCHIE_DECLARE_TEX2D(_NoiseTexSSR);
 MOCHIE_DECLARE_TEX2D(_AudioLinkTriOffsetMask);
 MOCHIE_DECLARE_TEX2D(_AudioLinkWireframeMask);
@@ -233,7 +234,7 @@ int _UsingDetailMetallic;
 int _HueMode;
 int _MonoTint;
 int _LitCubemap;
-float _DetailMetallicStrength;
+
 
 float _RefractionBlurStrength;
 float _IridescenceStrength;
@@ -242,7 +243,9 @@ float _IridescenceWidth;
 float _IridescenceEdge;
 float _IridescenceCurl;
 float _IridescenceCurlScale;
+int _IridescenceMode;
 
+float _DetailMetallicStrength;
 float4 _Color; 
 float4 _CubeColor0, _CubeColor1;
 float4 _MatcapColor, _MatcapColor1;
@@ -345,6 +348,7 @@ float _AudioLinkRemapOutlineMax, _AudioLinkRemapOutlineMin;
 float _MatcapNormal0Str;
 float _MatcapNormal1Str;
 float _ACES;
+float _IridescenceRemapMin, _IridescenceRemapMax;
 
 float3 _VertexRotation;
 float3 _VertexPosition;
@@ -493,8 +497,7 @@ struct lighting {
     float TdotH;
     float BdotH;
     float LdotH;
-    float VdotL;
-    float VVRdotL;
+    float VRNdotV;
     float3 ao;
     float3 sRamp;
     float worldBrightness;

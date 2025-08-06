@@ -105,10 +105,16 @@ namespace Mochie {
         private EditorWindow gradientWindow;
         private Texture2D rampTex;
 
+        private GradientObject iridescenceGradientObj;
+        private SerializedProperty iridescenceColorGradient;
+        private SerializedObject iridescenceSerializedGradient;
+        private EditorWindow iridescenceGradientWindow;
+        private Texture2D iridescenceRampTex;
+
         static readonly int blendingLabelPos = 111;
 
         static readonly string unityFolderPath = "Assets/Mochie/Unity";
-        string versionLabel = "v1.33";
+        string versionLabel = "v1.34";
         // β
         
         MaterialProperty _RenderMode = null; 
@@ -606,7 +612,6 @@ namespace Mochie {
         MaterialProperty _IridescenceStrength = null;
         MaterialProperty _IridescenceWidth = null;
         MaterialProperty _IridescenceEdge = null;
-        MaterialProperty _IridescenceHue = null;
         MaterialProperty _IridescenceMask = null;
         MaterialProperty _RefractionBlur = null;
         MaterialProperty _RefractionBlurStrength = null;
@@ -657,6 +662,8 @@ namespace Mochie {
         MaterialProperty _LitCubemap = null;
         MaterialProperty _LightVolumeSpecularity = null;
         MaterialProperty _LightVolumeSpecularityStrength = null;
+        MaterialProperty _IridescenceMode = null;
+        MaterialProperty _IridescenceRamp = null;
 
         MaterialProperty _VRCFallback = null;
         MaterialProperty _NaNLmao = null;
@@ -683,6 +690,15 @@ namespace Mochie {
                 colorGradient = serializedGradient.FindProperty("gradient");
                 rampTex = new Texture2D(128, 16);
                 GradientToTexture(ref rampTex);
+            }
+
+            // For iridescence ramp gradient editor
+            if (iridescenceGradientObj == null){
+                iridescenceGradientObj = GradientObject.CreateInstance<GradientObject>();
+                iridescenceSerializedGradient = new SerializedObject(iridescenceGradientObj);
+                iridescenceColorGradient = iridescenceSerializedGradient.FindProperty("gradient");
+                iridescenceRampTex = new Texture2D(128, 16);
+                IridescenceGradientToTexture(ref iridescenceRampTex);
             }
 
             // Using this to mercilessly murder verts when necessary (must be 0)
@@ -1391,11 +1407,31 @@ namespace Mochie {
                         MGUI.PropertyGroupParent(()=>{
                             MGUI.ToggleGroup(_Iridescence.floatValue == 0);
                             MGUI.PropertyGroup( () => {
+                                me.ShaderProperty(_IridescenceMode, "Mode");
                                 me.TexturePropertySingleLine(Tips.maskLabel, _IridescenceMask);
+                                if (_IridescenceMode.floatValue == 1){
+                                    me.TexturePropertySingleLine(Tips.shadowRampLabel, _IridescenceRamp);
+                                    GUILayout.Space(-19);
+                                    EditorGUI.BeginChangeCheck();
+                                    EditorGUILayout.PropertyField(iridescenceColorGradient, new GUIContent(" "));
+                                    if (EditorGUI.EndChangeCheck()){
+                                        iridescenceSerializedGradient.ApplyModifiedProperties();
+                                        IridescenceGradientToTexture(ref iridescenceRampTex);
+                                    }
+                                    if (MGUI.SimpleButton("Apply", MGUI.GetPropertyWidth(), EditorGUIUtility.labelWidth)){
+                                        byte[] iridescenceEncodedTex = iridescenceRampTex.EncodeToPNG();
+                                        int iridescenceRampID = UnityEngine.Random.Range(0,10000000);
+                                        string iridescenceRampPath = unityFolderPath+"/Textures/Ramps/Ramp_"+iridescenceRampID+".png";
+                                        MGUI.WriteBytes(iridescenceEncodedTex, iridescenceRampPath);
+                                        AssetDatabase.ImportAsset(iridescenceRampPath);
+                                        _IridescenceRamp.textureValue = (Texture)EditorGUIUtility.Load(iridescenceRampPath);
+                                    }
+                                }
                                 me.ShaderProperty(_IridescenceStrength, "Strength");
-                                me.ShaderProperty(_IridescenceHue, "Hue");
-                                me.ShaderProperty(_IridescenceWidth, "Width");
-                                me.ShaderProperty(_IridescenceEdge, "Sharpness");
+                                if (_IridescenceMode.floatValue == 0){
+                                    me.ShaderProperty(_IridescenceWidth, "Width");
+                                    me.ShaderProperty(_IridescenceEdge, "Sharpness");
+                                }
                             });
                             MGUI.ToggleGroupEnd();
                         });
@@ -1480,6 +1516,7 @@ namespace Mochie {
                         MGUI.ToggleGroupEnd();
                     });
                 };
+                MGUI.ToggleGroupEnd();
                 MGUI.Space6();
             }
                 
@@ -2108,6 +2145,14 @@ namespace Mochie {
         private void GradientToTexture(ref Texture2D tex){
             for (int x = 0; x < tex.width; x++){
                 Color col = gradientObj.gradient.Evaluate((float)x / tex.width);
+                for (int y = 0; y < tex.height; y++) tex.SetPixel(x, y, col);
+            }
+            tex.Apply();
+        }
+
+        private void IridescenceGradientToTexture(ref Texture2D tex){
+            for (int x = 0; x < tex.width; x++){
+                Color col = iridescenceGradientObj.gradient.Evaluate((float)x / tex.width);
                 for (int y = 0; y < tex.height; y++) tex.SetPixel(x, y, col);
             }
             tex.Apply();

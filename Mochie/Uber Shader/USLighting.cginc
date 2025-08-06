@@ -257,10 +257,9 @@ lighting GetLighting(g2f i, masks m, float3 atten, bool frontFace){
 
         l.NdotL = clamp(dot(l.normalDir, l.lightDir), -1, 1);
         l.NdotV = abs(dot(l.normal, l.viewDir));
+        l.VRNdotV = abs(dot(l.normal, l.viewDirVR));
         l.NdotH = Safe_DotClamped(l.normal, l.halfVector);
         l.LdotH = Safe_DotClamped(l.lightDir, l.halfVector);
-        l.VdotL = abs(dot(l.viewDir, l.normal));
-        l.VVRdotL = abs(dot(l.viewDirVR, l.normal));
         #if SPECULAR_ENABLED && !OUTLINE_PASS
             l.TdotH = dot(l.tangent, l.halfVector);
             l.BdotH = dot(l.binormal, l.halfVector);

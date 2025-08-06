@@ -288,11 +288,10 @@ float3 GetEmission(g2f i, masks m, audioLinkData al){
 
 #if SHADING_ENABLED
 float GetRim(lighting l, float width){
-    float rim = GetFresnel(l.VdotL, width, _RimEdge);
+    float rim = GetFresnel(l.NdotV, width, _RimEdge);
     #if AUDIOLINK_ENABLED
         audioLinkData ral = (audioLinkData)0;
-        float VVRdotL = abs(dot(l.viewDirVR, l.normal));
-        InitializeAudioLink(ral, 1-VVRdotL);
+        InitializeAudioLink(ral, 1-l.VRNdotV);
         float pulseValueAL = 1-GetAudioLinkBand(ral, _AudioLinkRimBand, _AudioLinkRemapRimMin, _AudioLinkRemapRimMax);
         float pulseRim = pow((1-pulseValueAL), (1-_AudioLinkRimPulseWidth) * 10);
         pulseRim = smoothstep(_AudioLinkRimPulseSharp, 1-_AudioLinkRimPulseSharp, pulseRim);
