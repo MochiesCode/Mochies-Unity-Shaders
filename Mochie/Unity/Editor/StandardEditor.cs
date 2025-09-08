@@ -26,7 +26,7 @@ namespace Mochie {
             "Debug"
         }, 3);
 
-        string versionLabel = "v2.5";
+        string versionLabel = "v2.6";
 
         // Variant Settings
         MaterialProperty _BlendMode = null;
@@ -149,6 +149,7 @@ namespace Mochie {
         MaterialProperty _UVAlphaMaskSwizzle = null;
         MaterialProperty _UVAlphaMaskScroll = null;
         MaterialProperty _UVAlphaMaskRotation = null;
+        MaterialProperty _AlphaMaskOpacity = null;
 
         MaterialProperty _VertexMask = null;
         MaterialProperty _VertexMaskChannel = null;
@@ -477,7 +478,7 @@ namespace Mochie {
                     MGUI.PropertyGroup(()=>{
                         me.TexturePropertySingleLine(Tips.baseColorText, _MainTex, _Color);
                         if (_BlendMode.floatValue > 0 && _AlphaSource.floatValue == 1 && !isMobile)
-                            me.TexturePropertySingleLine(Tips.alphaMaskLabel, _AlphaMask, _AlphaMask.textureValue ? _AlphaMaskChannel : null);
+                            me.TexturePropertySingleLine(Tips.alphaMaskLabel, _AlphaMask, _AlphaMask.textureValue ? _AlphaMaskOpacity : null, _AlphaMask.textureValue ? _AlphaMaskChannel : null);
                         me.TexturePropertySingleLine(Tips.normalMapText, _NormalMap, _NormalMap.textureValue ? _NormalStrength : null);
                         MGUI.NormalWarning(_NormalMap);
                         if (_PrimaryWorkflow.floatValue == 0){

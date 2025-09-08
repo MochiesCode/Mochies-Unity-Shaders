@@ -142,7 +142,7 @@ Shader "Mochie/Water" {
         _CausticsShadow("Caustics Shadow Tex", 2D) = "white" {}
         _CausticsShadowStrength("Caustics Shadow Strength", Float) = 0
         _CausticsDisp("Dispersion", Float) = 0.15
-        _CausticsFlipbookDisp("Dispersion", Float) = 0.15
+        _CausticsFlipbookDisp("Dispersion", Range(0,1)) = 0.5
         _CausticsDistortion("Distortion", Float) = 0.5
         _CausticsDistortionTex("Distortion Texture", 2D) = "bump" {}
         _CausticsDistortionScale("Distortion Scale", Float) = 0.2

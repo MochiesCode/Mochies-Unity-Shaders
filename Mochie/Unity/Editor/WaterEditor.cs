@@ -38,7 +38,7 @@ namespace Mochie {
                 "Render Settings"
         }, 0);
 
-        string versionLabel = "v1.25";
+        string versionLabel = "v1.26";
 
         MaterialProperty _Color = null;
         MaterialProperty _NonGrabColor = null;

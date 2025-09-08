@@ -351,8 +351,8 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
                     #elif CAUSTICS_FLIPBOOK
                         float2 causticsUV = (depthUV + uvOffset) * _CausticsScale;
                         float causticsR = tex2DflipbookSmooth(_CausticsTexArray, sampler_FlowMap, causticsUV * 0.35, _CausticsFlipbookSpeed).r;
-                        float causticsG = tex2DflipbookSmooth(_CausticsTexArray, sampler_FlowMap, causticsUV * 0.35, _CausticsFlipbookSpeed + (0.0005 * _CausticsFlipbookDisp)).g;
-                        float causticsB = tex2DflipbookSmooth(_CausticsTexArray, sampler_FlowMap, causticsUV * 0.35, _CausticsFlipbookSpeed + (0.00075 * _CausticsFlipbookDisp)).b;
+                        float causticsG = tex2DflipbookSmoothOffset(_CausticsTexArray, sampler_FlowMap, causticsUV * 0.35, _CausticsFlipbookSpeed, _CausticsFlipbookDisp).g;
+                        float causticsB = tex2DflipbookSmoothOffset(_CausticsTexArray, sampler_FlowMap, causticsUV * 0.35, _CausticsFlipbookSpeed, _CausticsFlipbookDisp*2).b;
                         caustics = float3(causticsR, causticsG, causticsB);
                         caustics = caustics * _CausticsColor * caustFade * surfaceTint;
                         if (_CausticsFlipbookBlend == 1){

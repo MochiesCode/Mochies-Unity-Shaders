@@ -37,6 +37,7 @@ int _TriplanarCoordSpace;
 int _ApplyHeightOffset;
 float _Cutoff;
 float _MipMapScale;
+float _AlphaMaskOpacity;
 
 // Base Texture Set
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_MainTex);

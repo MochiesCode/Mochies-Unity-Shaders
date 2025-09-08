@@ -397,6 +397,17 @@ float4 tex2DflipbookSmooth(Texture2DArray flipbook, sampler ss, float2 uv, float
     return lerp(sample1, sample2, frac(_Time[1] * speed));
 }
 
+float4 tex2DflipbookSmoothOffset(Texture2DArray flipbook, sampler ss, float2 uv, float speed, float offset){
+    float width, height;
+    float elements;
+    flipbook.GetDimensions(width, height, elements);
+    float frame = fmod(_Time[1] * speed  + offset, elements);
+    float frame2 = fmod(ceil(frame), elements);
+    float4 sample1 = flipbook.Sample(ss, float3(uv, floor(frame) ));
+    float4 sample2 = flipbook.Sample(ss, float3(uv, frame2));
+    return lerp(sample1, sample2, frac(frame));
+}
+
 float4 tex2DflipbookSmoothStoch(Texture2DArray flipbook, sampler ss, float2 uv, float speed){
     float width, height;
     uint elements;

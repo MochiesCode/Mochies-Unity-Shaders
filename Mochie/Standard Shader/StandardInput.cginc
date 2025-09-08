@@ -229,7 +229,7 @@ float4 SampleBaseColor(float2 uv, float2 alphaUV){
     float4 baseColor = SampleTexture(_MainTex, uv) * _Color;
     #if !defined(STANDARD_MOBILE)
         if (_AlphaSource == 1)
-            baseColor.a = MOCHIE_SAMPLE_TEX2D_SAMPLER(_AlphaMask, sampler_DefaultSampler, alphaUV)[_AlphaMaskChannel];
+            baseColor.a = MOCHIE_SAMPLE_TEX2D_SAMPLER(_AlphaMask, sampler_DefaultSampler, alphaUV)[_AlphaMaskChannel] * _AlphaMaskOpacity;
     #endif
     #if defined(_ALPHATEST_ON)
         baseColor.a = CutoutAlpha(baseColor.a, lerp(uv, alphaUV, _AlphaSource));

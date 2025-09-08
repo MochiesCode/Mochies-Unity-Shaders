@@ -132,6 +132,7 @@ Shader "Mochie/Standard Lite" {
         [Enum(XY,0, XZ,1, YZ,2)]_UVAlphaMaskSwizzle("Swizzle", Int) = 0
         _UVAlphaMaskScroll("Scroll Speed", Vector) = (0,0,0,0)
         _UVAlphaMaskRotation("Rotation", Float) = 0
+        _AlphaMaskOpacity("Alpha Mask Opacity", Range(0,1)) = 1
         
         _VertexMask("Vertex Mask", 2D) = "white" {}
         [Enum(Red,0, Green,1, Blue,2, Alpha,3)]_VertexMaskChannel("Alpha Mask Channel", Int) = 0
