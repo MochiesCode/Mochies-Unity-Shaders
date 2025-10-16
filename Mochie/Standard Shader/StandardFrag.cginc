@@ -7,7 +7,7 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
     UNITY_APPLY_DITHER_CROSSFADE(i.pos.xy);
 
-    InitializeDefaultSampler(defaultSampler);
+    InitializeDefaultSampler(defaultSampler, defaultDetailSampler);
 
     float3 viewDir, tangentViewDir;
     float3x3 tangentToWorld = ConstructTBNMatrix(i, isFrontFace);
@@ -42,7 +42,8 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
 
     float4 diffuse = id.diffuse;
     diffuse.a = id.alpha;
-    diffuse.r += defaultSampler.r; // Stopping sampler from getting optimized out (this value is imperceptibly small)
+    diffuse.r += defaultSampler.r; // Stopping samplers from getting optimized out (these values are imperceptibly small)
+    diffuse.r += defaultDetailSampler.r;
 
     if (_UnityFogToggle == 1){
         UNITY_APPLY_FOG(i.fogCoord, diffuse);

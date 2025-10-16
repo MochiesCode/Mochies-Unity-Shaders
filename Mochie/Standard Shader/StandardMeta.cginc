@@ -3,7 +3,7 @@
 
 float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
     
-    InitializeDefaultSampler(defaultSampler);
+    InitializeDefaultSampler(defaultSampler, defaultDetailSampler);
     
     float3 viewDir, tangentViewDir;
     float3x3 tangentToWorld = ConstructTBNMatrix(i, isFrontFace);

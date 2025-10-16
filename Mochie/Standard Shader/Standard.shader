@@ -307,6 +307,8 @@ Shader "Mochie/Standard" {
         [ToggleUI]_UnityFogToggle("Unity Fog", Int) = 1
         [ToggleUI]_VertexBaseColor("Vertex Base Color", Int) = 0
         [ToggleUI]_FlipBackfaceNormals("Flip Backface Normals", Int) = 0
+        _DefaultSampler("Primary Wrap/Filter Settings", 2D) = "white" {}
+        _DefaultDetailSampler("Detail Wrap/Filter Settings", 2D) = "white" {}
         
         // Debug Views
         [ToggleUI]_DebugEnable("Enable Debug View", Int) = 0
@@ -330,7 +332,6 @@ Shader "Mochie/Standard" {
         [HideInInspector]_ZTest("__zt", Float) = 4.0
         [HideInInspector]_MaterialResetCheck("Reset Check", Int) = 0
         [HideInInspector]_NoiseTexSSR("SSR Noise Tex", 2D) = "black"
-        [HideInInspector]_DefaultSampler("DO NOT REMOVE THIS", 2D) = "white" {}
         [HideInInspector]_DFG("LUT for Filament SM", 2D) = "white" {}
         [HideInInspector]_AlphaToMask("Alpha Coverage", Int) = 0
         [HideInInspector]_SampleCustomLUT("Sample Custom LUT?", Int) = 0

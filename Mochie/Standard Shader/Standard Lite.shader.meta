@@ -22,9 +22,12 @@ ShaderImporter:
   - _RainMask: {instanceID: 0}
   - _EmissionMask: {instanceID: 0}
   - _AlphaMask: {instanceID: 0}
+  - _VertexMask: {instanceID: 0}
   - _ThicknessMap: {instanceID: 0}
   - _RainSheet: {fileID: 2800000, guid: df89a63673a32f4438fba4fb13f0f640, type: 3}
   - _DropletMask: {fileID: 2800000, guid: 76ae1285472e6ce48a2f01ef7905b8fd, type: 3}
+  - _PuddleTexture: {instanceID: 0}
+  - _ColorGradingLUT: {instanceID: 0}
   - _RNM0: {instanceID: 0}
   - _RNM1: {instanceID: 0}
   - _RNM2: {instanceID: 0}
@@ -36,8 +39,10 @@ ShaderImporter:
   - _AreaLitOcclusion: {instanceID: 0}
   - _LTCGI_mat: {instanceID: 0}
   - _LTCGI_amp: {instanceID: 0}
-  - _NoiseTexSSR: {fileID: 2800000, guid: b7359cc7e3e84444b88656ff6c166220, type: 3}
   - _DefaultSampler: {fileID: 2800000, guid: b5f34bbf55503c942821a982c6756e38, type: 3}
+  - _DefaultDetailSampler: {fileID: 2800000, guid: 5996709f09a27974bb452a386c4c635e,
+      type: 3}
+  - _NoiseTexSSR: {fileID: 2800000, guid: b7359cc7e3e84444b88656ff6c166220, type: 3}
   - _DFG: {fileID: 2800000, guid: a10c95bc318a7a444b0ea3229dd64b50, type: 3}
   nonModifiableTextures: []
   userData: 

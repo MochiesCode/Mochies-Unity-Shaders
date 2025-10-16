@@ -27,6 +27,8 @@
 // Global stuff
 Texture2D _DefaultSampler;
 SamplerState sampler_DefaultSampler;
+Texture2D _DefaultDetailSampler;
+SamplerState sampler_DefaultDetailSampler;
 Texture2D _DFG;
 SamplerState sampler_DFG;
 int _BlendMode;
@@ -325,6 +327,7 @@ int _DebugSpecular;
 
 // Outputs
 float4 defaultSampler;
+float4 defaultDetailSampler;
 float2 parallaxOffset;
 float finalSurfaceHeight;
 float initialSurfaceHeight;

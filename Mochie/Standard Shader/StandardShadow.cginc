@@ -35,7 +35,7 @@ float4 frag (v2f i, UNITY_POSITION(vpos), bool isFrontFace : SV_IsFrontFace) : S
 
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
 
-    InitializeDefaultSampler(defaultSampler);
+    InitializeDefaultSampler(defaultSampler, defaultDetailSampler);
 
     worldVertexPos = i.worldPos;
     worldVertexNormal = i.normal;

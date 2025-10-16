@@ -100,28 +100,26 @@ void ApplyRainNormal(v2f i, inout InputData id){
 }
 
 void CalculatePuddleMask(v2f i, inout InputData id){
-    #if !defined(STANDARD_MOBILE)
-        [branch]
-        if (_PuddleToggle == 1 && id.facingAngle > 0 && id.isFrontFace){
-            float puddleThreshold = smoothstep(0.98 - 0.02, 0.98 + 0.02, id.facingAngle);
-            #if defined(_PARALLAX_ON)
-                [branch]
-                if (_PuddleUseHeightMap == 1){
-                    #if defined(_WORKFLOW_PACKED_ON)
-                        id.puddleMask = (1-MOCHIE_SAMPLE_TEX2D_SAMPLER(_PackedMap, sampler_DefaultSampler, i.uv5.xy)[_HeightChannel]) * _PuddleStrength * puddleThreshold;
-                    #else
-                        id.puddleMask = (1-MOCHIE_SAMPLE_TEX2D_SAMPLER(_HeightMap, sampler_DefaultSampler, i.uv5.xy).g) * _PuddleStrength * puddleThreshold;
-                    #endif
-                }
-                else {
-                    id.puddleMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_PuddleTexture, sampler_DefaultSampler, i.uv5.xy).g * _PuddleStrength * puddleThreshold;
-                }
-            #else
+    [branch]
+    if (_PuddleToggle == 1 && id.facingAngle > 0 && id.isFrontFace){
+        float puddleThreshold = smoothstep(0.98 - 0.02, 0.98 + 0.02, id.facingAngle);
+        #if defined(_PARALLAX_ON)
+            [branch]
+            if (_PuddleUseHeightMap == 1){
+                #if defined(_WORKFLOW_PACKED_ON)
+                    id.puddleMask = (1-MOCHIE_SAMPLE_TEX2D_SAMPLER(_PackedMap, sampler_DefaultSampler, i.uv5.xy)[_HeightChannel]) * _PuddleStrength * puddleThreshold;
+                #else
+                    id.puddleMask = (1-MOCHIE_SAMPLE_TEX2D_SAMPLER(_HeightMap, sampler_DefaultSampler, i.uv5.xy).g) * _PuddleStrength * puddleThreshold;
+                #endif
+            }
+            else {
                 id.puddleMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_PuddleTexture, sampler_DefaultSampler, i.uv5.xy).g * _PuddleStrength * puddleThreshold;
-            #endif
-            id.puddleMask = linearstep(_PuddleThresholdMin, _PuddleThresholdMax, id.puddleMask);
-        }
-    #endif
+            }
+        #else
+            id.puddleMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_PuddleTexture, sampler_DefaultSampler, i.uv5.xy).g * _PuddleStrength * puddleThreshold;
+        #endif
+        id.puddleMask = linearstep(_PuddleThresholdMin, _PuddleThresholdMax, id.puddleMask);
+    }
 }
 
 void ApplyPuddles(v2f i, inout InputData id){

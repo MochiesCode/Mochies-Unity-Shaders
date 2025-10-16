@@ -1,8 +1,12 @@
 #ifndef STANDARD_INPUT_INCLUDED
 #define STANDARD_INPUT_INCLUDED
 
-void InitializeDefaultSampler(out float4 defaultSampler){
+void InitializeDefaultSampler(out float4 defaultSampler, out float4 defaultDetailSampler){
     defaultSampler = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DefaultSampler, sampler_DefaultSampler, 0) * EPSILON;
+    defaultDetailSampler = 0;
+    #if DETAIL_MASK_NEEDED
+        defaultDetailSampler = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DefaultDetailSampler, sampler_DefaultDetailSampler, 0) * EPSILON;
+    #endif
 }
 
 void DebugView(v2f i, InputData id, LightingData ld, inout float4 diffuse){
@@ -134,7 +138,7 @@ void InitializeUVs(appdata v, inout v2f o){
     }
 }
 
-float4 tex2Dtri(Texture2D tex, float4 scaleTransform) {
+float4 tex2Dtri(Texture2D tex, SamplerState samp, float4 scaleTransform) {
     float3 surfaceNormal = _TriplanarCoordSpace == 1 ? abs(worldVertexNormal) : abs(localVertexNormal);
     float3 pos = _TriplanarCoordSpace == 1 ? worldVertexPos : localVertexPos;
     float3 projectedNormal = surfaceNormal / (surfaceNormal.x + surfaceNormal.y + surfaceNormal.z);
@@ -146,9 +150,9 @@ float4 tex2Dtri(Texture2D tex, float4 scaleTransform) {
 
     float4 sampleX, sampleY, sampleZ;
     sampleX = sampleY = sampleZ = 0;
-    if (projectedNormal.x > 0) sampleX = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, sampler_DefaultSampler, uvX);
-    if (projectedNormal.y > 0) sampleY = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, sampler_DefaultSampler, uvY);
-    if (projectedNormal.z > 0) sampleZ = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, sampler_DefaultSampler, uvZ);
+    if (projectedNormal.x > 0) sampleX = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, samp, uvX);
+    if (projectedNormal.y > 0) sampleY = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, samp, uvY);
+    if (projectedNormal.z > 0) sampleZ = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, samp, uvZ);
 
     return (sampleX * projectedNormal.x) + (sampleY * projectedNormal.y) + (sampleZ * projectedNormal.z);
 }
@@ -188,7 +192,7 @@ float4 SampleTexture(Texture2D tex, float2 uv){
     #if defined(_STOCHASTIC_ON)
         texSample = tex2Dstoch(tex, sampler_DefaultSampler, uv);
     #elif defined(_TRIPLANAR_ON)
-        texSample = tex2Dtri(tex, _MainTex_ST);
+        texSample = tex2Dtri(tex, sampler_DefaultSampler, _MainTex_ST);
     #elif defined(_SUPERSAMPLING_ON)
         texSample = tex2Dsuper(tex, sampler_DefaultSampler, uv);
     #else
@@ -200,13 +204,13 @@ float4 SampleTexture(Texture2D tex, float2 uv){
 float4 SampleDetailTexture(Texture2D tex, float2 uv){
     float4 texSample = 0;
     #if defined(_STOCHASTIC_DETAIL_ON) || (defined(STANDARD_LITE) && defined(_STOCHASTIC_ON))
-        texSample = tex2Dstoch(tex, sampler_DefaultSampler, uv);
+        texSample = tex2Dstoch(tex, sampler_DefaultDetailSampler, uv);
     #elif defined(_TRIPLANAR_DETAIL_ON) || (defined(STANDARD_LITE) && defined(_TRIPLANAR_ON))
-        texSample = tex2Dtri(tex, _DetailMainTex_ST);
+        texSample = tex2Dtri(tex, sampler_DefaultDetailSampler, _DetailMainTex_ST);
     #elif defined(_SUPERSAMPLING_DETAIL_ON) || (defined(STANDARD_LITE) && defined(_SUPERSAMPLING_ON))
-        texSample = tex2Dsuper(tex, sampler_DefaultSampler, uv);
+        texSample = tex2Dsuper(tex, sampler_DefaultDetailSampler, uv);
     #else
-        texSample = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, sampler_DefaultSampler, uv);
+        texSample = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, sampler_DefaultDetailSampler, uv);
     #endif
     return texSample;
 }
@@ -404,8 +408,10 @@ void InitializeInputData(v2f i, inout InputData id, float3x3 tangentToWorld, boo
     if (_VertexBaseColor == 1)
         id.baseColor *= i.color;
 
-    CalculatePuddleMask(i, id);
-    
+    #if !defined(STANDARD_MOBILE)
+        CalculatePuddleMask(i, id);
+    #endif
+
     CalculateNormals(i, id, tangentToWorld, detailMask);
     
     #if defined(_WORKFLOW_PACKED_ON)

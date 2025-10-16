@@ -432,11 +432,13 @@ namespace Mochie {
             string texFolder = "Assets/Mochie/Unity/Textures/";
             Texture dfgTex = AssetDatabase.LoadAssetAtPath(texFolder + "dfg-multiscatter.exr", typeof(Texture)) as Texture;
             Texture rainSheetTex = AssetDatabase.LoadAssetAtPath(texFolder + "Glass_Rain_Texturesheet.png", typeof(Texture)) as Texture;
-            Texture defaultTex = AssetDatabase.LoadAssetAtPath(texFolder + "Default White Swatch.png", typeof(Texture)) as Texture;
+            Texture defaultTex = AssetDatabase.LoadAssetAtPath(texFolder + "White Swatch (Primary).png", typeof(Texture)) as Texture;
+            Texture defaultDetailTex = AssetDatabase.LoadAssetAtPath(texFolder + "White Swatch (Detail).png", typeof(Texture)) as Texture;
             Texture dropletMaskTex = AssetDatabase.LoadAssetAtPath(texFolder + "Droplet Mask.tif", typeof(Texture)) as Texture;
             Texture ssrNoiseTex = AssetDatabase.LoadAssetAtPath(texFolder + "SSR Noise.png", typeof(Texture)) as Texture;
             foreach (Material m in materials){
                 m.SetTexture("_DefaultSampler", defaultTex);
+                m.SetTexture("_DefaultDetailSampler", defaultDetailTex);
                 m.SetTexture("_DFG", dfgTex);
                 m.SetTexture("_RainSheet", rainSheetTex);
                 m.SetTexture("_DropletMask", dropletMaskTex);

@@ -26,7 +26,7 @@ namespace Mochie {
             "Debug"
         }, 3);
 
-        string versionLabel = "v2.6";
+        string versionLabel = "v2.7";
 
         // Variant Settings
         MaterialProperty _BlendMode = null;
@@ -332,6 +332,7 @@ namespace Mochie {
         MaterialProperty _DebugLighting = null;
         MaterialProperty _NoiseTexSSR = null;
         MaterialProperty _DefaultSampler = null;
+        MaterialProperty _DefaultDetailSampler = null;
         MaterialProperty _SrcBlend = null;
         MaterialProperty _DstBlend = null;
         MaterialProperty _ZWrite = null;
@@ -1180,6 +1181,10 @@ namespace Mochie {
                         MGUI.DummyProperty("Render Queue:", mat.renderQueue.ToString());
                     });
                     MGUI.PropertyGroup(()=>{
+                        me.TexturePropertySingleLine(Tips.defaultSamplerText, _DefaultSampler);
+                        me.TexturePropertySingleLine(Tips.defaultDetailSamplerText, _DefaultDetailSampler);
+                    });
+                    MGUI.PropertyGroup(()=>{
                         me.ShaderProperty(_UnityFogToggle, Tips.unityFogToggleText);
                         me.ShaderProperty(_VertexBaseColor, Tips.vertexBaseColorText);
                         me.ShaderProperty(_FlipBackfaceNormals, Tips.flipBackfaceNormalsText);
@@ -1213,7 +1218,6 @@ namespace Mochie {
                         });		
                         MGUI.BoldLabel("Default Textures");
                         MGUI.PropertyGroup(()=>{
-                            me.TexturePropertySingleLine(Tips.defaultSamplerText, _DefaultSampler);
                             me.TexturePropertySingleLine(new GUIContent("LUT for Filament SM"), _DFG);
                             me.TexturePropertySingleLine(new GUIContent("SSR Noise Texture"), _NoiseTexSSR);
                             me.TexturePropertySingleLine(new GUIContent("Droplet Map"), _DropletMask);
