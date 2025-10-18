@@ -20,6 +20,7 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
     InputData id = (InputData)0;
     InitializeInputData(i, id, tangentToWorld, isFrontFace);
     id.baseColor.r += defaultSampler.r;
+    id.baseColor.r += defaultDetailSampler.r;
 
     float3 specularColor = lerp(unity_ColorSpaceDielectricSpec.rgb, id.baseColor, id.metallic);
 

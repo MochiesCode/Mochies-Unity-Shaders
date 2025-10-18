@@ -70,9 +70,9 @@ float4 frag (v2f i, UNITY_POSITION(vpos), bool isFrontFace : SV_IsFrontFace) : S
     #endif
 
     #if defined(SHADOWS_CUBE) && !defined(SHADOWS_CUBE_IN_DEPTH_TEX)
-        return UnityEncodeCubeShadowDepth((length(i.vec) + unity_LightShadowBias.x) * _LightPositionRange.w) + defaultSampler;
+        return UnityEncodeCubeShadowDepth((length(i.vec) + unity_LightShadowBias.x) * _LightPositionRange.w) + defaultSampler + defaultDetailSampler;
     #else
-        return defaultSampler;
+        return defaultSampler + defaultDetailSampler;
     #endif
 }
 
