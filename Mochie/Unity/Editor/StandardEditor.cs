@@ -26,7 +26,7 @@ namespace Mochie {
             "Debug"
         }, 3);
 
-        string versionLabel = "v2.7";
+        string versionLabel = "v2.8";
 
         // Variant Settings
         MaterialProperty _BlendMode = null;
@@ -190,8 +190,26 @@ namespace Mochie {
         MaterialProperty _VertexRotationStatic = null;
         MaterialProperty _VertexRotationAnimated = null;
         MaterialProperty _VertexOffset = null;
-        // MaterialProperty _VertexWave = null;
-
+        MaterialProperty _WindToggle = null;
+        MaterialProperty _WindMaskingMode = null;
+        MaterialProperty _WindSymmetry = null;
+        MaterialProperty _WindLayers = null;
+        MaterialProperty _WindStrength = null;
+        MaterialProperty _WindNoiseTex = null;
+        MaterialProperty _WindDirection = null;
+        MaterialProperty _WindScale0 = null;
+        MaterialProperty _WindScale1 = null;
+        MaterialProperty _WindScale2 = null;
+        MaterialProperty _WindSpeed0 = null;
+        MaterialProperty _WindSpeed1 = null;
+        MaterialProperty _WindSpeed2 = null;
+        MaterialProperty _WindContribution0 = null;
+        MaterialProperty _WindContribution1 = null;
+        MaterialProperty _WindContribution2 = null;
+        MaterialProperty _WindSmoothness0 = null;
+        MaterialProperty _WindSmoothness1 = null;
+        MaterialProperty _WindSmoothness2 = null;
+        
         // Subsurface Scattering
         MaterialProperty _Subsurface = null;
         MaterialProperty _ThicknessMap = null;
@@ -747,7 +765,47 @@ namespace Mochie {
                         MGUI.Vector3Field(_VertexRotationStatic, "Static Rotation", false);
                         MGUI.Vector3Field(_VertexRotationAnimated, "Animated Rotation", false);
                         MGUI.Vector3Field(_VertexOffset, "Offset", false);
-                        // me.ShaderProperty(_VertexWave, "Wave");
+                    });
+
+                    MGUI.ShaderPropertyBold(me, _WindToggle, "Wind");
+                    MGUI.ToggleGroup(_WindToggle.floatValue == 0);
+                    MGUI.PropertyGroup(()=>{
+                        MGUI.PropertyGroup(()=>{
+                            me.TexturePropertySingleLine(new GUIContent("Noise Texture"), _WindNoiseTex);
+                            me.ShaderProperty(_WindMaskingMode, "Masking Mode");
+                            me.ShaderProperty(_WindSymmetry, "Symmetry");
+                            me.ShaderProperty(_WindLayers, "Layers");
+                            MGUI.Vector3Field(_WindDirection, "Direction", false);
+                            me.ShaderProperty(_WindStrength, "Global Strength");
+                        });
+                        MGUI.PropertyGroup(()=>{
+                            me.ShaderProperty(_WindContribution0, "Strength");
+                            MGUI.Vector2Field(_WindScale0, "Scale");
+                            MGUI.Vector2Field(_WindSpeed0, "Speed");
+                            me.ShaderProperty(_WindSmoothness0, "Smoothness");
+                        });
+
+                        if (_WindLayers.floatValue > 1){
+                            MGUI.PropertyGroup(()=>{
+                                me.ShaderProperty(_WindContribution1, "Strength");
+                                MGUI.Vector2Field(_WindScale1, "Scale");
+                                MGUI.Vector2Field(_WindSpeed1, "Speed");
+                                me.ShaderProperty(_WindSmoothness1, "Smoothness");
+                            });
+                        }
+
+                        if (_WindLayers.floatValue > 2){
+                            MGUI.PropertyGroup(()=>{
+                                me.ShaderProperty(_WindContribution2, "Strength");
+                                MGUI.Vector2Field(_WindScale2, "Scale");
+                                MGUI.Vector2Field(_WindSpeed2, "Speed");
+                                me.ShaderProperty(_WindSmoothness2, "Smoothness");
+                            });
+                        }
+                        if (_WindToggle.floatValue == 1){
+                            MGUI.DisplayWarning("Please note that meshes set to 'batching static' may exhibit different wind behavior at runtime, it is recommended to use GPU instancing for these meshes instead.");
+                            MGUI.SpaceN1();
+                        }
                     });
                     MGUI.ToggleGroupEnd();
                 });
@@ -1354,13 +1412,23 @@ namespace Mochie {
         #region Utilities
         void TransferStandardTextures(Material mat, Shader oldShader){
             if (oldShader == Shader.Find("Standard") || oldShader == Shader.Find("Autodesk Interactive") || oldShader == Shader.Find("Standard (Specular setup)")){
-                mat.SetTexture("_NormalMap", mat.GetTexture("_BumpMap"));
-                mat.SetTexture("_MetallicMap", mat.GetTexture("_MetallicGlossMap"));
-                mat.SetTexture("_HeightMap", mat.GetTexture("_ParallaxMap"));
-                mat.SetTexture("_DetailMainTex", mat.GetTexture("_DetailAlbedoMap"));
+                Texture bumpMap = mat.GetTexture("_BumpMap");
+                Texture metallicGlossMap = mat.GetTexture("_MetallicGlossMap");
+                Texture parallaxMap = mat.GetTexture("_ParallaxMap");
+                Texture detailAlbedoMap = mat.GetTexture("_DetailAlbedoMap");
+                if (bumpMap != null)
+                    mat.SetTexture("_NormalMap", bumpMap);
+                if (metallicGlossMap != null)
+                    mat.SetTexture("_MetallicMap", metallicGlossMap);
+                if (parallaxMap != null)
+                    mat.SetTexture("_HeightMap", parallaxMap);
+                if (detailAlbedoMap != null)
+                    mat.SetTexture("_DetailMainTex", detailAlbedoMap);
             }
             if (oldShader == Shader.Find("Autodesk Interactive") || oldShader == Shader.Find("Standard (Specular setup)")){
-                mat.SetTexture("_RoughnessMap", mat.GetTexture("_SpecGlossMap"));
+                Texture specGlossMap = mat.GetTexture("_SpecGlossMap");
+                if (specGlossMap != null)
+                    mat.SetTexture("_RoughnessMap", specGlossMap);
             }
         }
 

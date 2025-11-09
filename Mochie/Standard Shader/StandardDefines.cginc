@@ -206,10 +206,20 @@ float _SSRHeight;
 float _SSREdgeFade;
 
 // Vertex Manipulation
+MOCHIE_DECLARE_TEX2D(_WindNoiseTex);
 float3 _VertexRotationStatic;
 float3 _VertexRotationAnimated;
 float3 _VertexOffset;
-float _VertexWave;
+float3 _WindDirection;
+float2 _WindScale0, _WindScale1, _WindScale2;
+float2 _WindSpeed0, _WindSpeed1, _WindSpeed2;
+float _WindContribution0, _WindContribution1, _WindContribution2;
+float _WindSmoothness0, _WindSmoothness1, _WindSmoothness2;
+float _WindStrength;
+int _WindToggle;
+int _WindMaskingMode;
+int _WindSymmetry;
+int _WindLayers;
 
 // Subsurface Scattering
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_ThicknessMap);
@@ -442,6 +452,7 @@ struct InputData {
 #include "StandardLighting.cginc"
 #include "StandardSSR.cginc"
 #include "StandardBRDF.cginc"
+#include "StandardVertManip.cginc"
 #include "StandardVert.cginc"
 #if defined(META_PASS)
     #include "StandardMeta.cginc"

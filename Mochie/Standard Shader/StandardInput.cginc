@@ -22,7 +22,7 @@ void DebugView(v2f i, InputData id, LightingData ld, inout float4 diffuse){
         diffuse.rgb = _DebugAtten == 1 ? diffuse.rgb + ld.atten * ld.NdotL : diffuse;
         diffuse.rgb = _DebugReflections == 1 ? diffuse.rgb + ld.reflectionCol : diffuse.rgb;
         diffuse.rgb = _DebugSpecular == 1 ? diffuse.rgb + ld.specHighlightCol : diffuse.rgb;
-        diffuse.rgb = _DebugVertexColors == 1 ? diffuse.rgb + i.color : diffuse.rgb;
+        // diffuse.rgb = _DebugVertexColors == 1 ? diffuse.rgb + i.color : diffuse.rgb;
     }
 }
 
@@ -405,8 +405,8 @@ void InitializeInputData(v2f i, inout InputData id, float3x3 tangentToWorld, boo
         blendedBaseColor = lerp(blendedBaseColor, detailBaseColor, _DetailMaskMode);
         id.baseColor.rgb = lerp(id.baseColor, blendedBaseColor, _DetailMainTexStrength * detailMask);
     #endif
-    if (_VertexBaseColor == 1)
-        id.baseColor *= i.color;
+    // if (_VertexBaseColor == 1)
+    //     id.baseColor *= i.color;
 
     #if !defined(STANDARD_MOBILE)
         CalculatePuddleMask(i, id);

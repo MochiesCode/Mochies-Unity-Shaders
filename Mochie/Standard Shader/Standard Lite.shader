@@ -135,8 +135,8 @@ Shader "Mochie/Standard Lite" {
         _AlphaMaskOpacity("Alpha Mask Opacity", Range(0,1)) = 1
         
         _VertexMask("Vertex Mask", 2D) = "white" {}
-        [Enum(Red,0, Green,1, Blue,2, Alpha,3)]_VertexMaskChannel("Alpha Mask Channel", Int) = 0
-        [Enum(UV0,0, UV1,1, UV2,2, UV3,3, UV4,4)]_UVVertexMaskSet("UV Set for Alpha mask", Int) = 0
+        [Enum(Red,0, Green,1, Blue,2, Alpha,3)]_VertexMaskChannel("Vertex Mask Channel", Int) = 0
+        [Enum(UV0,0, UV1,1, UV2,2, UV3,3, UV4,4)]_UVVertexMaskSet("UV Set for vertex mask", Int) = 0
         [Enum(XY,0, XZ,1, YZ,2)]_UVVertexMaskSwizzle("Swizzle", Int) = 0
         _UVVertexMaskScroll("Scroll Speed", Vector) = (0,0,0,0)
         _UVVertexMaskRotation("Rotation", Float) = 0
@@ -173,7 +173,25 @@ Shader "Mochie/Standard Lite" {
         _VertexRotationStatic("Static Rotation", Vector) = (0,0,0,0)
         _VertexRotationAnimated("Animated Rotation", Vector) = (0,0,0,0)
         _VertexOffset("Vertex Offset", Vector) = (0,0,0,0)
-        _VertexWave("Vertex Wave", Float) = 0
+        [ToggleUI]_WindToggle("Wind Toggle", Int) = 0
+        [Enum(Texture,0, Vertex Color,1)]_WindMaskingMode("Wind Masking Mode", Int) = 0
+        [Enum(X,0, Y,1, Z,2, Off,3)]_WindSymmetry("Wind Symmetry", Int) = 3
+        [IntRange]_WindLayers("Wind Layers", Range(1,3)) = 1
+        _WindStrength("Wind Strength", Float) = 2
+        _WindNoiseTex("Wind Noise Texture", 2D) = "black" {}
+        _WindDirection("Wind Direction", Vector) = (1,1,1,0)
+        _WindScale0("Wind Scale", Vector) = (0.2,0.2,0,0)
+        _WindScale1("Wind Scale", Vector) = (0.6, 0.6, 0, 0)
+        _WindScale2("Wind Scale", Vector) = (1, 1, 0, 0)
+        _WindSpeed0("Wind Speed", Vector) = (0,0.35,0,0)
+        _WindSpeed1("Wind Speed", Vector) = (0, 0.7, 0, 0)
+        _WindSpeed2("Wind Speed", Vector) = (0, 1, 0, 0)
+        _WindContribution0("Wind Contribution", Float) = 1
+        _WindContribution1("Wind Contribution", Float) = 1
+        _WindContribution2("Wind Contribution", Float) = 1
+        _WindSmoothness0("Wind Smoothness", Range(0,8)) = 1
+        _WindSmoothness1("Wind Smoothness", Range(0,1)) = 3
+        _WindSmoothness2("Wind Smoothness", Range(0,8)) = 5
 
         // Subsurface Scattering
         [ToggleUI]_Subsurface("Subsurface Scattering", Int) = 0

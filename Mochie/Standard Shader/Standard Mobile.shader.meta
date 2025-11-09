@@ -23,6 +23,7 @@ ShaderImporter:
   - _EmissionMask: {instanceID: 0}
   - _AlphaMask: {instanceID: 0}
   - _VertexMask: {instanceID: 0}
+  - _WindNoiseTex: {fileID: 2800000, guid: 352f401c145570f488487622cd5fdaa6, type: 3}
   - _ThicknessMap: {instanceID: 0}
   - _RainSheet: {fileID: 2800000, guid: df89a63673a32f4438fba4fb13f0f640, type: 3}
   - _DropletMask: {fileID: 2800000, guid: 76ae1285472e6ce48a2f01ef7905b8fd, type: 3}

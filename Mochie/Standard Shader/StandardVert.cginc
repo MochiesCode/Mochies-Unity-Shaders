@@ -12,15 +12,7 @@ v2f vert (appdata v){
     UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 
     #if defined(_VERTEX_MANIPULATION_ON)
-        // float2 uvs[5] = {v.uv0, v.uv1, v.uv2, v.uv3, v.uv4};
-        float2 vertexMaskUV = ScaleOffsetRotateScrollUV(v.uv0, _VertexMask_ST.xy, _VertexMask_ST.zw, _UVVertexMaskRotation, _UVVertexMaskScroll);
-        float3 vertexMask = MOCHIE_SAMPLE_TEX2D_LOD(_VertexMask, vertexMaskUV, 0);
-        float3 animatedRotation = _VertexRotationAnimated * _Time.y * 10 * vertexMask;
-        float3 staticRotation = _VertexRotationStatic * vertexMask;
-        float3 staticOffset = _VertexOffset * vertexMask;
-        Rotate3D3(v.vertex.xyz, v.normal.xyz, v.tangent.xyz, staticRotation);
-        Rotate3D3(v.vertex.xyz, v.normal.xyz, v.tangent.xyz, animatedRotation);
-        v.vertex.xyz += staticOffset;
+        ApplyVertexManipulation(v, o);
     #endif
 
     #if defined(META_PASS)
