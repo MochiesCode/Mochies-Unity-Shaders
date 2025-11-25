@@ -29,7 +29,7 @@ float ShadowGetOneMinusReflectivity(v2f i){
 // Not using LOD_FADE_CROSSFADE option as it's a multi_compile and severely bloats variant count
 float4 frag (v2f i, UNITY_POSITION(vpos), bool isFrontFace : SV_IsFrontFace) : SV_Target {
 
-    if (_MaterialDebugMode == 1 && _DebugEnable == 1){
+    if (_MaterialDebugMode == 1 && _DebugFlags != 0){
         discard;
     }
 

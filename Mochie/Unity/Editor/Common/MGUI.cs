@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace Mochie {
     public static class MGUI {
@@ -1010,6 +1011,48 @@ namespace Mochie {
                 }
                 return;
             }
+        }
+
+        /// <summary>
+        /// Draws an enum dropdown control for the provided enum type. If the enum type
+        /// has the <see cref="System.FlagsAttribute"/> attribute, a flags dropdown is
+        /// drawn. Otherwise, a normal enum selector is shown.
+        ///
+        /// This function takes (and updates) a MaterialProperty.
+        /// </summary>
+        /// <param name="prop">The material property to read and write</param>
+        /// <typeparam name="T">The enum type to use</typeparam>
+        public static void EnumDropdown<T>(MaterialProperty prop, GUIContent label) where T : Enum
+        {
+            int intValue = prop.intValue;
+            
+            // a generic enum parameter can't be directly casted to an int,
+            // so this is the most performant option (rather than casting
+            // to object first, which would allocate some garbage)
+            
+            T enumValue = Unsafe.As<int, T>(ref intValue);
+
+            enumValue = EnumDropdown(enumValue, label);
+
+            prop.intValue = Unsafe.As<T, int>(ref enumValue);
+        }
+
+        /// <summary>
+        /// Draws an enum dropdown control for the provided enum type. If the enum type
+        /// has the <see cref="System.FlagsAttribute"/> attribute, a flags dropdown is
+        /// drawn. Otherwise, a normal enum selector is shown.
+        ///
+        /// This function uses an actual enum value directly.
+        /// </summary>
+        /// <param name="currentValue"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public static T EnumDropdown<T>(T currentValue, GUIContent label) where T : Enum
+        {
+            if (typeof(T).GetCustomAttribute<FlagsAttribute>() != null)
+                return (T)EditorGUILayout.EnumFlagsField(label, currentValue);
+            else
+                return (T)EditorGUILayout.EnumPopup(label, currentValue);
         }
 
         // Shorthand spacing funcs

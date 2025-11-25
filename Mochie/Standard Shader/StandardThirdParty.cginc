@@ -111,9 +111,7 @@ float GetAudioLinkBand(audioLinkData al, int band){
     return bands[band-1];
 }
 
-void InitializeAudioLink(inout audioLinkData al, float time){
-    float versionBand = 1;
-    float versionTime = 1;
+void InitializeAudioLink(inout audioLinkData al){
     al.textureExists = AudioLinkIsAvailable();
     if (al.textureExists){
         al.bass = AudioLinkData(ALPASS_AUDIOBASS);

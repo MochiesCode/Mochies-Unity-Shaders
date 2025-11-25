@@ -327,21 +327,9 @@ Shader "Mochie/Standard Mobile" {
         [ToggleUI]_FlipBackfaceNormals("Flip Backface Normals", Int) = 0
         _DefaultSampler("Primary Wrap/Filter Settings", 2D) = "white" {}
         _DefaultDetailSampler("Detail Wrap/Filter Settings", 2D) = "white" {}
-
-        // Debug
-        [ToggleUI]_DebugEnable("Enable Debug View", Int) = 0
-        [ToggleUI]_DebugVertexColors("Vertex Colors", Int) = 0
-        [ToggleUI]_DebugBaseColor("Base Color", Int) = 1
-        [ToggleUI]_DebugNormals("Normals", Int) = 0
-        [ToggleUI]_DebugRoughness("Roughness", Int) = 0
-        [ToggleUI]_DebugMetallic("Metallic", Int) = 0
-        [ToggleUI]_DebugOcclusion("Occlusion", Int) = 0
-        [ToggleUI]_DebugHeight("Height", Int) = 0
-        [ToggleUI]_DebugAtten("Attenuation", Int) = 0
-        [ToggleUI]_DebugReflections("Reflections", Int) = 0
-        [ToggleUI]_DebugSpecular("Specular Highlights", Int) = 0
-        [ToggleUI]_DebugAlpha("Alpha", Int) = 0
-        [ToggleUI]_DebugLighting("Alpha", Int) = 0
+        
+        // Debug Views
+        [HideInInspector] _DebugFlags("Debug Flags", Integer) = 0
 
         // NO TOUCHY
         [HideInInspector]_SrcBlend("__src", Float) = 1.0
@@ -437,6 +425,7 @@ Shader "Mochie/Standard Mobile" {
         Pass {
             Tags {"LightMode" = "ShadowCaster"}
             CGPROGRAM
+            #pragma target 5.0
             #pragma vertex vert
             #pragma fragment frag
             #pragma shader_feature_local _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
@@ -457,6 +446,7 @@ Shader "Mochie/Standard Mobile" {
             Cull Off
 
             CGPROGRAM
+            #pragma target 5.0
             #pragma vertex vert
             #pragma fragment frag
             #pragma shader_feature_local _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON

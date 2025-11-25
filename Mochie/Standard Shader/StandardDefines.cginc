@@ -321,9 +321,11 @@ float _LightVolumeBias;
 
 // Debug Toggles
 int _MaterialDebugMode;
-int _DebugEnable;
+int _DebugFlags;
 int _DebugBaseColor;
 int _DebugNormals;
+int _DebugTangentSpaceNormals;
+int _DebugVertexNormals;
 int _DebugRoughness;
 int _DebugMetallic;
 int _DebugOcclusion;
@@ -383,15 +385,16 @@ struct v2f {
     float3 worldPos : TEXCOORD7;
     float3 localPos : TEXCOORD8;
     float3 localNorm : TEXCOORD9;
+    float3 wind : TEXCOORD12;
     #if defined(META_PASS)
         #if defined(EDITOR_VISUALIZATION)
             float2 vizUV    : TEXCOORD10;
             float4 lightCoord   : TEXCOORD11;
         #endif
-    #else
-        bool vertexLightOn : TEXCOORD12;
-        UNITY_SHADOW_COORDS(13)
-        UNITY_FOG_COORDS(14)
+    #else 
+        bool vertexLightOn : TEXCOORD13;
+        UNITY_SHADOW_COORDS(14)
+        UNITY_FOG_COORDS(15)
     #endif
     UNITY_VERTEX_INPUT_INSTANCE_ID
     UNITY_VERTEX_OUTPUT_STEREO

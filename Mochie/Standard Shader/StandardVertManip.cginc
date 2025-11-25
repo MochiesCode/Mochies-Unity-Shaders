@@ -11,22 +11,23 @@ float3 FlowUV (float2 uv, float2 flowVector, float time, float phase) {
     return uvw;
 }
 
-void ApplyVertexManipulation(inout appdata v, inout v2f o){
+float3 GetVertexManipulation(appdata v, inout v2f o){
+    float3 worldPos = mul(unity_ObjectToWorld, v.vertex);
+    float3 worldOrigin = mul(unity_ObjectToWorld, float4(0, 0, 0, 1));
+    worldPos -= worldOrigin;
     float2 vertexMaskUV = ScaleOffsetRotateScrollUV(v.uv0, _VertexMask_ST.xy, _VertexMask_ST.zw, _UVVertexMaskRotation, _UVVertexMaskScroll);
     float4 vertexMask = MOCHIE_SAMPLE_TEX2D_LOD(_VertexMask, vertexMaskUV, 0);
     float3 animatedRotation = _VertexRotationAnimated * _Time.y * 10 * vertexMask;
     float3 staticRotation = _VertexRotationStatic * vertexMask;
     float3 staticOffset = _VertexOffset * vertexMask;
-    Rotate3D3(v.vertex.xyz, v.normal.xyz, v.tangent.xyz, staticRotation);
-    Rotate3D3(v.vertex.xyz, v.normal.xyz, v.tangent.xyz, animatedRotation);
-    v.vertex.xyz += staticOffset;
+    worldPos = Rotate3D(worldPos, staticRotation + animatedRotation);
+    worldPos += staticOffset;
     
     [branch]
     if (_WindToggle == 1 && _WindStrength != 0){
         if (_WindMaskingMode == 1)
             vertexMask = v.color;
-        float3 worldPos = mul(unity_ObjectToWorld, v.vertex.xyz);
-    
+        
         float3 noise0 = 0;
         float3 noise1 = 0;
         float3 noise2 = 0;
@@ -49,16 +50,19 @@ void ApplyVertexManipulation(inout appdata v, inout v2f o){
 
         float3 noise = (noise0 + noise1 + noise2);
         noise *= _WindDirection * _WindStrength * vertexMask;
+        o.wind = noise;
         
         if (_WindSymmetry != 3){
             if (v.vertex[_WindSymmetry] > 0)
-                Rotate3D3(v.vertex.xyz, v.normal.xyz, v.tangent.xyz, noise);
+                worldPos = Rotate3D(worldPos, noise);
             else if (v.vertex[_WindSymmetry] < 0)
-                Rotate3D3(v.vertex.xyz, v.normal.xyz, v.tangent.xyz, -noise);
+                worldPos = Rotate3D(worldPos, -noise);
         }
         else {
-            Rotate3D3(v.vertex.xyz, v.normal.xyz, v.tangent.xyz, noise);
+            worldPos = Rotate3D(worldPos, noise);
         }
     }
+
+    return worldPos + worldOrigin;
 }
 #endif

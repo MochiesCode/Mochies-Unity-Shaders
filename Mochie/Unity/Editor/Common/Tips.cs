@@ -41,6 +41,7 @@ namespace Mochie {
         public static GUIContent flipBackfaceNormalsText = new GUIContent("Flip Normals on Backfaces", "This both causes and fixes issues with backfaces appearing black when lightmapped. It appears to be random which way it goes. We love Unity.");
         public static GUIContent lightVolumeSpecText = new GUIContent("Light Volume Specularity", "Specularity derived from VRC Light Volumes.");
         public static GUIContent lightVolumeBiasText = new GUIContent("Light Volume Bias", "Offsets the sampling position of the light volume to help avoid light leaking.");
+        public static GUIContent horizonAdjustmentText = new GUIContent("Horizon Adjustment", "Adjusts the strength of the effect at sharper viewing angles to avoid artifacts");
         
         // Standard
         public static GUIContent standWorkflow = new GUIContent("Workflow", "Standard:\nDefault packing mode of visually separated texture slots for PBR maps, uses MAHS format.\n\nPacked: \nModular packing mode that combines all PBR texture slots into one and allows channel selection.");
@@ -228,7 +229,6 @@ namespace Mochie {
         public static GUIContent turbulence = new GUIContent("Strength", "Adds variation to the height of waves.");
         public static GUIContent blendNoise = new GUIContent("Blend Noise", "Each normal map (and some other textures) are sampled twice with different uvs. This texture will determine the pattern for blending between the two samples.");
         public static GUIContent detailMode = new GUIContent("Decal Mode", "Uses the alpha and UVs of the decal base color for blending and sampling these textures.");
-        public static GUIContent horizonAdjustmentText = new GUIContent("Horizon Adjustment", "Reduces normal strength at sharp viewing angles.");
         
         // Particles
         public static GUIContent softening = new GUIContent("Softening", "Fades out the edges of particles where they interesect with opaque geometry to hide harsh cutoffs.");
@@ -237,9 +237,9 @@ namespace Mochie {
         public static GUIContent flipbookBlending = new GUIContent("Flipbook Blending", "Fades between frames instead of immediately cutting to make the animation smoother.");
 
         // Taken
-        public static GUIContent gradientRestriction = new GUIContent("Gradient Restriction", "Masks the rim effect inside the gradient, so it will only be visible where the gradient is.");
-        public static GUIContent emissionGradRestrict = new GUIContent("Gradient Restriction", "Masks the emission inside the gradient, so it will only be visible where the gradient is.");
-        public static GUIContent restrictionMask = new GUIContent("Restriction Mask", "White areas will be exempt from the gradient restriction.");
+        public static GUIContent gradientRestriction = new GUIContent("Gradient Masking", "Masks the rim effect inside the gradient, so it will only be visible where the gradient is.");
+        public static GUIContent emissionGradRestrict = new GUIContent("Gradient Masking", "Masks the emission inside the gradient, so it will only be visible where the gradient is.");
+        public static GUIContent restrictionMask = new GUIContent("Gradient Exemption Mask", "White areas will be exempt from the gradient masking.");
         public static GUIContent gradientAxis = new GUIContent("Axis", "The direction the gradient will be applied. Y will come from below, Z will come from the front or behind, and X will come from the left or right. These directions are based on the mesh root position.");
         public static GUIContent endPos = new GUIContent("End Position", "How far from the start position the gradient will reach.");
         public static GUIContent startPos = new GUIContent("Start Position", "The position on the chosen axis that the gradient will start, measured by the distance from the mesh origin.");
@@ -247,7 +247,9 @@ namespace Mochie {
         public static GUIContent globalTint = new GUIContent("Global Tint", "Determines the color of the majority of effects in the shader.");
         public static GUIContent emissionAO = new GUIContent("Emission (AO)", "Takes an ambient occlusion map and inverts it to determine emission. This is the same technique used by bungie for the effect in Destiny.");
         public static GUIContent invertTint = new GUIContent("Invert Tint", "Uses an inverted copy of the base color texture to determine outline tint.");
-
+        public static GUIContent noiseIterationsText = new GUIContent("Iterations", "How many layers of noise should be generated. Fewer iterations will perform better, but look different");
+        public static GUIContent starSamplesText = new GUIContent("Samples", "How many layers of stars should appear. More samples is less performant.");
+        public static GUIContent noiseTypeText = new GUIContent("Noise Type", "tanoise:\nLooks very similar to simplex but much more performant. This should pretty much always be used.\n\nSimplex: 4D Simplex noise, much more expensive than tanoise, but looks a bit better.");
         // Glass
         public static GUIContent rainModeText = new GUIContent("Mode", "Droplets:\nDotted droplets and streaks of rain, best used on vertical surfaces.\n\nRipples:\nRippling circles that you'd see on horizontal surfaces where water might pool.\n\nAutomatic:\nRenders both ripples and droplets and interpolates between them based on the angle of the surface. Vertical surfaces will display droplets, horizontal surfaces will display ripples.");
         public static GUIContent litBaseColorText = new GUIContent("Lit", "Applies realtime and light probe lighting to the base color. Does not support baked lightmaps.");

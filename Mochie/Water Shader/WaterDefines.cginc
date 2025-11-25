@@ -314,7 +314,6 @@ struct v2f {
 #include "WaterSSR.cginc"
 #include "WaterIndirect.cginc"
 #include "WaterFunctions.cginc"
-#include "WaterAudioLink.cginc"
 #include "WaterThirdParty.cginc"
 #if AREALIT_ENABLED
     #include "../../AreaLit/Shader/Lighting.hlsl"

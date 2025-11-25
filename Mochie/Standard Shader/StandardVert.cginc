@@ -11,8 +11,9 @@ v2f vert (appdata v){
     UNITY_TRANSFER_INSTANCE_ID(v, o);
     UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 
+    float3 worldPos = mul(unity_ObjectToWorld, v.vertex);
     #if defined(_VERTEX_MANIPULATION_ON)
-        ApplyVertexManipulation(v, o);
+        worldPos = GetVertexManipulation(v, o);
     #endif
 
     #if defined(META_PASS)
@@ -20,14 +21,23 @@ v2f vert (appdata v){
     #elif defined(SHADOWCASTER_PASS)
         TRANSFER_SHADOW_CASTER_NORMALOFFSET(o);
     #else
-        o.pos = UnityObjectToClipPos(v.vertex);
+        #if defined(_VERTEX_MANIPULATION_ON)
+            o.pos = UnityWorldToClipPos(float4(worldPos, v.vertex.w));
+        #else
+            o.pos = UnityObjectToClipPos(v.vertex);
+        #endif
     #endif
-    o.worldPos = mul(unity_ObjectToWorld, v.vertex);
+    
+    o.worldPos = worldPos;
     o.normal = UnityObjectToWorldNormal(v.normal);
     o.tangent.xyz = UnityObjectToWorldDir(v.tangent.xyz);
     o.tangent.w = v.tangent.w;
     o.color = v.color;
-    o.localPos = v.vertex;
+    #if defined(_VERTEX_MANIPULATION_ON)
+        o.localPos = mul(unity_WorldToObject, worldPos);
+    #else
+        o.localPos = v.vertex;
+    #endif
     o.localNorm = v.normal;
     
     InitializeUVs(v, o);

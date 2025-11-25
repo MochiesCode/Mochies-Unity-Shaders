@@ -114,7 +114,7 @@ namespace Mochie {
         static readonly int blendingLabelPos = 111;
 
         static readonly string unityFolderPath = "Assets/Mochie/Unity";
-        string versionLabel = "v1.34";
+        string versionLabel = "v1.34.1";
         // β
         
         MaterialProperty _RenderMode = null; 
@@ -1147,6 +1147,11 @@ namespace Mochie {
                                         string rampPath = unityFolderPath+"/Textures/Ramps/Ramp_"+rampID+".png";
                                         MGUI.WriteBytes(encodedTex, rampPath);
                                         AssetDatabase.ImportAsset(rampPath);
+
+                                        TextureImporter importer = (TextureImporter) AssetImporter.GetAtPath(rampPath);
+                                        importer.wrapMode = TextureWrapMode.Clamp;
+                                        importer.SaveAndReimport();
+
                                         _ShadowRamp.textureValue = (Texture)EditorGUIUtility.Load(rampPath);
                                     }
                                 });
@@ -1424,6 +1429,11 @@ namespace Mochie {
                                         string iridescenceRampPath = unityFolderPath+"/Textures/Ramps/Ramp_"+iridescenceRampID+".png";
                                         MGUI.WriteBytes(iridescenceEncodedTex, iridescenceRampPath);
                                         AssetDatabase.ImportAsset(iridescenceRampPath);
+                                        
+                                        TextureImporter importer = (TextureImporter) AssetImporter.GetAtPath(iridescenceRampPath);
+                                        importer.wrapMode = TextureWrapMode.Clamp;
+                                        importer.SaveAndReimport();
+                                        
                                         _IridescenceRamp.textureValue = (Texture)EditorGUIUtility.Load(iridescenceRampPath);
                                     }
                                 }

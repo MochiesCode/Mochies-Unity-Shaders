@@ -43,4 +43,29 @@ float3 GetLTCGISpecularity(v2f i, float3 normal, float3 viewDir, float roughness
 
 #endif
 
+#include "../Common/AudioLink.cginc"
+
+struct audioLinkData {
+    bool textureExists;
+    float bass;
+    float lowMid;
+    float upperMid;
+    float treble;
+};
+
+float GetAudioLinkBand(audioLinkData al, int band){
+    float4 bands = float4(al.bass, al.lowMid, al.upperMid, al.treble);
+    return bands[band-1];
+}
+
+void InitializeAudioLink(inout audioLinkData al){
+    al.textureExists = AudioLinkIsAvailable();
+    if (al.textureExists){
+        al.bass = AudioLinkData(ALPASS_AUDIOBASS);
+        al.lowMid = AudioLinkData(ALPASS_AUDIOLOWMIDS);
+        al.upperMid = AudioLinkData(ALPASS_AUDIOHIGHMIDS);
+        al.treble = AudioLinkData(ALPASS_AUDIOTREBLE);
+    }
+}
+
 #endif

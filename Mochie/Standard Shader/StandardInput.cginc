@@ -1,5 +1,6 @@
 #ifndef STANDARD_INPUT_INCLUDED
 #define STANDARD_INPUT_INCLUDED
+#include "StandardDefines.cginc"
 
 void InitializeDefaultSampler(out float4 defaultSampler, out float4 defaultDetailSampler){
     defaultSampler = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DefaultSampler, sampler_DefaultSampler, 0) * EPSILON;
@@ -9,20 +10,35 @@ void InitializeDefaultSampler(out float4 defaultSampler, out float4 defaultDetai
     #endif
 }
 
+void apply_debug(int index, inout float4 current, float4 value){
+    bool active = (_DebugFlags & (1 << index)) > 0;
+
+    if (active)
+        current = value;
+}
+
+void apply_debug(int index, inout float4 current, float3 value){
+    apply_debug(index, current, float4(value, 0));
+}
+
 void DebugView(v2f i, InputData id, LightingData ld, inout float4 diffuse){
-    if (_MaterialDebugMode == 1 && _DebugEnable == 1){
-        diffuse = _DebugBaseColor == 1 ? id.baseColor : float4(0,0,0,1);
-        diffuse.rgb = _DebugAlpha == 1 ? diffuse.rgb + id.alpha : diffuse.rgb;
-        diffuse.rgb = _DebugNormals == 1 ? diffuse.rgb + id.tsNormal : diffuse;
-        diffuse.rgb = _DebugRoughness == 1 ? diffuse.rgb + id.roughness : diffuse;
-        diffuse.rgb = _DebugMetallic == 1 ? diffuse.rgb + id.metallic : diffuse;
-        diffuse.rgb = _DebugOcclusion == 1 ? diffuse.rgb + id.occlusion : diffuse;
-        diffuse.rgb = _DebugHeight == 1 ? diffuse.rgb + id.height : diffuse;
-        diffuse.rgb = _DebugLighting == 1 ? diffuse.rgb + ld.lightCol : diffuse.rgb;
-        diffuse.rgb = _DebugAtten == 1 ? diffuse.rgb + ld.atten * ld.NdotL : diffuse;
-        diffuse.rgb = _DebugReflections == 1 ? diffuse.rgb + ld.reflectionCol : diffuse.rgb;
-        diffuse.rgb = _DebugSpecular == 1 ? diffuse.rgb + ld.specHighlightCol : diffuse.rgb;
-        // diffuse.rgb = _DebugVertexColors == 1 ? diffuse.rgb + i.color : diffuse.rgb;
+    if (_MaterialDebugMode == 1 && _DebugFlags != 0){
+        diffuse = float4(0,0,0,1);
+        apply_debug(0, diffuse, id.baseColor);
+        apply_debug(1, diffuse, id.alpha.rrrr);
+        apply_debug(2, diffuse, id.normal);
+        apply_debug(3, diffuse, id.tsNormal);
+        apply_debug(4, diffuse, id.vNormal);
+        apply_debug(5, diffuse, id.roughness);
+        apply_debug(6, diffuse, id.metallic);
+        apply_debug(7, diffuse, id.occlusion);
+        apply_debug(8, diffuse, id.height);
+        apply_debug(9, diffuse, ld.lightCol);
+        apply_debug(10, diffuse, (ld.atten * ld.NdotL).rrrr);
+        apply_debug(11, diffuse, ld.reflectionCol);
+        apply_debug(12, diffuse, ld.specHighlightCol);
+        apply_debug(13, diffuse, i.color);
+        apply_debug(14, diffuse, saturate(float4(i.wind.xyz, 1)));
     }
 }
 
@@ -129,32 +145,93 @@ void InitializeUVs(appdata v, inout v2f o){
         o.uv4.xy = TRANSFORM_TEX(o.uv4.xy, _AreaLitOcclusion);
     #endif
 
-    if (_AlphaSource == 1){
-        o.uv4.zw = ScaleOffsetRotateScrollUV(SelectUVSet(uvs, _UVAlphaMaskSet, _UVAlphaMaskSwizzle, o.worldPos, o.localPos), _AlphaMask_ST.xy, _AlphaMask_ST.zw, _UVAlphaMaskRotation, _UVAlphaMaskScroll);
-    }
+    #if !defined(STANDARD_MOBILE)
+        if (_AlphaSource == 1){
+            o.uv4.zw = ScaleOffsetRotateScrollUV(SelectUVSet(uvs, _UVAlphaMaskSet, _UVAlphaMaskSwizzle, o.worldPos, o.localPos), _AlphaMask_ST.xy, _AlphaMask_ST.zw, _UVAlphaMaskRotation, _UVAlphaMaskScroll);
+        }
 
-    if (_PuddleToggle == 1){
-        o.uv5.xy = ScaleOffsetRotateScrollUV(SelectUVSet(uvs, _UVPuddleSet, _UVPuddleSwizzle, o.worldPos, o.localPos), _PuddleTexture_ST.xy, _PuddleTexture_ST.zw, _UVPuddleRotation, _UVPuddleScroll);
-    }
+        if (_PuddleToggle == 1){
+            o.uv5.xy = ScaleOffsetRotateScrollUV(SelectUVSet(uvs, _UVPuddleSet, _UVPuddleSwizzle, o.worldPos, o.localPos), _PuddleTexture_ST.xy, _PuddleTexture_ST.zw, _UVPuddleRotation, _UVPuddleScroll);
+        }
+    #endif
 }
 
-float4 tex2Dtri(Texture2D tex, SamplerState samp, float4 scaleTransform) {
-    float3 surfaceNormal = _TriplanarCoordSpace == 1 ? abs(worldVertexNormal) : abs(localVertexNormal);
-    float3 pos = _TriplanarCoordSpace == 1 ? worldVertexPos : localVertexPos;
-    float3 projectedNormal = surfaceNormal / (surfaceNormal.x + surfaceNormal.y + surfaceNormal.z);
+float4 triplanar_color(Texture2D tex, SamplerState samp, float4 tilingOffset, float blendFactor = 2)
+{
+    float3 surfaceNormal = _TriplanarCoordSpace == 1 ? worldVertexNormal : localVertexNormal;
+    float3 worldPos = _TriplanarCoordSpace == 1 ? worldVertexPos : localVertexPos;
+    
+    float3 blend = pow(abs(surfaceNormal.xyz), blendFactor);
+    blend /= dot(blend, float3(1,1,1));
 
-    float3 normalSign = sign(surfaceNormal);
-    float2 uvX = scaleTransform.xy * (pos.zy * float2(normalSign.x, 1)) + scaleTransform.zw;
-    float2 uvY = scaleTransform.xy * (pos.xz * float2(normalSign.y, 1)) + scaleTransform.zw;
-    float2 uvZ = scaleTransform.xy * (pos.xy * float2(-normalSign.z, 1)) + scaleTransform.zw;
+    float4 result = 0;
 
-    float4 sampleX, sampleY, sampleZ;
-    sampleX = sampleY = sampleZ = 0;
-    if (projectedNormal.x > 0) sampleX = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, samp, uvX);
-    if (projectedNormal.y > 0) sampleY = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, samp, uvY);
-    if (projectedNormal.z > 0) sampleZ = MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, samp, uvZ);
+    float2 uvX = tilingOffset.xy * worldPos.zy + tilingOffset.zw;
+    float2 uvY = tilingOffset.xy * worldPos.xz + tilingOffset.zw;
+    float2 uvZ = tilingOffset.xy * worldPos.xy + tilingOffset.zw;
 
-    return (sampleX * projectedNormal.x) + (sampleY * projectedNormal.y) + (sampleZ * projectedNormal.z);
+    // these keep a UV checker texture oriented sensibly
+    if (surfaceNormal.x < 0)
+        uvX.x *= -1;
+
+    if (surfaceNormal.z > 0)
+        uvZ.x *= -1;
+    
+    result += blend.x * tex.Sample(samp, uvX);
+    result += blend.y * tex.Sample(samp, uvY);
+    result += blend.z * tex.Sample(samp, uvZ);
+
+    return result;
+}
+
+// bless bgolus
+// https://bgolus.medium.com/normal-mapping-for-a-triplanar-shader-10bf39dca05a
+float3 triplanar_normal(Texture2D tex, SamplerState samp, float4 tilingOffset, float strength, float blendFactor = 2)
+{
+    float3 surfaceNormal = _TriplanarCoordSpace == 1 ? worldVertexNormal : localVertexNormal;
+    float3 worldPos = _TriplanarCoordSpace == 1 ? worldVertexPos : localVertexPos;
+
+    float3 blend = pow(abs(surfaceNormal.xyz), blendFactor);
+    blend /= dot(blend, float3(1,1,1));
+    
+    float2 uvX = tilingOffset.xy * worldPos.zy + tilingOffset.zw;
+    float2 uvY = tilingOffset.xy * worldPos.xz + tilingOffset.zw;
+    float2 uvZ = tilingOffset.xy * worldPos.xy + tilingOffset.zw;
+
+    // th
+    if (surfaceNormal.x < 0)
+        uvX.x *= -1;
+
+    if (surfaceNormal.z > 0)
+        uvZ.x *= -1;
+
+    half3 tnormalX = UnpackScaleNormal(MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, samp, uvX), strength);
+    half3 tnormalY = UnpackScaleNormal(MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, samp, uvY), strength);
+    half3 tnormalZ = UnpackScaleNormal(MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, samp, uvZ), strength);
+
+    if (surfaceNormal.x < 0)
+        tnormalX.x *= -1;
+
+    if (surfaceNormal.z > 0)
+        tnormalZ.x *= -1;
+
+    // this reinterprets the tangent-space normals as
+    // world-space normals
+    half3 normalX = half3(0.0, tnormalX.yx);
+    half3 normalY = half3(tnormalY.x, 0.0, tnormalY.y);
+    half3 normalZ = half3(tnormalZ.xy, 0.0);
+    
+    // Triblend normals and add to world normal
+    float3 result = 
+        normalX.xyz * blend.x +
+        normalY.xyz * blend.y +
+        normalZ.xyz * blend.z +
+        surfaceNormal;
+
+    if (_TriplanarCoordSpace == 0)
+        result = mul((float3x3) unity_ObjectToWorld, result);
+
+    return normalize(result);
 }
 
 // Unused for now - works but has some quirks
@@ -192,7 +269,7 @@ float4 SampleTexture(Texture2D tex, float2 uv){
     #if defined(_STOCHASTIC_ON)
         texSample = tex2Dstoch(tex, sampler_DefaultSampler, uv);
     #elif defined(_TRIPLANAR_ON)
-        texSample = tex2Dtri(tex, sampler_DefaultSampler, _MainTex_ST);
+        texSample = triplanar_color(tex, sampler_DefaultSampler, _MainTex_ST);
     #elif defined(_SUPERSAMPLING_ON)
         texSample = tex2Dsuper(tex, sampler_DefaultSampler, uv);
     #else
@@ -206,7 +283,7 @@ float4 SampleDetailTexture(Texture2D tex, float2 uv){
     #if defined(_STOCHASTIC_DETAIL_ON) || (defined(STANDARD_LITE) && defined(_STOCHASTIC_ON))
         texSample = tex2Dstoch(tex, sampler_DefaultDetailSampler, uv);
     #elif defined(_TRIPLANAR_DETAIL_ON) || (defined(STANDARD_LITE) && defined(_TRIPLANAR_ON))
-        texSample = tex2Dtri(tex, sampler_DefaultDetailSampler, _DetailMainTex_ST);
+        texSample = triplanar_color(tex, sampler_DefaultDetailSampler, _DetailMainTex_ST);
     #elif defined(_SUPERSAMPLING_DETAIL_ON) || (defined(STANDARD_LITE) && defined(_SUPERSAMPLING_ON))
         texSample = tex2Dsuper(tex, sampler_DefaultDetailSampler, uv);
     #else
@@ -249,16 +326,10 @@ float4 SampleDetailBaseColor(float2 uv){
 }
 
 float3 SampleNormalMap(float2 uv){
-    #if defined(_TRIPLANAR_ON)
-        _NormalStrength *= 2;
-    #endif
     return UnpackScaleNormal(SampleTexture(_NormalMap, uv), _NormalStrength);
 }
 
 float3 SampleDetailNormalMap(float2 uv, float mask){
-    #if defined(_TRIPLANAR_DETAIL_ON) || (defined(STANDARD_LITE) && defined(_TRIPLANAR_ON))
-        _DetailNormalStrength *= 2;
-    #endif
     return UnpackScaleNormal(SampleDetailTexture(_DetailNormalMap, uv), _DetailNormalStrength * mask);
 }
 
@@ -325,7 +396,7 @@ float4 GetEmission(v2f i){
     #if defined(META_PASS)
         #if defined(_AUDIOLINK_ON) && defined(_AUDIOLINK_META_ON)
             audioLinkData al = (audioLinkData)0;
-            InitializeAudioLink(al, 0);
+            InitializeAudioLink(al);
             float alMult = GetAudioLinkBand(al, _AudioLinkEmission);
             alMult = Remap(alMult, 0, 1, _AudioLinkMin, _AudioLinkMax);
             emissTex *= lerp(1, alMult, _AudioLinkEmissionStrength * al.textureExists);
@@ -333,7 +404,7 @@ float4 GetEmission(v2f i){
     #else
         #if defined(_AUDIOLINK_ON)
             audioLinkData al = (audioLinkData)0;
-            InitializeAudioLink(al, 0);
+            InitializeAudioLink(al);
             float alMult = GetAudioLinkBand(al, _AudioLinkEmission);
             alMult = Remap(alMult, 0, 1, _AudioLinkMin, _AudioLinkMax);
             emissTex *= lerp(1, alMult, _AudioLinkEmissionStrength * al.textureExists);
@@ -341,6 +412,52 @@ float4 GetEmission(v2f i){
     #endif
 
     return emissTex;
+}
+
+float3 project(float3 a, float3 b)
+{
+    return b * dot(a, b) / dot(b, b);
+}
+
+float3x3 calculate_planar_tbn(float3x3 tangentToWorld, bool localSpace, int swizzle)
+{
+    float3 normal = tangentToWorld[2];
+    float3 tangent = 0;
+    float3 bitangent = 0;
+
+    switch (swizzle)
+    {
+    case 0:
+        tangent.x = bitangent.y = 1;
+        break;
+    case 1:
+        tangent.x = bitangent.z = 1;
+        break;
+    case 2:
+        tangent.y = bitangent.z = 1;
+        break;
+    default:
+        break;
+    }
+
+    normal = normalize(normal);
+    if (localSpace)
+    {
+        tangent = normalize(mul((float3x3) unity_ObjectToWorld, tangent));
+        bitangent = normalize(mul((float3x3) unity_ObjectToWorld, bitangent));
+    }
+
+    // give up if the vectors are not linearly independent
+    if (abs(dot(normal, tangent)) < 0.999 && abs(dot(normal, bitangent)) < 0.999)
+    {
+        tangent = tangent - project(tangent, normal);
+        bitangent = bitangent - project(bitangent, normal) - project(bitangent, tangent);
+
+        tangentToWorld[0] = normalize(tangent);
+        tangentToWorld[1] = normalize(bitangent);
+    }
+
+    return tangentToWorld;
 }
 
 void CalculateNormals(v2f i, inout InputData id, float3x3 tangentToWorld, float detailMask){
@@ -351,15 +468,45 @@ void CalculateNormals(v2f i, inout InputData id, float3x3 tangentToWorld, float 
     _NormalStrength *= 1-id.puddleMask;
     _DetailNormalStrength *= 1-id.puddleMask;
 
+    float3 tsNormalBase;
+    float3 tsNormalDetail;
+
+    float3x3 tbnDetail = tangentToWorld;
+
+    if (_UVDetailSet == 5 || _UVDetailSet == 6)
+    {
+        tbnDetail = calculate_planar_tbn(tangentToWorld, _UVDetailSet == 6, _UVDetailSwizzle);
+    }
+
+    // Does this save registers vs. creating a new tbnMain variable? I'm guessing it does
+    if (_UVMainSet == 5 || _UVMainSet == 6)
+    {
+        tangentToWorld = calculate_planar_tbn(tangentToWorld, _UVMainSet == 6, _UVMainSwizzle);
+    }
+
+    #if defined(_NORMALMAP_ON)
+        #if defined(_TRIPLANAR_ON)
+            tsNormalBase = mul(triplanar_normal(_NormalMap, sampler_DefaultSampler, _MainTex_ST, _NormalStrength), transpose(tangentToWorld));
+        #else
+            tsNormalBase = SampleNormalMap(i.uv0.xy);
+        #endif
+    #endif
+    
+    #if defined(_NORMALMAP_ON)
+        #if defined(_TRIPLANAR_DETAIL_ON) || (defined(STANDARD_LITE) && defined(_TRIPLANAR_ON))
+            tsNormalDetail = mul(triplanar_normal(_DetailNormalMap, sampler_DefaultDetailSampler, _DetailMainTex_ST, _DetailNormalStrength * detailMask), transpose(tbnDetail));
+        #else
+            tsNormalDetail = SampleDetailNormalMap(i.uv0.zw, detailMask);
+        #endif
+    #endif
+    
     #if defined(_NORMALMAP_ON) && !defined(_DETAIL_NORMAL_ON)
-        id.tsNormal = SampleNormalMap(i.uv0.xy);
+        id.tsNormal = tsNormalBase;
     #elif !defined(_NORMALMAP_ON) && defined(_DETAIL_NORMAL_ON)
-        id.tsNormal = SampleDetailNormalMap(i.uv0.zw, detailMask);
+        id.tsNormal = tsNormalDetail;
     #elif defined(_NORMALMAP_ON) && defined(_DETAIL_NORMAL_ON)
-        float3 baseNormal = SampleNormalMap(i.uv0.xy);
-        float3 detailNormal = SampleDetailNormalMap(i.uv0.zw, detailMask);
-        float3 blendedNormal0 = BlendNormals(baseNormal, detailNormal);
-        float3 blendedNormal1 = lerp(baseNormal, detailNormal, detailMask);
+        float3 blendedNormal0 = BlendNormals(tsNormalBase, tsNormalDetail);
+        float3 blendedNormal1 = lerp(tsNormalBase, tsNormalDetail, detailMask);
         id.tsNormal = lerp(blendedNormal0, blendedNormal1, _DetailMaskMode);
     #endif
 
