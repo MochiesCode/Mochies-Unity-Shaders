@@ -55,7 +55,7 @@ struct audioLinkData {
 
 float GetAudioLinkBand(audioLinkData al, int band){
     float4 bands = float4(al.bass, al.lowMid, al.upperMid, al.treble);
-    return bands[band-1];
+    return bands[band];
 }
 
 void InitializeAudioLink(inout audioLinkData al){
