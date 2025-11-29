@@ -492,7 +492,7 @@ void CalculateNormals(v2f i, inout InputData id, float3x3 tangentToWorld, float 
         #endif
     #endif
     
-    #if defined(_NORMALMAP_ON)
+    #if defined(_DETAIL_NORMAL_ON)
         #if defined(_TRIPLANAR_DETAIL_ON) || (defined(STANDARD_LITE) && defined(_TRIPLANAR_ON))
             tsNormalDetail = mul(triplanar_normal(_DetailNormalMap, sampler_DefaultDetailSampler, _DetailMainTex_ST, _DetailNormalStrength * detailMask), transpose(tbnDetail));
         #else
