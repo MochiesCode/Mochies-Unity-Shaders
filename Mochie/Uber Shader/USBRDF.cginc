@@ -1,9 +1,6 @@
 #ifndef USBRDF_INCLUDED
 #define USBRDF_INCLUDED
 
-// on these platforms, half3 == float3,
-// so the built-in functions collide with these!
-#if !defined(SHADER_API_METAL) && !defined(SHADER_API_VULKAN)
 float3 FresnelLerp(float3 specCol, float3 grazingTerm, float NdotV){
     float t = Pow5(1 - NdotV);
     return lerp(specCol, grazingTerm, t);
@@ -13,7 +10,6 @@ float3 FresnelTerm(float3 specCol, float LdotH){
     float t = Pow5(1 - LdotH);
     return specCol + (1-specCol) * t;
 }
-#endif
 
 float GetDetailRough(g2f i, float roughIn){
     float4 detailRough = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailRoughnessMap, sampler_MainTex, i.uv2.xy);

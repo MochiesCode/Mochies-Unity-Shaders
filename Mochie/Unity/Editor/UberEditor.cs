@@ -905,6 +905,7 @@ namespace Mochie {
                     // Masking
                     if (Foldouts.DoFoldout(foldouts, mat, me, _MaskingMode, "Masks", Foldouts.Style.ThinToggle)) {
                         MGUI.PropertyGroupParent(()=>{
+                            MGUI.ToggleGroup(_MaskingMode.floatValue == 0);
                             if (_MaskingMode.floatValue != 2){
                                 me.ShaderProperty(_EnableMaskTransform, Tips.enableMaskTransformLabel);
                                 MGUI.PropertyGroup(() => {
@@ -959,6 +960,7 @@ namespace Mochie {
                                     GUILayout.Label("Red:	Emission\nGreen:	Emission Pulse\nBlue:	Filtering\nAlpha:	Outline Thickness");
                                 });
                             }
+                            MGUI.ToggleGroupEnd();
                         });
                     }
                     

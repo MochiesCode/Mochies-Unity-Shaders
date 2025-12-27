@@ -29,6 +29,20 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
 
     UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos);
     atten = FadeShadows(i.worldPos, atten);
+    
+    #if defined(UNITY_PASS_FORWARDBASE)
+        UNITY_BRANCH
+        if (_UdonLightVolumeEnabled == 1){
+            LightVolumeSH(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+            unity_SHAr = float4(lightVolumeL1r, lightVolumeL0.r);
+            unity_SHAg = float4(lightVolumeL1g, lightVolumeL0.g);
+            unity_SHAb = float4(lightVolumeL1b, lightVolumeL0.b);
+            unity_SHBr = 0;
+            unity_SHBg = 0;
+            unity_SHBb = 0;
+            unity_SHC = 0;
+        }
+    #endif
 
     #if defined(_RAIN_ON)
         float2 maskUV = TRANSFORM_TEX(i.uv, _RainMask);

@@ -26,7 +26,7 @@ namespace Mochie {
             "Debug"
         }, 3);
         
-        string versionLabel = "v2.9";
+        string versionLabel = "v2.9.1";
 
         // Variant Settings
         MaterialProperty _BlendMode = null;

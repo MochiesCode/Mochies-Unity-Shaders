@@ -428,13 +428,13 @@ float3x3 calculate_planar_tbn(float3x3 tangentToWorld, bool localSpace, int swiz
     switch (swizzle)
     {
     case 0:
-        tangent.x = bitangent.y = 1;
+        tangent.x = bitangent.y = -1;
         break;
     case 1:
-        tangent.x = bitangent.z = 1;
+        tangent.x = bitangent.z = -1;
         break;
     case 2:
-        tangent.y = bitangent.z = 1;
+        tangent.y = bitangent.z = -1;
         break;
     default:
         break;
@@ -473,16 +473,23 @@ void CalculateNormals(v2f i, inout InputData id, float3x3 tangentToWorld, float 
 
     float3x3 tbnDetail = tangentToWorld;
 
+    // this should be skipped if we're using triplanar sampling – the _UVMainSet property isn't even shown in
+    // the inspector when using this sampling mode
+    #if !defined(_TRIPLANAR_DETAIL_ON) && !(defined(STANDARD_LITE) && defined(_TRIPLANAR_ON))
     if (_UVDetailSet == 5 || _UVDetailSet == 6)
     {
         tbnDetail = calculate_planar_tbn(tangentToWorld, _UVDetailSet == 6, _UVDetailSwizzle);
     }
+    #endif
 
-    // Does this save registers vs. creating a new tbnMain variable? I'm guessing it does
+    // same rationale as above
+    #if !defined(_TRIPLANAR_ON)
     if (_UVMainSet == 5 || _UVMainSet == 6)
     {
+        // Does this save registers vs. creating a new tbnMain variable? I'm guessing it does
         tangentToWorld = calculate_planar_tbn(tangentToWorld, _UVMainSet == 6, _UVMainSwizzle);
     }
+    #endif
 
     #if defined(_NORMALMAP_ON)
         #if defined(_TRIPLANAR_ON)
@@ -494,9 +501,25 @@ void CalculateNormals(v2f i, inout InputData id, float3x3 tangentToWorld, float 
     
     #if defined(_DETAIL_NORMAL_ON)
         #if defined(_TRIPLANAR_DETAIL_ON) || (defined(STANDARD_LITE) && defined(_TRIPLANAR_ON))
-            tsNormalDetail = mul(triplanar_normal(_DetailNormalMap, sampler_DefaultDetailSampler, _DetailMainTex_ST, _DetailNormalStrength * detailMask), transpose(tbnDetail));
+            // even though this is the detail texture, we need to have all of our normals in the same tangent space – so, use tangentToWorld here
+            tsNormalDetail = mul(triplanar_normal(_DetailNormalMap, sampler_DefaultDetailSampler, _DetailMainTex_ST, _DetailNormalStrength * detailMask), transpose(tangentToWorld));
         #else
             tsNormalDetail = SampleDetailNormalMap(i.uv0.zw, detailMask);
+            // we now need to decide if this is the correct tangent-space!
+
+            // if triplanar sampling is enabled for the main texture, then we act like it's using UV0.
+            // otherwise, we check if the UV sources are incompatible: this happens when they aren't equal AND
+            // when they aren't both from a UV map
+            #if defined(_TRIPLANAR_ON)
+                if (_UVDetailSet == 5 || _UVDetailSet == 6)
+            #else
+                if (_UVDetailSet != _UVMainSet && (_UVMainSet >= 5 || _UVDetailSet >= 5))
+            #endif
+                {
+                    tsNormalDetail = mul(tsNormalDetail, tbnDetail);
+                    tsNormalDetail = mul(tsNormalDetail, transpose(tangentToWorld));
+                }
+                    
         #endif
     #endif
     

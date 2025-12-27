@@ -102,4 +102,5 @@ struct v2f {
 
 #include "../Common/Sampling.cginc"
 #include "../Common/Utilities.cginc"
+#include "../Common/LightVolumes.cginc"
 #include "GlassFunctions.cginc"
