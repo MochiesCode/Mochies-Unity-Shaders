@@ -321,11 +321,9 @@ float _LightVolumeBias;
 
 // Debug Toggles
 int _MaterialDebugMode;
-int _DebugFlags;
+int _DebugEnable;
 int _DebugBaseColor;
 int _DebugNormals;
-int _DebugTangentSpaceNormals;
-int _DebugVertexNormals;
 int _DebugRoughness;
 int _DebugMetallic;
 int _DebugOcclusion;
@@ -352,6 +350,46 @@ float3 worldVertexPos;
 float3 localVertexPos;
 float3 worldVertexNormal;
 float3 localVertexNormal;
+
+float4 _TriplanarWorldRotation;
+float4 _TriplanarWorldOffset;
+
+float3 RotateEulerDeg(float3 p, float3 deg)
+{
+    float3 r = radians(deg);
+    float sx, cx, sy, cy, sz, cz;
+    sincos(r.x, sx, cx);
+    sincos(r.y, sy, cy);
+    sincos(r.z, sz, cz);
+
+    float3x3 mx = float3x3(
+        1, 0, 0,
+        0, cx, -sx,
+        0, sx, cx
+    );
+
+    float3x3 my = float3x3(
+        cy, 0, sy,
+        0, 1, 0,
+        -sy, 0, cy
+    );
+
+    float3x3 mz = float3x3(
+        cz, -sz, 0,
+        sz, cz, 0,
+        0, 0, 1
+    );
+
+    return mul(mz, mul(my, mul(mx, p)));
+}
+
+float3 ApplyTriplanarWorldXform(float3 worldPos)
+{
+    float3 p = worldPos + _TriplanarWorldOffset.xyz;
+    p = RotateEulerDeg(p, _TriplanarWorldRotation.xyz);
+    return p;
+}
+
 
 struct appdata {
     float4 vertex : POSITION;
@@ -385,16 +423,15 @@ struct v2f {
     float3 worldPos : TEXCOORD7;
     float3 localPos : TEXCOORD8;
     float3 localNorm : TEXCOORD9;
-    float3 wind : TEXCOORD12;
     #if defined(META_PASS)
         #if defined(EDITOR_VISUALIZATION)
             float2 vizUV    : TEXCOORD10;
             float4 lightCoord   : TEXCOORD11;
         #endif
-    #else 
-        bool vertexLightOn : TEXCOORD13;
-        UNITY_SHADOW_COORDS(14)
-        UNITY_FOG_COORDS(15)
+    #else
+        bool vertexLightOn : TEXCOORD12;
+        UNITY_SHADOW_COORDS(13)
+        UNITY_FOG_COORDS(14)
     #endif
     UNITY_VERTEX_INPUT_INSTANCE_ID
     UNITY_VERTEX_OUTPUT_STEREO

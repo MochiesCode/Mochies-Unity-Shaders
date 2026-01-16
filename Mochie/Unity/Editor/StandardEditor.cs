@@ -25,13 +25,15 @@ namespace Mochie {
             "Render Settings",
             "Debug"
         }, 3);
-        
-        string versionLabel = "v2.9.1";
+
+        string versionLabel = "v2.8";
 
         // Variant Settings
         MaterialProperty _BlendMode = null;
         MaterialProperty _SmoothnessToggle = null;
         MaterialProperty _TriplanarCoordSpace = null;
+        MaterialProperty _TriplanarWorldRotation = null;
+        MaterialProperty _TriplanarWorldOffset = null;
         MaterialProperty _Cutoff = null;
         MaterialProperty _AlphaSource = null;
         MaterialProperty _MipMapRescaling = null;
@@ -335,7 +337,19 @@ namespace Mochie {
         MaterialProperty _FlipBackfaceNormals = null;
 
         // Debug
-        MaterialProperty _DebugFlags = null;
+        MaterialProperty _DebugEnable = null;
+        MaterialProperty _DebugBaseColor = null;
+        MaterialProperty _DebugNormals = null;
+        MaterialProperty _DebugRoughness = null;
+        MaterialProperty _DebugMetallic = null;
+        MaterialProperty _DebugHeight = null;
+        MaterialProperty _DebugVertexColors = null;
+        MaterialProperty _DebugAtten = null;
+        MaterialProperty _DebugReflections = null;
+        MaterialProperty _DebugSpecular = null;
+        MaterialProperty _DebugOcclusion = null;
+        MaterialProperty _DebugAlpha = null;
+        MaterialProperty _DebugLighting = null;
         MaterialProperty _NoiseTexSSR = null;
         MaterialProperty _DefaultSampler = null;
         MaterialProperty _DefaultDetailSampler = null;
@@ -449,7 +463,18 @@ namespace Mochie {
                         }
                         me.ShaderProperty(_SmoothnessToggle, Tips.smoothnessModeText);
                         if (_PrimarySampleMode.floatValue == 3 || (_DetailSampleMode.floatValue == 3 && !isLite))
+                        {
                             me.ShaderProperty(_TriplanarCoordSpace, "Triplanar Coordinates");
+
+                            if (_TriplanarCoordSpace.floatValue == 1)
+                            {
+                                MGUI.PropertyGroup(() => {
+                                    MGUI.Vector3Field(_TriplanarWorldRotation, "World Rotation", false);
+                                    MGUI.Vector3Field(_TriplanarWorldOffset, "World Offset", false);
+                                });
+                            }
+                        }
+
                     });
                     if (_BlendMode.floatValue == 1){
                         MGUI.PropertyGroup(()=>{
@@ -746,9 +771,6 @@ namespace Mochie {
         #region Vertex Manip
         void DoVertexManipulation(Material mat){
             if (Foldouts.DoFoldout(foldouts, mat, me, _VertexManipulationToggle, "Vertex Manipulation", Foldouts.Style.ThinLongToggle)){
-                MGUI.Space6();
-                MGUI.DisplayWarning("Please note that meshes set to 'batching static' may exhibit different behavior at runtime when using wind or rotation settings, it is recommended to use GPU instancing for these meshes instead. To do this: disable 'batching static' in the static toggle dropdown for the object, then tick 'Enable GPU Instancing' in the render settings for this material.");
-                MGUI.SpaceN4();
                 MGUI.PropertyGroupParent(()=>{
                     MGUI.ToggleGroup(_VertexManipulationToggle.floatValue == 0);
                     MGUI.PropertyGroup(()=>{
@@ -793,10 +815,13 @@ namespace Mochie {
                                 me.ShaderProperty(_WindSmoothness2, "Smoothness");
                             });
                         }
+                        if (_WindToggle.floatValue == 1){
+                            MGUI.DisplayWarning("Please note that meshes set to 'batching static' may exhibit different wind behavior at runtime, it is recommended to use GPU instancing for these meshes instead.");
+                            MGUI.SpaceN1();
+                        }
                     });
                     MGUI.ToggleGroupEnd();
                 });
-                MGUI.ToggleGroupEnd();
             }
         }
         #endregion
@@ -875,7 +900,7 @@ namespace Mochie {
                 me.ShaderProperty(_RippleSpeed, "Speed");
                 me.ShaderProperty(_RippleDensity, "Density");
                 me.ShaderProperty(_RippleSize, "Size");
-                me.ShaderProperty(_RippleHorizonAdjustment, Tips.horizonAdjustmentText);
+                me.ShaderProperty(_RippleHorizonAdjustment, "Horizon Adjustment");
                 me.ShaderProperty(_RippleHorizonAdjustmentDistance, "Adjustment Distance");
             });
             if (_PuddleToggle.floatValue == 1){
@@ -1219,7 +1244,7 @@ namespace Mochie {
         void DoRenderSettings(Material mat){
             if (Foldouts.DoFoldout(foldouts, mat, "Render Settings", Foldouts.Style.ThinLong)){
                 MGUI.PropertyGroupParent(()=>{
-                    MGUI.PropertyGroup(()=>{
+                    MGUI.PropertyGroup(() => {
                         me.ShaderProperty(_Culling, Tips.culling);
                         _QueueOffset.floatValue = (int)_QueueOffset.floatValue;
                         me.ShaderProperty(_QueueOffset, Tips.queueOffset);
@@ -1247,8 +1272,21 @@ namespace Mochie {
             if (_MaterialDebugMode.floatValue == 1){
                 if (Foldouts.DoFoldout(foldouts, mat, "Debug", Foldouts.Style.ThinLong)){
                     MGUI.PropertyGroupParent(()=>{
-                        MGUI.EnumDropdown<DebugFlags>(_DebugFlags, new GUIContent("Debug View"));
-
+                        MGUI.ShaderPropertyBold(me, _DebugEnable, "Debug View");
+                        MGUI.PropertyGroup(()=>{
+                            me.ShaderProperty(_DebugBaseColor, "Base Color");
+                            me.ShaderProperty(_DebugAlpha, "Alpha");
+                            me.ShaderProperty(_DebugNormals, "Normals");
+                            me.ShaderProperty(_DebugRoughness, "Roughness");
+                            me.ShaderProperty(_DebugMetallic, "Metallic");
+                            me.ShaderProperty(_DebugOcclusion, "Occlusion");
+                            me.ShaderProperty(_DebugHeight, "Height");
+                            me.ShaderProperty(_DebugLighting, "Lighting");
+                            me.ShaderProperty(_DebugAtten, "Realtime Shadows");
+                            me.ShaderProperty(_DebugReflections, "Reflections");
+                            me.ShaderProperty(_DebugSpecular, "Specular Highlights");
+                            me.ShaderProperty(_DebugVertexColors, "Vertex Colors");
+                        });		
                         MGUI.BoldLabel("Default Textures");
                         MGUI.PropertyGroup(()=>{
                             me.TexturePropertySingleLine(new GUIContent("LUT for Filament SM"), _DFG);

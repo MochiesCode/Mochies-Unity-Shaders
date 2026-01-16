@@ -13,6 +13,11 @@ Shader "Mochie/Standard" {
         [Enum(Off,0, On,1)]_SmoothnessToggle("Use Smoothness", Int) = 0
         [Enum(Local,0, World,1)]_TriplanarCoordSpace("Triplanar Coordinate Space", Int) = 0
 
+        // World Rotation for Triplanar CS PR01
+        _TriplanarWorldRotation("Triplanar World Rotation (XYZ Degrees)", Vector) = (0,0,0,0)
+        _TriplanarWorldOffset("Triplanar World Offset", Vector) = (0,0,0,0)
+        // World Rotation for Triplanar CS PR01 END
+
         // Primary Textures
         [Enum(Separate,0, Packed,1)]_PrimaryWorkflow("Primary Workflow", Int) = 0
         [Enum(Default,0, Stochastic,1, Supersampling,2, Triplanar,3)]_PrimarySampleMode("Primary Sampling Mode", Int) = 0
@@ -329,7 +334,19 @@ Shader "Mochie/Standard" {
         _DefaultDetailSampler("Detail Wrap/Filter Settings", 2D) = "white" {}
         
         // Debug Views
-        [HideInInspector] _DebugFlags("Debug Flags", Integer) = 0
+        [ToggleUI]_DebugEnable("Enable Debug View", Int) = 0
+        [ToggleUI]_DebugVertexColors("Vertex Colors", Int) = 0
+        [ToggleUI]_DebugBaseColor("Base Color", Int) = 1
+        [ToggleUI]_DebugNormals("Normals", Int) = 0
+        [ToggleUI]_DebugRoughness("Roughness", Int) = 0
+        [ToggleUI]_DebugMetallic("Metallic", Int) = 0
+        [ToggleUI]_DebugOcclusion("Occlusion", Int) = 0
+        [ToggleUI]_DebugHeight("Height", Int) = 0
+        [ToggleUI]_DebugAtten("Attenuation", Int) = 0
+        [ToggleUI]_DebugReflections("Reflections", Int) = 0
+        [ToggleUI]_DebugSpecular("Specular Highlights", Int) = 0
+        [ToggleUI]_DebugAlpha("Alpha", Int) = 0
+        [ToggleUI]_DebugLighting("Alpha", Int) = 0
 
         // NO TOUCHY
         [HideInInspector]_SrcBlend("__src", Float) = 1.0
@@ -445,7 +462,6 @@ Shader "Mochie/Standard" {
         Pass {
             Tags {"LightMode" = "ShadowCaster"}
             CGPROGRAM
-            #pragma target 5.0
             #pragma vertex vert
             #pragma fragment frag
             #pragma shader_feature_local _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
@@ -470,7 +486,6 @@ Shader "Mochie/Standard" {
             Cull Off
 
             CGPROGRAM
-            #pragma target 5.0
             #pragma vertex vert
             #pragma fragment frag
             #pragma shader_feature_local _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
