@@ -29,7 +29,9 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
 
     UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos);
     atten = FadeShadows(i.worldPos, atten);
-    
+
+    float4 baseColorTex = SampleTexture(_BaseColor, TRANSFORM_TEX(i.uv, _BaseColor)) * _BaseColorTint;
+
     #if defined(UNITY_PASS_FORWARDBASE)
         UNITY_BRANCH
         if (_UdonLightVolumeEnabled == 1){
@@ -111,7 +113,7 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
     ApplyGSAA(i.normal, roughness);
     float3 occlusion = lerp(1, SampleTexture(_OcclusionMap, TRANSFORM_TEX(i.uv, _OcclusionMap)), _Occlusion);
 
-    #if defined(_SPECULAR_HIGHLIGHTS_ON) || defined(_REFLECTIONS_ON) || AREALIT_ENABLED || LTCGI_ENABLED
+    #if defined(_SPECULAR_HIGHLIGHTS_ON) || defined(_REFLECTIONS_ON) || defined(_SSR_ON) || AREALIT_ENABLED || LTCGI_ENABLED
         float roughSq = roughness * roughness;
         float roughBRDF = max(roughSq, 0.003);
         float metallic = SampleTexture(_MetallicMap, TRANSFORM_TEX(i.uv, _MetallicMap)) * _Metallic;
@@ -124,7 +126,7 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
         float LdotH = Safe_DotClamped(lightDir, halfVector);
         float NdotV = abs(dot(normalDir, viewDir));
 
-        #if defined(_REFLECTIONS_ON) || LTCGI_ENABLED
+        #if defined(_REFLECTIONS_ON) || defined(_SSR_ON) || LTCGI_ENABLED
             float surfaceReduction = 1.0 / (roughBRDF*roughBRDF + 1.0);
             float grazingTerm = saturate((1-_Roughness) + (1-omr));
             float3 fresnel = FresnelLerp(specularTint, grazingTerm, NdotV);
@@ -137,6 +139,11 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
 
         #if LTCGI_ENABLED
             reflCol += GetLTCGISpecularity(i, normalDir, viewDir, roughness) * reflAdjust;
+        #endif
+
+        #if defined(_SSR_ON)
+            float4 ssrCol = GetSSR(i.worldPos, viewDir, reflDir, normalDir, 1-roughness, baseColorTex, metallic, ComputeGrabScreenPos(i.pos));
+            reflCol = lerp(reflCol, ssrCol.rgb, ssrCol.a);
         #endif
 
         #if defined(_SPECULAR_HIGHLIGHTS_ON)
@@ -195,7 +202,6 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
         grabCol *= _GrabpassTint;
     #endif
 
-    float4 baseColorTex = SampleTexture(_BaseColor, TRANSFORM_TEX(i.uv, _BaseColor)) * _BaseColorTint;
     #if defined(_AREALIT_ON) && defined(_LITBASECOLOR_ON)
         baseColorTex.rgb += diffTerm;
     #endif

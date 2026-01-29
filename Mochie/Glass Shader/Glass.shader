@@ -45,6 +45,11 @@
 
         [ToggleUI]_ReflectionsToggle("Reflections", Int) = 1
         _ReflectionStrength("Reflection Strength", Float) = 1
+        [ToggleUI]_SSRToggle("Screen Space Reflections", Int) = 0
+        _SSRStrength("SSR Strength", Float) = 1
+        _SSREdgeFade("Edge Fade", Range(0,1)) = 0.1
+        _SSRHeight("SSR Height", Float) = 0.2
+        [HideInInspector]_NoiseTexSSR("SSR Noise Tex", 2D) = "black"
         [ToggleUI]_SpecularToggle("Specular Highlights", Int) = 1
         _SpecularStrength("Specular Strength", Float) = 1
         [ToggleUI]_GSAAToggle("Specular Antialiasing", Int) = 0
@@ -110,6 +115,7 @@
             #pragma shader_feature_local _ _BLURQUALITY_ULTRA _BLURQUALITY_HIGH _BLURQUALITY_MED _BLURQUALITY_LOW
             #pragma shader_feature_local _REFLECTIONS_ON
             #pragma shader_feature_local _SPECULAR_HIGHLIGHTS_ON
+            #pragma shader_feature_local _SSR_ON
             #pragma shader_feature_local _GRABPASS_ON
             #pragma shader_feature_local _LIT_BASECOLOR_ON
             #pragma shader_feature_local _STOCHASTIC_SAMPLING_ON

@@ -4,6 +4,8 @@ Shader "Mochie/Screen FX" {
     Properties {
 
         //Global Settings
+        [Enum(Hide in Mirror,0, Mirror Only,1)]_MirrorRenderMode("", Int) = 0
+        [Enum(Show in Camera,0, Hide in Camera,1, Camera Only,2)]_CameraRenderMode("", Int) = 0
         [Enum(Opaque,0, Alpha,1, Premultiplied,2, Additive,3, Soft Additive,4, Multiply,5, Multiply 2x,6)]_BlendMode("", Int) = 0
         _SrcBlend("", Int) = 1
         _DstBlend("", Int) = 0

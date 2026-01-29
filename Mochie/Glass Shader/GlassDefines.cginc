@@ -15,6 +15,7 @@
 #define GRABPASS_ENABLED defined(_GRABPASS_ON) && !defined(SHADER_API_MOBILE)
 
 MOCHIE_DECLARE_TEX2D_SCREENSPACE(_GlassGrab);
+float4 _GlassGrab_TexelSize;
 sampler2D _RainSheet;
 sampler2D _BaseColor;
 sampler2D _RoughnessMap;
@@ -63,6 +64,9 @@ float _GSAAToggle;
 float _GSAAStrength;
 float _SpecularStrength;
 float _ReflectionStrength;
+float _SSREdgeFade;
+float _SSRHeight;
+float _SSRStrength;
 
 float4 _LTCGI_DiffuseColor;
 float4 _LTCGI_SpecularColor;
@@ -74,6 +78,13 @@ float _AreaLitRoughnessMult;
 float4 _AreaLitMask_ST;
 
 float rainStrength;
+
+#if defined(_SSR_ON)
+    MOCHIE_DECLARE_TEX2D_SCREENSPACE(_CameraDepthTexture);
+    MOCHIE_DECLARE_TEX2D(_NoiseTexSSR);
+    float4 _CameraDepthTexture_TexelSize;
+    float4 _NoiseTexSSR_TexelSize;
+#endif
 
 struct appdata {
     float4 vertex : POSITION;
@@ -103,4 +114,7 @@ struct v2f {
 #include "../Common/Sampling.cginc"
 #include "../Common/Utilities.cginc"
 #include "../Common/LightVolumes.cginc"
+#if defined(_SSR_ON)
+    #include "GlassSSR.cginc"
+#endif
 #include "GlassFunctions.cginc"

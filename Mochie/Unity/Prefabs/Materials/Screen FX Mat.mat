@@ -144,6 +144,7 @@ Material:
     - _BlurUseGlobal: 1
     - _BlurY: 0
     - _Brightness: 1
+    - _CameraRenderMode: 0
     - _ClampMax: 1
     - _ClampToggle: 0
     - _ColorMaxRange: 15
@@ -202,6 +203,7 @@ Material:
     - _MaterialResetCheck: 0
     - _MaxRange: 15
     - _MinRange: 8
+    - _MirrorRenderMode: 0
     - _MonoTint: 0
     - _NMFOpacity: 1
     - _NMFToggle: 0

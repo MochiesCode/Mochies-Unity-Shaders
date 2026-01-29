@@ -341,6 +341,7 @@ Shader "Mochie/Standard" {
         [HideInInspector]_DFG("LUT for Filament SM", 2D) = "white" {}
         [HideInInspector]_AlphaToMask("Alpha Coverage", Int) = 0
         [HideInInspector]_SampleCustomLUT("Sample Custom LUT?", Int) = 0
+        [HideInInspector]_ThisValueIsZero("But the compiler doesn't know that :3", Float) = 0
         [ToggleUI]_MaterialDebugMode("Debug Mode", Int) = 0
 
     }
@@ -492,6 +493,44 @@ Shader "Mochie/Standard" {
             #include "StandardDefines.cginc"
             ENDCG
         }
+
+        // Pass {
+        //     Name "ScenePickingPass"
+        //     Tags {"LightMode"="Picking"}
+        //     BlendOp Add
+        //     Blend One Zero
+        //     ZWrite On
+        //     Cull Back
+
+        //     CGPROGRAM
+        //     #pragma target 5.0
+        //     #pragma vertex vert
+        //     #pragma fragment picking
+        //     #pragma shader_feature_local _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
+        //     #pragma shader_feature_local _ _STOCHASTIC_ON _TRIPLANAR_ON _SUPERSAMPLING_ON
+        //     #pragma shader_feature_local _VERTEX_MANIPULATION_ON
+        //     #include "StandardPicking.cginc"
+        //     ENDCG
+        // }
+
+        // Pass {
+        //     Name "SceneSelectionPass"
+        //     Tags {"LightMode"="SceneSelectionPass"}
+
+        //     BlendOp Add
+        //     Blend One Zero
+        //     ZWrite On
+        //     Cull Back
+
+        //     CGPROGRAM
+        //     #pragma target 5.0
+        //     #pragma shader_feature_local _VERTEX_MANIPULATION_ON
+        //     #pragma vertex vert
+        //     #pragma fragment selection
+
+        //     #include ".cginc"
+        //     ENDCG
+        // }
     }
     CustomEditor "Mochie.StandardEditor"
 }

@@ -55,7 +55,7 @@ namespace Mochie {
                 "Sobel Filter",
         }, 0);
 
-        string versionLabel = "v1.20.2";
+        string versionLabel = "v1.21";
         
         // Commonly used strings
         string strengthLabel = "Strength";
@@ -71,6 +71,8 @@ namespace Mochie {
         string speedLabel = "Speed";
 
         // General
+        // MaterialProperty _MirrorRenderMode = null;
+        MaterialProperty _CameraRenderMode = null;
         MaterialProperty _BlendMode = null;
         MaterialProperty _MinRange = null;
         MaterialProperty _MaxRange = null;
@@ -478,6 +480,8 @@ namespace Mochie {
                         MGUI.PropertyGroup(()=>{
                         me.ShaderProperty(_DisplayGlobalGizmo, "Display Range Gizmos");
                         me.RenderQueueField();
+                        // me.ShaderProperty(_MirrorRenderMode, "VRC Mirror");
+                        me.ShaderProperty(_CameraRenderMode, "VRC Handheld Camera");
                         EditorGUI.BeginChangeCheck();
                         me.ShaderProperty(_BlendMode, "Blending Mode");
                         MGUI.Space4();

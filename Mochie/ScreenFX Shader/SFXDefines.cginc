@@ -85,6 +85,12 @@ float3 wPos;
 float3 wNorm;
 float depth;
 
+// VRC
+int _MirrorRenderMode;
+int _CameraRenderMode;
+float _VRChatCameraMode;
+float _VRChatMirrorMode;
+
 #if X_FEATURES
     // Audio Link
     int _AudioLinkZoomBand;

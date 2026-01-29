@@ -80,6 +80,9 @@ float3 BlurredGrabpassSample(float2 uv, float str){
     float3 blurCol = 0;
     float2 blurStr = str;
     blurStr.x *= 0.5625;
+    #if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
+        blurStr *= 0.5;
+    #endif
     float2 uvBlur = uv;
     
     #if defined(_BLURQUALITY_ULTRA)

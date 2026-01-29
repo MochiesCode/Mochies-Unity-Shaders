@@ -303,6 +303,13 @@ float CutoutAlpha(float alpha, float2 uv){
     float cleanAlpha = (alpha - _Cutoff) / max(fwidth(alpha), 0.0001) + 0.5;
     if (_MipMapRescaling == 1)
         cleanAlpha *= 1 + CalcMipLevel(uv * lerp(_MainTex_TexelSize.zw, _AlphaMask_TexelSize.zw, _AlphaSource)) * _MipMapScale;
+
+    // this crashed fen lol
+    // #if defined(SHADER_API_METAL) || defined(SHADER_API_GLES) || defined(SHADER_API_GLES3)
+    //     if (GetRenderTargetSampleCount() == 1){
+    //         clip(cleanAlpha - _Cutoff);
+    //     }
+    // #endif
     return cleanAlpha;
 }
 
@@ -575,8 +582,8 @@ void InitializeInputData(v2f i, inout InputData id, float3x3 tangentToWorld, boo
         blendedBaseColor = lerp(blendedBaseColor, detailBaseColor, _DetailMaskMode);
         id.baseColor.rgb = lerp(id.baseColor, blendedBaseColor, _DetailMainTexStrength * detailMask);
     #endif
-    // if (_VertexBaseColor == 1)
-    //     id.baseColor *= i.color;
+    if (_VertexBaseColor == 1)
+        id.baseColor *= i.color;
 
     #if !defined(STANDARD_MOBILE)
         CalculatePuddleMask(i, id);

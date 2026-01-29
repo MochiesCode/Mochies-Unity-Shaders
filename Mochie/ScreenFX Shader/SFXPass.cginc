@@ -65,6 +65,15 @@ float4 frag (v2f i) : SV_Target {
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
 
     MirrorCheck();
+    
+    if (_CameraRenderMode == 1){
+        if (_VRChatCameraMode > 0)
+            discard;
+    }
+    else if (_CameraRenderMode == 2){
+        if (_VRChatCameraMode == 0)
+            discard;
+    }
 
     float2 uv = i.uv.xy / i.uv.w;
     i.uv.xy = uv;

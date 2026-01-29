@@ -45,6 +45,11 @@
 
         [ToggleUI]_ReflectionsToggle("Reflections", Int) = 1
         _ReflectionStrength("Reflection Strength", Float) = 1
+        [ToggleUI]_SSRToggle("Screen Space Reflections", Int) = 0
+        _SSRStrength("SSR Strength", Float) = 1
+        _SSREdgeFade("Edge Fade", Range(0,1)) = 0.1
+        _SSRHeight("SSR Height", Float) = 0.2
+        [HideInInspector]_NoiseTexSSR("SSR Noise Tex", 2D) = "black"
         [ToggleUI]_SpecularToggle("Specular Highlights", Int) = 1
         _SpecularStrength("Specular Strength", Float) = 1
         [ToggleUI]_GSAAToggle("Specular Antialiasing", Int) = 0

@@ -13,11 +13,12 @@ namespace Mochie {
         public static Dictionary<Material, Toggles> foldouts = new Dictionary<Material, Toggles>();
         Toggles toggles = new Toggles(new string[] {
             "Surface",
+            "Specularity",
             "Rain",
             "LTCGI",
             "AreaLit",
             "Render Settings"
-        }, 5);
+        }, 1);
 
         string versionLabel = "v1.10";
 
@@ -64,6 +65,10 @@ namespace Mochie {
         MaterialProperty _ReflectionStrength = null;
         MaterialProperty _SpecularToggle = null;
         MaterialProperty _SpecularStrength = null;
+        MaterialProperty _SSRToggle = null;
+        MaterialProperty _SSRStrength = null;
+        MaterialProperty _SSREdgeFade = null;
+        MaterialProperty _SSRHeight = null;
         MaterialProperty _GSAAToggle = null;
         MaterialProperty _GSAAStrength = null;
         MaterialProperty _Culling = null;
@@ -134,10 +139,13 @@ namespace Mochie {
                             MGUI.TexPropLabel(Tips.litBaseColorText, 100, false);
                             MGUI.TextureSO(me, _BaseColor, _BaseColor.textureValue);
                             me.TexturePropertySingleLine(Tips.metallicText, _MetallicMap, _Metallic);
+                            MGUI.sRGBWarning(_MetallicMap);
                             MGUI.TextureSO(me, _MetallicMap, _MetallicMap.textureValue);
                             me.TexturePropertySingleLine(Tips.roughnessTexLabel, _RoughnessMap, _Roughness);
+                            MGUI.sRGBWarning(_RoughnessMap);
                             MGUI.TextureSO(me, _RoughnessMap, _RoughnessMap.textureValue);
                             me.TexturePropertySingleLine(Tips.occlusionTexLabel, _OcclusionMap, _OcclusionMap.textureValue ? _Occlusion : null);
+                            MGUI.sRGBWarning(_OcclusionMap);
                             MGUI.TextureSO(me, _OcclusionMap, _OcclusionMap.textureValue);
                             me.TexturePropertySingleLine(Tips.normalMapText, _NormalMap, _NormalMap.textureValue ? _NormalStrength : null);
                             MGUI.TextureSO(me, _NormalMap, _NormalMap.textureValue);
@@ -153,7 +161,22 @@ namespace Mochie {
                         }
                     });
                 }
-
+                if (Foldouts.DoFoldout(foldouts, mat, "Specularity", Foldouts.Style.Standard)) {
+                    MGUI.PropertyGroupParent(()=>{
+                        MGUI.PropertyGroup(()=>{
+                            MGUI.ToggleFloat(me, Tips.cubemapReflectionsText, _ReflectionsToggle, _ReflectionStrength);
+                            if (!isTwoPass){
+                                MGUI.ToggleFloat(me, Tips.ssrText, _SSRToggle, _SSRStrength);
+                                if (_SSRToggle.floatValue == 1){
+                                    me.ShaderProperty(_SSREdgeFade, Tips.ssrEdgeFadeText);
+                                    me.ShaderProperty(_SSRHeight, Tips.ssrDepthText);
+                                }
+                            }
+                            MGUI.ToggleFloat(me, Tips.specularHighlightsText, _SpecularToggle, _SpecularStrength);
+                            MGUI.ToggleFloat(me, Tips.gsaa, _GSAAToggle, _GSAAStrength);
+                        });
+                    });
+                }
                 // Rain
                 if (Foldouts.DoFoldout(foldouts, mat, me, _RainMode, "Rain", Foldouts.Style.StandardToggle)) {
                     MGUI.PropertyGroupParent(()=>{
@@ -235,11 +258,6 @@ namespace Mochie {
                 if (Foldouts.DoFoldout(foldouts, mat, "Render Settings", Foldouts.Style.Standard)) {
                     MGUI.PropertyGroupParent(()=>{
                         MGUI.PropertyGroup(()=>{
-                            MGUI.ToggleFloat(me, Tips.cubemapReflectionsText, _ReflectionsToggle, _ReflectionStrength);
-                            MGUI.ToggleFloat(me, Tips.specularHighlightsText, _SpecularToggle, _SpecularStrength);
-                            MGUI.ToggleFloat(me, Tips.gsaa, _GSAAToggle, _GSAAStrength);
-                        });
-                        MGUI.PropertyGroup(()=>{
                             me.ShaderProperty(_SamplingMode, Tips.samplingModeText);
                             me.ShaderProperty(_TexCoordSpace, Tips.texCoordSpaceText);
                             if (_TexCoordSpace.floatValue == 1f){
@@ -306,13 +324,14 @@ namespace Mochie {
         }
 
         void SetKeywords(Material mat){
+            bool isTwoPass = mat.shader.name.Contains("(Two Pass)"); 
             int rainMode = mat.GetInt("_RainMode");
             int blurMode = mat.GetInt("_BlurQuality");
             MGUI.SetKeyword(mat, "_STOCHASTIC_SAMPLING_ON", mat.GetInt("_SamplingMode") == 1);
             MGUI.SetKeyword(mat, "_NORMALMAP_ON", mat.GetTexture("_NormalMap"));
             MGUI.SetKeyword(mat, "_RAIN_ON", rainMode > 0);
-            MGUI.SetKeyword(mat, "_RAINMODE_RIPPLE", mat.GetInt("_RainMode") == 2);
-            MGUI.SetKeyword(mat, "_RAINMODE_AUTO", mat.GetInt("_RainMode") == 3);
+            MGUI.SetKeyword(mat, "_RAINMODE_RIPPLE", rainMode == 2);
+            MGUI.SetKeyword(mat, "_RAINMODE_AUTO", rainMode == 3);
             MGUI.SetKeyword(mat, "_BLURQUALITY_LOW", blurMode == 0);
             MGUI.SetKeyword(mat, "_BLURQUALITY_MED", blurMode == 1);
             MGUI.SetKeyword(mat, "_BLURQUALITY_HIGH", blurMode == 2);
@@ -321,6 +340,7 @@ namespace Mochie {
             MGUI.SetKeyword(mat, "LTCGI", mat.GetInt("_LTCGI") == 1);
             MGUI.SetKeyword(mat, "_REFLECTIONS_ON", mat.GetInt("_ReflectionsToggle") == 1);
             MGUI.SetKeyword(mat, "_SPECULAR_HIGHLIGHTS_ON", mat.GetInt("_SpecularToggle") == 1);
+            MGUI.SetKeyword(mat, "_SSR_ON", mat.GetInt("_SSRToggle") == 1 && mat.GetInt("_BlendMode") == 0 && !isTwoPass);
         }
 
         void SetBlendMode(Material mat){

@@ -341,6 +341,7 @@ Shader "Mochie/Standard Lite" {
         [HideInInspector]_DFG("LUT for Filament SM", 2D) = "white" {}
         [HideInInspector]_AlphaToMask("Alpha Coverage", Int) = 0
         [HideInInspector]_SampleCustomLUT("Sample Custom LUT?", Int) = 0
+        [HideInInspector]_ThisValueIsZero("But the compiler doesn't know that :3", Float) = 0
         [ToggleUI]_MaterialDebugMode("Debug Mode", Int) = 0
     }
 

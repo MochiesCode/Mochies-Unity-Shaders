@@ -11,6 +11,15 @@ ShaderImporter:
   - _RainSheet: {fileID: 2800000, guid: df89a63673a32f4438fba4fb13f0f640, type: 3}
   - _RainMask: {instanceID: 0}
   - _DropletMask: {fileID: 2800000, guid: 76ae1285472e6ce48a2f01ef7905b8fd, type: 3}
+  - _NoiseTexSSR: {fileID: 2800000, guid: b7359cc7e3e84444b88656ff6c166220, type: 3}
+  - _AreaLitMask: {instanceID: 0}
+  - _LightMesh: {instanceID: 0}
+  - _LightTex0: {instanceID: 0}
+  - _LightTex1: {instanceID: 0}
+  - _LightTex2: {instanceID: 0}
+  - _LightTex3: {instanceID: 0}
+  - _LTCGI_mat: {instanceID: 0}
+  - _LTCGI_amp: {instanceID: 0}
   nonModifiableTextures: []
   userData: 
   assetBundleName: 

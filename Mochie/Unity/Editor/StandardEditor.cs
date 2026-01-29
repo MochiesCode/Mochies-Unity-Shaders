@@ -1104,8 +1104,7 @@ namespace Mochie {
                     MGUI.PropertyGroup(()=>{
                         me.ShaderProperty(_LTCGIStrength, "Strength");
                         me.ShaderProperty(_LTCGIRoughness, "Roughness Multiplier");
-                        if (_ShadingModel.floatValue == 0)
-                            me.ShaderProperty(_LTCGISpecularOcclusion, "Specular Occlusion");
+                        me.ShaderProperty(_LTCGISpecularOcclusion, "Specular Occlusion");
                     });
                     MGUI.PropertyGroup(()=>{
                         me.ShaderProperty(_LTCGI_DiffuseColor, "Diffuse Color");
@@ -1157,8 +1156,7 @@ namespace Mochie {
                     MGUI.PropertyGroup(()=>{
                         me.ShaderProperty(_AreaLitStrength, "Strength");
                         me.ShaderProperty(_AreaLitRoughnessMultiplier, "Roughness Multiplier");
-                        if (_ShadingModel.floatValue == 0)
-                            me.ShaderProperty(_AreaLitSpecularOcclusion, "Specular Occlusion");
+                        me.ShaderProperty(_AreaLitSpecularOcclusion, "Specular Occlusion");
                         me.ShaderProperty(_OpaqueLights, Tips.opaqueLightsText);
                     });
                     MGUI.PropertyGroup(()=>{
