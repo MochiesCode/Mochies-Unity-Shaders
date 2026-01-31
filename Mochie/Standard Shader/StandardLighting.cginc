@@ -81,6 +81,32 @@ float SampleBakedOcclusion(float2 lightmapUV, float3 worldPos){
     #endif
 }
 
+// Modified version of https://github.com/TwoTailsGames/Unity-Built-in-Shaders/blob/master/CGIncludes/UnityCG.cginc#L872
+// Called in the shadowcaster when vertex manipulation is enabled because the offsets are calculated in world space, so we're going world --> clip instead of object --> clip
+float4 UnityClipSpaceShadowCasterWorldPos(float4 worldPos, float3 normal){
+    float4 wPos = worldPos;
+
+    if (unity_LightShadowBias.z != 0.0){
+        float3 wNormal = UnityObjectToWorldNormal(normal);
+        float3 wLight = normalize(UnityWorldSpaceLightDir(wPos.xyz));
+
+        // apply normal offset bias (inset position along the normal)
+        // bias needs to be scaled by sine between normal and light direction
+        // (http://the-witness.net/news/2013/09/shadow-mapping-summary-part-1/)
+        //
+        // unity_LightShadowBias.z contains user-specified normal offset amount
+        // scaled by world space texel size.
+
+        float shadowCos = dot(wNormal, wLight);
+        float shadowSine = sqrt(1-shadowCos*shadowCos);
+        float normalBias = unity_LightShadowBias.z * shadowSine;
+
+        wPos.xyz -= wNormal * normalBias;
+    }
+
+    return mul(UNITY_MATRIX_VP, wPos);
+}
+
 float FadeShadows (float3 worldPos, float2 lmuv, float atten) {
     #if defined(HANDLE_SHADOWS_BLENDING_IN_GI)
         float bakedAtten = SampleBakedOcclusion(lmuv, worldPos);

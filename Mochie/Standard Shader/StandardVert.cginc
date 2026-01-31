@@ -19,7 +19,12 @@ v2f vert (appdata v){
     #if defined(META_PASS)
         o.pos = UnityMetaVertexPosition(v.vertex, v.uv1.xy, v.uv2.xy, unity_LightmapST, unity_DynamicLightmapST);
     #elif defined(SHADOWCASTER_PASS)
-        TRANSFER_SHADOW_CASTER_NORMALOFFSET(o);
+        #if defined(_VERTEX_MANIPULATION_ON)
+            o.pos = UnityClipSpaceShadowCasterWorldPos(float4(worldPos, v.vertex.w), v.normal);
+            o.pos = UnityApplyLinearShadowBias(o.pos);
+        #else
+            TRANSFER_SHADOW_CASTER_NORMALOFFSET(o);
+        #endif
     #else
         #if defined(_VERTEX_MANIPULATION_ON)
             o.pos = UnityWorldToClipPos(float4(worldPos, v.vertex.w));
