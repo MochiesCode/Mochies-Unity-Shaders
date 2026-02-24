@@ -313,11 +313,13 @@ float CutoutAlpha(float alpha, float2 uv){
     return cleanAlpha;
 }
 
-float4 SampleBaseColor(float2 uv, float2 alphaUV){
+float4 SampleBaseColor(float2 uv, float2 alphaUV, float vertAlpha){
     float4 baseColor = SampleTexture(_MainTex, uv) * _Color;
     #if !defined(STANDARD_MOBILE)
         if (_AlphaSource == 1)
             baseColor.a = MOCHIE_SAMPLE_TEX2D_SAMPLER(_AlphaMask, sampler_DefaultSampler, alphaUV)[_AlphaMaskChannel] * _AlphaMaskOpacity;
+        else if (_AlphaSource == 2)
+            baseColor.a = vertAlpha;
     #endif
     #if defined(_ALPHATEST_ON)
         baseColor.a = CutoutAlpha(baseColor.a, lerp(uv, alphaUV, _AlphaSource));
@@ -570,7 +572,7 @@ void InitializeInputData(v2f i, inout InputData id, float3x3 tangentToWorld, boo
         detailMask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_DetailMask, sampler_DefaultSampler, i.uv1.xy)[_DetailMaskChannel];
     #endif
 
-    id.baseColor = SampleBaseColor(i.uv0.xy, i.uv4.zw);
+    id.baseColor = SampleBaseColor(i.uv0.xy, i.uv4.zw, i.color.a);
     #if IS_TRANSPARENT
         id.alpha = saturate(id.baseColor.a);
     #else

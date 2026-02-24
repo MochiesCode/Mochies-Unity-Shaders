@@ -114,7 +114,7 @@ namespace Mochie {
         static readonly int blendingLabelPos = 111;
 
         static readonly string unityFolderPath = "Assets/Mochie/Unity";
-        string versionLabel = "v1.34.1";
+        string versionLabel = "v1.34.2";
         // β
         
         MaterialProperty _RenderMode = null; 

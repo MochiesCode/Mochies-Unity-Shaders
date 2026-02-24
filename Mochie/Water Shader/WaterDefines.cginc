@@ -79,6 +79,7 @@ MOCHIE_DECLARE_TEX2D_NOSAMPLER(_OpacityMask);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_CausticsShadow);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_CausticsDistortionTex);
 MOCHIE_DECLARE_TEX2D_NOSAMPLER(_RippleMask);
+MOCHIE_DECLARE_TEX2D_NOSAMPLER(_FoamMap);
 
 MOCHIE_DECLARE_TEX2DARRAY(_VertOffsetFlipbook);
 MOCHIE_DECLARE_TEX2DARRAY_NOSAMPLER(_NormalMapFlipbook);
@@ -93,6 +94,7 @@ sampler2D _ReflectionTex1;
 
 float4 _RippleMask_ST;
 float4 _VertexOffsetMask_ST;
+float4 _FoamMap_ST;
 float4 _CausticsTex_TexelSize;
 float4 _OpacityMask_ST;
 float2 _OpacityMaskScroll;
@@ -243,6 +245,10 @@ int _CausticsFlipbookBlend;
 float4 _HorizonTint;
 float _HorizonTintDistance;
 float _HorizonTintStrength;
+int _FoamMapUVSet;
+int _FoamMode;
+int _FoamVertexColorChannel;
+float _FoamStrength;
 
 float _Test1, _Test2;
 float _ZeroProp;
@@ -258,6 +264,7 @@ struct TessellationControlPoint {
     // float3 barycentricCoordinates : TEXCOORD4;
     float3 normal : NORMAL;
     float4 tangent : TANGENT;
+    float4 color : COLOR;
     UNITY_VERTEX_INPUT_INSTANCE_ID
     UNITY_VERTEX_OUTPUT_STEREO
 };
@@ -271,6 +278,7 @@ struct appdata {
     float4 uv3 : TEXCOORD3;
     float3 normal : NORMAL;
     float4 tangent : TANGENT;
+    float4 color : COLOR;
     UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
@@ -289,7 +297,7 @@ struct v2f {
     float3 tangentViewDir : TEXCOORD11;
     float4 uvGrab : TEXCOORD2;
     float4 depthUV : TEXCOORD20;
-
+    float2 uvFoamMap : TEXCOORD23;
     #if !defined(META_PASS)
         float3 cameraPos : TEXCOORD16;
         float4 reflUV : TEXCOORD14;
@@ -304,7 +312,7 @@ struct v2f {
             float4 lightCoord   : TEXCOORD19;
         #endif
     #endif
-
+    float4 color : COLOR;
     UNITY_FOG_COORDS(21)
     UNITY_SHADOW_COORDS(22)
     UNITY_VERTEX_INPUT_INSTANCE_ID 

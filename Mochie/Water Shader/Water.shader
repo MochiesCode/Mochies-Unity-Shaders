@@ -168,6 +168,11 @@ Shader "Mochie/Water" {
         _FogBrightness2("Brightness", Float) = 1
 
         [Toggle(_FOAM_ON)]_FoamToggle("Enable", Int) = 1
+        [Enum(Depth,0, Mask,1, Vertex Color,2)]_FoamMode("Mode", Int) = 0
+        [Enum(Red,0, Green,1, Blue,2, Alpha,3)]_FoamVertexColorChannel("Foam vertex color channel", Int) = 0
+        _FoamStrength("Foam Strength", Float) = 1
+        _FoamMap("Foam Map", 2D) = "black" {}
+        [Enum(UV0,0, UV1,1, UV2,2, UV3,3)]_FoamMapUVSet("Foam Map UV Set", Int) = 0
         [NoScaleOffset]_FoamTex("Foam Texture", 2D) = "white" {}
         _FoamNoiseTex("Noise Texture", 2D) = "white" {}
         _FoamNoiseTexScale("Scale", Vector) = (3,3,0,0)
@@ -413,6 +418,7 @@ Shader "Mochie/Water" {
             #pragma shader_feature_local _REFLECTIONS_ON
             #pragma shader_feature_local _SPECULAR_ON
             #pragma shader_feature_local _FLOW_ON
+            #pragma target 5.0
             #define META_PASS
             #undef TESSELLATION_VARIANT
             #include "WaterDefines.cginc"

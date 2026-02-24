@@ -427,15 +427,36 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
         float foam = 0;
         float foamDepth = 1;
         #if DEPTH_EFFECTS_ENABLED
-            if (!i.isInVRMirror){
-                foamDepth = saturate(pow(rawDepth,_FoamPower));
+            if (_FoamMode == 0){
+                if (!i.isInVRMirror){
+                    foamDepth = saturate(pow(rawDepth,_FoamPower));
+                    #if EDGEFADE_ENABLED
+                        foamDepth = 1-saturate(Remap(1-foamDepth, 0, 1, -_EdgeFadeOffset, 1));
+                    #endif
+                    foam = saturate(foamTex.a * foamDepth * _FoamEdgeStrength * foamTexNoise * Average(foamTex.rgb));
+                    col.rgb = lerp(col.rgb, foamTex.rgb, foam);
+                }
+            }
+            else {
+                if (_FoamMode == 1)
+                    foamDepth = MOCHIE_SAMPLE_TEX2D_SAMPLER(_FoamMap, sampler_FlowMap, i.uvFoamMap);
+                else if (_FoamMode == 2)
+                    foamDepth = i.color[_FoamVertexColorChannel];
                 #if EDGEFADE_ENABLED
                     foamDepth = 1-saturate(Remap(1-foamDepth, 0, 1, -_EdgeFadeOffset, 1));
                 #endif
-                foam = saturate(foamTex.a * foamDepth * _FoamEdgeStrength * foamTexNoise * Average(foamTex.rgb));
+                foam = saturate(foamTex.a * foamDepth * _FoamStrength * foamTexNoise * Average(foamTex.rgb));
                 col.rgb = lerp(col.rgb, foamTex.rgb, foam);
             }
+        #else
+            if (_FoamMode == 1)
+                foamDepth = MOCHIE_SAMPLE_TEX2D_SAMPLER(_FoamMap, sampler_FlowMap, i.uvFoamMap);
+            else if (_FoamMode == 2)
+                foamDepth = i.color[_FoamVertexColorChannel];
+            foam = saturate(foamTex.a * foamDepth * _FoamStrength * foamTexNoise * Average(foamTex.rgb));
+            col.rgb = lerp(col.rgb, foamTex.rgb, foam);
         #endif
+            
         float crestFoam = 0;
         #if VERT_OFFSET_ENABLED
             float crestThreshold = smoothstep(_FoamCrestThreshold, 1, i.wave.y);

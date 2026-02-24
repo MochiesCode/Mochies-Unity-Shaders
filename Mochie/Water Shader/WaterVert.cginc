@@ -22,6 +22,7 @@ v2f vert (
     
     float2 uvs[] = {v.uv, v.uv1, v.uv2, v.uv3};
     o.uvFlow = uvs[_FlowMapUV].xy;
+    o.uvFoamMap = TRANSFORM_TEX(uvs[_FoamMapUVSet], _FoamMap);
     o.uv = v.uv;
     v.tangent.w = v.tangent.w * unity_WorldTransformParams.w;
     #if !GERSTNER_ENABLED
@@ -179,7 +180,6 @@ v2f vert (
     o.reflUV = ComputeNonStereoScreenPos(o.pos);
     o.depthUV = GetScreenPosition(o.pos);
     o.depthUV.z = -mul(UNITY_MATRIX_V, float4(mul(unity_ObjectToWorld, float4(v.vertex.xyz, 1.0)).xyz, 1.0)).z;
-    
     #if defined(LIGHTMAP_ON)
         o.lightmapUV.xy = v.uv1 * unity_LightmapST.xy + unity_LightmapST.zw;
     #endif

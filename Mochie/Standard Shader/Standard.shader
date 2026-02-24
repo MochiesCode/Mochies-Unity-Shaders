@@ -6,7 +6,7 @@ Shader "Mochie/Standard" {
           
         // Variant
         [Enum(Opaque,0, Cutout,1, Fade,2, Transparent,3)]_BlendMode("Blending Mode", Int) = 0
-        [Enum(Base Color Alpha,0, Alpha Mask,1)]_AlphaSource("Alpha Source", Int) = 0
+        [Enum(Base Color Alpha,0, Alpha Mask,1, Vertex Color Alpha,2)]_AlphaSource("Alpha Source", Int) = 0
         [Enum(Off,0, On,1)]_MipMapRescaling("Mip Map Rescaling", Int) = 1
         _Cutoff("Alpha Cutoff", Range(0,1)) = 0.5
         _MipMapScale("Mip Map Scale", Float) = 0.25

@@ -38,7 +38,7 @@ namespace Mochie {
                 "Render Settings"
         }, 0);
 
-        string versionLabel = "v1.26.1";
+        string versionLabel = "v1.27";
 
         MaterialProperty _Color = null;
         MaterialProperty _NonGrabColor = null;
@@ -252,6 +252,11 @@ namespace Mochie {
         MaterialProperty _HorizonTint = null;
         MaterialProperty _HorizonTintDistance = null;
         MaterialProperty _HorizonTintStrength = null;
+        MaterialProperty _FoamMap = null;
+        MaterialProperty _FoamMode = null;
+        MaterialProperty _FoamMapUVSet = null;
+        MaterialProperty _FoamVertexColorChannel = null;
+        MaterialProperty _FoamStrength = null;
         // MaterialProperty _WireframeVisualization = null;
         // MaterialProperty _WireframeColor = null;
 
@@ -645,6 +650,28 @@ namespace Mochie {
                     MGUI.PropertyGroupParent(()=>{
                         MGUI.ToggleGroup(_FoamToggle.floatValue == 0);
                         MGUI.PropertyGroup(()=>{
+                            me.ShaderProperty(_FoamMode, "Mode");
+                            if (_FoamMode.floatValue == 1){
+                                me.TexturePropertySingleLine(new GUIContent("Foam Map"), _FoamMap);
+                                MGUI.TextureSO(me, _FoamMap);
+                                me.ShaderProperty(_FoamMapUVSet, "UV Set");
+                            }
+                            else if (_FoamMode.floatValue == 2){
+                                me.ShaderProperty(_FoamVertexColorChannel, "Channel");
+                            }
+                            me.ShaderProperty(_FoamRoughness, Tips.foamRoughness);
+                            if (_FoamMode.floatValue == 0){
+                                me.ShaderProperty(_FoamPower, Tips.foamPower);
+                                me.ShaderProperty(_FoamEdgeStrength, Tips.foamEdgeStrength);
+                            }
+                            else {
+                                me.ShaderProperty(_FoamStrength, "Strength");
+                            }
+                            me.ShaderProperty(_FoamCrestStrength, Tips.foamCrestStrength);
+                            // me.ShaderProperty(_FoamCrestPower, Tips.foamCrestPower);
+                            me.ShaderProperty(_FoamCrestThreshold, Tips.foamCrestThreshold);
+                        });
+                        MGUI.PropertyGroup(()=>{
                             me.TexturePropertySingleLine(foamLabel, _FoamTex, _FoamColor, _FoamStochasticToggle);
                             MGUI.TexPropLabel(Tips.stochasticLabel, 117, true);
                             MGUI.Space2();
@@ -660,14 +687,6 @@ namespace Mochie {
                             MGUI.Vector2Field(_FoamNoiseTexScroll, "Scrolling");
                             me.ShaderProperty(_FoamNoiseTexStrength, Tips.foamNoiseTexStrength);
                             me.ShaderProperty(_FoamNoiseTexCrestStrength, Tips.foamNoiseTexCrestStrength);
-                        });
-                        MGUI.PropertyGroup(()=>{
-                            me.ShaderProperty(_FoamRoughness, Tips.foamRoughness);
-                            me.ShaderProperty(_FoamPower, Tips.foamPower);
-                            me.ShaderProperty(_FoamEdgeStrength, Tips.foamEdgeStrength);
-                            me.ShaderProperty(_FoamCrestStrength, Tips.foamCrestStrength);
-                            // me.ShaderProperty(_FoamCrestPower, Tips.foamCrestPower);
-                            me.ShaderProperty(_FoamCrestThreshold, Tips.foamCrestThreshold);
                         });
                         MGUI.ToggleGroupEnd();
                     });

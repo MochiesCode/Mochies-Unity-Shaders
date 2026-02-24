@@ -42,7 +42,7 @@ float4 frag (v2f i, UNITY_POSITION(vpos), bool isFrontFace : SV_IsFrontFace) : S
     localVertexPos = i.localPos;
     localVertexNormal = i.localNorm;
 
-    float alpha = SampleBaseColor(i.uv0.xy, i.uv4.zw).a;
+    float alpha = SampleBaseColor(i.uv0.xy, i.uv4.zw, i.color.a).a;
     #if defined(_ALPHATEST_ON)
         clip(alpha - _Cutoff);
     #endif
