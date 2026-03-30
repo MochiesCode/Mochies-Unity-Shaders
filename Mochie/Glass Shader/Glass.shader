@@ -3,9 +3,9 @@
 
         _GrabpassTint("Grabpass Tint", Color) = (1,1,1,1)
         _SpecularityTint("Specularity Tint", Color) = (1,1,1,1)
-        _BaseColorTint("Base Color Tint", Color) = (1,1,1,1)
+        _BaseColorTint("Base Color Tint", Color) = (0,0,0,1)
 
-        _BaseColor("Base Color", 2D) = "black" {}
+        _MainTex("Base Color", 2D) = "white" {}
         _RoughnessMap("Roughness Map", 2D) = "white" {}
         _MetallicMap("Metallic Map", 2D) = "white" {}
         _OcclusionMap("Occlusion Map", 2D) = "white" {}
@@ -20,7 +20,11 @@
         [ToggleUI]_RefractVertexNormal("Refract Mesh Normals", Int) = 0
         _RefractionIOR("IOR", Float) = 1.2
 
-        // [Toggle(_RAIN_ON)]_RainToggle("Enable", Int) = 0
+        _EmissionMap("Emission Map", 2D) = "white" {}
+        [HDR]_EmissionColor("Emission Color", Color) = (1,1,1,1)
+        _EmissionStrength("Emission Strength", Float) = 1
+        _EmissionParallaxDepth("Emission Parallax Depth", Float) = 0
+
         [Enum(Off,0, Droplets,1, Ripples,2, Automatic,3)]_RainMode("Mode", Int) = 0
         [HideInInspector]_RainSheet("Texture Sheet", 2D) = "black" {}
         [HideInInspector]_Rows("Rows", Float) = 8
@@ -67,6 +71,19 @@
         [HideInInspector]_MaterialResetCheck("Reset", Int) = 0
         _QueueOffset("Queue Offset", Int) = 0
 
+        [ToggleUI]_BAKERY_LMSPEC("Lightmap Specular", Float) = 0
+        _BakeryLMSpecStrength("Lightmap Specular Strength", Float) = 1
+        _IndirectStrength("Indirect Strength", Float) = 1
+        _IndirectSaturation("Indirect Saturation", Float) = 1
+        [ToggleUI]_BAKERY_SHNONLINEAR ("Non-Linear SH", Float) = 0
+        [ToggleUI]_BicubicSampling("Bicubic Sampling", Int) = 1
+        _LightmapDistortion("Distortion", Float) = 0.1
+        [Enum(None, 0, SH, 1, RNM, 2, MONOSH, 3)] _BakeryMode ("Bakery Mode", Int) = 0
+        [ToggleUI]_IgnoreRealtimeGI("Ignore Realtime GI", Int) = 0
+        _RNM0("RNM0", 2D) = "black" {}
+        _RNM1("RNM1", 2D) = "black" {}
+        _RNM2("RNM2", 2D) = "black" {}
+
         [ToggleUI]_AreaLitToggle("Enable", Int) = 0
         _AreaLitMask("Mask", 2D) = "white" {}
         _AreaLitStrength("Strength", Float) = 1
@@ -91,7 +108,7 @@
         Tags { 
             "RenderType"="Transparent"
             "Queue"="Transparent"
-            "ForceNoShadowCaster"="True"
+            // "ForceNoShadowCaster"="True"
             "IgnoreProjector"="True"
             "LTCGI"="_LTCGI"
         }
@@ -117,11 +134,16 @@
             #pragma shader_feature_local _SPECULAR_HIGHLIGHTS_ON
             #pragma shader_feature_local _SSR_ON
             #pragma shader_feature_local _GRABPASS_ON
+            #pragma shader_feature_local _PREMULTIPLIED_ON
             #pragma shader_feature_local _LIT_BASECOLOR_ON
             #pragma shader_feature_local _STOCHASTIC_SAMPLING_ON
             #pragma shader_feature_local _NORMALMAP_ON
             #pragma shader_feature_local _ _RAINMODE_RIPPLE _RAINMODE_AUTO 
             #pragma shader_feature_local _AREALIT_ON
+            #pragma shader_feature_local _BICUBIC_LIGHTMAPPING_ON
+            #pragma shader_feature_local _EMISSION_ON
+            #pragma shader_feature_local BAKERY_LMSPEC
+            #pragma shader_feature_local _ BAKERY_SH BAKERY_RNM BAKERY_MONOSH
             #pragma shader_feature_local LTCGI
             #pragma target 5.0
 
@@ -153,6 +175,42 @@
 
             ENDCG
         }
+
+        Pass {
+            Tags {"LightMode" = "ShadowCaster"}
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #pragma multi_compile_instancing
+            #pragma multi_compile_shadowcaster
+            #pragma target 5.0
+
+            #include "UnityCG.cginc"
+            #include "GlassDefines.cginc"
+            #include "GlassShadow.cginc"
+
+            ENDCG
+        }
+
+        Pass {
+            Name "META"
+            Tags {"LightMode"="Meta"}
+            Cull Off
+
+            CGPROGRAM
+            #pragma vertex vert_meta
+            #pragma fragment frag_meta
+            #pragma shader_feature_local _EMISSION_ON
+            #pragma shader_feature EDITOR_VISUALIZATION
+            #define META_PASS
+            #pragma target 5.0
+
+            #include "GlassDefines.cginc"
+            #include "GlassMeta.cginc"
+
+            ENDCG
+        }
+
     }
     CustomEditor "Mochie.GlassEditor"
 }

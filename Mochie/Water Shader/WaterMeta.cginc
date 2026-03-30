@@ -139,6 +139,7 @@ float4 frag_meta (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
                 roughnessMap *= detailBC.a;
         #endif
         float rough = roughnessMap * _Roughness;
+        roughness = rough;
         #if FOAM_ENABLED
             float foamLerp = (foam + crestFoam);
             rough = lerp(rough, _FoamRoughness, foamLerp*2);

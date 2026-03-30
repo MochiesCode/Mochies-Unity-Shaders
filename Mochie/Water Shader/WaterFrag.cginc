@@ -425,7 +425,7 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
         float foamTexNoise = lerp(1, foamNoise, _FoamNoiseTexStrength);
         float foamCrestNoise = lerp(1, foamNoise, _FoamNoiseTexCrestStrength);
         float foam = 0;
-        float foamDepth = 1;
+        float foamDepth = 0;
         #if DEPTH_EFFECTS_ENABLED
             if (_FoamMode == 0){
                 if (!i.isInVRMirror){

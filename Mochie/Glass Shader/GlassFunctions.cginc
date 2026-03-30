@@ -1,6 +1,11 @@
 ﻿
 #include "../Common/Utilities.cginc"
 
+void CalculateTangentViewDir(inout v2f i){
+    i.tangentViewDir = normalize(i.tangentViewDir);
+    i.tangentViewDir.xy /= (i.tangentViewDir.z + 0.42);
+}
+
 void ApplyGSAA(float3 normal, inout float roughness){
     if (_GSAAToggle == 1){
         float3 normalDDX = ddx(normal);
@@ -55,6 +60,66 @@ float3 GetFlipbookNormals(v2f i, inout float flipbookBase, float mask){
     return tex2DnormalSmooth(_RainSheet, flipUV, uvdd, rainStrength);
 }
 
+#include "GlassKernels.cginc"
+
+float4 BlurredEmissionSample(float2 uv, float2 blurStr){
+    float4 blurCol = 0;
+    float2 uvBlur = uv;
+    
+    #if defined(_BLURQUALITY_ULTRA)
+        [unroll(71)]
+        for (uint index = 0; index < 71; ++index){
+            uvBlur.xy = uv.xy + (kernel71[index] * blurStr);
+            blurCol += tex2D(_EmissionMap, uvBlur);
+        }
+        blurCol /= 71;
+    #elif defined(_BLURQUALITY_HIGH)
+        [unroll(43)]
+        for (uint index = 0; index < 43; ++index){
+            uvBlur.xy = uv.xy + (kernel43[index] * blurStr);
+            blurCol += tex2D(_EmissionMap, uvBlur);
+        }
+        blurCol /= 43;
+    #elif defined(_BLURQUALITY_MED)
+        [unroll(22)]
+        for (uint index = 0; index < 22; ++index){
+            uvBlur.xy = uv.xy + (kernel22[index] * blurStr);
+            blurCol += tex2D(_EmissionMap, uvBlur);
+        }
+        blurCol /= 22;
+    #elif defined(_BLURQUALITY_LOW)
+        [unroll(16)]
+        for (uint index = 0; index < 16; ++index){
+            uvBlur.xy = uv.xy + (kernel16[index] * blurStr);
+            blurCol += tex2D(_EmissionMap, uvBlur);
+        }
+        blurCol /= 16;
+    #endif
+
+    return blurCol;
+}
+
+float4 GetEmission(v2f i, float3 viewDir, float3 normalMap, float2 blurStr){
+    float4 emission = 0;
+    #if defined(_EMISSION_ON)
+        float emissMult = pow(_EmissionColor, 2.2) * _EmissionStrength;
+        #if !defined(META_PASS) && !defined(TWO_PASS_TRANSPARENCY)
+            float2 offset = normalMap * _Refraction * 0.05;
+            float2 parallaxOffset = -_EmissionParallaxDepth * 0.1 * (viewDir.xy / max(viewDir.z, 1e-5));
+            float2 emissUV = TRANSFORM_TEX(i.uv, _EmissionMap) + (offset * _EmissionParallaxDepth) + parallaxOffset;
+            blurStr *= max(0, _EmissionParallaxDepth) * 2;
+            if (any(blurStr))
+                emission = BlurredEmissionSample(emissUV, blurStr) * emissMult;
+            else
+                emission = tex2D(_EmissionMap, emissUV) * emissMult;
+        #else
+            float2 emissUV = TRANSFORM_TEX(i.uv, _EmissionMap);
+            emission = tex2D(_EmissionMap, emissUV) * emissMult;
+        #endif
+    #endif
+    return emission;
+}
+
 // based on https://www.toadstorm.com/blog/?p=742
 void ApplyExtraDroplets(v2f i, inout float3 rainNormal, inout float flipbookBase, float mask){
     if (_DynamicDroplets > 0){
@@ -74,15 +139,8 @@ void ApplyExtraDroplets(v2f i, inout float3 rainNormal, inout float flipbookBase
     }
 }
 
-#include "GlassKernels.cginc"
-
-float3 BlurredGrabpassSample(float2 uv, float str){
+float3 BlurredGrabpassSample(float2 uv, float2 blurStr){
     float3 blurCol = 0;
-    float2 blurStr = str;
-    blurStr.x *= 0.5625;
-    #if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
-        blurStr *= 0.5;
-    #endif
     float2 uvBlur = uv;
     
     #if defined(_BLURQUALITY_ULTRA)
@@ -117,6 +175,7 @@ float3 BlurredGrabpassSample(float2 uv, float str){
 
     return blurCol;
 }
+
 
 float3 BoxProjection(float3 dir, float3 pos, float4 cubePos, float3 boxMin, float3 boxMax){
     #ifdef UNITY_SPECCUBE_BOX_PROJECTION

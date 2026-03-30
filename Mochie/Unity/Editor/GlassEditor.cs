@@ -14,19 +14,21 @@ namespace Mochie {
         Toggles toggles = new Toggles(new string[] {
             "Surface",
             "Specularity",
+            "Emission",
             "Rain",
+            "Lightmap Settings",
             "LTCGI",
             "AreaLit",
             "Render Settings"
         }, 1);
 
-        string versionLabel = "v1.10";
+        string versionLabel = "v1.11";
 
         // Surface
         MaterialProperty _GrabpassTint = null;
         MaterialProperty _SpecularityTint = null;
         MaterialProperty _BaseColorTint = null;
-        MaterialProperty _BaseColor = null;
+        MaterialProperty _MainTex = null;
         MaterialProperty _RoughnessMap = null;
         MaterialProperty _MetallicMap = null;
         MaterialProperty _OcclusionMap = null;
@@ -40,6 +42,12 @@ namespace Mochie {
         MaterialProperty _BlurQuality = null;
         MaterialProperty _RefractionIOR = null;
         MaterialProperty _RefractVertexNormal = null;
+
+        // Emission
+        MaterialProperty _EmissionMap = null;
+        MaterialProperty _EmissionColor= null;
+        MaterialProperty _EmissionStrength = null;
+        MaterialProperty _EmissionParallaxDepth = null;
 
         // Rain
         // MaterialProperty _RainToggle = null;
@@ -59,6 +67,17 @@ namespace Mochie {
         // MaterialProperty _RainBias = null;
         MaterialProperty _RainThreshold = null;
         MaterialProperty _RainThresholdSize = null;
+        
+        // Lightmap Settings
+        MaterialProperty _LightmapDistortion = null;
+        MaterialProperty _IndirectStrength = null;
+        MaterialProperty _IndirectSaturation = null;
+        MaterialProperty _BAKERY_LMSPEC = null;
+        MaterialProperty _BakeryLMSpecStrength = null;
+       //  MaterialProperty _BAKERY_SHNONLINEAR = null;
+        MaterialProperty _BakeryMode = null;
+        MaterialProperty _BicubicSampling = null;
+        MaterialProperty _IgnoreRealtimeGI = null;
 
         // Render Settings
         MaterialProperty _ReflectionsToggle = null;
@@ -135,9 +154,9 @@ namespace Mochie {
                             me.ShaderProperty(_BaseColorTint, "Base Color Tint");
                         });
                         MGUI.PropertyGroup(()=>{
-                            me.TexturePropertySingleLine(Tips.baseColorLabel, _BaseColor, _LitBaseColor);
+                            me.TexturePropertySingleLine(Tips.baseColorLabel, _MainTex, _LitBaseColor);
                             MGUI.TexPropLabel(Tips.litBaseColorText, 100, false);
-                            MGUI.TextureSO(me, _BaseColor, _BaseColor.textureValue);
+                            MGUI.TextureSO(me, _MainTex, _MainTex.textureValue);
                             me.TexturePropertySingleLine(Tips.metallicText, _MetallicMap, _Metallic);
                             MGUI.sRGBWarning(_MetallicMap);
                             MGUI.TextureSO(me, _MetallicMap, _MetallicMap.textureValue);
@@ -161,6 +180,8 @@ namespace Mochie {
                         }
                     });
                 }
+
+                // Specularity
                 if (Foldouts.DoFoldout(foldouts, mat, "Specularity", Foldouts.Style.Standard)) {
                     MGUI.PropertyGroupParent(()=>{
                         MGUI.PropertyGroup(()=>{
@@ -177,6 +198,30 @@ namespace Mochie {
                         });
                     });
                 }
+                
+                // Emission
+                if (Foldouts.DoFoldout(foldouts, mat, "Emission", Foldouts.Style.Standard)) {
+                    MGUI.PropertyGroupParent(()=>{
+                        MGUI.ToggleGroup(!me.EmissionEnabledProperty());
+                        me.LightmapEmissionFlagsProperty(0, true);
+                        MGUI.Space4();
+                        MGUI.PropertyGroup(()=>{
+                            me.TexturePropertySingleLine(Tips.emissionText, _EmissionMap, _EmissionColor);
+                            MGUI.TextureSO(me, _EmissionMap, _EmissionMap.textureValue);
+                            me.ShaderProperty(_EmissionStrength, "Strength");
+                            if (!isTwoPass)
+                                me.ShaderProperty(_EmissionParallaxDepth, "Parallax Offset");
+                        });
+                        if ((_BlendMode.floatValue == 1 || _BlendMode.floatValue == 2) && _EmissionParallaxDepth.floatValue > 0){
+                            MGUI.PropertyGroup(()=>{
+                                me.ShaderProperty(_BlurQuality, "Blur Quality");
+                                me.ShaderProperty(_Blur, "Blur Strength");
+                            });
+                        }
+                         MGUI.ToggleGroupEnd();
+                    });
+                }
+
                 // Rain
                 if (Foldouts.DoFoldout(foldouts, mat, me, _RainMode, "Rain", Foldouts.Style.StandardToggle)) {
                     MGUI.PropertyGroupParent(()=>{
@@ -194,6 +239,25 @@ namespace Mochie {
                             MGUI.BoldLabel("Both");
                             RainBoth(me);
                         }
+                    });
+                }
+
+                // Lightmap Settings
+                if (Foldouts.DoFoldout(foldouts, mat, "Lightmap Settings", Foldouts.Style.Standard)) {
+                    MGUI.PropertyGroupParent(()=>{
+                        MGUI.PropertyGroup(()=>{
+                            me.ShaderProperty(_BakeryMode, Tips.bakeryMode);
+                            MGUI.ToggleFloat(me, "Bakery Specular Highlights", _BAKERY_LMSPEC, _BakeryLMSpecStrength);
+                        });
+                        MGUI.PropertyGroup(()=>{
+                            me.ShaderProperty(_LightmapDistortion, "Lightmap UV Distortion");
+                            me.ShaderProperty(_IndirectStrength, "Lightmap Strength");
+                            me.ShaderProperty(_IndirectSaturation, "Lightmap Saturation");
+                        });
+                        MGUI.PropertyGroup(()=>{
+                            me.ShaderProperty(_BicubicSampling, Tips.bicubicLightmap);
+                            me.ShaderProperty(_IgnoreRealtimeGI, Tips.ignoreRealtimeGIText);
+                        });
                     });
                 }
 
@@ -324,9 +388,11 @@ namespace Mochie {
         }
 
         void SetKeywords(Material mat){
+            bool isEmissive = (mat.globalIlluminationFlags & MaterialGlobalIlluminationFlags.EmissiveIsBlack) == 0;
             bool isTwoPass = mat.shader.name.Contains("(Two Pass)"); 
             int rainMode = mat.GetInt("_RainMode");
             int blurMode = mat.GetInt("_BlurQuality");
+            MGUI.SetKeyword(mat, "_EMISSION_ON", isEmissive);
             MGUI.SetKeyword(mat, "_STOCHASTIC_SAMPLING_ON", mat.GetInt("_SamplingMode") == 1);
             MGUI.SetKeyword(mat, "_NORMALMAP_ON", mat.GetTexture("_NormalMap"));
             MGUI.SetKeyword(mat, "_RAIN_ON", rainMode > 0);
@@ -366,6 +432,7 @@ namespace Mochie {
                     mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent+mat.GetInt("_QueueOffset");
                     mat.SetShaderPassEnabled("Always", true);
                     MGUI.SetKeyword(mat, "_GRABPASS_ON", true);
+                    MGUI.SetKeyword(mat, "_PREMULTIPLIED_ON", false);
                     break;
                 case 1: // Premultiplied
                     mat.SetOverrideTag("RenderType", "Transparent");
@@ -375,6 +442,7 @@ namespace Mochie {
                     mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent+mat.GetInt("_QueueOffset");
                     mat.SetShaderPassEnabled("Always", false);
                     MGUI.SetKeyword(mat, "_GRABPASS_ON", false);
+                    MGUI.SetKeyword(mat, "_PREMULTIPLIED_ON", true);
                     break;
                 case 2: // Opaque
                     mat.SetOverrideTag("RenderType", "Opaque");
@@ -384,6 +452,7 @@ namespace Mochie {
                     mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Geometry+mat.GetInt("_QueueOffset");
                     mat.SetShaderPassEnabled("Always", false);
                     MGUI.SetKeyword(mat, "_GRABPASS_ON", false);
+                    MGUI.SetKeyword(mat, "_PREMULTIPLIED_ON", false);
                     break;
                 default: break;
             }

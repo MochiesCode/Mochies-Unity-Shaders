@@ -623,19 +623,19 @@ void InitializeInputData(v2f i, inout InputData id, float3x3 tangentToWorld, boo
         id.occlusion = lerp(id.occlusion, saturate(blendedOcclusion), _DetailOcclusionStrength * detailMask);
     #else
         #if defined(_DETAIL_METALLIC_ON)
-            float4 detailMetallic = SampleDetailMetallicMap(i.uv0.zw).b;
+            float4 detailMetallic = SampleDetailMetallicMap(i.uv0.zw);
             blendedMetallic = BlendScalarsAlpha(id.metallic, detailMetallic, _DetailMetallicBlend, detailMetallic.a);
             blendedMetallic = lerp(blendedMetallic, detailMetallic, _DetailMaskMode);
             id.metallic = lerp(id.metallic, saturate(blendedMetallic), _DetailMetallicStrength * detailMask);
         #endif
         #if defined(_DETAIL_ROUGHNESS_ON)
-            float4 detailRoughness = SampleDetailRoughnessMap(i.uv0.zw).g;
+            float4 detailRoughness = SampleDetailRoughnessMap(i.uv0.zw);
             blendedRoughness = BlendScalarsAlpha(id.roughness, detailRoughness, _DetailRoughnessBlend, detailRoughness.a);
             blendedRoughness = lerp(blendedRoughness, detailRoughness, _DetailMaskMode);
             id.roughness = lerp(id.roughness, blendedRoughness, _DetailRoughnessStrength * detailMask);
         #endif
         #if defined(_DETAIL_OCCLUSION_ON)
-            float4 detailOcclusion = SampleDetailOcclusionMap(i.uv0.zw).r;
+            float4 detailOcclusion = SampleDetailOcclusionMap(i.uv0.zw);
             blendedOcclusion = BlendScalarsAlpha(id.occlusion, detailOcclusion, _DetailOcclusionBlend, detailOcclusion.a);
             blendedOcclusion = lerp(blendedOcclusion, detailOcclusion, _DetailMaskMode);
             id.occlusion = lerp(id.occlusion, saturate(blendedOcclusion), _DetailOcclusionStrength * detailMask);

@@ -17,7 +17,12 @@ v2f vert (appdata v){
     o.worldPos = mul(unity_ObjectToWorld, v.vertex);
     o.cameraPos = GetCameraPos();
     o.localPos = v.vertex;
-    
+
+    v.tangent.xyz = normalize(v.tangent.xyz);
+    v.normal = normalize(v.normal);
+    float3x3 objectToTangent = float3x3(v.tangent.xyz, (cross(v.normal, v.tangent.xyz) * v.tangent.w), v.normal);
+    o.tangentViewDir = mul(objectToTangent, ObjSpaceViewDir(v.vertex));
+
     UNITY_TRANSFER_SHADOW(o, o.pos)
     UNITY_TRANSFER_FOG(o,o.pos);
     return o;
@@ -29,8 +34,6 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
 
     UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos);
     atten = FadeShadows(i.worldPos, atten);
-
-    float4 baseColorTex = SampleTexture(_BaseColor, TRANSFORM_TEX(i.uv, _BaseColor)) * _BaseColorTint;
 
     #if defined(UNITY_PASS_FORWARDBASE)
         UNITY_BRANCH
@@ -57,6 +60,8 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
         i.uv.xy = worldCoords;
     }
     i.uv.xy *= abs(_GlobalTexCoordScale);
+
+    float4 baseColorTex = SampleTexture(_MainTex, TRANSFORM_TEX(i.uv, _MainTex)) * _BaseColorTint;
 
     float3 specCol = 0;
     float3 reflCol = 0;
@@ -112,6 +117,7 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
     float roughness = saturate(roughnessMap-flipbookBase);
     ApplyGSAA(i.normal, roughness);
     float3 occlusion = lerp(1, SampleTexture(_OcclusionMap, TRANSFORM_TEX(i.uv, _OcclusionMap)), _Occlusion);
+    float indirectRough = roughness;
 
     #if defined(_SPECULAR_HIGHLIGHTS_ON) || defined(_REFLECTIONS_ON) || defined(_SSR_ON) || AREALIT_ENABLED || LTCGI_ENABLED
         float roughSq = roughness * roughness;
@@ -119,6 +125,7 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
         float metallic = SampleTexture(_MetallicMap, TRANSFORM_TEX(i.uv, _MetallicMap)) * _Metallic;
         float omr = unity_ColorSpaceDielectricSpec.a - metallic * unity_ColorSpaceDielectricSpec.a;
         float3 specularTint = lerp(unity_ColorSpaceDielectricSpec.rgb, 1, metallic);
+        indirectRough = roughSq;
 
         float3 halfVector = normalize(lightDir + viewDir);
         float NdotL = dot(normalDir, lightDir);
@@ -172,7 +179,21 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
 
     #endif
 
+    CalculateTangentViewDir(i);
+    float3 indirectCol, lmSpec;
+    i.lightmapUV.xy += normalMap.xy * _LightmapDistortion * 0.05;
+    i.lightmapUV.zw += normalMap.xy * _LightmapDistortion * 0.05;
+    GetIndirectLighting(indirectCol, lmSpec, i.lightmapUV, normalDir, normalMap, i.worldPos, viewDir, i.tangentViewDir, indirectRough, atten);
+    indirectCol = GetSaturation(indirectCol, _IndirectSaturation);
+    indirectCol = linearstep(-0.5, 0.5, indirectCol);
+    indirectCol = lerp(1, indirectCol, _IndirectStrength);
+
     float3 grabCol = 0;
+    float2 blurStr = _Blur * 0.017578125 * roughness;
+    #if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
+        blurStr *= 0.125;
+    #endif
+    blurStr.x *= 0.5625;
     #if GRABPASS_ENABLED
         float2 screenUV = 0;
         float2 offset = normalMap * _Refraction * 0.01;
@@ -191,12 +212,9 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
         // float dist = distance(wPos, i.cameraPos); 
         // _Blur *= 1-min(dist/10, 1);
 
-        float blurStr = _Blur * 0.0125;
-        #if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
-            blurStr *= 0.25;
-        #endif
+
         if (_Roughness > 0 && _Blur > 0)
-            grabCol = BlurredGrabpassSample(screenUV, (roughness * blurStr));
+            grabCol = BlurredGrabpassSample(screenUV, blurStr);
         else
             grabCol = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_GlassGrab, screenUV);
         grabCol *= _GrabpassTint;
@@ -220,8 +238,12 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
     #endif
     specularity *= _SpecularityTint;
 
-    float3 col = (specularity + grabCol + baseColor) * occlusion;
-    
+    float3 col = (specularity + grabCol + baseColor) * occlusion * indirectCol;
+
+    // float3x3 tangentToWorld = ConstructTBNMatrix(i, isFrontFace);
+    // float3 tangentViewDir = CalculateTangentViewDirection(i, tangentToWorld, viewDir);
+    col += GetEmission(i, i.tangentViewDir, normalMap, float2(blurStr.x / 0.5625, blurStr.y));
+
     #if GRABPASS_ENABLED
         float4 finalCol = float4(col, 1);
     #else
