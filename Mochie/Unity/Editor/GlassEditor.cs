@@ -22,7 +22,7 @@ namespace Mochie {
             "Render Settings"
         }, 1);
 
-        string versionLabel = "v1.11";
+        string versionLabel = "v1.11.1";
 
         // Surface
         MaterialProperty _GrabpassTint = null;
@@ -407,6 +407,10 @@ namespace Mochie {
             MGUI.SetKeyword(mat, "_REFLECTIONS_ON", mat.GetInt("_ReflectionsToggle") == 1);
             MGUI.SetKeyword(mat, "_SPECULAR_HIGHLIGHTS_ON", mat.GetInt("_SpecularToggle") == 1);
             MGUI.SetKeyword(mat, "_SSR_ON", mat.GetInt("_SSRToggle") == 1 && mat.GetInt("_BlendMode") == 0 && !isTwoPass);
+            MGUI.SetKeyword(mat, "BAKERY_SH", mat.GetInt("_BakeryMode") == 1);
+            MGUI.SetKeyword(mat, "BAKERY_RNM", mat.GetInt("_BakeryMode") == 2);
+            MGUI.SetKeyword(mat, "BAKERY_MONOSH", mat.GetInt("_BakeryMode") == 3);
+            MGUI.SetKeyword(mat, "BAKERY_LMSPEC", mat.GetInt("_BAKERY_LMSPEC") == 1);
         }
 
         void SetBlendMode(Material mat){

@@ -22,6 +22,13 @@ v2f vert (appdata v){
     v.normal = normalize(v.normal);
     float3x3 objectToTangent = float3x3(v.tangent.xyz, (cross(v.normal, v.tangent.xyz) * v.tangent.w), v.normal);
     o.tangentViewDir = mul(objectToTangent, ObjSpaceViewDir(v.vertex));
+    
+    #if defined(LIGHTMAP_ON)
+        o.lightmapUV.xy = v.uv1 * unity_LightmapST.xy + unity_LightmapST.zw;
+    #endif
+    #if defined(DYNAMICLIGHTMAP_ON)
+        o.lightmapUV.zw = v.uv2.xy * unity_DynamicLightmapST.xy + unity_DynamicLightmapST.zw;
+    #endif
 
     UNITY_TRANSFER_SHADOW(o, o.pos)
     UNITY_TRANSFER_FOG(o,o.pos);
@@ -226,13 +233,11 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
     float3 baseColor = baseColorTex.rgb * baseColorTex.a;
     #if defined(_LIT_BASECOLOR_ON) || defined(UNITY_PASS_FORWARDADD)
         #if defined(UNITY_PASS_FORWARDBASE)
-            float3 lightCol = ShadeSH9(normalDir) + _LightColor0;
-        #else
-            float3 lightCol = _LightColor0;
+        if (any(_WorldSpaceLightPos0.xyz))
         #endif
-        baseColor *= saturate(lightCol) * atten;
+        baseColor *= _LightColor0 * atten;   
     #endif
-    float3 specularity = specCol + reflCol;
+    float3 specularity = specCol + reflCol + lmSpec;
     #if defined(_AREALIT_ON)
         specularity += specTerm * specularTint;
     #endif
