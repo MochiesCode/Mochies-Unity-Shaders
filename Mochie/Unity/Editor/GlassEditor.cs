@@ -22,7 +22,7 @@ namespace Mochie {
             "Render Settings"
         }, 1);
 
-        string versionLabel = "v1.11.1";
+        string versionLabel = "v1.12";
 
         // Surface
         MaterialProperty _GrabpassTint = null;
@@ -69,6 +69,7 @@ namespace Mochie {
         MaterialProperty _RainThresholdSize = null;
         
         // Lightmap Settings
+        MaterialProperty _LightmappedSpecularity = null;
         MaterialProperty _LightmapDistortion = null;
         MaterialProperty _IndirectStrength = null;
         MaterialProperty _IndirectSaturation = null;
@@ -250,6 +251,7 @@ namespace Mochie {
                             MGUI.ToggleFloat(me, "Bakery Specular Highlights", _BAKERY_LMSPEC, _BakeryLMSpecStrength);
                         });
                         MGUI.PropertyGroup(()=>{
+                            me.ShaderProperty(_LightmappedSpecularity, Tips.lightmappedSpecularityText);
                             me.ShaderProperty(_LightmapDistortion, "Lightmap UV Distortion");
                             me.ShaderProperty(_IndirectStrength, "Lightmap Strength");
                             me.ShaderProperty(_IndirectSaturation, "Lightmap Saturation");

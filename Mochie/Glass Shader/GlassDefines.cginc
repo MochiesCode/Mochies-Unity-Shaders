@@ -73,6 +73,7 @@ float _SSREdgeFade;
 float _SSRHeight;
 float _SSRStrength;
 
+int _LightmappedSpecularity;
 int _BAKERY_SHNONLINEAR;
 int _IgnoreRealtimeGI;
 float _BakeryLMSpecStrength;

@@ -22,7 +22,7 @@ v2f vert (appdata v){
     v.normal = normalize(v.normal);
     float3x3 objectToTangent = float3x3(v.tangent.xyz, (cross(v.normal, v.tangent.xyz) * v.tangent.w), v.normal);
     o.tangentViewDir = mul(objectToTangent, ObjSpaceViewDir(v.vertex));
-    
+
     #if defined(LIGHTMAP_ON)
         o.lightmapUV.xy = v.uv1 * unity_LightmapST.xy + unity_LightmapST.zw;
     #endif
@@ -193,7 +193,7 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
     GetIndirectLighting(indirectCol, lmSpec, i.lightmapUV, normalDir, normalMap, i.worldPos, viewDir, i.tangentViewDir, indirectRough, atten);
     indirectCol = GetSaturation(indirectCol, _IndirectSaturation);
     indirectCol = linearstep(-0.5, 0.5, indirectCol);
-    indirectCol = lerp(1, indirectCol, _IndirectStrength);
+    indirectCol = saturate(lerp(1, indirectCol, _IndirectStrength));
 
     float3 grabCol = 0;
     float2 blurStr = _Blur * 0.017578125 * roughness;
@@ -242,8 +242,11 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
         specularity += specTerm * specularTint;
     #endif
     specularity *= _SpecularityTint;
-
-    float3 col = (specularity + grabCol + baseColor) * occlusion * indirectCol;
+    if (_LightmappedSpecularity == 1)
+        specularity *= indirectCol;
+    else
+        occlusion *= indirectCol;
+    float3 col = (specularity + grabCol + baseColor) * occlusion;
 
     // float3x3 tangentToWorld = ConstructTBNMatrix(i, isFrontFace);
     // float3 tangentViewDir = CalculateTangentViewDirection(i, tangentToWorld, viewDir);

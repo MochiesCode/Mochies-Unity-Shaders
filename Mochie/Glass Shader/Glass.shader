@@ -71,6 +71,7 @@
         [HideInInspector]_MaterialResetCheck("Reset", Int) = 0
         _QueueOffset("Queue Offset", Int) = 0
 
+        [Enum(Final Color,0, Specularity,1)]_LightmappedSpecularity("Apply to", Int) = 0
         [ToggleUI]_BAKERY_LMSPEC("Lightmap Specular", Float) = 0
         _BakeryLMSpecStrength("Lightmap Specular Strength", Float) = 1
         _IndirectStrength("Indirect Strength", Float) = 1

@@ -39,7 +39,7 @@ namespace Mochie {
         public static GUIContent colorGradingLUTText = new GUIContent("Custom LUT", "Custom LUT for color grading.");
         public static GUIContent splatHeightText = new GUIContent("Height Mapping", "Enables the use of height-based features including Parallax Occlusion, Layer Blending, and Puddles.");
         public static GUIContent flipBackfaceNormalsText = new GUIContent("Flip Normals on Backfaces", "This both causes and fixes issues with backfaces appearing black when lightmapped. It appears to be random which way it goes. We love Unity.");
-        public static GUIContent lightVolumeSpecText = new GUIContent("Light Volume Specularity", "Specularity derived from VRC Light Volumes.");
+        public static GUIContent lightVolumeSpecText = new GUIContent("Light Volume Highlights", "Specular highlights derived from VRC Light Volumes.");
         public static GUIContent lightVolumeBiasText = new GUIContent("Light Volume Bias", "Offsets the sampling position of the light volume to help avoid light leaking.");
         public static GUIContent horizonAdjustmentText = new GUIContent("Horizon Adjustment", "Adjusts the strength of the effect at sharper viewing angles to avoid artifacts");
         
@@ -235,6 +235,7 @@ namespace Mochie {
         public static GUIContent falloffMode = new GUIContent("Mode", "Per Particle:\nFalloff will be based on the distance from the center of the particle.\n\nPer Vertex:\nFalloff will be based on the distance from the vertex of a particle. Mostly useful for larger mesh particles.");
         public static GUIContent autoShift = new GUIContent("Auto Shift", "Automatically shifts the hue over time based on the speed parameter.");
         public static GUIContent flipbookBlending = new GUIContent("Flipbook Blending", "Fades between frames instead of immediately cutting to make the animation smoother.");
+        public static GUIContent randomOffsetText = new GUIContent("Random Offset", "Randomly offsets UVs on a per-particle basis.");
 
         // Taken
         public static GUIContent gradientRestriction = new GUIContent("Gradient Masking", "Masks the rim effect inside the gradient, so it will only be visible where the gradient is.");
@@ -250,11 +251,13 @@ namespace Mochie {
         public static GUIContent noiseIterationsText = new GUIContent("Iterations", "How many layers of noise should be generated. Fewer iterations will perform better, but look different");
         public static GUIContent starSamplesText = new GUIContent("Samples", "How many layers of stars should appear. More samples is less performant.");
         public static GUIContent noiseTypeText = new GUIContent("Noise Type", "tanoise:\nLooks very similar to simplex but much more performant. This should pretty much always be used.\n\nSimplex: 4D Simplex noise, much more expensive than tanoise, but looks a bit better.");
+        
         // Glass
         public static GUIContent rainModeText = new GUIContent("Mode", "Droplets:\nDotted droplets and streaks of rain, best used on vertical surfaces.\n\nRipples:\nRippling circles that you'd see on horizontal surfaces where water might pool.\n\nAutomatic:\nRenders both ripples and droplets and interpolates between them based on the angle of the surface. Vertical surfaces will display droplets, horizontal surfaces will display ripples.");
         public static GUIContent litBaseColorText = new GUIContent("Lit", "Applies realtime and light probe lighting to the base color. Does not support baked lightmaps.");
         public static GUIContent samplingModeText = new GUIContent("Sampling Mode", "Default:\nSamples textures normally.\n\nStochastic:\nUses uvs to generate pseudo-random positions for sampling to alleviate tiling artifacts. 3 samples per texture.");
         public static GUIContent normalRefractionText = new GUIContent("Normal Refraction", "Refraction strength for normal maps and rain.");
         public static GUIContent meshRefractionText = new GUIContent("Mesh Refraction", "Includes mesh normals in refraction calculations. Do not use on flat surfaces.");
-    }
+        public static GUIContent lightmappedSpecularityText = new GUIContent("Apply Lightmaps to", "Final Color:\nApplies lightmaps to the final color output. This is much more visible, but can result in very unrealistic visuals if the grabpass is darkened or lightened too much.\n\nSpecularity:\nApplies lightmaps only to specularity. This is more realistic, but often far less discernable.");
+    }   
 }
