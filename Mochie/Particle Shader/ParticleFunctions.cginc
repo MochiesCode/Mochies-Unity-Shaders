@@ -9,7 +9,7 @@ float2 GetUVs(v2f i, int mode, float4 scaleOffset, float2 speed, float polarRadi
 
 float GetAudioLinkBand(audioLinkData al, int band, float remapMin, float remapMax){
     float4 bands = float4(al.bass, al.lowMid, al.upperMid, al.treble);
-    return Remap(bands[band-1], _AudioLinkRemapMin, _AudioLinkRemapMax, remapMin, remapMax);
+    return Remap(bands[band], _AudioLinkRemapMin, _AudioLinkRemapMax, remapMin, remapMax);
 }
 
 void InitializeAudioLink(inout audioLinkData al){
