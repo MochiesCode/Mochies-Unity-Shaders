@@ -16,8 +16,10 @@ namespace Mochie {
         public static Texture2D resetIcon = (Texture2D)Resources.Load("ResetIcon", typeof(Texture2D));
         public static Texture2D collapseIcon = (Texture2D)Resources.Load("CollapseIcon", typeof(Texture2D));
         public static Texture2D mochieLogo = (Texture2D)Resources.Load("MochieLogo", typeof(Texture2D));
+        public static Texture2D mochieLogoSquare = (Texture2D)Resources.Load("MochieLogoSquare", typeof(Texture2D));
         public static Texture2D mochieLogoPro = (Texture2D)Resources.Load("MochieLogo_Pro", typeof(Texture2D));
         public static Texture2D patIconTex = (Texture2D)Resources.Load("Patreon_Icon", typeof(Texture2D));
+        public static Texture2D cheeseIconTex = (Texture2D)Resources.Load("Cheese_Icon", typeof(Texture2D));
         public static GUIContent collapseLabel = new GUIContent(collapseIcon, "Collapse all foldout tabs.");
         public static GUIContent resetLabel = new GUIContent(resetIcon, "Reset all properties in this tab to their default values.");
         
@@ -137,16 +139,18 @@ namespace Mochie {
         }
 
         public static void DoFooter(string versionLabel){
-            GUILayout.Space(20);
+            GUILayout.Space(40);
             float buttonSize = 35f;
-            Rect footerRect = EditorGUILayout.GetControlRect();
-            footerRect.x += (MGUI.GetInspectorWidth()/2f)-buttonSize-5f;
-            footerRect.width = buttonSize;
-            footerRect.height = buttonSize;
-            if (GUI.Button(footerRect, MGUI.patIconTex))
+            float centerOffset = MGUI.GetInspectorWidth()/2f;
+            Rect buttonRect = EditorGUILayout.GetControlRect();
+            buttonRect.x += centerOffset-buttonSize*3f*0.5f;
+            buttonRect.width = buttonSize;
+            buttonRect.height = buttonSize;
+            if (GUI.Button(buttonRect, MGUI.patIconTex))
                 Application.OpenURL("https://www.patreon.com/mochieshaders");
-            footerRect.x += buttonSize + 5f;
-            footerRect.y += 17f;
+            buttonRect.x += buttonSize;
+            GUI.Label(buttonRect, MGUI.mochieLogoSquare);
+            buttonRect.y -= 20f;
             GUIStyle formatting = new GUIStyle();
             formatting.fontSize = 15;
             formatting.fontStyle = FontStyle.Bold;
@@ -155,12 +159,17 @@ namespace Mochie {
                 formatting.normal.textColor = proCol;
                 formatting.hover.textColor = proCol;
             }
-            GUI.Label(footerRect, versionLabel, formatting);
-            footerRect.y += 20f;
-            footerRect.x -= 35f;
-            footerRect.width = 70f;
-            footerRect.height = 70f;
-            GUI.Label(footerRect, MGUI.mochieLogo);
+            GUI.Label(buttonRect, versionLabel, formatting);
+            buttonRect.y += 20f;
+            buttonRect.x += buttonSize;
+            if (GUI.Button(buttonRect, MGUI.cheeseIconTex)){
+                string patrons = "Please note that names are not removed from this list, so it does not reflect any individual user's current patreon subscription status.\n";
+                foreach (string s in cheeseList){
+                    patrons += "\n" + s;
+                }
+                patrons += "\n\nThank you for your support, past and present!";
+                EditorUtility.DisplayDialog("Skyrim Cheese Wheel Hall of Fame", patrons, "Close");
+            }
             GUILayout.Space(90);
         }
 
@@ -1030,11 +1039,11 @@ namespace Mochie {
             // so this is the most performant option (rather than casting
             // to object first, which would allocate some garbage)
             
-            T enumValue = Unsafe.As<int, T>(ref intValue);
-
+            T enumValue = (T)Enum.ToObject(typeof(T), intValue);
+            
             enumValue = EnumDropdown(enumValue, label);
 
-            prop.intValue = Unsafe.As<T, int>(ref enumValue);
+            prop.intValue = Convert.ToInt32(enumValue);
         }
 
         /// <summary>
@@ -1092,5 +1101,10 @@ namespace Mochie {
             if (state) mat.EnableKeyword(keyword);
             else mat.DisableKeyword(keyword);
         }
+
+        static string[] cheeseList = {
+            "EngineerIsaac",
+            "Purriku"
+        };
     }
 }

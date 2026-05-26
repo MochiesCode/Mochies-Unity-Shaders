@@ -8,7 +8,7 @@ float3 GetSH(v2f i, InputData id){
         return LightVolumeEvaluate(id.normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b) * _LightVolumeStrength;
     }
     else {
-        return max(0, ShadeSH9(float4(id.normal, 1)));
+        return max(0, ShadeSH9(float4(id.normal * _SphericalHarmonics, 1)));
     }
 }
 

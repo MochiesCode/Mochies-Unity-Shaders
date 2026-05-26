@@ -57,6 +57,8 @@ void CalculateBRDF(v2f i, InputData id, inout LightingData ld){
             float D = GGXTerm(NdotH, roughSq);
             float specularTerm = V * D * UNITY_PI;
             ld.specHighlightCol = ld.directCol * fresnelTerm * specularTerm * _SpecularHighlightStrength;
+            if (_SharpHighlights == 1)
+                ld.specHighlightCol = floor(ld.specHighlightCol * _SharpHighlightSteps) / _SharpHighlightSteps;
         }
     #endif
 

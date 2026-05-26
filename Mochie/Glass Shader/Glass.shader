@@ -109,12 +109,11 @@
         Tags { 
             "RenderType"="Transparent"
             "Queue"="Transparent"
-            // "ForceNoShadowCaster"="True"
             "IgnoreProjector"="True"
             "LTCGI"="_LTCGI"
         }
         GrabPass {
-            Tags {"LightMode"="Always"}
+            Tags {"LightMode"="GrabPass"}
             "_GlassGrab"
         }
         Cull [_Culling]

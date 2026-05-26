@@ -24,8 +24,22 @@ void InitializeAudioLink(inout audioLinkData al){
 
 void ApplyDistortionBlend(v2f i, inout float4 baseColor){
     i.uvGrab.xy /= i.uvGrab.w;
-    float3 grabCol = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MPSGrab, i.uvGrab.xy).rgb;
+    float3 grabCol = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_ParticleGrab, i.uvGrab.xy).rgb;
     baseColor.rgb = lerp(baseColor.rgb, grabCol.rgb*lerp(1,baseColor.a,_BlendMode == 1), _DistortionBlend);
+}
+
+float2 GetMeshRefraction(v2f i){
+    float2 offset = 0;
+    if (_MeshRefraction == 1){
+        float3 vNormalDir = normalize(i.normal);
+        float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPos);
+        float2 screenUV = GetGrabPos(UNITY_PROJ_COORD(i.uvGrab));
+        float2 IOR = (_RefractionIOR - 1) * mul(UNITY_MATRIX_V, float4(vNormalDir, 0));
+        float2 meshOffset = ((1/(i.uvGrab.z + 1) * IOR)) * (1-dot(vNormalDir, viewDir));
+        meshOffset = float2(meshOffset.x, -(meshOffset.y * _ProjectionParams.x));
+        offset = meshOffset;
+    }
+    return offset;
 }
 
 void ApplyDistortion(inout v2f i, inout float2 uv, float alpha, audioLinkData al){
@@ -43,6 +57,8 @@ void ApplyDistortion(inout v2f i, inout float2 uv, float alpha, audioLinkData al
     #endif
     float2 normal = UnpackNormal(normalMap).rg;
     float2 offset = normal * alpha * _DistortionStr * ((i.color.r + i.color.b + i.color.g)/3.0);
+    offset += GetMeshRefraction(i);
+
     #if defined(_FADING_ON)
         offset *= fade;
     #endif
@@ -58,7 +74,7 @@ void ApplyDistortion(inout v2f i, inout float2 uv, float alpha, audioLinkData al
 
 void ApplyHSVFilter(inout float4 col, audioLinkData al){
     float3 baseCol = col;
-    _Hue += lerp(0, frac(_Time.y*_AutoShiftSpeed), _AutoShift);
+    _Hue += frac(_Time.y*_AutoShiftSpeed) * _AutoShift;
     float3 filteredCol = HSVShift(col.rgb, _Hue, 0, 0);
     filteredCol = GetSaturation(filteredCol, _Saturation);
     filteredCol = lerp(filteredCol, GetHDR(filteredCol), _HDR);

@@ -137,19 +137,38 @@ float3 LV_MultiplyVectorByQuaternion(float3 v, float4 q) {
     return v + q.w * t + cross(q.xyz, t);
 }
 
-// Rotates vector by Matrix 2x3
-float3 LV_MultiplyVectorByMatrix2x3(float3 v, float3 r0, float3 r1) {
-    float3 r2 = cross(r0, r1);
+// Builds orthonormal axes from a normalized quaternion.
+void LV_QuaternionAxes(float4 q, out float3 xAxis, out float3 yAxis, out float3 zAxis) {
+    float x2 = q.x + q.x;
+    float y2 = q.y + q.y;
+    float z2 = q.z + q.z;
+    float xx = q.x * x2;
+    float yy = q.y * y2;
+    float zz = q.z * z2;
+    float xy = q.x * y2;
+    float xz = q.x * z2;
+    float yz = q.y * z2;
+    float wx = q.w * x2;
+    float wy = q.w * y2;
+    float wz = q.w * z2;
+
+    xAxis = float3(1.0f - yy - zz, xy + wz, xz - wy);
+    yAxis = float3(xy - wz, 1.0f - xx - zz, yz + wx);
+    zAxis = float3(xz + wy, yz - wx, 1.0f - xx - yy);
+}
+
+// Rotates vector by Matrix 3x3 with precomputed third axis
+float3 LV_MultiplyVectorByMatrix3x3(float3 v, float3 r0, float3 r1, float3 r2) {
     return float3(dot(v, r0), dot(v, r1), dot(v, r2));
 }
 
-// Fast approximate inverse cosine. Max absolute error = 0.009.
-// From https://seblagarde.wordpress.com/2014/12/01/inverse-trigonometric-functions-gpu-optimization-for-amd-gcn-architecture/
-float LV_FastAcos(float x) {
-    float absX = abs(x); 
-    float res = -0.156583f * absX + LV_PI * 0.5f;
-    res *= sqrt(1.0f - absX); 
-    return (x >= 0) ? res : (LV_PI - res);
+// Fast approximate arctangent for positive values. Max error is small enough for area light attenuation.
+float LV_FastAtanPositive(float x) {
+    float x2 = x * x;
+    float atanSmall = x * rcp(1.0f + 0.280872f * x2);
+    float invX = rcp(max(x, 1e-6f));
+    float atanLarge = LV_PI * 0.5f - invX * rcp(1.0f + 0.280872f * invX * invX);
+    return x <= 1.0f ? atanSmall : atanLarge;
 }
 
 // Forms specular based on roughness
@@ -192,126 +211,62 @@ float4 LV_SampleCubemapArray(uint id, float3 dir) {
     return LV_SAMPLE(_UdonPointLightVolumeTexture, uvid);
 }
 
-// Projects irradiance from a planar quad with uniform radiant exitance into L1 spherical harmonics.
-// Based on "Analytic Spherical Harmonic Coefficients for Polygonal Area Lights" by Wang and Ramamoorthi.
-// https://cseweb.ucsd.edu/~ravir/ash.pdf. Assumes that shadingPosition is not behind the quad.
-float4 LV_ProjectQuadLightIrradianceSH(float3 shadingPosition, float3 lightVertices[4]) {
-    // Transform the vertices into local space centered on the shading position,
-    // project, the polygon onto the unit sphere.
-    [unroll] for (uint edge0 = 0; edge0 < 4; edge0++) {
-        lightVertices[edge0] = normalize(lightVertices[edge0] - shadingPosition);
-    }
+// Projects a quad light into L1 SH using a cheap solid-angle approximation.
+// The axis-aligned case follows the same attenuation law as ComputeAreaLightSquaredBoundingSphere().
+float4 LV_ProjectFastQuadLightIrradianceSH(float3 lightToWorldPos, float4 rotationQuat, float2 size) {
+    float3 xAxis;
+    float3 yAxis;
+    float3 normal;
+    LV_QuaternionAxes(rotationQuat, xAxis, yAxis, normal);
 
-    // Precomputed directions of rotated zonal harmonics,
-    // and associated weights for each basis function.
-    // I.E. \omega_{l,d} and \alpha_{l,d}^m in the paper respectively.
-    const float3 zhDir0 = float3(0.866025, -0.500001, -0.000004);
-    const float3 zhDir1 = float3(-0.759553, 0.438522, -0.480394);
-    const float3 zhDir2 = float3(-0.000002, 0.638694,  0.769461);
-    const float3 zhWeightL1y = float3(2.1995339f, 2.50785367f, 1.56572711f);
-    const float3 zhWeightL1z = float3(-1.82572523f, -2.08165037f, 0.00000000f);
-    const float3 zhWeightL1x = float3(2.42459869f, 1.44790525f, 0.90397552f);
+    float3 localPos = float3(dot(lightToWorldPos, xAxis), dot(lightToWorldPos, yAxis), dot(lightToWorldPos, normal));
+    [branch] if (localPos.z <= 0.0f) return float4(0.0f, 0.0f, 0.0f, 0.0f);
 
-    float solidAngle = 0.0;
-    float3 surfaceIntegral = 0.0;
-    [loop] for (uint edge1 = 0; edge1 < 4; edge1++) {
-        uint next = (edge1 + 1) % 4;
-        uint prev = (edge1 + 4 - 1) % 4;
-        float3 prevVert = lightVertices[prev];
-        float3 thisVert = lightVertices[edge1];
-        float3 nextVert = lightVertices[next];
+    float2 halfSize = size * 0.5f;
+    float area = max(size.x * size.y, 1e-6f);
+    float extentSq = max(dot(halfSize, halfSize), 1e-6f);
 
-        // Compute the solid angle subtended by the polygon at the shading position,
-        // using Arvo's formula (5.1) https://dl.acm.org/doi/pdf/10.1145/218380.218467.
-        // The L0 term is directly proportional to the solid angle.
-        float3 a = cross(thisVert, prevVert);
-        float3 b = cross(thisVert, nextVert);
-        float lenA = length(a);
-        float lenB = length(b);
-        solidAngle += LV_FastAcos(clamp(dot(a, b) / (lenA * lenB), -1, 1));
+    float2 closestXY = clamp(localPos.xy, -halfSize, halfSize);
+    float2 rectDelta = localPos.xy - closestXY;
+    float rectDeltaSq = dot(rectDelta, rectDelta);
+    float planeSq = localPos.z * localPos.z;
+    float closestSqDist = max(rectDeltaSq + planeSq, 1e-6f);
+    float centerSqDist = max(dot(localPos, localPos), 1e-6f);
 
-        // Compute the integral of the legendre polynomials over the surface of the
-        // projected polygon for each zonal harmonic direction (S_l in the paper).
-        // Computed as a sum of line integrals over the edges of the polygon.
-        float3 mu = b * rcp(lenB);
-        float cosGamma = dot(thisVert, nextVert);
-        float gamma = LV_FastAcos(clamp(cosGamma, -1, 1));
-        surfaceIntegral.x += gamma * dot(zhDir0, mu);
-        surfaceIntegral.y += gamma * dot(zhDir1, mu);
-        surfaceIntegral.z += gamma * dot(zhDir2, mu);
-    }
-    solidAngle = solidAngle - LV_PI2;
-    surfaceIntegral *= 0.5;
+    float distanceBlend = (rectDeltaSq + planeSq) * rcp(rectDeltaSq + planeSq + extentSq);
+    float solidSqDist = lerp(closestSqDist, centerSqDist, distanceBlend);
+    float invSolidDist = rsqrt(solidSqDist);
+    float invExtendedDist = rsqrt(solidSqDist + extentSq);
 
-    // The L0 term is just the projection of the solid angle onto the L0 basis function.
-    const float normalizationL0 = 0.5f * sqrt(1.0f / LV_PI);
-    float l0 = normalizationL0 * solidAngle;
-    
-    // Combine each surface (sub)integral with the associated weights to get
-    // full surface integral for each L1 SH basis function.
-    float l1y = dot(zhWeightL1y, surfaceIntegral);
-    float l1z = dot(zhWeightL1z, surfaceIntegral);
-    float l1x = dot(zhWeightL1x, surfaceIntegral);
+    float atanArg = area * localPos.z * invSolidDist * invSolidDist * invExtendedDist * 0.25f;
+    float solidAngle = 4.0f * LV_FastAtanPositive(atanArg);
+    float l0 = solidAngle * (0.25f / LV_PI);
 
-    // The l0, l1y, l1z, l1x are raw SH coefficients for radiance from the polygon.
-    // We need to apply some more transformations before we are done:
-    // (1) We want the coefficients for irradiance, so we need to convolve with the
-    //     clamped cosine kernel, as detailed in https://cseweb.ucsd.edu/~ravir/papers/envmap/envmap.pdf.
-    //     The kernel has coefficients PI and 2/3*PI for L0 and L1 respectively.
-    // (2) Unity's area lights underestimate the irradiance by a factor of PI for historical reasons.
-    //     We need to divide by PI to match this 'incorrect' behavior.
-    // (3) Unity stores SH coefficients (unity_SHAr..unity_SHC) pre-multiplied with the constant
-    //     part of each SH basis function, so we need to multiply by constant part to match it.
-    const float cosineKernelL0 = LV_PI; // (1)
-    const float cosineKernelL1 = LV_PI2 / 3.0f; // (1)
-    const float oneOverPi = 1.0f / LV_PI; // (2)
-    const float normalizationL1 = 0.5f * sqrt(3.0f / LV_PI); // (3)
-    const float weightL0 = cosineKernelL0 * normalizationL0 * oneOverPi; // (1), (2), (3)
-    const float weightL1 = cosineKernelL1 * normalizationL1 * oneOverPi; // (1), (2), (3)
-    l0  *= weightL0;
-    l1y *= weightL1;
-    l1z *= weightL1;
-    l1x *= weightL1;
-    
-    return float4(l1x, l1y, l1z, l0);
+    float2 representativeXY = lerp(closestXY, float2(0.0f, 0.0f), distanceBlend);
+    float3 worldDir = xAxis * representativeXY.x + yAxis * representativeXY.y - lightToWorldPos;
+    float3 dir = worldDir * rsqrt(max(dot(worldDir, worldDir), 1e-6f));
+    float directionality = saturate(1.0f - solidAngle * (0.25f / LV_PI));
+
+    return float4(dir * (l0 * directionality), l0);
 }
 
 // Samples a quad light, including culling
 void LV_QuadLight(float3 worldPos, float3 centroidPos, float4 rotationQuat, float2 size, float3 color, float sqMaxDist, float occlusion, inout float3 L0, inout float3 L1r, inout float3 L1g, inout float3 L1b, inout uint count) {
-    
+
     float3 lightToWorldPos = worldPos - centroidPos;
-    
-    // Normal culling
-    float3 normal = LV_MultiplyVectorByQuaternion(float3(0, 0, 1), rotationQuat);
-    [branch] if (dot(normal, lightToWorldPos) < 0.0) return;
-    
+
+    float4 areaLightSH = LV_ProjectFastQuadLightIrradianceSH(lightToWorldPos, rotationQuat, size);
+    [branch] if (areaLightSH.w <= 0.0f) return;
+
     // Attenuate the light based on distance to the bounding sphere, so we don't get hard seam at the edge.
     float sqCutoffDist = sqMaxDist - dot(lightToWorldPos, lightToWorldPos);
     color.rgb *= saturate(sqCutoffDist / sqMaxDist) * LV_PI * occlusion;
-        
-    // Compute the vertices of the quad
-    float2 halfSize = size * 0.5f;
-    float3 xAxis = LV_MultiplyVectorByQuaternion(float3(1, 0, 0), rotationQuat);
-    float3 yAxis = cross(normal, xAxis);
-    float3 verts[4];
-    verts[0] = centroidPos + (-halfSize.x * xAxis) + ( halfSize.y * yAxis);
-    verts[1] = centroidPos + ( halfSize.x * xAxis) + ( halfSize.y * yAxis);
-    verts[2] = centroidPos + ( halfSize.x * xAxis) + (-halfSize.y * yAxis);
-    verts[3] = centroidPos + (-halfSize.x * xAxis) + (-halfSize.y * yAxis);
 
-    // Project irradiance from the area light
-    float4 areaLightSH = LV_ProjectQuadLightIrradianceSH(worldPos, verts);
-
-    // If the magnitude of L1 is greater than L0, we may get negative values
-    // when reconstructing. To avoid, normalize L1. This is effectively de-ringing.
-    float lenL1 = length(areaLightSH.xyz);
-    if (lenL1 > areaLightSH.w) areaLightSH.xyz *= areaLightSH.w / lenL1;
-    
     L0  += areaLightSH.w * color.rgb;
     L1r += areaLightSH.xyz * color.r;
     L1g += areaLightSH.xyz * color.g;
     L1b += areaLightSH.xyz * color.b;
-    
+
     count++;
 }
 
@@ -414,7 +369,6 @@ void LV_PointLight(uint id, float3 worldPos, float4 occlusion, inout float3 L0, 
     float3 dir = pos.xyz - worldPos;
     float sqlen = max(dot(dir, dir), 1e-6);
     [branch] if (sqlen > sqrRange) return; // Early distance based culling
-    float3 dirN = dir * rsqrt(sqlen);
     
     // Processing lights occlusion
     float lightOcclusion = 1;
@@ -427,6 +381,7 @@ void LV_PointLight(uint id, float3 worldPos, float4 occlusion, inout float3 L0, 
     
     [branch] if (pos.w < 0) { // It is a spot light
 
+        float3 dirN = dir * rsqrt(sqlen);
         float angle = color.w;
         float spotMask = dot(ldir.xyz, -dirN) - angle;
         [branch] if(customId >= 0 && spotMask < 0) return; // Spot cone based culling
@@ -453,6 +408,7 @@ void LV_PointLight(uint id, float3 worldPos, float4 occlusion, inout float3 L0, 
         
     } else if (color.w <= 1.5f) { // It is a point light
         
+        float3 dirN = dir * rsqrt(sqlen);
         [branch] if (customId > 0) { // Using LUT
             
             float invSqRange = abs(pos.w); // Sign of range defines if it's point light (positive) or a spot light (negative)
@@ -581,9 +537,10 @@ void LV_SampleVolume(uint id, float3 localUVW, inout float3 L0, inout float3 L1r
         // Legacy to support older light volumes worlds! Commented code above will be used in future releases! Legacy!
         float3 r0 = _UdonLightVolumeRotation[id * 2].xyz;
         float3 r1 = _UdonLightVolumeRotation[id * 2 + 1].xyz;
-        L1r += LV_MultiplyVectorByMatrix2x3(l1r, r0, r1);
-        L1g += LV_MultiplyVectorByMatrix2x3(l1g, r0, r1);
-        L1b += LV_MultiplyVectorByMatrix2x3(l1b, r0, r1);
+        float3 r2 = cross(r0, r1);
+        L1r += LV_MultiplyVectorByMatrix3x3(l1r, r0, r1, r2);
+        L1g += LV_MultiplyVectorByMatrix3x3(l1g, r0, r1, r2);
+        L1b += LV_MultiplyVectorByMatrix3x3(l1b, r0, r1, r2);
     } else {
         L1r += l1r;
         L1g += l1g;

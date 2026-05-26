@@ -31,11 +31,11 @@ namespace Mochie {
                 "Cutout",
                 "Random Hue",
                 "Outlines",
-                "Special Effects",
+                "Rim Light",
                 "Render Settings"
         }, 0);
 
-        string versionLabel = "v3.0";
+        string versionLabel = "v3.1";
 
         // Render Settings
         MaterialProperty _BlendMode = null;
@@ -106,6 +106,9 @@ namespace Mochie {
         MaterialProperty _SpecularHighlightsToggle = null;
         MaterialProperty _ReflectionStrength = null;
         MaterialProperty _SpecularHighlightStrength = null;
+        MaterialProperty _SharpHighlights = null;
+        MaterialProperty _SharpHighlightSteps = null;
+        MaterialProperty _SphericalHarmonics = null;
         MaterialProperty _LightVolumes = null;
         MaterialProperty _LightVolumeSpecularity = null;
         MaterialProperty _LightVolumeSpecularityStrength = null;
@@ -144,6 +147,27 @@ namespace Mochie {
         MaterialProperty _DistortionBlend = null;
         MaterialProperty _DistortionSpeed = null;
         MaterialProperty _DistortMainTex = null;
+        MaterialProperty _MeshRefraction = null;
+        MaterialProperty _RefractionIOR = null;
+
+        // Rim Light
+        MaterialProperty _RimLight = null;
+        MaterialProperty _RimTex = null;
+        MaterialProperty _RimTexUVMode = null;
+        MaterialProperty _RimTexSpeed = null;
+        MaterialProperty _RimTexPolarRotation = null;
+        MaterialProperty _RimTexPolarSpeed = null;
+        MaterialProperty _RimTexPolarRadius = null;
+        MaterialProperty _RimColor = null;
+        MaterialProperty _RimBlending = null;
+        MaterialProperty _RimStrength = null;
+        MaterialProperty _RimWidth = null;
+        MaterialProperty _RimEdge = null;
+        MaterialProperty _RimLifetime = null;
+        MaterialProperty _RimLifetimeMax = null;
+        MaterialProperty _RimLifetimeMin = null;
+        MaterialProperty _RimStartWidth = null;
+        MaterialProperty _RimEndWidth = null;
 
         // Pulse
         MaterialProperty _Pulse = null;
@@ -370,11 +394,6 @@ namespace Mochie {
                             DrawUVBlock(mat, me, _MetallicMap, _MetallicMapUVMode, _MetallicMapSpeed, _MetallicMapPolarRadius, _MetallicMapPolarRotation, _MetallicMapPolarSpeed);
                             me.TexturePropertySingleLine(Tips.roughnessText, _RoughnessMap, _Roughness);
                             DrawUVBlock(mat, me, _RoughnessMap, _RoughnessMapUVMode, _RoughnessMapSpeed, _RoughnessMapPolarRadius, _RoughnessMapPolarRotation, _RoughnessMapPolarSpeed);
-                            MGUI.ToggleFloat(me, Tips.cubemapReflectionsText, _ReflectionsToggle, _ReflectionStrength);
-                            MGUI.ToggleFloat(me, Tips.specularHighlightsText, _SpecularHighlightsToggle, _SpecularHighlightStrength);
-                            MGUI.ToggleFloat(me, "Light Volume Lighting", _LightVolumes, _LightVolumeStrength);
-                            if (_LightVolumes.floatValue != 0)
-                                MGUI.ToggleFloat(me, Tips.lightVolumeSpecText, _LightVolumeSpecularity, _LightVolumeSpecularityStrength);
                         });
                         MGUI.PropertyGroup(()=>{
                             me.ShaderProperty(_Emission, "Emission");
@@ -388,8 +407,20 @@ namespace Mochie {
                             DrawUVBlock(mat, me, _EmissionMap, _EmissionMapUVMode, _EmissionMapSpeed, _EmissionMapPolarRadius, _EmissionMapPolarRotation, _EmissionMapPolarSpeed);
                             MGUI.ToggleGroupEnd();
                         });
+                        MGUI.PropertyGroup(()=>{
+                            MGUI.ToggleFloat(me, Tips.cubemapReflectionsText, _ReflectionsToggle, _ReflectionStrength);
+                            MGUI.ToggleFloat(me, Tips.specularHighlightsText, _SpecularHighlightsToggle, _SpecularHighlightStrength);
+                            MGUI.ToggleFloat(me, "Light Volume Lighting", _LightVolumes, _LightVolumeStrength);
+                            if (_LightVolumes.floatValue != 0)
+                                MGUI.ToggleFloat(me, Tips.lightVolumeSpecText, _LightVolumeSpecularity, _LightVolumeSpecularityStrength);
+                            if (_SpecularHighlightsToggle.floatValue == 1){
+                                MGUI.ToggleIntSlider(me, "Sharp Highlights", _SharpHighlights, _SharpHighlightSteps);
+                            }
+                            me.ShaderProperty(_SphericalHarmonics, "Spherical Harmonics");
+                        });
                         MGUI.ToggleGroupEnd();
                         MGUI.DisplayInfo("Please note that for full lighting support you need to enable the various lighting options at the bottom of the particle system 'Renderer' tab.");   
+                        MGUI.SpaceN1();
                     });
                 }
 
@@ -421,6 +452,7 @@ namespace Mochie {
                             MGUI.TexPropLabel("Distort UVs", 124, false);
                             DrawUVBlock(mat, me, _NormalMap, _NormalMapUVMode, _NormalMapSpeed, _NormalMapPolarRadius, _NormalMapPolarRotation, _NormalMapPolarSpeed);
                             me.ShaderProperty(_DistortionStr, "Strength");
+                            MGUI.ToggleFloat(me, Tips.meshRefractionText, _MeshRefraction, _RefractionIOR);
                             if (_BlendMode.floatValue != 6)
                                 me.ShaderProperty(_DistortionBlend, "Blend");
                         });
@@ -459,7 +491,7 @@ namespace Mochie {
 
                     // Randomn Hue
                     if (Foldouts.DoFoldout(foldouts, mat, me, _RandomHue, "Random Hue", Foldouts.Style.StandardToggle)){
-                            MGUI.PropertyGroupParent(()=>{
+                        MGUI.PropertyGroupParent(()=>{
                             MGUI.ToggleGroup(_RandomHue.floatValue == 0);
                             MGUI.PropertyGroup(()=>{
                                 me.ShaderProperty(_RandomHueMode, "Mode");
@@ -471,6 +503,30 @@ namespace Mochie {
                         });
                     }
                     
+                    // Rim Light
+                    if (Foldouts.DoFoldout(foldouts, mat, me, _RimLight, "Rim Light", Foldouts.Style.StandardToggle)){
+                        MGUI.PropertyGroupParent(()=>{
+                            MGUI.ToggleGroup(_RimLight.floatValue == 0);
+                            MGUI.PropertyGroup(()=>{
+                                me.TexturePropertySingleLine(Tips.rimCol, _RimTex, _RimColor, _RimBlending);
+                                MGUI.TexPropLabel("Blending", 105, true);
+                                DrawUVBlock(mat, me, _RimTex, _RimTexUVMode, _RimTexSpeed, _RimTexPolarRadius, _RimTexPolarRotation, _RimTexPolarSpeed);
+                                me.ShaderProperty(_RimStrength, Tips.rimStr);
+                                me.ShaderProperty(_RimEdge, Tips.rimEdge);
+                                if (_RimLifetime.floatValue == 0){
+                                    me.ShaderProperty(_RimWidth, Tips.rimWidth);
+                                }
+                                else {
+                                    me.ShaderProperty(_RimStartWidth, "Starting Width");
+                                    me.ShaderProperty(_RimEndWidth, "Ending Width");
+                                    MGUI.SliderMinMax01(_RimLifetimeMin, _RimLifetimeMax, "Age Threshold", 0);
+                                }
+                                me.ShaderProperty(_RimLifetime, "Scale by Lifetime");
+                            });
+                            MGUI.ToggleGroupEnd();
+                        });
+                    }
+
                     // Outlines
                     if (Foldouts.DoFoldout(foldouts, mat, me, _Outlines, "Outlines", Foldouts.Style.StandardToggle)){
                         if (_BlendMode.floatValue != 6){
@@ -731,6 +787,7 @@ namespace Mochie {
             bool outlines = mat.GetInt("_Outlines") == 1 && blendMode == 6;
             bool outlineStencil = mat.GetInt("_OutlineStencilToggle") == 1;
             bool emission = mat.GetInt("_Emission") == 1 && lighting;
+            bool rimLight = mat.GetInt("_RimLight") == 1;
 
             MGUI.SetKeyword(mat, "_ALPHATEST_ON", cutout);
             MGUI.SetKeyword(mat, "_FADING_ON", softening);
@@ -752,9 +809,10 @@ namespace Mochie {
             MGUI.SetKeyword(mat, "_ALPHA_MASK_ON", alphaMask);
             MGUI.SetKeyword(mat, "_RANDOM_HUE_ON", randomHue);
             MGUI.SetKeyword(mat, "_EMISSION_ON", emission);
+            MGUI.SetKeyword(mat, "_RIMLIGHT_ON", rimLight);
 
             mat.SetShaderPassEnabled("Always", outlines);
-            mat.SetShaderPassEnabled("GrabPass", distortion);
+            mat.SetShaderPassEnabled("GrabPass", distortion && blendMode != 6);
 
             if (outlineStencil)
                 mat.SetInt("_OutlineCulling", 0);

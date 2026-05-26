@@ -918,7 +918,7 @@ namespace Mochie {
                     mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
                     mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
                     mat.SetInt("_ZWrite", 1);
-                    mat.SetShaderPassEnabled("Always", false);
+                    mat.SetShaderPassEnabled("GrabPass", false);
                     mat.EnableKeyword("_OPAQUE_MODE_ON");
                     mat.DisableKeyword("_PREMUL_MODE_ON");
                     mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Geometry+mat.GetInt("_QueueOffset");
@@ -930,7 +930,7 @@ namespace Mochie {
                     mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
                     mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
                     mat.SetInt("_ZWrite", 0);
-                    mat.SetShaderPassEnabled("Always", false);
+                    mat.SetShaderPassEnabled("GrabPass", false);
                     mat.DisableKeyword("_OPAQUE_MODE_ON");
                     mat.EnableKeyword("_PREMUL_MODE_ON");
                     mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent+mat.GetInt("_QueueOffset");
@@ -942,7 +942,7 @@ namespace Mochie {
                     mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
                     mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
                     mat.SetInt("_ZWrite", 0);
-                    mat.SetShaderPassEnabled("Always", true);
+                    mat.SetShaderPassEnabled("GrabPass", true);
                     mat.DisableKeyword("_OPAQUE_MODE_ON");
                     mat.DisableKeyword("_PREMUL_MODE_ON");
                     mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent+mat.GetInt("_QueueOffset");

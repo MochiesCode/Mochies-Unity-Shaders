@@ -436,7 +436,7 @@ namespace Mochie {
                     mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
                     mat.SetInt("_ZWrite", 0);
                     mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent+mat.GetInt("_QueueOffset");
-                    mat.SetShaderPassEnabled("Always", true);
+                    mat.SetShaderPassEnabled("GrabPass", true);
                     MGUI.SetKeyword(mat, "_GRABPASS_ON", true);
                     MGUI.SetKeyword(mat, "_PREMULTIPLIED_ON", false);
                     break;
@@ -446,7 +446,7 @@ namespace Mochie {
                     mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
                     mat.SetInt("_ZWrite", 0);
                     mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent+mat.GetInt("_QueueOffset");
-                    mat.SetShaderPassEnabled("Always", false);
+                    mat.SetShaderPassEnabled("GrabPass", false);
                     MGUI.SetKeyword(mat, "_GRABPASS_ON", false);
                     MGUI.SetKeyword(mat, "_PREMULTIPLIED_ON", true);
                     break;
@@ -456,7 +456,7 @@ namespace Mochie {
                     mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
                     mat.SetInt("_ZWrite", 1);
                     mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Geometry+mat.GetInt("_QueueOffset");
-                    mat.SetShaderPassEnabled("Always", false);
+                    mat.SetShaderPassEnabled("GrabPass", false);
                     MGUI.SetKeyword(mat, "_GRABPASS_ON", false);
                     MGUI.SetKeyword(mat, "_PREMULTIPLIED_ON", false);
                     break;

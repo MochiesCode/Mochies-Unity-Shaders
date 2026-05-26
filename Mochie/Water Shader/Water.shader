@@ -289,7 +289,7 @@ Shader "Mochie/Water" {
             ZFail Keep
         }
         GrabPass {
-            Tags {"LightMode"="Always"}
+            Tags {"LightMode"="GrabPass"}
             "_MWGrab"
         }
         ZWrite [_ZWrite]

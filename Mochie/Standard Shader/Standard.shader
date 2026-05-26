@@ -353,8 +353,8 @@ Shader "Mochie/Standard" {
             "LTCGI"="_LTCGI"
         }
         GrabPass {
-            Tags {"LightMode"="Always"}
-            "_GrabTexture"
+            Tags {"LightMode"="GrabPass"}
+            "_StandardGrab"
         }
         Cull [_Culling]
         ZTest [_ZTest]

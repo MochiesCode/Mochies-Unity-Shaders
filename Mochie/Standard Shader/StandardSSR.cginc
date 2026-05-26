@@ -15,7 +15,7 @@ float3 GetBlurredGrabPass(const float2 texelSize, const float2 uvs, const float 
     float3 refTotal = float3(0,0,0);
     for (int i = 0; i < dimFloored; i++){
         for (int j = 0; j < dimFloored; j++){
-            float4 refl = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_GrabTexture, float2(uvs.x + pixSize.x*(i-center), uvs.y + pixSize.y*(j-center)));
+            float4 refl = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_StandardGrab, float2(uvs.x + pixSize.x*(i-center), uvs.y + pixSize.y*(j-center)));
             refTotal += refl.rgb;
         }
     }

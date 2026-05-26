@@ -80,6 +80,18 @@ float4 frag (v2f i) : SV_Target {
     #if defined(_EMISSION_ON) && defined(_LIGHTING_ON)
         ApplyEmission(i, ld, al, col.rgb);
     #endif
+    
+    #if defined (_RIMLIGHT_ON) && defined(X_VERSION)
+        float3 rimNormal, rimViewDir;
+        #if defined(_LIGHTING_ON)
+            rimNormal = id.normal;
+            rimViewDir = ld.viewDir;
+        #else
+            rimNormal = normalize(i.normal);
+            rimViewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPos);
+        #endif
+        ApplyRimLight(i, rimNormal, rimViewDir, col.rgb);
+    #endif
 
     #if defined(_ALPHATEST_ON) && defined(X_VERSION)
         ApplyCutoutRim(col);
@@ -89,12 +101,12 @@ float4 frag (v2f i) : SV_Target {
         ApplyDissolveRim(col, rimCol);
     #endif
 
-    #if defined(_FILTERING_ON)
-        ApplyHSVFilter(col, al);
-    #endif
-    
     #if defined(_RANDOM_HUE_ON) && defined(X_VERSION)
         ApplyRandomHue(i, col.rgb);
+    #endif
+
+    #if defined(_FILTERING_ON)
+        ApplyHSVFilter(col, al);
     #endif
 
     #if defined(UNITY_PASS_SHADOWCASTER)

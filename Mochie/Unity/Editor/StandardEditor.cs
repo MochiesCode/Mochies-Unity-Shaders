@@ -368,7 +368,7 @@ namespace Mochie {
             bool isMobile = MGUI.IsMobileVersion(mat);
             bool isLite = MGUI.IsNewLiteVersion(mat) || isMobile;
 
-            mat.SetShaderPassEnabled("Always", mat.GetInt("_SSRToggle") == 1 && !isLite);
+            mat.SetShaderPassEnabled("GrabPass", mat.GetInt("_SSRToggle") == 1 && !isLite);
 
             if (firstTimeApply){
                 SetKeywords(mat);

@@ -197,7 +197,7 @@ int _ShadingModel;
 int _SSRToggle;
 int _VRSSR;
 MOCHIE_DECLARE_TEX2D_SCREENSPACE(_CameraDepthTexture);
-MOCHIE_DECLARE_TEX2D_SCREENSPACE(_GrabTexture);
+MOCHIE_DECLARE_TEX2D_SCREENSPACE(_StandardGrab);
 MOCHIE_DECLARE_TEX2D(_NoiseTexSSR);
 float4 _CameraDepthTexture_TexelSize;
 float4 _GrabTexture_TexelSize;

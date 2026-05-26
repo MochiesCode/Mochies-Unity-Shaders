@@ -60,7 +60,7 @@ namespace Mochie {
         ToggleOffOn areaLitSpecularOcclusion = ToggleOffOn.Unchanged;
         float areaLitStrength = 1f;
         float areaLitRoughnessMultiplier = 1f;
-        Texture2D lightMesh;
+        RenderTexture lightMesh;
         Texture2D lightTex0;
         Texture2D lightTex1;
         Texture2D lightTex2;
@@ -189,7 +189,7 @@ namespace Mochie {
                 areaLitSpecularOcclusion = (ToggleOffOn)EditorGUILayout.EnumPopup("Specular Occlusion", areaLitSpecularOcclusion);
                 areaLitStrength = EditorGUILayout.FloatField("Strength", areaLitStrength);
                 areaLitRoughnessMultiplier = EditorGUILayout.FloatField("Roughness Multiplier", areaLitRoughnessMultiplier);
-                lightMesh = (Texture2D)EditorGUILayout.ObjectField("Light Mesh", lightMesh, typeof(Texture2D), true, GUILayout.Height(EditorGUIUtility.singleLineHeight));
+                lightMesh = (RenderTexture)EditorGUILayout.ObjectField("Light Mesh", lightMesh, typeof(RenderTexture), true, GUILayout.Height(EditorGUIUtility.singleLineHeight));
                 lightTex0 = (Texture2D)EditorGUILayout.ObjectField("Light Texture 0", lightTex0, typeof(Texture2D), true, GUILayout.Height(EditorGUIUtility.singleLineHeight));
                 lightTex1 = (Texture2D)EditorGUILayout.ObjectField("Light Texture 1", lightTex1, typeof(Texture2D), true, GUILayout.Height(EditorGUIUtility.singleLineHeight));
                 lightTex2 = (Texture2D)EditorGUILayout.ObjectField("Light Texture 2", lightTex2, typeof(Texture2D), true, GUILayout.Height(EditorGUIUtility.singleLineHeight));

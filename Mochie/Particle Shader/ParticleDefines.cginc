@@ -20,7 +20,7 @@
 #define PBR_ENABLED defined(_REFLECTIONS_ON) || defined(_SPECULAR_HIGHLIGHTS_ON)
 
 MOCHIE_DECLARE_TEX2D_SCREENSPACE(_CameraDepthTexture);
-MOCHIE_DECLARE_TEX2D_SCREENSPACE(_MPSGrab); float4 _MPSGrab_TexelSize;
+MOCHIE_DECLARE_TEX2D_SCREENSPACE(_ParticleGrab); float4 _ParticleGrab_TexelSize;
 float4 _CameraDepthTexture_TexelSize;
 sampler2D _MainTex;
 float4 _MainTex_ST;
@@ -84,6 +84,9 @@ float _ReflectionStrength;
 float _SpecularHighlightStrength;
 float _LightVolumeStrength;
 int _LightVolumes;
+int _SharpHighlights;
+int _SharpHighlightSteps;
+int _SphericalHarmonics;
 
 sampler2D _NormalMap;
 float4 _NormalMap_ST;
@@ -94,6 +97,7 @@ float _NormalMapPolarRotation;
 float _NormalMapPolarSpeed;
 float _NormalMapPolarRadius;
 
+// Emission
 int _Emission;
 float4 _EmissionColor;
 sampler2D _EmissionMap;
@@ -108,6 +112,7 @@ float _EmissionLightReactivityMin;
 float _EmissionLightReactivityMax;
 int _EmissionLightReactivity;
 
+// Dissolve
 sampler2D _DissolveNoise;
 float4 _DissolveNoise_ST;
 int _DissolveNoiseUVMode;
@@ -127,7 +132,7 @@ float _DissolveAgeThresholdMin;
 float _DissolveAgeThresholdMax;
 float _DissolveAmount;
 
-// Core surface
+// Base
 float4 _Color;
 float4 _SecondColor;
 
@@ -157,7 +162,6 @@ int _CutoutRimBlend;
 float _CutoutRimWidth;
 float4 _CutoutRimColor;
 
-
 // Pulse
 int _Pulse;
 int _Waveform;
@@ -167,9 +171,32 @@ float _PulseSpeed;
 // Distortion
 int _Distortion;
 int _DistortMainTex;
+int _MeshRefraction;
+float _RefractionIOR;
 float _DistortionStr;
 float _DistortionBlend;
 float2 _DistortionSpeed;
+
+// Rim Light
+sampler2D _RimTex;
+float4 _RimTex_ST;
+int _RimLight;
+int _RimBlending;
+float4 _RimColor;
+float _RimStrength;
+float _RimWidth;
+float _RimEdge;
+int _RimTexUVMode;
+float2 _RimTexSpeed;
+float _RimTexRotation;
+float _RimTexPolarRotation;
+float _RimTexPolarSpeed;
+float _RimTexPolarRadius;
+int _RimLifetime;
+float _RimLifetimeMin;
+float _RimLifetimeMax;
+float _RimStartWidth;
+float _RimEndWidth;
 
 // Color manipulation
 float _Hue;

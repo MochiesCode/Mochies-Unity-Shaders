@@ -66,10 +66,13 @@ Shader "Mochie/Particles" {
         _RoughnessMapPolarRotation("Rotation", Float) = 0
         _RoughnessMapPolarSpeed("Speed", Float) = 0
         _RoughnessMapPolarRadius("Radius", Float) = 1
-        [ToggleUI]_ReflectionsToggle("Reflections", Int) = 0
-        [ToggleUI]_SpecularHighlightsToggle("Specular Highlights", Int) = 0
+        [ToggleUI]_ReflectionsToggle("Reflections", Int) = 1
+        [ToggleUI]_SpecularHighlightsToggle("Specular Highlights", Int) = 1
         _ReflectionStrength("Reflection Strength", Float) = 1
         _SpecularHighlightStrength("Specular Highlight Strength", Float) = 1
+        [ToggleUI]_SharpHighlights("Sharp Highlights", Int) = 0
+        [IntRange]_SharpHighlightSteps("Sharp Highlight Steps", Range(1,15)) = 1
+        [ToggleUI]_SphericalHarmonics("Spherical Harmonics", Int) = 1
         [ToggleUI]_LightVolumes("Light Volumes", Int) = 1
         _LightVolumeSpecularity("Light Volumes Specularity", Int) = 0
         _LightVolumeSpecularityStrength("Light Volumes Specularity Strength", Float) = 1
@@ -112,6 +115,8 @@ Shader "Mochie/Particles" {
         _DistortionStr("", Float) = 0
         _DistortionBlend("", Range(0,1)) = 0.5
         _DistortionSpeed("", Vector) = (0,0,0,0)
+        [ToggleUI]_MeshRefraction("Refract Mesh Normals", Int) = 0
+        _RefractionIOR("IOR", Float) = 1.2
 
         [ToggleUI]_Pulse("", Int) = 0
         [Enum(Sin,0, Square,1, Triangle,2, Saw,3, Reverse Saw,4)]_Waveform("", Int) = 0
@@ -145,7 +150,25 @@ Shader "Mochie/Particles" {
         [HDR]_DissolveRimColor("Dissolve Rim Color", Color) = (1,1,1,1)
         _DissolveRimWidth("Dissolve Rim Width", Float) = 0.5
         [Enum(Add,0, Multiply,1)]_DissolveRimBlend("Dissolve Rim Blend", Int) = 0
-        
+
+        [ToggleUI]_RimLight("Rim Light", Int) = 0
+        _RimTex("Rim Texture", 2D) = "white" {}
+        [Enum(Default,0, Polar,1, Panosphere,2)]_RimTexUVMode("UV Mode", Int) = 0
+        _RimTexSpeed("Speed", Vector) = (0,0,0,0)
+        _RimTexPolarRotation("Rotation", Float) = 0
+        _RimTexPolarSpeed("Speed", Float) = 0
+        _RimTexPolarRadius("Radius", Float) = 1
+        [HDR]_RimColor("Rim Color", Color) = (1,1,1,1)
+        [Enum(Add,0, Sub,1, Mul,2, Mulx2,3, Overlay,4, Screen,5, Lerp,6)]_RimBlending("Rim Blending", Int) = 0
+        _RimStrength("Rim Strength", Range(0,1)) = 1
+        _RimWidth("Rim Width", Range (0,1)) = 0.5
+        _RimStartWidth("Rim Start Width", Range(0,1)) = 1
+        _RimEndWidth("Rim End Width", Range(0,1)) = 0
+        _RimEdge("Rim Edge", Range(0,0.5)) = 0
+        [ToggleUI]_RimLifetime("Rim Lifetime", Int) = 0
+        _RimLifetimeMin("Rim Lifetime Min", Float) = 0
+        _RimLifetimeMax("Rim Lifetime Max", Float) = 0.5
+
         [ToggleUI]_RandomHue("Random Hue", Int) = 0
         [Enum(HSV,0, Oklab,1)]_RandomHueMode("Random Hue Mode", Int) = 0
         [ToggleUI]_RandomHueMonoTint("Mono Tint", Int) = 0
@@ -214,7 +237,7 @@ Shader "Mochie/Particles" {
         }
         GrabPass {
             Tags {"LightMode"="GrabPass"}
-            "_MPSGrab"
+            "_ParticleGrab"
         }
         Blend [_SrcBlend] [_DstBlend]
         Cull [_Culling]

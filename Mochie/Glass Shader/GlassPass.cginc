@@ -22,6 +22,13 @@ v2f vert (appdata v){
     v.normal = normalize(v.normal);
     float3x3 objectToTangent = float3x3(v.tangent.xyz, (cross(v.normal, v.tangent.xyz) * v.tangent.w), v.normal);
     o.tangentViewDir = mul(objectToTangent, ObjSpaceViewDir(v.vertex));
+    
+    #if defined(LIGHTMAP_ON)
+        o.lightmapUV.xy = v.uv1 * unity_LightmapST.xy + unity_LightmapST.zw;
+    #endif
+    #if defined(DYNAMICLIGHTMAP_ON)
+        o.lightmapUV.zw = v.uv2.xy * unity_DynamicLightmapST.xy + unity_DynamicLightmapST.zw;
+    #endif
 
     #if defined(LIGHTMAP_ON)
         o.lightmapUV.xy = v.uv1 * unity_LightmapST.xy + unity_LightmapST.zw;
