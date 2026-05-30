@@ -61,10 +61,10 @@ namespace Mochie {
         float areaLitStrength = 1f;
         float areaLitRoughnessMultiplier = 1f;
         RenderTexture lightMesh;
-        Texture2D lightTex0;
-        Texture2D lightTex1;
-        Texture2D lightTex2;
-        Texture2D lightTex3;
+        RenderTexture lightTex0;
+        RenderTexture lightTex1;
+        RenderTexture lightTex2;
+        RenderTexture lightTex3;
         Texture2D areaLitOcclusion;
         AreaLitOcclusionUVSet areaLitOcclusionUVSet = AreaLitOcclusionUVSet.Unchanged;
 
@@ -190,10 +190,10 @@ namespace Mochie {
                 areaLitStrength = EditorGUILayout.FloatField("Strength", areaLitStrength);
                 areaLitRoughnessMultiplier = EditorGUILayout.FloatField("Roughness Multiplier", areaLitRoughnessMultiplier);
                 lightMesh = (RenderTexture)EditorGUILayout.ObjectField("Light Mesh", lightMesh, typeof(RenderTexture), true, GUILayout.Height(EditorGUIUtility.singleLineHeight));
-                lightTex0 = (Texture2D)EditorGUILayout.ObjectField("Light Texture 0", lightTex0, typeof(Texture2D), true, GUILayout.Height(EditorGUIUtility.singleLineHeight));
-                lightTex1 = (Texture2D)EditorGUILayout.ObjectField("Light Texture 1", lightTex1, typeof(Texture2D), true, GUILayout.Height(EditorGUIUtility.singleLineHeight));
-                lightTex2 = (Texture2D)EditorGUILayout.ObjectField("Light Texture 2", lightTex2, typeof(Texture2D), true, GUILayout.Height(EditorGUIUtility.singleLineHeight));
-                lightTex3 = (Texture2D)EditorGUILayout.ObjectField("Light Texture 3", lightTex3, typeof(Texture2D), true, GUILayout.Height(EditorGUIUtility.singleLineHeight));
+                lightTex0 = (RenderTexture)EditorGUILayout.ObjectField("Light Texture 0", lightTex0, typeof(RenderTexture), true, GUILayout.Height(EditorGUIUtility.singleLineHeight));
+                lightTex1 = (RenderTexture)EditorGUILayout.ObjectField("Light Texture 1", lightTex1, typeof(RenderTexture), true, GUILayout.Height(EditorGUIUtility.singleLineHeight));
+                lightTex2 = (RenderTexture)EditorGUILayout.ObjectField("Light Texture 2", lightTex2, typeof(RenderTexture), true, GUILayout.Height(EditorGUIUtility.singleLineHeight));
+                lightTex3 = (RenderTexture)EditorGUILayout.ObjectField("Light Texture 3", lightTex3, typeof(RenderTexture), true, GUILayout.Height(EditorGUIUtility.singleLineHeight));
                 areaLitOcclusion = (Texture2D)EditorGUILayout.ObjectField("Occlusion", areaLitOcclusion, typeof(Texture2D), true, GUILayout.Height(EditorGUIUtility.singleLineHeight));
                 areaLitOcclusionUVSet = (AreaLitOcclusionUVSet)EditorGUILayout.EnumPopup("Occlusion UV Set", areaLitOcclusionUVSet);
             });
