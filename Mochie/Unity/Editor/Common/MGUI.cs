@@ -1104,7 +1104,8 @@ namespace Mochie {
 
         static string[] cheeseList = {
             "EngineerIsaac",
-            "Purriku"
+            "Purriku",
+            "BooneDoggy"
         };
     }
 }

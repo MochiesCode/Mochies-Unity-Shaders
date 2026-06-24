@@ -44,6 +44,7 @@ Shader "Mochie/Particles" {
         [HDR]_CutoutRimColor("Cutout Rim Color", Color) = (1,1,1,1)
         [Enum(Add,0, Multiply,1)]_CutoutRimBlend("Cutout Rim Blending", Int) = 0
 
+        [Enum(Separate,0, Packed,1)]_Workflow("Workflow", Int) = 0
         _NormalMapLighting("Normal Map", 2D) = "bump" {}
         [Enum(Default,0, Polar,1, Panosphere,2)]_NormalMapLightingUVMode("UV Mode", Int) = 0
         _NormalMapLightingSpeed("Speed", Vector) = (0,0,0,0)
@@ -54,6 +55,7 @@ Shader "Mochie/Particles" {
         [ToggleUI]_NormalMapLightingTSToggle("Is Texturesheet", Int) = 0
         _Metallic("Metallic", Range(0,1)) = 0
         _Roughness("Roughness", Range(0,1)) = 1
+        _Occlusion("Occlusion", Range(0,1)) = 1
         _MetallicMap("Metallic Map", 2D) = "white" {}
         [Enum(Default,0, Polar,1, Panosphere,2)]_MetallicMapUVMode("UV Mode", Int) = 0
         _MetallicMapSpeed("Speed", Vector) = (0,0,0,0)
@@ -66,6 +68,26 @@ Shader "Mochie/Particles" {
         _RoughnessMapPolarRotation("Rotation", Float) = 0
         _RoughnessMapPolarSpeed("Speed", Float) = 0
         _RoughnessMapPolarRadius("Radius", Float) = 1
+        _OcclusionMap("Occlusion Map", 2D) = "white" {}
+        [Enum(Default,0, Polar,1, Panosphere,2)]_OcclusionMapUVMode("UV Mode", Int) = 0
+        _OcclusionMapSpeed("Speed", Vector) = (0,0,0,0)
+        _OcclusionMapPolarRotation("Rotation", Float) = 0
+        _OcclusionMapPolarSpeed("Speed", Float) = 0
+        _OcclusionMapPolarRadius("Radius", Float) = 1
+        _PackedMap("Packed Map", 2D) = "white" {}
+        [Enum(Default,0, Polar,1, Panosphere,2)]_PackedMapUVMode("UV Mode", Int) = 0
+        _PackedMapSpeed("Speed", Vector) = (0,0,0,0)
+        _PackedMapPolarRotation("Rotation", Float) = 0
+        _PackedMapPolarSpeed("Speed", Float) = 0
+        _PackedMapPolarRadius("Radius", Float) = 1
+        _PackedRoughnessStrength("Packed Roughness Strength", Range(0,1)) = 1
+        _PackedMetallicStrength("Packed Metallic Strength", Range(0,1)) = 1
+        _PackedOcclusionStrength("Packed Occlusion Strength", Range(0,1)) = 1
+        [Enum(Red,0, Green,1, Blue,2, Alpha,3)]_RoughnessChannel("Roughness Channel", Int) = 1
+        [Enum(Red,0, Green,1, Blue,2, Alpha,3)]_MetallicChannel("Metallic Channel", Int) = 2
+        [Enum(Red,0, Green,1, Blue,2, Alpha,3)]_OcclusionChannel("Occlusion Channel", Int) = 0
+        [Enum(Red,0, Green,1, Blue,2, Alpha,3)]_HeightChannel("Height Channel", Int) = 3
+
         [ToggleUI]_ReflectionsToggle("Reflections", Int) = 1
         [ToggleUI]_SpecularHighlightsToggle("Specular Highlights", Int) = 1
         _ReflectionStrength("Reflection Strength", Float) = 1
@@ -73,10 +95,12 @@ Shader "Mochie/Particles" {
         [ToggleUI]_SharpHighlights("Sharp Highlights", Int) = 0
         [IntRange]_SharpHighlightSteps("Sharp Highlight Steps", Range(1,15)) = 1
         [ToggleUI]_SphericalHarmonics("Spherical Harmonics", Int) = 1
+
         [ToggleUI]_LightVolumes("Light Volumes", Int) = 1
         _LightVolumeSpecularity("Light Volumes Specularity", Int) = 0
         _LightVolumeSpecularityStrength("Light Volumes Specularity Strength", Float) = 1
         _LightVolumeStrength("Light Volumes Strength", Float) = 1
+
         [ToggleUI]_Emission("Emission", Int) = 0
         _EmissionMap("Emission Map", 2D) = "white" {}
         [Enum(Default,0, Polar,1, Panosphere,2)]_EmissionMapUVMode("UV Mode", Int) = 0
@@ -96,6 +120,7 @@ Shader "Mochie/Particles" {
 
         [ToggleUI]_Filtering("", Int) = 0
         [Enum(HSV,0, Oklab,1)]_HueMode("Hue Mode", Int) = 0
+        [ToggleUI]_MonoTint("Mono Tint", Int) = 0
         [ToggleUI]_AutoShift("", Int) = 0
         _AutoShiftSpeed("", Float) = 0.25
         _Hue("", Range(0,1)) = 0
@@ -276,8 +301,10 @@ Shader "Mochie/Particles" {
             #pragma shader_feature_local _SPECULAR_HIGHLIGHTS_ON
             #pragma shader_feature_local _METALLIC_MAP_ON
             #pragma shader_feature_local _ROUGHNESS_MAP_ON
+            #pragma shader_feature_local _OCCLUSION_MAP_ON
             #pragma shader_feature_local _ALPHA_MASK_ON
             #pragma shader_feature_local _EMISSION_ON
+            #pragma shader_feature_local _WORKFLOW_PACKED_ON
             #pragma multi_compile _ SOFTPARTICLES_ON
             #pragma multi_compile_instancing
             #pragma multi_compile_fwdbase
@@ -324,6 +351,7 @@ Shader "Mochie/Particles" {
             #pragma shader_feature_local _METALLIC_MAP_ON
             #pragma shader_feature_local _ROUGHNESS_MAP_ON
             #pragma shader_feature_local _ALPHA_MASK_ON
+            #pragma shader_feature_local _WORKFLOW_PACKED_ON
             #pragma multi_compile _ SOFTPARTICLES_ON
             #pragma multi_compile_instancing
             #pragma multi_compile_fwdadd_fullshadows 

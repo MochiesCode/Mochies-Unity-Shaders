@@ -4,7 +4,7 @@
 float3 GetSH(v2f i, InputData id){
     [branch]
     if (_UdonLightVolumeEnabled == 1 && _LightVolumes != 0){
-        LightVolumeSH(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+        LightVolumeSH(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, id.normal);
         return LightVolumeEvaluate(id.normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b) * _LightVolumeStrength;
     }
     else {
@@ -88,7 +88,7 @@ void InitializeLightingData(v2f i, InputData id, inout LightingData ld, float at
     bool isRealtime = any(_WorldSpaceLightPos0.xyz);
 
     float3 directCol = (_LightColor0 * atten * NdotL) + GetVertexLightColor(id, i);
-    float3 indirectCol = GetRealtimeIndirectLighting(i, id);
+    float3 indirectCol = GetRealtimeIndirectLighting(i, id) * id.occlusion;
 
     ld.lightCol = (indirectCol + directCol) * omr;
     ld.directCol = directCol;

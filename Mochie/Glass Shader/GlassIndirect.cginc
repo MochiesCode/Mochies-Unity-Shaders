@@ -340,7 +340,7 @@ float3 ShadeSHNL(float3 normal) {
 float3 GetSH(float3 worldPos, float3 normal){
     [branch]
     if (_UdonLightVolumeEnabled == 1){
-        LightVolumeSH(worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+        LightVolumeSH(worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, normal);
         return LightVolumeEvaluate(normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
     }
     else {
@@ -420,6 +420,12 @@ void GetIndirectLighting(out float3 indirectCol, out float3 lmSpec, float4 light
                 #else
                     indirectCol += realtimeColor;
                 #endif
+            }
+            
+            [branch]
+            if (_UdonLightVolumeEnabled == 1 && _AdditiveLightVolumesToggle == 1){
+                LightVolumeAdditiveSH(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, normal);
+                indirectCol += LightVolumeEvaluate(normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
             }
         #endif
     #else

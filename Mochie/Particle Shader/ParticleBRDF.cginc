@@ -42,9 +42,9 @@ void CalculateBRDF(v2f i, InputData id, inout LightingData ld){
         float grazingTerm = saturate((1-id.roughness) + (1-ld.omr));
         float3 fresnel = FresnelLerp(specularTint, grazingTerm, NdotV);
         float horizon = min(1 + dot(reflDir, id.normal), 1);
-        float3 reflAdjust = fresnel * surfaceReduction * horizon * horizon;
+        float3 reflAdjust = fresnel * surfaceReduction * horizon * horizon * id.occlusion;
         float3 reflCol = GetEnvironmentReflections(reflDir, i.worldPos, id.roughness) * _ReflectionStrength;
-        ld.reflectionCol += (reflCol * reflAdjust);
+        ld.reflectionCol = reflCol * reflAdjust;
     #endif
 
     #if defined(_SPECULAR_HIGHLIGHTS_ON)

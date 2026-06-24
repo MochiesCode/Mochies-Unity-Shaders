@@ -26,7 +26,7 @@ namespace Mochie {
             "Debug"
         }, 3);
         
-        string versionLabel = "v2.10.1";
+        string versionLabel = "v2.11";
 
         // Variant Settings
         MaterialProperty _BlendMode = null;
@@ -949,7 +949,7 @@ namespace Mochie {
             if (Foldouts.DoFoldout(foldouts, mat, me, _Filtering, "Filtering", Foldouts.Style.ThinLongToggle)){
                 MGUI.PropertyGroupParent(()=>{
                     MGUI.ToggleGroup(_Filtering.floatValue == 0);
-                    me.ShaderProperty(_HueMode, "Hue Mode");
+                    me.ShaderProperty(_HueMode, Tips.hueModeText);
                     me.ShaderProperty(_MonoTint, Tips.monoTintText);
                     MGUI.Space4();
                     MGUI.BoldLabel("Post Processing");

@@ -60,6 +60,7 @@ float _SecondTexPolarRotation;
 float _SecondTexPolarSpeed;
 float _SecondTexPolarRadius;
 
+
 sampler2D _MetallicMap;
 float4 _MetallicMap_ST;
 int _MetallicMapUVMode;
@@ -79,6 +80,31 @@ float _RoughnessMapPolarRotation;
 float _RoughnessMapPolarSpeed;
 float _RoughnessMapPolarRadius;
 float _Roughness;
+
+sampler2D _OcclusionMap;
+float4 _OcclusionMap_ST;
+int _OcclusionMapUVMode;
+float2 _OcclusionMapSpeed;
+float _OcclusionMapRotation;
+float _OcclusionMapPolarRotation;
+float _OcclusionMapPolarSpeed;
+float _OcclusionMapPolarRadius;
+float _Occlusion;
+
+sampler2D _PackedMap;
+float4 _PackedMap_ST;
+int _PackedMapUVMode;
+float2 _PackedMapSpeed;
+float _PackedMapRotation;
+float _PackedMapPolarRotation;
+float _PackedMapPolarSpeed;
+float _PackedMapPolarRadius;
+int _MetallicChannel;
+int _RoughnessChannel;
+int _OcclusionChannel;
+float _PackedMetallicStrength;
+float _PackedRoughnessStrength;
+float _PackedOcclusionStrength;
 
 float _ReflectionStrength;
 float _SpecularHighlightStrength;
@@ -205,7 +231,7 @@ float _Contrast;
 float _HDR;
 float _Brightness;
 float _AutoShiftSpeed;
-float _HueMode;
+int _HueMode;
 int _AutoShift;
 int _MonoTint;
 
@@ -267,6 +293,7 @@ float2 panoUV;
 float globalAlpha;
 float falloff;
 float pulse;
+float3 offset;
 
 struct appdata {
     float3 vertex : POSITION;
@@ -325,6 +352,7 @@ struct InputData {
     float3 vNormal;
     float roughness;
     float metallic;
+    float occlusion;
 };
 
 struct audioLinkData {

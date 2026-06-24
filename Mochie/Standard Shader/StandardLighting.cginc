@@ -162,7 +162,7 @@ float3 ShadeSHNL(float3 normal) {
 float3 GetSH(v2f i, InputData id){
     [branch]
     if (_UdonLightVolumeEnabled == 1){
-        LightVolumeSH(i.worldPos+i.normal*_LightVolumeBias, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+        LightVolumeSH(i.worldPos+i.normal*_LightVolumeBias, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, id.normal);
         return LightVolumeEvaluate(id.normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
     }
     else {
@@ -247,7 +247,7 @@ void GetIndirectLighting(v2f i, InputData id, float3 viewDir, inout float3 indir
             
             [branch]
             if (_UdonLightVolumeEnabled == 1 && _AdditiveLightVolumesToggle == 1){
-                LightVolumeAdditiveSH(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+                LightVolumeAdditiveSH(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, id.normal);
                 indirectCol += LightVolumeEvaluate(id.normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
             }
 

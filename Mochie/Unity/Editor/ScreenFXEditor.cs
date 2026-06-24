@@ -518,7 +518,7 @@ namespace Mochie {
                                 me.ShaderProperty(_Hue, "Hue");
                             else
                                 me.ShaderProperty(_AutoShiftSpeed, "Shift Speed");
-                            me.ShaderProperty(_HueMode, "Hue Mode");
+                            me.ShaderProperty(_HueMode, Tips.hueModeText);
                             me.ShaderProperty(_MonoTint, Tips.monoTintText);
                             me.ShaderProperty(_AutoShift, "Auto Hue Shift");
                         });

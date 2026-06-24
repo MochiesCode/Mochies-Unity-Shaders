@@ -24,7 +24,15 @@ void InitializeAudioLink(inout audioLinkData al){
 
 void ApplyDistortionBlend(v2f i, inout float4 baseColor){
     i.uvGrab.xy /= i.uvGrab.w;
-    float3 grabCol = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_ParticleGrab, i.uvGrab.xy).rgb;
+    float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPos);
+    float3 grabCol = 0;
+    [branch]
+    if (true){
+        grabCol = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_ParticleGrab, i.uvGrab.xy).rgb;
+    }
+    else {
+        grabCol = GetEnvironmentReflections(-viewDir + offset, i.worldPos, 0);
+    }
     baseColor.rgb = lerp(baseColor.rgb, grabCol.rgb*lerp(1,baseColor.a,_BlendMode == 1), _DistortionBlend);
 }
 
@@ -42,7 +50,7 @@ float2 GetMeshRefraction(v2f i){
     return offset;
 }
 
-void ApplyDistortion(inout v2f i, inout float2 uv, float alpha, audioLinkData al){
+void ApplyDistortion(inout v2f i, inout float2 uv, float alpha, audioLinkData al, out float3 offset){
     #if defined(_AUDIOLINK_ON)
         if (_AudioLinkDistortionStrength > 0){
             float alDistortion = GetAudioLinkBand(al, _AudioLinkDistortionBand, _AudioLinkRemapDistortionMin, _AudioLinkRemapDistortionMax);
@@ -55,9 +63,9 @@ void ApplyDistortion(inout v2f i, inout float2 uv, float alpha, audioLinkData al
         float4 normalMap2 = tex2D(_NormalMap, i.uv0.zw);
         normalMap = lerp(normalMap, normalMap2, i.animBlend.x);
     #endif
-    float2 normal = UnpackNormal(normalMap).rg;
-    float2 offset = normal * alpha * _DistortionStr * ((i.color.r + i.color.b + i.color.g)/3.0);
-    offset += GetMeshRefraction(i);
+    float3 normal = UnpackNormal(normalMap);
+    offset = normal * alpha * _DistortionStr * ((i.color.r + i.color.b + i.color.g)/3.0);
+    offset.xy += GetMeshRefraction(i);
 
     #if defined(_FADING_ON)
         offset *= fade;
@@ -75,7 +83,11 @@ void ApplyDistortion(inout v2f i, inout float2 uv, float alpha, audioLinkData al
 void ApplyHSVFilter(inout float4 col, audioLinkData al){
     float3 baseCol = col;
     _Hue += frac(_Time.y*_AutoShiftSpeed) * _AutoShift;
-    float3 filteredCol = HSVShift(col.rgb, _Hue, 0, 0);
+    float3 filteredCol = col;
+    if (_HueMode == 0)
+        filteredCol = HueShift(col.rgb, _Hue, _MonoTint);
+    else
+        filteredCol = HueShiftOklab(col.rgb, _Hue, _MonoTint);
     filteredCol = GetSaturation(filteredCol, _Saturation);
     filteredCol = lerp(filteredCol, GetHDR(filteredCol), _HDR);
     filteredCol = GetContrast(filteredCol, _Contrast);
@@ -149,7 +161,7 @@ float4 GetBaseColor(inout v2f i, audioLinkData al, float alpha){
         float4 baseCol = tex2D(_MainTex, mainTexUV);
         if (_AlphaSource == 1)
             baseCol.a = alpha;
-        ApplyDistortion(i, mainTexUV, baseCol.a, al);
+        ApplyDistortion(i, mainTexUV, baseCol.a, al, offset);
         #if defined(_DISTORTION_UV_ON)
             baseCol = tex2D(_MainTex, mainTexUV);
             if (_AlphaSource == 1)
@@ -237,15 +249,29 @@ void InitializeInputData(v2f i, inout InputData id, audioLinkData al, float4 alb
         float3x3 tbn = ConstructTBNMatrix(i, id.normal);
         id.normal = GetNormal(i, tbn);
     #endif
-    id.metallic = _Metallic;
-    #if defined(_METALLIC_MAP_ON)
-        float2 metallicMapUV = GetUVs(i, _MetallicMapUVMode, _MetallicMap_ST, _MetallicMapSpeed, _MetallicMapPolarRadius, _MetallicMapPolarRotation, _MetallicMapPolarSpeed);
-        id.metallic = tex2D(_MetallicMap, metallicMapUV) * _Metallic;
-    #endif
-    id.roughness = _Roughness;
-    #if defined(_ROUGHNESS_MAP_ON)
-        float2 roughnessMapUV = GetUVs(i, _RoughnessMapUVMode, _RoughnessMap_ST, _RoughnessMapSpeed, _RoughnessMapPolarRadius, _RoughnessMapPolarRotation, _RoughnessMapPolarSpeed);
-        id.roughness = tex2D(_RoughnessMap, roughnessMapUV) * _Roughness;
+
+    #if defined(_WORKFLOW_PACKED_ON)
+        float2 packedMapUV = GetUVs(i, _PackedMapUVMode, _PackedMap_ST, _PackedMapSpeed, _PackedMapPolarRadius, _PackedMapPolarRotation, _PackedMapPolarSpeed);
+        float4 packedMap = tex2D(_PackedMap, packedMapUV);
+        id.metallic = packedMap[_MetallicChannel] * _PackedMetallicStrength;
+        id.roughness = packedMap[_RoughnessChannel] * _PackedRoughnessStrength;
+        id.occlusion = lerp(1, packedMap[_OcclusionChannel], _PackedOcclusionStrength);
+    #else
+        id.metallic = _Metallic;
+        #if defined(_METALLIC_MAP_ON)
+            float2 metallicMapUV = GetUVs(i, _MetallicMapUVMode, _MetallicMap_ST, _MetallicMapSpeed, _MetallicMapPolarRadius, _MetallicMapPolarRotation, _MetallicMapPolarSpeed);
+            id.metallic = tex2D(_MetallicMap, metallicMapUV).g * _Metallic;
+        #endif
+        id.roughness = _Roughness;
+        #if defined(_ROUGHNESS_MAP_ON)
+            float2 roughnessMapUV = GetUVs(i, _RoughnessMapUVMode, _RoughnessMap_ST, _RoughnessMapSpeed, _RoughnessMapPolarRadius, _RoughnessMapPolarRotation, _RoughnessMapPolarSpeed);
+            id.roughness = tex2D(_RoughnessMap, roughnessMapUV).g * _Roughness;
+        #endif
+        id.occlusion = 1;
+        #if defined(_OCCLUSION_MAP_ON)
+            float2 occlusionMapUV = GetUVs(i, _OcclusionMapUVMode, _OcclusionMap_ST, _OcclusionMapSpeed, _OcclusionMapPolarRadius, _OcclusionMapPolarRotation, _OcclusionMapPolarSpeed);
+            id.occlusion = lerp(1, tex2D(_OcclusionMap, occlusionMapUV).g, _Occlusion);
+        #endif
     #endif
     id.albedo = albedo * _Color * i.color;
 }
