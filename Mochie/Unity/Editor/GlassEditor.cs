@@ -22,7 +22,7 @@ namespace Mochie {
             "Render Settings"
         }, 1);
 
-        string versionLabel = "v1.13";
+        string versionLabel = "v1.13.1";
 
         // Surface
         MaterialProperty _GrabpassTint = null;

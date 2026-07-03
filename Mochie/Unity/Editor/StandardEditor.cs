@@ -26,7 +26,7 @@ namespace Mochie {
             "Debug"
         }, 3);
         
-        string versionLabel = "v2.11";
+        string versionLabel = "v2.11.1";
 
         // Variant Settings
         MaterialProperty _BlendMode = null;
@@ -745,7 +745,7 @@ namespace Mochie {
 
         #region Vertex Manip
         void DoVertexManipulation(Material mat){
-            if (Foldouts.DoFoldout(foldouts, mat, me, _VertexManipulationToggle, "Vertex Manipulation", Foldouts.Style.ThinLongToggle)){
+            if (Foldouts.DoFoldout(foldouts, mat, me, _VertexManipulationToggle, "Vertex Manipulation", Foldouts.Style.StandardToggle)){
                 MGUI.Space6();
                 MGUI.DisplayWarning("Please note that meshes set to 'batching static' may exhibit different behavior at runtime when using wind or rotation settings, it is recommended to use GPU instancing for these meshes instead. To do this: disable 'batching static' in the static toggle dropdown for the object, then tick 'Enable GPU Instancing' in the render settings for this material.");
                 MGUI.SpaceN4();
@@ -803,7 +803,7 @@ namespace Mochie {
         
         #region Subsurface
         void DoSubsurface(Material mat){
-            if (Foldouts.DoFoldout(foldouts, mat, me, _Subsurface, "Subsurface Scattering", Foldouts.Style.ThinLongToggle)){
+            if (Foldouts.DoFoldout(foldouts, mat, me, _Subsurface, "Subsurface Scattering", Foldouts.Style.StandardToggle)){
                 MGUI.PropertyGroupParent(()=>{
                     MGUI.ToggleGroup(_Subsurface.floatValue == 0);
                     MGUI.PropertyGroup(() => {
@@ -826,7 +826,7 @@ namespace Mochie {
 
         #region Rain
         void DoRain(Material mat){
-            if (Foldouts.DoFoldout(foldouts, mat, me, _RainMode, "Rain", Foldouts.Style.ThinLongToggle)){
+            if (Foldouts.DoFoldout(foldouts, mat, me, _RainMode, "Rain", Foldouts.Style.StandardToggle)){
                 MGUI.PropertyGroupParent(()=>{
                     if (_RainMode.floatValue == 0 || _RainMode.floatValue == 1){
                         RainDroplets();
@@ -906,7 +906,7 @@ namespace Mochie {
 
         #region Puddles
         void DoPuddles(Material mat){
-            if (Foldouts.DoFoldout(foldouts, mat, me, _PuddleToggle, "Puddles", Foldouts.Style.ThinLongToggle)){
+            if (Foldouts.DoFoldout(foldouts, mat, me, _PuddleToggle, "Puddles", Foldouts.Style.StandardToggle)){
                 MGUI.PropertyGroupParent(()=>{
                     MGUI.ToggleGroup(_PuddleToggle.floatValue == 0);
                     MGUI.PropertyGroup(()=>{
@@ -946,7 +946,7 @@ namespace Mochie {
 
         #region Filtering
         void DoFiltering(Material mat){
-            if (Foldouts.DoFoldout(foldouts, mat, me, _Filtering, "Filtering", Foldouts.Style.ThinLongToggle)){
+            if (Foldouts.DoFoldout(foldouts, mat, me, _Filtering, "Filtering", Foldouts.Style.StandardToggle)){
                 MGUI.PropertyGroupParent(()=>{
                     MGUI.ToggleGroup(_Filtering.floatValue == 0);
                     me.ShaderProperty(_HueMode, Tips.hueModeText);
@@ -1004,7 +1004,7 @@ namespace Mochie {
             bool needsVertexMaskUV = _VertexManipulationToggle.floatValue == 1 && _VertexMask.textureValue && !isLite;
 
             if (needsHeightMaskUV || needsDetailMaskUV || needsRainMaskUV || needsEmissionMaskUV || needsAlphaMaskUV || needsVertexMaskUV){
-                if (Foldouts.DoFoldout(foldouts, mat, "Extra UVs", Foldouts.Style.ThinLong)){
+                if (Foldouts.DoFoldout(foldouts, mat, "Extra UVs", Foldouts.Style.Standard)){
                     MGUI.PropertyGroupParent(()=>{
                         if (needsDetailMaskUV){
                             MGUI.BoldLabel("Detail Mask");
@@ -1098,7 +1098,7 @@ namespace Mochie {
         }
 
         void LTCGILayout(Material mat){
-            if (Foldouts.DoFoldout(foldouts, mat, me, _LTCGI, "LTCGI", Foldouts.Style.ThinLongToggle)){
+            if (Foldouts.DoFoldout(foldouts, mat, me, _LTCGI, "LTCGI", Foldouts.Style.StandardToggle)){
                 MGUI.PropertyGroupParent(()=>{
                     MGUI.ToggleGroup(_LTCGI.floatValue == 0);
                     MGUI.PropertyGroup(()=>{
@@ -1150,7 +1150,7 @@ namespace Mochie {
         }
 
         void AreaLitLayout(Material mat){
-            if (Foldouts.DoFoldout(foldouts, mat, me, _AreaLitToggle, "AreaLit", Foldouts.Style.ThinLongToggle)){
+            if (Foldouts.DoFoldout(foldouts, mat, me, _AreaLitToggle, "AreaLit", Foldouts.Style.StandardToggle)){
                 MGUI.PropertyGroupParent(()=>{
                     MGUI.ToggleGroup(_AreaLitToggle.floatValue == 0);
                     MGUI.PropertyGroup(()=>{
@@ -1187,7 +1187,7 @@ namespace Mochie {
 
         #region Lightmap Settings
         void DoLightmapSettings(Material mat){
-            if (Foldouts.DoFoldout(foldouts, mat, "Lightmap Settings", Foldouts.Style.ThinLong)){
+            if (Foldouts.DoFoldout(foldouts, mat, "Lightmap Settings", Foldouts.Style.Standard)){
                 MGUI.PropertyGroupParent(()=>{
                     MGUI.PropertyGroup(()=>{
                         me.ShaderProperty(_BakeryMode, Tips.bakeryMode);
@@ -1215,7 +1215,7 @@ namespace Mochie {
 
         #region Render Settings
         void DoRenderSettings(Material mat){
-            if (Foldouts.DoFoldout(foldouts, mat, "Render Settings", Foldouts.Style.ThinLong)){
+            if (Foldouts.DoFoldout(foldouts, mat, "Render Settings", Foldouts.Style.Standard)){
                 MGUI.PropertyGroupParent(()=>{
                     MGUI.PropertyGroup(()=>{
                         me.ShaderProperty(_Culling, Tips.culling);
@@ -1243,7 +1243,7 @@ namespace Mochie {
         #region Debug Menu
         void DoDebug(Material mat){
             if (_MaterialDebugMode.floatValue == 1){
-                if (Foldouts.DoFoldout(foldouts, mat, "Debug", Foldouts.Style.ThinLong)){
+                if (Foldouts.DoFoldout(foldouts, mat, "Debug", Foldouts.Style.Standard)){
                     MGUI.PropertyGroupParent(()=>{
                         MGUI.EnumDropdown<DebugFlags>(_DebugFlags, new GUIContent("Debug View"));
 

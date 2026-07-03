@@ -35,7 +35,7 @@ namespace Mochie {
                 "Render Settings"
         }, 0);
 
-        string versionLabel = "v3.2";
+        string versionLabel = "v3.2.1";
 
         // Render Settings
         MaterialProperty _BlendMode = null;

@@ -64,9 +64,9 @@ void CalculateBRDF(v2f i, InputData id, inout LightingData ld){
 
     #if defined(UNITY_PASS_FORWARDBASE)
         [branch]
-        if (_UdonLightVolumeEnabled == 1 && _LightVolumeSpecularity == 1 && _LightVolumeSpecularityStrength > 0){
-            ld.lightVolumeSpecularity = LightVolumeSpecularDominant(id.albedo, 1-id.roughness, id.metallic, id.normal, i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b) * _LightVolumeSpecularityStrength;
-        }
+        if (_UdonLightVolumeEnabled == 0)
+            lvSpec = 0;
+        ld.lightVolumeSpecularity = lvSpec * _LightVolumeSpecularityStrength * _LightVolumeSpecularity;
     #endif
 }
 

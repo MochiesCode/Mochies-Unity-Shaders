@@ -1,10 +1,10 @@
 #ifndef PARTICLE_LIGHTING_INCLUDED
 #define PARTICLE_LIGHTING_INCLUDED
 
-float3 GetSH(v2f i, InputData id){
+float3 GetSH(v2f i, InputData id, float3 viewDir){
     [branch]
     if (_UdonLightVolumeEnabled == 1 && _LightVolumes != 0){
-        LightVolumeSH(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, id.normal);
+        LightVolumeSHSpecular(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, lvSpec, id.albedo, 1-id.roughness, id.metallic, id.normal, viewDir, 0, 1);
         return LightVolumeEvaluate(id.normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b) * _LightVolumeStrength;
     }
     else {
@@ -12,17 +12,17 @@ float3 GetSH(v2f i, InputData id){
     }
 }
 
-float3 GetRealtimeIndirectLighting(v2f i, InputData id){
+float3 GetRealtimeIndirectLighting(v2f i, InputData id, float3 viewDir){
     float3 indirectCol = 0;
     #if UNITY_LIGHT_PROBE_PROXY_VOLUME
         if (unity_ProbeVolumeParams.x == 1){
             indirectCol = max(0, SHEvalLinearL0L1_SampleProbeVolume(float4(id.normal, 1), i.worldPos));
         }
         else {
-            indirectCol = GetSH(i, id);
+            indirectCol = GetSH(i, id, viewDir);
         }
     #else
-        indirectCol = GetSH(i, id);
+        indirectCol = GetSH(i, id, viewDir);
     #endif
     return indirectCol;
 }
@@ -88,7 +88,7 @@ void InitializeLightingData(v2f i, InputData id, inout LightingData ld, float at
     bool isRealtime = any(_WorldSpaceLightPos0.xyz);
 
     float3 directCol = (_LightColor0 * atten * NdotL) + GetVertexLightColor(id, i);
-    float3 indirectCol = GetRealtimeIndirectLighting(i, id) * id.occlusion;
+    float3 indirectCol = GetRealtimeIndirectLighting(i, id, viewDir) * id.occlusion;
 
     ld.lightCol = (indirectCol + directCol) * omr;
     ld.directCol = directCol;

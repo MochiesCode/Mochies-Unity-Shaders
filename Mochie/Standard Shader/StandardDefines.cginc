@@ -347,6 +347,7 @@ float initialSurfaceHeight;
 float flipbookBase;
 float rainThreshold;
 float rainStrength;
+float3 lvSpec;
 
 // Outputs for triplanar stuff
 float3 worldVertexPos;

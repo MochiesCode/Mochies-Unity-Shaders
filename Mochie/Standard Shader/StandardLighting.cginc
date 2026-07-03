@@ -159,10 +159,10 @@ float3 ShadeSHNL(float3 normal) {
     return indirect;
 }
 
-float3 GetSH(v2f i, InputData id){
+float3 GetSH(v2f i, InputData id, float3 viewDir){
     [branch]
     if (_UdonLightVolumeEnabled == 1){
-        LightVolumeSH(i.worldPos+i.normal*_LightVolumeBias, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, id.normal);
+        LightVolumeSHSpecular(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, lvSpec, id.baseColor, 1-id.roughness, id.metallic, id.normal, viewDir, i.normal*_LightVolumeBias, 1);
         return LightVolumeEvaluate(id.normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
     }
     else {
@@ -174,17 +174,17 @@ float3 GetSH(v2f i, InputData id){
     }
 }
 
-float3 GetRealtimeIndirectLighting(v2f i, InputData id){
+float3 GetRealtimeIndirectLighting(v2f i, InputData id, float3 viewDir){
     float3 indirectCol = 0;
     #if UNITY_LIGHT_PROBE_PROXY_VOLUME
         if (unity_ProbeVolumeParams.x == 1){
             indirectCol = max(0, SHEvalLinearL0L1_SampleProbeVolume(float4(id.normal, 1), i.worldPos));
         }
         else {
-            indirectCol = GetSH(i, id);
+            indirectCol = GetSH(i, id, viewDir);
         }
     #else
-        indirectCol = GetSH(i, id);
+        indirectCol = GetSH(i, id, viewDir);
     #endif
     return indirectCol;
 }
@@ -247,12 +247,12 @@ void GetIndirectLighting(v2f i, InputData id, float3 viewDir, inout float3 indir
             
             [branch]
             if (_UdonLightVolumeEnabled == 1 && _AdditiveLightVolumesToggle == 1){
-                LightVolumeAdditiveSH(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, id.normal);
+                LightVolumeAdditiveSHSpecular(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, lvSpec, id.baseColor, 1-id.roughness, id.metallic, id.normal, viewDir, i.normal*_LightVolumeBias, 1);
                 indirectCol += LightVolumeEvaluate(id.normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
             }
 
         #else
-            indirectCol = GetRealtimeIndirectLighting(i, id);
+            indirectCol = GetRealtimeIndirectLighting(i, id, viewDir);
         #endif
     #endif
 }

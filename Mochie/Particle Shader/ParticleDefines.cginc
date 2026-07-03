@@ -294,6 +294,7 @@ float globalAlpha;
 float falloff;
 float pulse;
 float3 offset;
+float3 lvSpec;
 
 struct appdata {
     float3 vertex : POSITION;
