@@ -165,8 +165,7 @@ Shader "Mochie/Standard" {
         _GSAAStrength("GSAA Strength", Float) = 1
         _IndirectSpecularOcclusionStrength("Baked Spec Occlusion Strength", Range(0,1)) = 0.2
         _RealtimeSpecularOcclusionStrength("Realtime Spec Occlusion Strength", Range(0,1)) = 0
-        [ToggleUI]_LightVolumeSpecularity("Light Volume Specularity", Int) = 0
-        _LightVolumeSpecularityStrength("Light Volume Specularity Strength", Float) = 1
+
         
         // Vertex Manipulation
         [ToggleUI]_VertexManipulationToggle("Vertex Manipulation Toggle", Int) = 0
@@ -281,7 +280,7 @@ Shader "Mochie/Standard" {
         _ColorGradingLUT("Color Grading LUT", 2D) = "white" {}
         _ColorGradingLUTStrength("LUT Strength", Range(0,2)) = 1 
 
-        // Lightmapping stuff
+        // Lightmapping
         [ToggleUI] _BAKERY_LMSPEC ("Lightmap Specular", Float) = 0
         _BakeryLMSpecStrength("Lightmap Specular Strength", Float) = 1
         [ToggleUI] _BAKERY_SHNONLINEAR ("Non-Linear SH", Float) = 0
@@ -289,11 +288,18 @@ Shader "Mochie/Standard" {
         [ToggleUI]_ApplyHeightOffset("Apply Height Offset", Int) = 0
         [Enum(None, 0, SH, 1, RNM, 2, MONOSH, 3)] _BakeryMode ("Bakery Mode", Int) = 0
         [ToggleUI]_IgnoreRealtimeGI("Ignore Realtime GI", Int) = 0
-        [ToggleUI]_AdditiveLightVolumesToggle("Additive Light Volumes", Int) = 1
-        _LightVolumeBias("Light Volume Bias", Float) = 0
         _RNM0("RNM0", 2D) = "black" {}
         _RNM1("RNM1", 2D) = "black" {}
         _RNM2("RNM2", 2D) = "black" {}
+
+        // Light Volumes
+        [ToggleUI]_LightVolumesToggle("Light Volume Toggle", Int) = 1
+        _LightVolumeStrength("Light Volume Strength", Range(0,1)) = 1
+        [ToggleUI]_AdditiveLightVolumesToggle("Additive Light Volumes", Int) = 1
+        _AdditiveLightVolumeStrength("Additive Light Volume Strength", Float) = 1
+        [ToggleUI]_LightVolumeSpecularity("Light Volume Specularity", Int) = 0
+        _LightVolumeSpecularityStrength("Light Volume Specularity Strength", Float) = 1
+        _LightVolumeBias("Light Volume Bias", Float) = 0
 
         // AreaLit
         [ToggleUI]_AreaLitToggle("Enable", Int) = 0

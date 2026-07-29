@@ -108,8 +108,6 @@ float _PackedOcclusionStrength;
 
 float _ReflectionStrength;
 float _SpecularHighlightStrength;
-float _LightVolumeStrength;
-int _LightVolumes;
 int _SharpHighlights;
 int _SharpHighlightSteps;
 int _SphericalHarmonics;
@@ -294,7 +292,6 @@ float globalAlpha;
 float falloff;
 float pulse;
 float3 offset;
-float3 lvSpec;
 
 struct appdata {
     float3 vertex : POSITION;

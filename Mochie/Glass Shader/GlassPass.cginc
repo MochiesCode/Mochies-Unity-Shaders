@@ -132,11 +132,11 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
     ApplyGSAA(i.normal, roughness);
     float3 occlusion = lerp(1, SampleTexture(_OcclusionMap, TRANSFORM_TEX(i.uv, _OcclusionMap)), _Occlusion);
     float indirectRough = roughness;
+    float metallic = SampleTexture(_MetallicMap, TRANSFORM_TEX(i.uv, _MetallicMap)) * _Metallic;
 
     #if defined(_SPECULAR_HIGHLIGHTS_ON) || defined(_REFLECTIONS_ON) || defined(_SSR_ON) || AREALIT_ENABLED || LTCGI_ENABLED
         float roughSq = roughness * roughness;
         float roughBRDF = max(roughSq, 0.003);
-        float metallic = SampleTexture(_MetallicMap, TRANSFORM_TEX(i.uv, _MetallicMap)) * _Metallic;
         float omr = unity_ColorSpaceDielectricSpec.a - metallic * unity_ColorSpaceDielectricSpec.a;
         float3 specularTint = lerp(unity_ColorSpaceDielectricSpec.rgb, 1, metallic);
         indirectRough = roughSq;
@@ -190,17 +190,26 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
                 specTerm = 0;
             }
         #endif
-
     #endif
 
-    CalculateTangentViewDir(i);
     float3 indirectCol, lmSpec;
-    i.lightmapUV.xy += normalMap.xy * _LightmapDistortion * 0.05;
-    i.lightmapUV.zw += normalMap.xy * _LightmapDistortion * 0.05;
-    GetIndirectLighting(indirectCol, lmSpec, i.lightmapUV, normalDir, normalMap, i.worldPos, viewDir, i.tangentViewDir, indirectRough, atten);
-    indirectCol = GetSaturation(indirectCol, _IndirectSaturation);
-    indirectCol = linearstep(-0.5, 0.5, indirectCol);
-    indirectCol = saturate(lerp(1, indirectCol, _IndirectStrength));
+    #if defined(UNITY_PASS_FORWARDBASE)
+        CalculateTangentViewDir(i);
+        i.lightmapUV.xy += normalMap.xy * _LightmapDistortion * 0.05;
+        i.lightmapUV.zw += normalMap.xy * _LightmapDistortion * 0.05;
+        GetIndirectLighting(indirectCol, lmSpec, i.lightmapUV, normalDir, normalMap, i.worldPos, viewDir, i.tangentViewDir, indirectRough, metallic, baseColorTex, i.normal, atten);
+        #if !(IS_OPAQUE)
+            indirectCol = GetSaturation(indirectCol, _IndirectSaturation);
+            indirectCol = linearstep(-0.5, 0.5, indirectCol);
+            indirectCol = saturate(lerp(1, indirectCol, _IndirectStrength));
+        #endif
+        if (_UdonLightVolumeEnabled == 0 || _LightVolumesToggle == 0 || _LightVolumeSpecularity == 0)
+            lvSpec = 0;
+    #else
+        indirectCol = 1;
+        lmSpec = 0;
+        lvSpec = 0;
+    #endif
 
     float3 grabCol = 0;
     float2 blurStr = _Blur * 0.017578125 * roughness;
@@ -244,7 +253,7 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
         #endif
         baseColor *= _LightColor0 * atten;   
     #endif
-    float3 specularity = specCol + reflCol + lmSpec;
+    float3 specularity = specCol + reflCol + lmSpec + lvSpec;
     #if defined(_AREALIT_ON)
         specularity += specTerm * specularTint;
     #endif

@@ -15,7 +15,7 @@ namespace Mochie {
         enum BakeryMode {None, SH, RNM, MonoSH, Unchanged}
         enum SpecularityShadingModel {Unity_Standard, Google_Filament, Unchanged}
         enum AreaLitOcclusionUVSet {UV0, UV1, UV2, UV3, UV4, LightmapUV, UV5, Unchanged}
-        enum SrcShaderSelection {Unity_Standard, M_Standard, M_Standard_Lite, M_Standard_Mobile}
+        enum SrcShaderSelection {Unity_Standard, Filamented, M_Standard, M_Standard_Lite, M_Standard_Mobile}
         enum DestShaderSelection {M_Standard, M_Standard_Lite, M_Standard_Mobile}
         bool applyToScene = true;
         bool inactive = true;
@@ -23,6 +23,7 @@ namespace Mochie {
         Shader standardShader;
         Shader standardLiteShader;
         Shader standardMobileShader;
+        Shader filamentShader;
 
         SrcShaderSelection srcShader = SrcShaderSelection.M_Standard;
         DestShaderSelection destShader = DestShaderSelection.M_Standard_Lite;
@@ -33,6 +34,7 @@ namespace Mochie {
         List<Material> standardLiteMaterials = new List<Material>();
         List<Material> standardMobileMaterials = new List<Material>();
         List<Material> standardUnityMaterials = new List<Material>();
+        List<Material> filamentedMaterials = new List<Material>();
 
         // Bakery settings
         BakeryMode dirMode = BakeryMode.Unchanged;
@@ -139,6 +141,12 @@ namespace Mochie {
                     MigrateFromUnityStandardToLite();
                 else if (srcShader == SrcShaderSelection.Unity_Standard && destShader == DestShaderSelection.M_Standard_Mobile)
                     MigrateFromUnityStandardToMobile();
+                else if (srcShader == SrcShaderSelection.Filamented && destShader == DestShaderSelection.M_Standard)
+                    MigrateFromFilamentedToStandard();
+                else if (srcShader == SrcShaderSelection.Filamented && destShader == DestShaderSelection.M_Standard_Lite)
+                    MigrateFromFilamentedToLite();
+                else if (srcShader == SrcShaderSelection.Filamented && destShader == DestShaderSelection.M_Standard_Mobile)
+                    MigrateFromFilamentedToMobile();
             }
 
             scrollPos = EditorGUILayout.BeginScrollView(scrollPos);
@@ -283,6 +291,30 @@ namespace Mochie {
                 }
             }
             RefreshMaterials();
+        }
+
+        void MigrateFromFilamentedToStandard(){
+            if (filamentedMaterials != null){
+                foreach (Material m in filamentedMaterials){
+                    m.shader = standardShader;
+                }
+            }
+        }
+
+        void MigrateFromFilamentedToLite(){
+            if (filamentedMaterials != null){
+                foreach (Material m in filamentedMaterials){
+                    m.shader = standardLiteShader;
+                }
+            }
+        }
+
+        void MigrateFromFilamentedToMobile(){
+            if (filamentedMaterials != null){
+                foreach (Material m in filamentedMaterials){
+                    m.shader = standardMobileShader;
+                }
+            }
         }
 
         void ApplyBakerySettings(){
@@ -430,6 +462,7 @@ namespace Mochie {
             projectMaterials.Clear();
             sceneMaterials.Clear();
             standardMaterials.Clear();
+            filamentedMaterials.Clear();
             standardLiteMaterials.Clear();
             standardMobileMaterials.Clear();
             standardUnityMaterials.Clear();
@@ -461,6 +494,9 @@ namespace Mochie {
                     }
                     else if (shaderName == "Standard" || shaderName == "Autodesk Interactive"){
                         standardUnityMaterials.Add(m);
+                    }
+                    else if (shaderName == "Silent/Filamented"){
+                        filamentedMaterials.Add(m);
                     }
                 }
             }

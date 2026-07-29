@@ -337,38 +337,33 @@ float3 ShadeSHNL(float3 normal) {
     return indirect;
 }
 
-float3 GetSH(float3 worldPos, float3 normal){
+float3 GetSH(float3 worldPos, float3 normal, float3 viewDir, float3 baseColor, float roughness, float metallic, float3 vNormal){
     [branch]
-    if (_UdonLightVolumeEnabled == 1){
-        LightVolumeSH(worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, 0, normal, 1);
-        return LightVolumeEvaluate(normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+    if (_UdonLightVolumeEnabled == 1 && _LightVolumesToggle == 1){
+        LightVolumeSHSpecular(worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, lvSpec, baseColor, 1-roughness, metallic, normal, viewDir, vNormal*_LightVolumeBias, 1);
+        return lerp(1, LightVolumeEvaluate(normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b), _LightVolumeStrength);
     }
     else {
         return 1;
-        // #if defined(BAKERY_SHNONLINEAR)
-        //     return max(0, ShadeSHNL(normal));
-        // #else
-        //     return max(0, ShadeSH9(float4(normal, 1)));
-        // #endif
     }
 }
 
-float3 GetRealtimeIndirectLighting(float3 worldPos, float3 normal){
+float3 GetRealtimeIndirectLighting(float3 worldPos, float3 normal, float3 viewDir, float3 baseColor, float roughness, float metallic, float3 vNormal){
     float3 indirectCol = 0;
     #if UNITY_LIGHT_PROBE_PROXY_VOLUME
         if (unity_ProbeVolumeParams.x == 1){
             indirectCol = max(0, SHEvalLinearL0L1_SampleProbeVolume(float4(normal, 1), worldPos));
         }
         else {
-            indirectCol = GetSH(worldPos, normal);
+            indirectCol = GetSH(worldPos, normal, viewDir, baseColor, roughness, metallic, vNormal);
         }
     #else
-        indirectCol = GetSH(worldPos, normal);
+        indirectCol = GetSH(worldPos, normal, viewDir, baseColor, roughness, metallic, vNormal);
     #endif
     return indirectCol;
 }
 
-void GetIndirectLighting(out float3 indirectCol, out float3 lmSpec, float4 lightmapUV, float3 normal, float3 normalts, float3 worldPos, float3 viewDir, float3 tangentViewDir, float roughness, float atten) {
+void GetIndirectLighting(out float3 indirectCol, out float3 lmSpec, float4 lightmapUV, float3 normal, float3 normalts, float3 worldPos, float3 viewDir, float3 tangentViewDir, float roughness, float metallic, float atten, float3 baseColor, float3 vNormal) {
     indirectCol = 1;
     lmSpec = 0;
 
@@ -424,12 +419,13 @@ void GetIndirectLighting(out float3 indirectCol, out float3 lmSpec, float4 light
         #endif
 
         [branch]
-        if (_UdonLightVolumeEnabled == 1){
-            LightVolumeAdditiveSH(worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, 0, normal, 1);
-            indirectCol += LightVolumeEvaluate(normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+        if (_UdonLightVolumeEnabled == 1 && _AdditiveLightVolumesToggle == 1 && _LightVolumesToggle == 1){
+            LightVolumeAdditiveSHSpecular(worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, lvSpec, baseColor, 1-roughness, metallic, normal, viewDir, vNormal*_LightVolumeBias, 1);
+            indirectCol += LightVolumeEvaluate(normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b) * _AdditiveLightVolumeStrength;
         }
+
     #else
-        indirectCol = GetRealtimeIndirectLighting(worldPos, normal);
+        indirectCol = GetRealtimeIndirectLighting(worldPos, normal, viewDir, baseColor, roughness, metallic, vNormal);
     #endif
 }
 

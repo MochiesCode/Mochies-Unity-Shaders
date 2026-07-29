@@ -17,12 +17,13 @@ namespace Mochie {
             "Emission",
             "Rain",
             "Lightmap Settings",
+            "Light Volumes",
             "LTCGI",
             "AreaLit",
             "Render Settings"
         }, 1);
 
-        string versionLabel = "v1.13.1";
+        string versionLabel = "v1.14";
 
         // Surface
         MaterialProperty _GrabpassTint = null;
@@ -64,7 +65,6 @@ namespace Mochie {
         MaterialProperty _RippleSize = null;
         MaterialProperty _RippleDensity = null;
         MaterialProperty _DynamicDroplets = null;
-        // MaterialProperty _RainBias = null;
         MaterialProperty _RainThreshold = null;
         MaterialProperty _RainThresholdSize = null;
         
@@ -75,10 +75,36 @@ namespace Mochie {
         MaterialProperty _IndirectSaturation = null;
         MaterialProperty _BAKERY_LMSPEC = null;
         MaterialProperty _BakeryLMSpecStrength = null;
-       //  MaterialProperty _BAKERY_SHNONLINEAR = null;
         MaterialProperty _BakeryMode = null;
         MaterialProperty _BicubicSampling = null;
         MaterialProperty _IgnoreRealtimeGI = null;
+
+        // Light Volumes
+        MaterialProperty _LightVolumesToggle = null;
+        MaterialProperty _LightVolumeStrength = null;
+        MaterialProperty _AdditiveLightVolumesToggle = null;
+        MaterialProperty _AdditiveLightVolumeStrength = null;
+        MaterialProperty _LightVolumeSpecularity = null;
+        MaterialProperty _LightVolumeSpecularityStrength = null;
+        MaterialProperty _LightVolumeBias = null;
+
+        // Area Lit
+        MaterialProperty _AreaLitToggle = null;
+        MaterialProperty _AreaLitMask = null;
+        MaterialProperty _AreaLitStrength = null;
+        MaterialProperty _AreaLitRoughnessMult = null;
+        MaterialProperty _LightMesh = null;
+        MaterialProperty _LightTex0 = null;
+        MaterialProperty _LightTex1 = null;
+        MaterialProperty _LightTex2 = null;
+        MaterialProperty _LightTex3 = null;
+        MaterialProperty _OpaqueLights = null;
+
+        // LTCGI
+        MaterialProperty _LTCGI = null;
+        MaterialProperty _LTCGIStrength = null;
+        MaterialProperty _LTCGIRoughness = null;
+        MaterialProperty _LTCGI_SpecularColor = null;
 
         // Render Settings
         MaterialProperty _ReflectionsToggle = null;
@@ -99,24 +125,6 @@ namespace Mochie {
         MaterialProperty _TexCoordSpace = null;
         MaterialProperty _TexCoordSpaceSwizzle = null;
         MaterialProperty _GlobalTexCoordScale = null;
-
-        // Area Lit
-        MaterialProperty _AreaLitToggle = null;
-        MaterialProperty _AreaLitMask = null;
-        MaterialProperty _AreaLitStrength = null;
-        MaterialProperty _AreaLitRoughnessMult = null;
-        MaterialProperty _LightMesh = null;
-        MaterialProperty _LightTex0 = null;
-        MaterialProperty _LightTex1 = null;
-        MaterialProperty _LightTex2 = null;
-        MaterialProperty _LightTex3 = null;
-        MaterialProperty _OpaqueLights = null;
-
-        // LTCGI
-        MaterialProperty _LTCGI = null;
-        MaterialProperty _LTCGIStrength = null;
-        MaterialProperty _LTCGIRoughness = null;
-        MaterialProperty _LTCGI_SpecularColor = null;
 
         BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
@@ -261,6 +269,20 @@ namespace Mochie {
                             me.ShaderProperty(_IgnoreRealtimeGI, Tips.ignoreRealtimeGIText);
                         });
                     });
+                }
+                
+                // Light Volumes
+                if (Foldouts.DoFoldout(foldouts, mat, me, _LightVolumesToggle, "Light Volumes", Foldouts.Style.StandardToggle)) {
+                    MGUI.ToggleGroup(_LightVolumesToggle.floatValue == 0);
+                    MGUI.PropertyGroupParent(() => {
+                        MGUI.PropertyGroup(() => {
+                            me.ShaderProperty(_LightVolumeStrength, "Strength");
+                            MGUI.ToggleFloat(me, Tips.additiveLightVolumeText, _AdditiveLightVolumesToggle, _AdditiveLightVolumeStrength);
+                            MGUI.ToggleFloat(me, Tips.lightVolumeSpecText, _LightVolumeSpecularity, _LightVolumeSpecularityStrength);
+                            me.ShaderProperty(_LightVolumeBias, Tips.lightVolumeBiasText);
+                        });
+                    });
+                    MGUI.ToggleGroupEnd();
                 }
 
                 // LTCGI

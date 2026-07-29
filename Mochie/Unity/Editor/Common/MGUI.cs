@@ -163,11 +163,11 @@ namespace Mochie {
             buttonRect.y += 20f;
             buttonRect.x += buttonSize;
             if (GUI.Button(buttonRect, MGUI.cheeseIconTex)){
-                string patrons = "Please note that names are not removed from this list, so it does not reflect any individual user's current patreon subscription status.\n";
+                string patrons = "Thank you for your support, past and present!\n";
                 foreach (string s in cheeseList){
                     patrons += "\n" + s;
                 }
-                patrons += "\n\nThank you for your support, past and present!";
+                patrons += "\n\nPlease note that names are not removed from this list, so it does not reflect any individual user's current patreon subscription status.";
                 EditorUtility.DisplayDialog("Skyrim Cheese Wheel Hall of Fame", patrons, "Close");
             }
             GUILayout.Space(90);
@@ -1105,7 +1105,9 @@ namespace Mochie {
         static string[] cheeseList = {
             "EngineerIsaac",
             "Purriku",
-            "BooneDoggy"
+            "BooneDoggy",
+            "Danimals",
+            "RealRewriteOfficial"
         };
     }
 }

@@ -989,9 +989,6 @@ namespace Mochie {
                         }
 
                         if (Foldouts.DoFoldout(foldouts, mat, me, _DepthBufferToggle, "Depth Buffer", Foldouts.Style.ThinToggle)){
-                            if (_DepthBufferToggle.floatValue == 1){
-                                MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
-                            }
                             MGUI.PropertyGroupParent(()=>{
                                 MGUI.ToggleGroup(_DepthBufferToggle.floatValue == 0);
                                 MGUI.PropertyGroup(()=>{
@@ -1000,6 +997,8 @@ namespace Mochie {
                                 });
                                 MGUI.ToggleGroupEnd();
                             });
+                            MGUI.SpaceN4();
+                            MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
                         }
 
                         if (Foldouts.DoFoldout(foldouts, mat, me, _SobelFilterToggle, "Sobel Filter", Foldouts.Style.ThinToggle)){

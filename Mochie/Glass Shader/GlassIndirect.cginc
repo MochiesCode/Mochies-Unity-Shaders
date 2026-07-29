@@ -213,24 +213,6 @@ void BakeryRNMLightmapAndSpecular(inout half3 lightMap, float2 lightmapUV, inout
     lightMap =    saturate(dot(rnmBasis0, normalTS)) * rnm0
                 + saturate(dot(rnmBasis1, normalTS)) * rnm1
                 + saturate(dot(rnmBasis2, normalTS)) * rnm2;
-
-    // [branch]
-    // if (_BAKERY_SHNONLINEAR == 1){
-    //     float3 viewDirT = -normalize(viewDirTS);
-    //     float3 dominantDirT = rnmBasis0 * dot(rnm0, GRAYSCALE) +
-    //                             rnmBasis1 * dot(rnm1, GRAYSCALE) +
-    //                             rnmBasis2 * dot(rnm2, GRAYSCALE);
-
-    //     float3 dominantDirTN = normalize(dominantDirT);
-    //     half3 specColor = saturate(dot(rnmBasis0, dominantDirTN)) * rnm0 +
-    //                         saturate(dot(rnmBasis1, dominantDirTN)) * rnm1 +
-    //                         saturate(dot(rnmBasis2, dominantDirTN)) * rnm2;
-
-    //     half3 halfDir = Unity_SafeNormalize(dominantDirTN - viewDirT);
-    //     half NoH = saturate(dot(normalTS, halfDir));
-    //     half spec = GGXTerm(NoH, roughness);
-    //     directSpecular += spec * specColor;
-    // }
 }
 
 void BakerySHLightmapAndSpecular(inout half3 lightMap, float2 lightmapUV, inout half3 directSpecular, float3 normalWS, float3 viewDir, half roughness)
@@ -243,21 +225,7 @@ void BakerySHLightmapAndSpecular(inout half3 lightMap, float2 lightmapUV, inout 
     float3 L1y = nL1y * L0 * 2.0;
     float3 L1z = nL1z * L0 * 2.0;
 
-    // [branch]
-    // if (_BAKERY_SHNONLINEAR == 1){
-    //     float lumaL0 = dot(L0, float(1));
-    //     float lumaL1x = dot(L1x, float(1));
-    //     float lumaL1y = dot(L1y, float(1));
-    //     float lumaL1z = dot(L1z, float(1));
-    //     float lumaSH = shEvaluateDiffuseL1Geomerics(lumaL0, float3(lumaL1x, lumaL1y, lumaL1z), normalWS);
-
-    //     lightMap = L0 + normalWS.x * L1x + normalWS.y * L1y + normalWS.z * L1z;
-    //     float regularLumaSH = dot(lightMap, 1.0);
-    //     lightMap *= lerp(1.0, lumaSH / regularLumaSH, saturate(regularLumaSH * 16.0));
-    // }
-    // else {
-        lightMap = L0 + normalWS.x * L1x + normalWS.y * L1y + normalWS.z * L1z;
-    // }
+    lightMap = L0 + normalWS.x * L1x + normalWS.y * L1y + normalWS.z * L1z;
 
     #ifdef BAKERY_LMSPEC
         float3 dominantDir = float3(dot(nL1x, GRAYSCALE), dot(nL1y, GRAYSCALE), dot(nL1z, GRAYSCALE));
@@ -281,26 +249,7 @@ void BakeryMonoSH(inout half3 diffuseColor, inout half3 specularColor, float3 do
     float3 L1z = nL1.z * L0 * 2;
     half3 sh;
 
-    // [branch]
-    // if (_BAKERY_SHNONLINEAR == 1){
-    //     float lumaL0 = dot(L0, 1);
-    //     float lumaL1x = dot(L1x, 1);
-    //     float lumaL1y = dot(L1y, 1);
-    //     float lumaL1z = dot(L1z, 1);
-    //     float lumaSH = shEvaluateDiffuseL1Geomerics(lumaL0, float3(lumaL1x, lumaL1y, lumaL1z), normalWorld);
-
-    //     sh = L0 + normalWorld.x * L1x + normalWorld.y * L1y + normalWorld.z * L1z;
-    //     float regularLumaSH = dot(sh, 1);
-    //     //sh *= regularLumaSH < 0.001 ? 1 : (lumaSH / regularLumaSH);
-    //     sh *= lerp(1, lumaSH / regularLumaSH, saturate(regularLumaSH*16));
-
-    //     //sh.r = shEvaluateDiffuseL1Geomerics(L0.r, float3(L1x.r, L1y.r, L1z.r), normalWorld);
-    //     //sh.g = shEvaluateDiffuseL1Geomerics(L0.g, float3(L1x.g, L1y.g, L1z.g), normalWorld);
-    //     //sh.b = shEvaluateDiffuseL1Geomerics(L0.b, float3(L1x.b, L1y.b, L1z.b), normalWorld);
-    // }
-    // else {
-        sh = L0 + normalWorld.x * L1x + normalWorld.y * L1y + normalWorld.z * L1z;
-    // }
+    sh = L0 + normalWorld.x * L1x + normalWorld.y * L1y + normalWorld.z * L1z;
 
     diffuseColor = max(sh, 0.0);
 
@@ -318,57 +267,49 @@ void BakeryMonoSH(inout half3 diffuseColor, inout half3 specularColor, float3 do
     #endif
 }
 
-float NonlinearSH(float L0, float3 L1, float3 normal) {
-    float R0 = L0;
-    float3 R1 = 0.5f * L1;
-    float lenR1 = length(R1);
-    float q = dot(normalize(R1), normal) * 0.5 + 0.5;
-    q = max(0, q);
-    float p = 1.0f + 2.0f * lenR1 / R0;
-    float a = (1.0f - lenR1 / R0) / (1.0f + lenR1 / R0);
-    return R0 * (a + (1.0f - a) * (p + 1.0f) * pow(q, p));
+float3 GetUnitySH(float3 normal){
+    #if IS_OPAQUE
+        return max(0, ShadeSH9(float4(normal, 1)));
+    #else
+        return 1;
+    #endif
 }
 
-float3 ShadeSHNL(float3 normal) {
-    float3 indirect;
-    indirect.r = NonlinearSH(unity_SHAr.w, unity_SHAr.xyz, normal);
-    indirect.g = NonlinearSH(unity_SHAg.w, unity_SHAg.xyz, normal);
-    indirect.b = NonlinearSH(unity_SHAb.w, unity_SHAb.xyz, normal);
-    return indirect;
-}
-
-float3 GetSH(float3 worldPos, float3 normal){
+float3 GetSH(float3 worldPos, float3 normal, float3 viewDir, float3 baseColor, float roughness, float metallic, float3 vNormal){
     [branch]
-    if (_UdonLightVolumeEnabled == 1){
-        LightVolumeSH(worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, 0, normal, 1);
-        return LightVolumeEvaluate(normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+    if (_UdonLightVolumeEnabled == 1 && _LightVolumesToggle == 1){
+        LightVolumeSHSpecular(worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, lvSpec, baseColor, 1-roughness, metallic, normal, viewDir, vNormal*_LightVolumeBias, 1);
+        [branch]
+        if (_LightVolumeStrength < 1){
+            float3 lvSH = LightVolumeEvaluate(normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+            float3 unitySH = GetUnitySH(normal);
+            return lerp(unitySH, lvSH, _LightVolumeStrength);
+        }
+        else {
+            return LightVolumeEvaluate(normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+        }
     }
     else {
-        return 1;
-        // #if defined(BAKERY_SHNONLINEAR)
-        //     return max(0, ShadeSHNL(normal));
-        // #else
-        //     return max(0, ShadeSH9(float4(normal, 1)));
-        // #endif
+        return GetUnitySH(normal);
     }
 }
 
-float3 GetRealtimeIndirectLighting(float3 worldPos, float3 normal){
+float3 GetRealtimeIndirectLighting(float3 worldPos, float3 normal, float3 viewDir, float3 baseColor, float roughness, float metallic, float3 vNormal){
     float3 indirectCol = 0;
     #if UNITY_LIGHT_PROBE_PROXY_VOLUME
         if (unity_ProbeVolumeParams.x == 1){
             indirectCol = max(0, SHEvalLinearL0L1_SampleProbeVolume(float4(normal, 1), worldPos));
         }
         else {
-            indirectCol = GetSH(worldPos, normal);
+            indirectCol = GetSH(worldPos, normal, viewDir, baseColor, roughness, metallic, vNormal);
         }
     #else
-        indirectCol = GetSH(worldPos, normal);
+        indirectCol = GetSH(worldPos, normal, viewDir, baseColor, roughness, metallic, vNormal);
     #endif
     return indirectCol;
 }
 
-void GetIndirectLighting(out float3 indirectCol, out float3 lmSpec, float4 lightmapUV, float3 normal, float3 normalts, float3 worldPos, float3 viewDir, float3 tangentViewDir, float roughness, float atten) {
+void GetIndirectLighting(out float3 indirectCol, out float3 lmSpec, float4 lightmapUV, float3 normal, float3 normalts, float3 worldPos, float3 viewDir, float3 tangentViewDir, float roughness, float metallic, float3 baseColor, float3 vNormal, float atten) {
     indirectCol = 1;
     lmSpec = 0;
 
@@ -424,13 +365,13 @@ void GetIndirectLighting(out float3 indirectCol, out float3 lmSpec, float4 light
         #endif
 
         [branch]
-        if (_UdonLightVolumeEnabled == 1){
-            LightVolumeAdditiveSH(worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, 0, normal, 1);
-            indirectCol += LightVolumeEvaluate(normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+        if (_UdonLightVolumeEnabled == 1 && _AdditiveLightVolumesToggle == 1 && _LightVolumesToggle == 1){
+            LightVolumeAdditiveSHSpecular(worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, lvSpec, baseColor, 1-roughness, metallic, normal, viewDir, vNormal*_LightVolumeBias, 1);
+            indirectCol += LightVolumeEvaluate(normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b) * _AdditiveLightVolumeStrength;
         }
         
     #else
-        indirectCol = GetRealtimeIndirectLighting(worldPos, normal);
+        indirectCol = GetRealtimeIndirectLighting(worldPos, normal, viewDir, baseColor, roughness, metallic, vNormal);
     #endif
 }
 

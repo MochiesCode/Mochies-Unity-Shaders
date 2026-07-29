@@ -316,9 +316,7 @@ int _UnityFogToggle;
 int _VertexBaseColor;
 int _BAKERY_SHNONLINEAR;
 int _FlipBackfaceNormals;
-int _AdditiveLightVolumesToggle;
 float _BakeryLMSpecStrength;
-float _LightVolumeBias;
 
 // Debug Toggles
 int _MaterialDebugMode;
@@ -347,7 +345,6 @@ float initialSurfaceHeight;
 float flipbookBase;
 float rainThreshold;
 float rainStrength;
-float3 lvSpec;
 
 // Outputs for triplanar stuff
 float3 worldVertexPos;

@@ -159,18 +159,30 @@ float3 ShadeSHNL(float3 normal) {
     return indirect;
 }
 
+float3 GetUnitySH(float3 normal){
+    #if defined(BAKERY_SHNONLINEAR)
+        return max(0, ShadeSHNL(normal));
+    #else
+        return max(0, ShadeSH9(float4(normal, 1)));
+    #endif
+}
+
 float3 GetSH(v2f i, InputData id, float3 viewDir){
     [branch]
-    if (_UdonLightVolumeEnabled == 1){
+    if (_UdonLightVolumeEnabled == 1 && _LightVolumesToggle == 1){
         LightVolumeSHSpecular(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, lvSpec, id.baseColor, 1-id.roughness, id.metallic, id.normal, viewDir, i.normal*_LightVolumeBias, 1);
-        return LightVolumeEvaluate(id.normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+        [branch]
+        if (_LightVolumeStrength < 1){
+            float3 lvSH = LightVolumeEvaluate(id.normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+            float3 unitySH = GetUnitySH(id.normal);
+            return lerp(unitySH, lvSH, _LightVolumeStrength);
+        }
+        else {
+            return LightVolumeEvaluate(id.normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+        }
     }
     else {
-        #if defined(BAKERY_SHNONLINEAR)
-            return max(0, ShadeSHNL(id.normal));
-        #else
-            return max(0, ShadeSH9(float4(id.normal, 1)));
-        #endif
+        return GetUnitySH(id.normal);
     }
 }
 
@@ -246,9 +258,9 @@ void GetIndirectLighting(v2f i, InputData id, float3 viewDir, inout float3 indir
             #endif
             
             [branch]
-            if (_UdonLightVolumeEnabled == 1 && _AdditiveLightVolumesToggle == 1){
+            if (_UdonLightVolumeEnabled == 1 && _AdditiveLightVolumesToggle == 1 && _LightVolumesToggle == 1){
                 LightVolumeAdditiveSHSpecular(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, lvSpec, id.baseColor, 1-id.roughness, id.metallic, id.normal, viewDir, i.normal*_LightVolumeBias, 1);
-                indirectCol += LightVolumeEvaluate(id.normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+                indirectCol += LightVolumeEvaluate(id.normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b) * _AdditiveLightVolumeStrength;
             }
 
         #else

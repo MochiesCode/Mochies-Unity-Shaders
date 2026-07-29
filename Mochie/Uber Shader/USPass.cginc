@@ -139,8 +139,8 @@ float4 frag (g2f i, bool frontFace : SV_IsFrontFace) : SV_Target {
         UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos.xyz);
     #endif
 
-    #if defined(UNITY_PASS_FORWARDBASE)
-        UNITY_BRANCH
+    #if defined(UNITY_PASS_FORWARDBASE) && !(SHADING_ENABLED)
+        [branch]
         if (_UdonLightVolumeEnabled == 1){
             LightVolumeSH(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
             unity_SHAr = float4(lightVolumeL1r, lightVolumeL0.r);

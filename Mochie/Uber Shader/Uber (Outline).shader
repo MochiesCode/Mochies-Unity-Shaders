@@ -221,8 +221,6 @@ Shader "Mochie/Uber (Outline)" {
         [ToggleUI]_FresnelToggle("tog", Int) = 1
         _FresnelStrength("fl", Float) = 1
         [ToggleUI]_LitCubemap("tog", Int) = 0
-        [ToggleUI]_LightVolumeSpecularity("tog", Int) = 0
-        _LightVolumeSpecularityStrength("fl", Float) = 1
         
         // SPECULAR
         [Enum(Off,0, GGX,1, Anisotropic,2, Combined,3)]_Specular("en4", Int) = 0
@@ -513,6 +511,15 @@ Shader "Mochie/Uber (Outline)" {
         _VertexRoundingMask("tex", 2D) = "white" {}
         _VertexRotation("vec", Vector) = (0,0,0,0)
         _VertexPosition("vec", Vector) = (0,0,0,0)
+
+        //----------------------------
+        // LIGHT VOLUMES
+        //----------------------------
+        [ToggleUI]_LightVolumesToggle("Light Volume Toggle", Int) = 1
+        _LightVolumeStrength("Light Volume Strength", Range(0,1)) = 1
+        [ToggleUI]_LightVolumeSpecularity("Light Volume Specularity", Int) = 0
+        _LightVolumeSpecularityStrength("Light Volume Specularity Strength", Float) = 1
+        _LightVolumeBias("Light Volume Bias", Float) = 0
 
         //----------------------------
         // AUDIO LINK

@@ -209,7 +209,16 @@ Shader "Mochie/Particles" {
         [Enum(UnityEngine.Rendering.StencilOp)]_OutlineStencilPass("Outline Stencil Op", Float) = 0
         [Enum(UnityEngine.Rendering.CompareFunction)]_OutlineStencilCompare("Outline Stencil Comp", Float) = 8
         [HideInInspector]_OutlineCulling("Outline Culling Mode", Int) = 1
-
+        
+        // Light Volumes
+        [ToggleUI]_LightVolumesToggle("Light Volume Toggle", Int) = 1
+        _LightVolumeStrength("Light Volume Strength", Range(0,1)) = 1
+        [ToggleUI]_AdditiveLightVolumesToggle("Additive Light Volumes", Int) = 1
+        _AdditiveLightVolumeStrength("Additive Light Volume Strength", Float) = 1
+        [ToggleUI]_LightVolumeSpecularity("Light Volume Specularity", Int) = 0
+        _LightVolumeSpecularityStrength("Light Volume Specularity Strength", Float) = 1
+        _LightVolumeBias("Light Volume Bias", Float) = 0
+        
         [Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkFilterBand("", Int) = 0
         _AudioLinkFilterStrength("", Range(0,1)) = 0
         _AudioLinkRemapFilterMin("", Float) = 0

@@ -130,7 +130,7 @@ void CalculateFilamentModel(InputData id, inout LightingData ld, float2 dfg, flo
 
 void CalculateBRDF(v2f i, InputData id, inout LightingData ld){
 
-    float roughSq = max(id.roughness * id.roughness, 0.003);
+    float roughSq = lerp(0.003, 1, id.roughness * id.roughness); // max(id.roughness * id.roughness, 0.003);
     float3 halfVector = Unity_SafeNormalize(ld.lightDir + ld.viewDir);
     float NdotV = abs(dot(id.normal, ld.viewDir));
     float NdotH = saturate(dot(id.normal, halfVector));
@@ -151,7 +151,7 @@ void CalculateBRDF(v2f i, InputData id, inout LightingData ld){
         #endif
     }
     else {
-        diffuseTerm = DisneyDiffuse(NdotV, ld.NdotL, LdotH, id.roughness);
+        diffuseTerm = 1; // DisneyDiffuse(NdotV, ld.NdotL, LdotH, id.roughness);
         float surfaceReduction = 1.0 / (roughSq*roughSq + 1.0);
         float grazingTerm = saturate((1-id.roughness) + (1-ld.omr));
         float3 fresnel = FresnelLerp(ld.specularTint, grazingTerm, lerp(1, NdotV, _FresnelStrength*_FresnelToggle));
@@ -203,9 +203,9 @@ void CalculateBRDF(v2f i, InputData id, inout LightingData ld){
     #endif
         
     #if defined(BASE_PASS)
-        if (_UdonLightVolumeEnabled == 0)
+        if (_UdonLightVolumeEnabled == 0 || _LightVolumesToggle == 0 || _LightVolumeSpecularity == 0)
             lvSpec = 0;
-        ld.lightVolumeSpecularity = lvSpec * _LightVolumeSpecularityStrength * _LightVolumeSpecularity;
+        ld.lightVolumeSpecularity = lvSpec * _LightVolumeSpecularityStrength;
     #endif
 
     ld.lmSpec *= ld.reflAdjust * UNITY_PI * ld.specularOcclusion * ld.specularTint * _BakeryLMSpecStrength;

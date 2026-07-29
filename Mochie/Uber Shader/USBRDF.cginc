@@ -483,8 +483,41 @@ float DisneyDiffuse(lighting l, masks m, float percepRough) {
 float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, float3 specCol, float3 reflCol, float omr, float smoothness, float3 atten, float metallic){
     float percepRough = 1-smoothness;
     float brdfRoughness = percepRough * percepRough;
-    brdfRoughness = max(brdfRoughness, 0.002);
+    brdfRoughness = lerp(0.02, 1, brdfRoughness);
+    float specRough = lerp(brdfRoughness, _SpecRough, _SpecUseRough);
     float3 subsurfCol = GetSubsurfaceLight(i, l, m, atten, albedo.rgb);
+
+    // have to redo the indirect logic here since the LV function now requires brdf stuff for the specularity
+    [branch]
+    if (_UdonLightVolumeEnabled == 1 && _LightVolumesToggle == 1){
+        LightVolumeSHSpecular(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, lvSpec, albedo, smoothness, metallic, l.normal, l.viewDir, i.normal*_LightVolumeBias, 1);
+        unity_SHAr = float4(lightVolumeL1r, lightVolumeL0.r);
+        unity_SHAg = float4(lightVolumeL1g, lightVolumeL0.g);
+        unity_SHAb = float4(lightVolumeL1b, lightVolumeL0.b);
+        unity_SHBr = 0;
+        unity_SHBg = 0;
+        unity_SHBb = 0;
+        unity_SHC = 0;
+        float3 lvIndirectCol = float3(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w);
+
+        float3 lvDirectCol = lerp(
+            lvIndirectCol * _DirectCont,		// No realtime light
+            _LightColor0 * _RTDirectCont,		// Realtime light
+            l.lightEnv
+        );
+
+        lvIndirectCol = lerp(
+            lvIndirectCol * _IndirectCont,		// No realtime light
+            lvIndirectCol * _RTIndirectCont,	// Realtime light
+            l.lightEnv
+        );
+
+        l.directCol = lerp(l.directCol, lvDirectCol, _LightVolumeStrength);
+        l.indirectCol = lerp(l.indirectCol, lvIndirectCol, _LightVolumeStrength);
+    }
+    else {
+        lvSpec = 0;
+    }
 
     l.directCol *= atten;
     l.directCol += l.vLightCol;
@@ -503,18 +536,28 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
         if (m.specularMask > 0){
             float3 fresnelTerm = 1;
             float3 specularTerm = 1;
-            float3 specBiasCol = lerp(specCol, albedo, _SpecBiasOverride*_SpecBiasOverrideToggle);
-            float specRough = lerp(brdfRoughness, _SpecRough, _SpecUseRough);
-            GetSpecFresTerm(i, l, m, specularTerm, fresnelTerm, specBiasCol, specRough, _SharpSpecStr);
-            specular = lerp(lighting, 1, _ManualSpecBright) * specularTerm * fresnelTerm * m.specularMask * _SpecCol * l.ao * atten;
+            [branch]
+            if (l.lightEnv){ // When there's a realtime light we want both the lvSpec and the realtime spec, otherwise only have one SH derived highlight
+                float3 specBiasCol = lerp(specCol, albedo, _SpecBiasOverride*_SpecBiasOverrideToggle);
+                GetSpecFresTerm(i, l, m, specularTerm, fresnelTerm, specBiasCol, specRough, _SharpSpecStr);
+                specular = lerp(lighting, 1, _ManualSpecBright) * specularTerm * fresnelTerm * m.specularMask * _SpecCol * atten;
+                specular += lvSpec * _LightVolumeSpecularityStrength * _SpecCol * _LightVolumeSpecularity;
+            }
+            else {
+                [branch]
+                if (_UdonLightVolumeEnabled == 1 && _LightVolumeSpecularity == 1 && _LightVolumesToggle == 1){
+                    specular = lvSpec * _LightVolumeSpecularityStrength * _SpecCol;
+                }
+                else {
+                    float3 specBiasCol = lerp(specCol, albedo, _SpecBiasOverride*_SpecBiasOverrideToggle);
+                    GetSpecFresTerm(i, l, m, specularTerm, fresnelTerm, specBiasCol, specRough, _SharpSpecStr);
+                    specular = lerp(lighting, 1, _ManualSpecBright) * specularTerm * fresnelTerm * m.specularMask * _SpecCol * atten;
+                }
+            }
             if (_SharpSpecular == 1){
                 float specInterp = smoothstep(0.5, 1, saturate(specRough*8));
                 float sharpSpec = floor(specular * _SharpSpecStr) / _SharpSpecStr;
                 specular = lerp(sharpSpec, specular, 0);
-            }
-            [branch]
-            if (_UdonLightVolumeEnabled == 1 && _LightVolumeSpecularity == 1 && _LightVolumeSpecularityStrength > 0){
-                specular += LightVolumeSpecular(albedo, smoothness, metallic, l.normal, i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b) * _LightVolumeSpecularityStrength * m.specularMask;
             }
         }
         #if !ADDITIVE_PASS
@@ -523,7 +566,6 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
     #endif
 
     // Reflections
-    // Lighting based IOR from Retro's standard mod
     #if REFLECTIONS_ENABLED && FORWARD_PASS			
         if (m.reflectionMask > 0){										
             float surfaceReduction = (1.0 / (brdfRoughness*brdfRoughness + 1.0)) * saturate(lerp(1, (l.NdotL + 0.3), _LightingBasedIOR));
@@ -547,11 +589,7 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
         ApplyMatcap(i, l, m, environment, GetRoughness(smoothness));
     #endif
 
-    // #if REFRACTION_ENABLED
-    // 	float3 col = diffuse.rgb * lerp(lighting, 1, step(m.refractDissolveMask, _RefractionDissolveMaskStr) * (1-_RefractionOpac) * m.refractMask);
-    // #else
-        float3 col = diffuse.rgb * lighting;
-    // #endif
+    float3 col = diffuse.rgb * lighting;
 
     // Prevents being washed out by intense lighting
     float3 maxCol = (diffuse.rgb + environment) * diffuseTerm;

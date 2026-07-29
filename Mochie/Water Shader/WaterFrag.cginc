@@ -656,32 +656,40 @@ float4 frag(v2f i, bool isFrontFace: SV_IsFrontFace) : SV_Target {
     #endif
     
     CalculateTangentViewDir(i);
-    float indirectRough = _Roughness;
-    #if PBR_ENABLED
-        indirectRough = rough;
+    #if defined(UNITY_PASS_FORWARDBASE)
+        float indirectRough = _Roughness;
+        #if PBR_ENABLED
+            indirectRough = rough;
+        #endif
+        float3 indirectCol, lmSpec;
+        i.lightmapUV.xy += normalMap.xy * _LightmapDistortion * 0.05;
+        i.lightmapUV.zw += normalMap.xy * _LightmapDistortion * 0.05;
+        GetIndirectLighting(indirectCol, lmSpec, i.lightmapUV, normalDir, normalMap, i.worldPos, viewDir, i.tangentViewDir, indirectRough, metallic, atten, mainTex, i.normal);
+        // #if DEPTH_EFFECTS_ENABLED
+        //     #if EDGEFADE_ENABLED
+        //         float indirectEdgeFade = linearstep(0, 0.5, edgeFadeDepth);
+        //         indirectCol = lerp(1, indirectCol, indirectEdgeFade);
+        //         lmSpec *= indirectEdgeFade;
+        //     #endif
+        // #endif
+        #if PBR_ENABLED
+            lmSpec *= reflAdjust * specularTint * _BakeryLMSpecStrength * lerp(20, 0.5, metallic);
+        #else
+            lmSpec = 0;
+        #endif
+        #if defined(LIGHTMAP_ON) || defined(DYNAMICLIGHTMAP_ON)
+            indirectCol = GetSaturation(indirectCol, _IndirectSaturation);
+            indirectCol = linearstep(-0.5, 0.5, indirectCol);
+            indirectCol = lerp(1, indirectCol, _IndirectStrength);
+        #endif
+        
+        col.rgb *= indirectCol * omr;
+        col.rgb += lmSpec;
+        if (_UdonLightVolumeEnabled == 0 || _LightVolumesToggle == 0 || _LightVolumeSpecularity == 0)
+            lvSpec = 0;
+        specCol += lvSpec * _LightVolumeSpecularityStrength;
     #endif
-    float3 indirectCol, lmSpec;
-    i.lightmapUV.xy += normalMap.xy * _LightmapDistortion * 0.05;
-    i.lightmapUV.zw += normalMap.xy * _LightmapDistortion * 0.05;
-    GetIndirectLighting(indirectCol, lmSpec, i.lightmapUV, normalDir, normalMap, i.worldPos, viewDir, i.tangentViewDir, indirectRough, atten);
-    // #if DEPTH_EFFECTS_ENABLED
-    //     #if EDGEFADE_ENABLED
-    //         float indirectEdgeFade = linearstep(0, 0.5, edgeFadeDepth);
-    //         indirectCol = lerp(1, indirectCol, indirectEdgeFade);
-    //         lmSpec *= indirectEdgeFade;
-    //     #endif
-    // #endif
-    #if PBR_ENABLED
-        lmSpec *= reflAdjust * specularTint * _BakeryLMSpecStrength * lerp(20, 0.5, metallic);
-    #else
-        lmSpec = 0;
-    #endif
-    indirectCol = GetSaturation(indirectCol, _IndirectSaturation);
-    indirectCol = linearstep(-0.5, 0.5, indirectCol);
-    indirectCol = lerp(1, indirectCol, _IndirectStrength);
 
-    col.rgb *= indirectCol * omr;
-    col.rgb += lmSpec;
     col.rgb += specCol;
     col.rgb += reflCol;
     col.rgb += areaLitColor;

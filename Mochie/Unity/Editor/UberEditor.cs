@@ -96,6 +96,7 @@ namespace Mochie {
                 "Oscilloscope",
                 "Primary Matcap",
                 "Secondary Matcap",
+                "Light Volumes",
                 "Debug"
         }, 0);
 
@@ -114,7 +115,7 @@ namespace Mochie {
         static readonly int blendingLabelPos = 111;
 
         static readonly string unityFolderPath = "Assets/Mochie/Unity";
-        string versionLabel = "v1.34.2";
+        string versionLabel = "v1.35";
         // β
         
         MaterialProperty _RenderMode = null; 
@@ -660,10 +661,15 @@ namespace Mochie {
         MaterialProperty _HueMode = null;
         MaterialProperty _MonoTint = null;
         MaterialProperty _LitCubemap = null;
-        MaterialProperty _LightVolumeSpecularity = null;
-        MaterialProperty _LightVolumeSpecularityStrength = null;
         MaterialProperty _IridescenceMode = null;
         MaterialProperty _IridescenceRamp = null;
+
+        // Light Volumes
+        MaterialProperty _LightVolumesToggle = null;
+        MaterialProperty _LightVolumeStrength = null;
+        MaterialProperty _LightVolumeSpecularity = null;
+        MaterialProperty _LightVolumeSpecularityStrength = null;
+        MaterialProperty _LightVolumeBias = null;
 
         MaterialProperty _VRCFallback = null;
         MaterialProperty _NaNLmao = null;
@@ -1216,7 +1222,6 @@ namespace Mochie {
                                 me.ShaderProperty(_SpecCol, "Tint");
                                 if (_Specular.floatValue == 1){
                                     me.ShaderProperty(_SpecStr, "Strength");
-                                    MGUI.ToggleFloat(me, "Light Volume Specularity", _LightVolumeSpecularity, _LightVolumeSpecularityStrength);
                                     MGUI.ToggleSlider(me, "Manual Roughness", _SpecUseRough, _SpecRough);
                                     MGUI.ToggleSlider(me, Tips.specBiasOverride, _SpecBiasOverrideToggle, _SpecBiasOverride);
                                     MGUI.ToggleIntSlider(me, "Stepping", _SharpSpecular, _SharpSpecStr);
@@ -1225,7 +1230,6 @@ namespace Mochie {
                                 }
                                 else if (_Specular.floatValue == 2){
                                     me.ShaderProperty(_AnisoStr, "Strength");
-                                    MGUI.ToggleFloat(me, "Light Volume Specularity", _LightVolumeSpecularity, _LightVolumeSpecularityStrength);
                                     me.ShaderProperty(_RealtimeSpec, Tips.realtimeSpec);
                                     MGUI.ToggleIntSlider(me, "Stepping", _SharpSpecular, _AnisoSteps);
                                     MGUI.SpaceN1();
@@ -1233,7 +1237,6 @@ namespace Mochie {
                                 else {
                                     me.ShaderProperty(_SpecStr, "GGX Strength");
                                     me.ShaderProperty(_AnisoStr, "Aniso Strength");
-                                    MGUI.ToggleFloat(me, "Light Volume Specularity", _LightVolumeSpecularity, _LightVolumeSpecularityStrength);
                                     me.ShaderProperty(_RealtimeSpec, Tips.realtimeSpec);
                                     me.ShaderProperty(_ManualSpecBright, Tips.manualSpecBright);
                                     me.ShaderProperty(_SharpSpecular, "Stepping");
@@ -1459,6 +1462,19 @@ namespace Mochie {
                             });
                         });
                     };
+
+                    // Light volumes
+                    if (Foldouts.DoFoldout(foldouts, mat, me, _LightVolumesToggle, "Light Volumes", Foldouts.Style.ThinToggle)) {
+                        MGUI.ToggleGroup(_LightVolumesToggle.floatValue == 0);
+                        MGUI.PropertyGroupParent(() => {
+                            MGUI.PropertyGroup(() => {
+                                me.ShaderProperty(_LightVolumeStrength, "Strength");
+                                MGUI.ToggleFloat(me, Tips.lightVolumeSpecText, _LightVolumeSpecularity, _LightVolumeSpecularityStrength);
+                                me.ShaderProperty(_LightVolumeBias, Tips.lightVolumeBiasText);
+                            });
+                        });
+                        MGUI.ToggleGroupEnd();
+                    }
                     MGUI.Space6();
                 }
             }

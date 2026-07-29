@@ -239,7 +239,16 @@ Shader "Mochie/Water" {
         [Enum(XY,0, XZ,1, YZ,2)]_TexCoordSpaceSwizzle("Swizzle", Int) = 1
         _GlobalTexCoordScaleUV("Global Scale", Float) = 1
         _GlobalTexCoordScaleWorld("Global Scale", Float) = 0.1
-        
+
+        // Light Volumes
+        [ToggleUI]_LightVolumesToggle("Light Volume Toggle", Int) = 1
+        _LightVolumeStrength("Light Volume Strength", Range(0,1)) = 1
+        [ToggleUI]_AdditiveLightVolumesToggle("Additive Light Volumes", Int) = 1
+        _AdditiveLightVolumeStrength("Additive Light Volume Strength", Float) = 1
+        [ToggleUI]_LightVolumeSpecularity("Light Volume Specularity", Int) = 0
+        _LightVolumeSpecularityStrength("Light Volume Specularity Strength", Float) = 1
+        _LightVolumeBias("Light Volume Bias", Float) = 0
+
         [ToggleUI] _BAKERY_LMSPEC ("Lightmap Specular", Float) = 0
         _BakeryLMSpecStrength("Lightmap Specular Strength", Float) = 1
         _FogContribution("Fog Contribution", Range(0,1)) = 1

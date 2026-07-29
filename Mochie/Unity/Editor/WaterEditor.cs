@@ -34,11 +34,12 @@ namespace Mochie {
                 "Emission",
                 "LTCGI",
                 "AreaLit",
+                "Light Volumes",
                 "Lightmap Settings",
                 "Render Settings"
         }, 0);
 
-        string versionLabel = "v1.28.1";
+        string versionLabel = "v1.29";
 
         MaterialProperty _Color = null;
         MaterialProperty _NonGrabColor = null;
@@ -260,6 +261,15 @@ namespace Mochie {
         // MaterialProperty _WireframeVisualization = null;
         // MaterialProperty _WireframeColor = null;
 
+        // Light Volumes
+        MaterialProperty _LightVolumesToggle = null;
+        MaterialProperty _LightVolumeStrength = null;
+        MaterialProperty _AdditiveLightVolumesToggle = null;
+        MaterialProperty _AdditiveLightVolumeStrength = null;
+        MaterialProperty _LightVolumeSpecularity = null;
+        MaterialProperty _LightVolumeSpecularityStrength = null;
+        MaterialProperty _LightVolumeBias = null;
+        
         // Lightmapping Settings
         MaterialProperty _BAKERY_LMSPEC = null;
         MaterialProperty _BakeryLMSpecStrength = null;
@@ -828,6 +838,20 @@ namespace Mochie {
                             MGUI.DisplayInfo("Use the 'Wireframe' scene view for easy visualization.");
                         });
                     }
+                }
+
+                // Light Volumes
+                if (Foldouts.DoFoldout(foldouts, mat, me, _LightVolumesToggle, "Light Volumes", Foldouts.Style.StandardToggle)) {
+                    MGUI.ToggleGroup(_LightVolumesToggle.floatValue == 0);
+                    MGUI.PropertyGroupParent(() => {
+                        MGUI.PropertyGroup(() => {
+                            me.ShaderProperty(_LightVolumeStrength, "Strength");
+                            MGUI.ToggleFloat(me, Tips.additiveLightVolumeText, _AdditiveLightVolumesToggle, _AdditiveLightVolumeStrength);
+                            MGUI.ToggleFloat(me, Tips.lightVolumeSpecText, _LightVolumeSpecularity, _LightVolumeSpecularityStrength);
+                            me.ShaderProperty(_LightVolumeBias, Tips.lightVolumeBiasText);
+                        });
+                    });
+                    MGUI.ToggleGroupEnd();
                 }
 
                 // Lightmap Settings

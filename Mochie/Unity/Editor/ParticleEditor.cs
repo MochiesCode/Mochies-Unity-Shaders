@@ -32,10 +32,11 @@ namespace Mochie {
                 "Random Hue",
                 "Outlines",
                 "Rim Light",
+                "Light Volumes",
                 "Render Settings"
         }, 0);
 
-        string versionLabel = "v3.2.1";
+        string versionLabel = "v3.3";
 
         // Render Settings
         MaterialProperty _BlendMode = null;
@@ -129,10 +130,6 @@ namespace Mochie {
         MaterialProperty _SharpHighlights = null;
         MaterialProperty _SharpHighlightSteps = null;
         MaterialProperty _SphericalHarmonics = null;
-        MaterialProperty _LightVolumes = null;
-        MaterialProperty _LightVolumeSpecularity = null;
-        MaterialProperty _LightVolumeSpecularityStrength = null;
-        MaterialProperty _LightVolumeStrength = null;
         MaterialProperty _Emission = null;
         MaterialProperty _EmissionColor = null;
         MaterialProperty _EmissionMap = null;
@@ -237,7 +234,14 @@ namespace Mochie {
         MaterialProperty _OutlineStencilPass = null;
         MaterialProperty _OutlineStencilCompare = null;
         MaterialProperty _OutlineStencilToggle = null;
-        
+
+        // Light Volumes
+        MaterialProperty _LightVolumesToggle = null;
+        MaterialProperty _LightVolumeStrength = null;
+        MaterialProperty _LightVolumeSpecularity = null;
+        MaterialProperty _LightVolumeSpecularityStrength = null;
+        MaterialProperty _LightVolumeBias = null;
+
         // Audio Link
         MaterialProperty _AudioLink = null;
         MaterialProperty _AudioLinkStrength = null;
@@ -446,9 +450,6 @@ namespace Mochie {
                         MGUI.PropertyGroup(()=>{
                             MGUI.ToggleFloat(me, Tips.cubemapReflectionsText, _ReflectionsToggle, _ReflectionStrength);
                             MGUI.ToggleFloat(me, Tips.specularHighlightsText, _SpecularHighlightsToggle, _SpecularHighlightStrength);
-                            MGUI.ToggleFloat(me, "Light Volume Lighting", _LightVolumes, _LightVolumeStrength);
-                            if (_LightVolumes.floatValue != 0)
-                                MGUI.ToggleFloat(me, Tips.lightVolumeSpecText, _LightVolumeSpecularity, _LightVolumeSpecularityStrength);
                             if (_SpecularHighlightsToggle.floatValue == 1){
                                 MGUI.ToggleIntSlider(me, "Sharp Highlights", _SharpHighlights, _SharpHighlightSteps);
                             }
@@ -671,6 +672,21 @@ namespace Mochie {
                         });
                         MGUI.ToggleGroupEnd();
                     });
+                }
+
+                // Light Volumes
+                if (_LightingToggle.floatValue == 1){
+                    if (Foldouts.DoFoldout(foldouts, mat, me, _LightVolumesToggle, "Light Volumes", Foldouts.Style.StandardToggle)) {
+                        MGUI.ToggleGroup(_LightVolumesToggle.floatValue == 0);
+                        MGUI.PropertyGroupParent(() => {
+                            MGUI.PropertyGroup(() => {
+                                me.ShaderProperty(_LightVolumeStrength, "Strength");
+                                MGUI.ToggleFloat(me, Tips.lightVolumeSpecText, _LightVolumeSpecularity, _LightVolumeSpecularityStrength);
+                                me.ShaderProperty(_LightVolumeBias, Tips.lightVolumeBiasText);
+                            });
+                        });
+                        MGUI.ToggleGroupEnd();
+                    }
                 }
 
                 // Rendering

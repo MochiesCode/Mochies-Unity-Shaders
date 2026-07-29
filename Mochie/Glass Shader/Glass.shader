@@ -84,6 +84,15 @@
         _RNM0("RNM0", 2D) = "black" {}
         _RNM1("RNM1", 2D) = "black" {}
         _RNM2("RNM2", 2D) = "black" {}
+        
+        // Light Volumes
+        [ToggleUI]_LightVolumesToggle("Light Volume Toggle", Int) = 1
+        _LightVolumeStrength("Light Volume Strength", Range(0,1)) = 1
+        [ToggleUI]_AdditiveLightVolumesToggle("Additive Light Volumes", Int) = 1
+        _AdditiveLightVolumeStrength("Additive Light Volume Strength", Float) = 1
+        [ToggleUI]_LightVolumeSpecularity("Light Volume Specularity", Int) = 0
+        _LightVolumeSpecularityStrength("Light Volume Specularity Strength", Float) = 1
+        _LightVolumeBias("Light Volume Bias", Float) = 0
 
         [ToggleUI]_AreaLitToggle("Enable", Int) = 0
         _AreaLitMask("Mask", 2D) = "white" {}

@@ -1,14 +1,30 @@
 #ifndef PARTICLE_LIGHTING_INCLUDED
 #define PARTICLE_LIGHTING_INCLUDED
 
+float3 GetUnitySH(float3 normal){
+    #if defined(BAKERY_SHNONLINEAR)
+        return max(0, ShadeSHNL(normal));
+    #else
+        return max(0, ShadeSH9(float4(normal, 1)));
+    #endif
+}
+
 float3 GetSH(v2f i, InputData id, float3 viewDir){
     [branch]
-    if (_UdonLightVolumeEnabled == 1 && _LightVolumes != 0){
-        LightVolumeSHSpecular(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, lvSpec, id.albedo, 1-id.roughness, id.metallic, id.normal, viewDir, 0, 1);
-        return LightVolumeEvaluate(id.normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b) * _LightVolumeStrength;
+    if (_UdonLightVolumeEnabled == 1 && _LightVolumesToggle == 1){
+        LightVolumeSHSpecular(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, lvSpec, id.albedo, 1-id.roughness, id.metallic, id.normal, viewDir, i.normal*_LightVolumeBias, 1);
+        [branch]
+        if (_LightVolumeStrength < 1){
+            float3 lvSH = LightVolumeEvaluate(id.normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+            float3 unitySH = GetUnitySH(id.normal);
+            return lerp(unitySH, lvSH, _LightVolumeStrength);
+        }
+        else {
+            return LightVolumeEvaluate(id.normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
+        }
     }
     else {
-        return max(0, ShadeSH9(float4(id.normal * _SphericalHarmonics, 1)));
+        return GetUnitySH(id.normal);
     }
 }
 
