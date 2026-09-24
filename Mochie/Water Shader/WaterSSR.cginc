@@ -89,22 +89,23 @@ float4 ReflectRay(float3 reflectedRay, float3 rayDir, float _LRad, float _SRad, 
     return float4(finalPos, totalIterations);
 }
 
-float4 GetSSR(const float3 wPos, const float3 viewDir, float3 rayDir, const half3 faceNormal, float smoothness, float3 albedo, float metallic, float2 screenUVs, float4 screenPos){
+float4 GetSSR(v2f i, InputData id, LightingData ld, float3 rayDir){
     
-    float FdotR = dot(faceNormal, rayDir.xyz);
-    float roughness = 1-smoothness;
+    float FdotR = dot(id.normal, rayDir.xyz);
+    float roughness = id.roughness;
+    float smoothness = 1 - id.roughness;
     
     UNITY_BRANCH
     if (IsInMirror() || FdotR < 0 || roughness > 0.65){
         return 0;
     }
     else {
-        float4 noiseUvs = screenPos;
+        float4 noiseUvs = i.uvGrab;
         noiseUvs.xy = (noiseUvs.xy * _MWGrab_TexelSize.zw) / (_NoiseTexSSR_TexelSize.zw * noiseUvs.w);	
         float4 noiseRGBA = tex2Dlod(_NoiseTexSSR, float4(noiseUvs.xy,0,0));
         float noise = noiseRGBA.r;
         
-        float3 reflectedRay = wPos + (_SSRHeight*_SSRHeight/FdotR + noise*_SSRHeight)*rayDir;
+        float3 reflectedRay = i.worldPos + (_SSRHeight*_SSRHeight/FdotR + noise*_SSRHeight)*rayDir;
         float4 finalPos = ReflectRay(reflectedRay, rayDir, _SSRHeight, 0.02, _SSRHeight, noise, 50);
         float totalSteps = finalPos.w;
         finalPos.w = 1;
@@ -123,7 +124,7 @@ float4 GetSSR(const float3 wPos, const float3 viewDir, float3 rayDir, const half
         #endif
         float yfade = smoothstep(0, _EdgeFadeSSR, uvs.y)*smoothstep(1, 1-_EdgeFadeSSR, uvs.y); //Same for y
         // float lengthFade = smoothstep(1, 0, 2*(totalSteps / 50)-1);
-        float smoothFade = smoothstep(0.3, 0.1, 1-smoothness);
+        float smoothFade = smoothstep(0.3, 0.1, roughness);
         float reflectionAlpha = xfade * yfade * smoothFade; // * lengthFade;
 
         float4 reflection = 0;
@@ -135,7 +136,7 @@ float4 GetSSR(const float3 wPos, const float3 viewDir, float3 rayDir, const half
             // else {
             // 	reflection.rgb = MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_MWGrab, uvs.xy).rgb;
             // }
-            reflection.rgb = lerp(reflection.rgb, reflection.rgb*albedo.rgb,smoothstep(0, 1.75, metallic));
+            reflection.rgb = lerp(reflection.rgb, reflection.rgb*id.diffuse.rgb,smoothstep(0, 1.75, id.metallic));
             reflection.a = reflectionAlpha; // saturate(reflectionAlpha * 10);
         }
 

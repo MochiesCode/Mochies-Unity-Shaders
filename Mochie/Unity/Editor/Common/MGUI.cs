@@ -1,4 +1,4 @@
-﻿// A collection of UI functions I've developed over the years to improve customization of editor scripts
+// A collection of UI functions I've developed over the years to improve customization of editor scripts
 // Full of lots of garbage duplicate stuff I'm too lazy to clean out
 // By Mochie#8794
 
@@ -9,6 +9,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Globalization;
 
 namespace Mochie {
     public static class MGUI {
@@ -304,431 +305,643 @@ namespace Mochie {
             return GUI.Button(buttonRect, label);
         }
 
+        public static void ResetProperty(MaterialProperty prop){
+            if (prop == null || prop.targets == null || prop.targets.Length == 0) return;
+            Undo.RecordObjects(prop.targets, "Reset " + prop.displayName);
+            foreach (var target in prop.targets){
+                Material mat = target as Material;
+                if (mat == null || mat.shader == null) continue;
+                int propIndex = mat.shader.FindPropertyIndex(prop.name);
+                if (propIndex < 0) continue;
+                switch (prop.type){
+                    case MaterialProperty.PropType.Float:
+                    case MaterialProperty.PropType.Range:
+                        prop.floatValue = mat.shader.GetPropertyDefaultFloatValue(propIndex);
+                        break;
+                    case MaterialProperty.PropType.Vector:
+                        prop.vectorValue = mat.shader.GetPropertyDefaultVectorValue(propIndex);
+                        break;
+                    case MaterialProperty.PropType.Color:
+                        prop.colorValue = mat.shader.GetPropertyDefaultVectorValue(propIndex);
+                        break;
+                    case MaterialProperty.PropType.Int:
+                        prop.intValue = mat.shader.GetPropertyDefaultIntValue(propIndex);
+                        break;
+                    case MaterialProperty.PropType.Texture:
+                        ShaderImporter shaderImporter = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(mat.shader)) as ShaderImporter;
+                        prop.textureValue = shaderImporter != null ? shaderImporter.GetDefaultTexture(prop.name) : null;
+                        prop.textureScaleAndOffset = new Vector4(1f, 1f, 0f, 0f);
+                        break;
+                }
+            }
+        }
+
+        public static void CopyProperty(MaterialProperty prop){
+            if (prop == null) return;
+            switch (prop.type){
+                case MaterialProperty.PropType.Float:
+                case MaterialProperty.PropType.Range:
+                    EditorGUIUtility.systemCopyBuffer = prop.floatValue.ToString(CultureInfo.InvariantCulture);
+                    break;
+                case MaterialProperty.PropType.Int:
+                    EditorGUIUtility.systemCopyBuffer = prop.intValue.ToString();
+                    break;
+                case MaterialProperty.PropType.Vector:
+                    Vector4 v = prop.vectorValue;
+                    EditorGUIUtility.systemCopyBuffer = string.Format(CultureInfo.InvariantCulture, "Vector4({0:g9},{1:g9},{2:g9},{3:g9})", v.x, v.y, v.z, v.w);
+                    break;
+                case MaterialProperty.PropType.Color:
+                    Color c = prop.colorValue;
+                    EditorGUIUtility.systemCopyBuffer = string.Format(CultureInfo.InvariantCulture, "Color({0:g9},{1:g9},{2:g9},{3:g9})", c.r, c.g, c.b, c.a);
+                    break;
+                case MaterialProperty.PropType.Texture:
+                    if (prop.textureValue != null)
+                        EditorGUIUtility.systemCopyBuffer = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(prop.textureValue));
+                    break;
+            }
+        }
+
+        public static void PasteProperty(MaterialProperty prop){
+            if (prop == null || prop.targets == null || prop.targets.Length == 0) return;
+            string clip = EditorGUIUtility.systemCopyBuffer;
+            if (string.IsNullOrEmpty(clip)) return;
+            Undo.RecordObjects(prop.targets, "Paste " + prop.displayName);
+            switch (prop.type){
+                case MaterialProperty.PropType.Float:
+                case MaterialProperty.PropType.Range:
+                    if (float.TryParse(clip, NumberStyles.Float, CultureInfo.InvariantCulture, out float fVal))
+                        prop.floatValue = fVal;
+                    break;
+                case MaterialProperty.PropType.Int:
+                    if (int.TryParse(clip, out int iVal))
+                        prop.intValue = iVal;
+                    else if (float.TryParse(clip, NumberStyles.Float, CultureInfo.InvariantCulture, out float fiVal))
+                        prop.intValue = (int)fiVal;
+                    break;
+                case MaterialProperty.PropType.Vector:
+                    if (TryParseVector4(clip, out Vector4 vVal))
+                        prop.vectorValue = vVal;
+                    break;
+            }
+        }
+
+        public static bool CanPasteProperty(MaterialProperty prop){
+            if (prop == null) return false;
+            string clip = EditorGUIUtility.systemCopyBuffer;
+            if (string.IsNullOrEmpty(clip)) return false;
+            switch (prop.type){
+                case MaterialProperty.PropType.Float:
+                case MaterialProperty.PropType.Range:
+                    return float.TryParse(clip, NumberStyles.Float, CultureInfo.InvariantCulture, out _);
+                case MaterialProperty.PropType.Int:
+                    return int.TryParse(clip, out _) || float.TryParse(clip, NumberStyles.Float, CultureInfo.InvariantCulture, out _);
+                case MaterialProperty.PropType.Vector:
+                    return TryParseVector4(clip, out _);
+                default:
+                    return false;
+            }
+        }
+
+        private static bool TryParseVector4(string text, out Vector4 result){
+            result = Vector4.zero;
+            if (string.IsNullOrEmpty(text)) return false;
+            text = text.Trim();
+            if (text.StartsWith("Vector4(", StringComparison.OrdinalIgnoreCase) && text.EndsWith(")"))
+                text = text.Substring(8, text.Length - 9);
+            string[] parts = text.Split(',');
+            if (parts.Length == 4){
+                if (float.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float x) &&
+                    float.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float y) &&
+                    float.TryParse(parts[2], NumberStyles.Float, CultureInfo.InvariantCulture, out float z) &&
+                    float.TryParse(parts[3], NumberStyles.Float, CultureInfo.InvariantCulture, out float w)){
+                    result = new Vector4(x, y, z, w);
+                    return true;
+                }
+            } else if (parts.Length == 3){
+                if (float.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float x) &&
+                    float.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float y) &&
+                    float.TryParse(parts[2], NumberStyles.Float, CultureInfo.InvariantCulture, out float z)){
+                    result = new Vector4(x, y, z, 0f);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public static void DoCompoundContextMenu(Rect totalRect, MaterialProperty copyProp, params MaterialProperty[] allProps){
+            Event e = Event.current;
+            Rect hitRect = new Rect(0f, totalRect.y, totalRect.xMax, totalRect.height);
+            if (e.type != EventType.ContextClick || !hitRect.Contains(e.mousePosition))
+                return;
+
+            e.Use();
+            GenericMenu menu = new GenericMenu();
+
+            // Material Variant override handling
+            bool isAnyOverridden = false;
+            Material firstMat = null;
+            foreach (var p in allProps){
+                if (p != null && p.targets != null){
+                    foreach (var t in p.targets){
+                        Material m = t as Material;
+                        if (m != null){
+                            if (firstMat == null) firstMat = m;
+                            if (m.isVariant && m.IsPropertyOverriden(p.name)){
+                                isAnyOverridden = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (isAnyOverridden) break;
+            }
+
+            if (isAnyOverridden && firstMat != null){
+                if (firstMat.parent != null){
+                    menu.AddItem(new GUIContent("Apply to Material '" + firstMat.parent.name + "'"), false, () => {
+                        foreach (var p in allProps){
+                            if (p != null && p.targets != null){
+                                foreach (var t in p.targets){
+                                    Material m = t as Material;
+                                    if (m != null && m.parent != null)
+                                        m.ApplyPropertyOverride(m.parent, p.name, true);
+                                }
+                            }
+                        }
+                    });
+                }
+                menu.AddItem(new GUIContent("Revert"), false, () => {
+                    foreach (var p in allProps){
+                        if (p != null && p.targets != null){
+                            foreach (var t in p.targets){
+                                Material m = t as Material;
+                                if (m != null)
+                                    m.RevertPropertyOverride(p.name);
+                            }
+                        }
+                    }
+                });
+                menu.AddSeparator("");
+            }
+
+            // Copy
+            if (copyProp != null)
+                menu.AddItem(new GUIContent("Copy"), false, () => CopyProperty(copyProp));
+            else
+                menu.AddDisabledItem(new GUIContent("Copy"));
+
+            // Paste
+            if (copyProp != null && CanPasteProperty(copyProp))
+                menu.AddItem(new GUIContent("Paste"), false, () => PasteProperty(copyProp));
+            else
+                menu.AddDisabledItem(new GUIContent("Paste"));
+
+            menu.AddSeparator("");
+
+            // Reset (Resets ALL properties in the function)
+            menu.AddItem(new GUIContent("Reset"), false, () => {
+                foreach (var p in allProps){
+                    if (p != null)
+                        ResetProperty(p);
+                }
+            });
+
+            menu.AddSeparator("");
+
+            // Lock in children (Locks/unlocks ALL properties in the function)
+            bool isAnyLocked = false;
+            foreach (var p in allProps){
+                if (p != null && p.targets != null){
+                    foreach (var t in p.targets){
+                        Material m = t as Material;
+                        if (m != null && m.IsPropertyLocked(p.name)){
+                            isAnyLocked = true;
+                            break;
+                        }
+                    }
+                }
+                if (isAnyLocked) break;
+            }
+
+            bool newLock = !isAnyLocked;
+            menu.AddItem(new GUIContent("Lock in children"), isAnyLocked, () => {
+                foreach (var p in allProps){
+                    if (p != null && p.targets != null){
+                        Undo.RecordObjects(p.targets, (newLock ? "Lock " : "Unlock ") + p.displayName);
+                        foreach (var t in p.targets){
+                            Material m = t as Material;
+                            if (m != null)
+                                m.SetPropertyLock(p.name, newLock);
+                        }
+                    }
+                }
+            });
+
+            menu.ShowAsContext();
+        }
+
         // Regular shader property but the text is bold
         public static void ShaderPropertyBold(MaterialEditor me, MaterialProperty prop, string text){
-            me.ShaderProperty(prop, " ");
-            SpaceN20();
-            BoldLabel(text);
+            ShaderPropertyBold(me, prop, new GUIContent(text));
         }
 
         public static void ShaderPropertyBold(MaterialEditor me, MaterialProperty prop, GUIContent text){
-            me.ShaderProperty(prop, " ");
-            SpaceN20();
-            BoldLabel(text);
+            string textStr = text != null ? text.text : "";
+            float height = (prop != null && me != null) ? me.GetPropertyHeight(prop, textStr) : EditorGUIUtility.singleLineHeight;
+            Rect r = EditorGUILayout.GetControlRect(true, height);
+            if (prop != null) MaterialEditor.BeginProperty(r, prop);
+            if (me != null) me.ShaderProperty(r, prop, " ");
+            Rect labelRect = new Rect(r.x, r.y, EditorGUIUtility.labelWidth, EditorGUIUtility.singleLineHeight);
+            EditorGUI.LabelField(labelRect, text, EditorStyles.boldLabel);
+            if (prop != null) MaterialEditor.EndProperty();
         }
 
         // Slider with a toggle
         public static void ToggleSlider(MaterialEditor me, string label, MaterialProperty toggle, MaterialProperty slider){
-            float lw = EditorGUIUtility.labelWidth;
-            float indent = lw + 25f;
-            GUILayoutOption clickArea = GUILayout.MaxWidth(lw+13f);
-
-            EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = toggle.hasMixedValue;
-            var tog = EditorGUILayout.Toggle(label, toggle.floatValue==1, clickArea)?1:0;
-            if (EditorGUI.EndChangeCheck())
-                toggle.floatValue = tog;
-            EditorGUI.showMixedValue = false;
-
-            SpaceN20();
-            Rect r = EditorGUILayout.GetControlRect();
-            r.x += indent;
-            r.width -= indent;
-
-            EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = slider.hasMixedValue;
-            EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
-            var slide = EditorGUI.Slider(r, slider.floatValue, slider.rangeLimits.x, slider.rangeLimits.y);
-            EditorGUI.EndDisabledGroup();
-            if (EditorGUI.EndChangeCheck())
-                slider.floatValue = slide;
-            EditorGUI.showMixedValue = false;
+            ToggleSlider(me, new GUIContent(label), toggle, slider);
         }
 
         public static void ToggleSlider(MaterialEditor me, GUIContent label, MaterialProperty toggle, MaterialProperty slider){
             float lw = EditorGUIUtility.labelWidth;
             float indent = lw + 25f;
-            GUILayoutOption clickArea = GUILayout.MaxWidth(lw+13f);
+            Rect totalRect = EditorGUILayout.GetControlRect();
+            Rect toggleRect = new Rect(totalRect.x, totalRect.y, indent, totalRect.height);
+            Rect sliderRect = new Rect(totalRect.x + indent, totalRect.y, totalRect.width - indent, totalRect.height);
+
+            bool isCheckbox = Event.current.mousePosition.x > (totalRect.x + lw) && Event.current.mousePosition.x <= (totalRect.x + indent);
+            MaterialProperty copyProp = isCheckbox ? toggle : slider;
+            DoCompoundContextMenu(totalRect, copyProp, toggle, slider);
+
+            Rect propRect = (Event.current.type == EventType.ContextClick || Event.current.rawType == EventType.ContextClick) ? Rect.zero : totalRect;
+            if (toggle != null) MaterialEditor.BeginProperty(propRect, toggle);
+            if (slider != null) MaterialEditor.BeginProperty(propRect, slider);
 
             EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = toggle.hasMixedValue;
-            var tog = EditorGUILayout.Toggle(label, toggle.floatValue==1, clickArea)?1:0;
-            if (EditorGUI.EndChangeCheck())
+            var tog = EditorGUI.Toggle(toggleRect, label, (toggle != null && toggle.floatValue == 1)) ? 1f : 0f;
+            if (EditorGUI.EndChangeCheck() && toggle != null)
                 toggle.floatValue = tog;
-            EditorGUI.showMixedValue = false;
-
-            SpaceN20();
-            Rect r = EditorGUILayout.GetControlRect();
-            r.x += indent;
-            r.width -= indent;
 
             EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = slider.hasMixedValue;
-            EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
-            var slide = EditorGUI.Slider(r, slider.floatValue, slider.rangeLimits.x, slider.rangeLimits.y);
+            EditorGUI.BeginDisabledGroup(toggle != null && toggle.floatValue == 0);
+            var slide = slider != null ? EditorGUI.Slider(sliderRect, slider.floatValue, slider.rangeLimits.x, slider.rangeLimits.y) : 0f;
             EditorGUI.EndDisabledGroup();
-            if (EditorGUI.EndChangeCheck())
+            if (EditorGUI.EndChangeCheck() && slider != null)
                 slider.floatValue = slide;
-            EditorGUI.showMixedValue = false;
+
+            if (slider != null) MaterialEditor.EndProperty();
+            if (toggle != null) MaterialEditor.EndProperty();
         }
 
         public static void ToggleIntSlider(MaterialEditor me, string label, MaterialProperty toggle, MaterialProperty slider){
+            ToggleIntSlider(me, new GUIContent(label), toggle, slider);
+        }
+
+        public static void ToggleIntSlider(MaterialEditor me, GUIContent label, MaterialProperty toggle, MaterialProperty slider){
             float lw = EditorGUIUtility.labelWidth;
             float indent = lw + 25f;
-            GUILayoutOption clickArea = GUILayout.MaxWidth(lw+13f);
+            Rect totalRect = EditorGUILayout.GetControlRect();
+            Rect toggleRect = new Rect(totalRect.x, totalRect.y, indent, totalRect.height);
+            Rect sliderRect = new Rect(totalRect.x + indent, totalRect.y, totalRect.width - indent, totalRect.height);
+
+            bool isCheckbox = Event.current.mousePosition.x > (totalRect.x + lw) && Event.current.mousePosition.x <= (totalRect.x + indent);
+            MaterialProperty copyProp = isCheckbox ? toggle : slider;
+            DoCompoundContextMenu(totalRect, copyProp, toggle, slider);
+
+            Rect propRect = (Event.current.type == EventType.ContextClick || Event.current.rawType == EventType.ContextClick) ? Rect.zero : totalRect;
+            if (toggle != null) MaterialEditor.BeginProperty(propRect, toggle);
+            if (slider != null) MaterialEditor.BeginProperty(propRect, slider);
 
             EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = toggle.hasMixedValue;
-            var tog = EditorGUILayout.Toggle(label, toggle.floatValue==1, clickArea)?1:0;
-            if (EditorGUI.EndChangeCheck())
+            var tog = EditorGUI.Toggle(toggleRect, label, (toggle != null && toggle.floatValue == 1)) ? 1f : 0f;
+            if (EditorGUI.EndChangeCheck() && toggle != null)
                 toggle.floatValue = tog;
-            EditorGUI.showMixedValue = false;
-
-            SpaceN18();
-            Rect r = EditorGUILayout.GetControlRect();
-            r.x += indent;
-            r.width -= indent;
 
             EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = slider.hasMixedValue;
-            EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
-            var slide = (int)EditorGUI.Slider(r, slider.floatValue, slider.rangeLimits.x, slider.rangeLimits.y);
+            EditorGUI.BeginDisabledGroup(toggle != null && toggle.floatValue == 0);
+            var slide = slider != null ? (int)EditorGUI.Slider(sliderRect, slider.floatValue, slider.rangeLimits.x, slider.rangeLimits.y) : 0;
             EditorGUI.EndDisabledGroup();
-            if (EditorGUI.EndChangeCheck())
+            if (EditorGUI.EndChangeCheck() && slider != null)
                 slider.floatValue = slide;
-            EditorGUI.showMixedValue = false;
+
+            if (slider != null) MaterialEditor.EndProperty();
+            if (toggle != null) MaterialEditor.EndProperty();
         }
         
         public static void CustomToggleSlider(string label, MaterialProperty toggle, MaterialProperty value, float min, float max){
-            SpaceN2();
-            float iw = GetInspectorWidth();
-            float lw = EditorGUIUtility.labelWidth;
-            GUILayoutOption clickArea = GUILayout.MaxWidth(lw+13);
-            Rect r0 = EditorGUILayout.GetControlRect();
-            Rect r1 = r0;
-            GUI.Label(r0, label);
-            
-            r0.width = iw-lw-(77);
-            r0.x += lw+22;
-            r1.width = 50;
-            r1.x += iw-50;
+            CustomToggleSlider(new GUIContent(label), toggle, value, min, max);
+        }
 
-            SpaceN20();
-            toggle.floatValue = EditorGUILayout.Toggle(" ", toggle.floatValue==1, clickArea)?1:0;
-            EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
-            value.floatValue = GUI.HorizontalSlider(r0, value.floatValue, min, max);
-            value.floatValue = EditorGUI.IntField(r1, (int)value.floatValue);
+        public static void CustomToggleSlider(GUIContent label, MaterialProperty toggle, MaterialProperty value, float min, float max){
+            float lw = EditorGUIUtility.labelWidth;
+            float indent = lw + 22f;
+            Rect totalRect = EditorGUILayout.GetControlRect();
+            Rect toggleRect = new Rect(totalRect.x, totalRect.y, indent, totalRect.height);
+            Rect sliderRect = new Rect(totalRect.x + indent, totalRect.y, totalRect.width - indent, totalRect.height);
+
+            bool isCheckbox = Event.current.mousePosition.x > (totalRect.x + lw) && Event.current.mousePosition.x <= (totalRect.x + indent);
+            MaterialProperty copyProp = isCheckbox ? toggle : value;
+            DoCompoundContextMenu(totalRect, copyProp, toggle, value);
+
+            Rect propRect = (Event.current.type == EventType.ContextClick || Event.current.rawType == EventType.ContextClick) ? Rect.zero : totalRect;
+            if (toggle != null) MaterialEditor.BeginProperty(propRect, toggle);
+            if (value != null) MaterialEditor.BeginProperty(propRect, value);
+
+            EditorGUI.BeginChangeCheck();
+            var tog = EditorGUI.Toggle(toggleRect, label, (toggle != null && toggle.floatValue == 1)) ? 1f : 0f;
+            if (EditorGUI.EndChangeCheck() && toggle != null)
+                toggle.floatValue = tog;
+
+            EditorGUI.BeginDisabledGroup(toggle != null && toggle.floatValue == 0);
+            Rect r0 = new Rect(sliderRect.x, sliderRect.y, sliderRect.width - 55f, sliderRect.height);
+            Rect r1 = new Rect(sliderRect.xMax - 50f, sliderRect.y, 50f, sliderRect.height);
+
+            EditorGUI.BeginChangeCheck();
+            float val = value != null ? value.floatValue : 0f;
+            val = GUI.HorizontalSlider(r0, val, min, max);
+            val = EditorGUI.IntField(r1, (int)val);
+            if (EditorGUI.EndChangeCheck() && value != null)
+                value.floatValue = val;
             EditorGUI.EndDisabledGroup();
+
+            if (value != null) MaterialEditor.EndProperty();
+            if (toggle != null) MaterialEditor.EndProperty();
         }
 
         // Float with a toggle
         public static void ToggleFloat(MaterialEditor me, string label, MaterialProperty toggle, MaterialProperty floatProp){
-            float lw = EditorGUIUtility.labelWidth;
-            float indent = lw + 20f;
-            GUILayoutOption clickArea = GUILayout.MaxWidth(lw+13f);
-
-            EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = toggle.hasMixedValue;
-            var tog = EditorGUILayout.Toggle(label, toggle.floatValue==1, clickArea)?1:0;
-            if (EditorGUI.EndChangeCheck())
-                toggle.floatValue = tog;
-            EditorGUI.showMixedValue = false;
-
-            SpaceN20();
-            Rect r = EditorGUILayout.GetControlRect();
-            r.x += indent;
-            r.width -= indent;
-
-            EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = floatProp.hasMixedValue;
-            EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
-            var floatVal = EditorGUI.FloatField(r, floatProp.floatValue);
-            EditorGUI.EndDisabledGroup();
-            if (EditorGUI.EndChangeCheck())
-                floatProp.floatValue = floatVal;
-            EditorGUI.showMixedValue = false;
+            ToggleFloat(me, new GUIContent(label), toggle, floatProp);
         }
 
         public static void ToggleFloat(MaterialEditor me, GUIContent label, MaterialProperty toggle, MaterialProperty floatProp){
             float lw = EditorGUIUtility.labelWidth;
             float indent = lw + 20f;
-            GUILayoutOption clickArea = GUILayout.MaxWidth(lw+13f);
+            Rect totalRect = EditorGUILayout.GetControlRect();
+            Rect toggleRect = new Rect(totalRect.x, totalRect.y, indent, totalRect.height);
+            Rect floatRect = new Rect(totalRect.x + indent, totalRect.y, totalRect.width - indent, totalRect.height);
+
+            bool isCheckbox = Event.current.mousePosition.x > (totalRect.x + lw) && Event.current.mousePosition.x <= (totalRect.x + indent);
+            MaterialProperty copyProp = isCheckbox ? toggle : floatProp;
+            DoCompoundContextMenu(totalRect, copyProp, toggle, floatProp);
+
+            Rect propRect = (Event.current.type == EventType.ContextClick || Event.current.rawType == EventType.ContextClick) ? Rect.zero : totalRect;
+            if (toggle != null) MaterialEditor.BeginProperty(propRect, toggle);
+            if (floatProp != null) MaterialEditor.BeginProperty(propRect, floatProp);
 
             EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = toggle.hasMixedValue;
-            var tog = EditorGUILayout.Toggle(label, toggle.floatValue==1, clickArea)?1:0;
-            if (EditorGUI.EndChangeCheck())
+            var tog = EditorGUI.Toggle(toggleRect, label, (toggle != null && toggle.floatValue == 1)) ? 1f : 0f;
+            if (EditorGUI.EndChangeCheck() && toggle != null)
                 toggle.floatValue = tog;
-            EditorGUI.showMixedValue = false;
-
-            SpaceN20();
-            Rect r = EditorGUILayout.GetControlRect();
-            r.x += indent;
-            r.width -= indent;
 
             EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = floatProp.hasMixedValue;
-            EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
-            var floatVal = EditorGUI.FloatField(r, floatProp.floatValue);
+            EditorGUI.BeginDisabledGroup(toggle != null && toggle.floatValue == 0);
+            var floatVal = floatProp != null ? EditorGUI.FloatField(floatRect, floatProp.floatValue) : 0f;
             EditorGUI.EndDisabledGroup();
-            if (EditorGUI.EndChangeCheck())
+            if (EditorGUI.EndChangeCheck() && floatProp != null)
                 floatProp.floatValue = floatVal;
-            EditorGUI.showMixedValue = false;
+
+            if (floatProp != null) MaterialEditor.EndProperty();
+            if (toggle != null) MaterialEditor.EndProperty();
         }
 
         public static void Vector3FieldToggle(string label, MaterialProperty toggle, MaterialProperty vec){
-            SpaceN2();
-            Vector4 newVec = vec.vectorValue;
-            float labelWidth = EditorGUIUtility.labelWidth;
-            float fieldWidth = (GetPropertyWidth()/3)-6f;
-
-            Rect r = EditorGUILayout.GetControlRect();
-            r.x += labelWidth+18f;
-
-            SpaceN20();
-            GUILayoutOption clickArea = GUILayout.MaxWidth(labelWidth+14f);
-
-            EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = toggle.hasMixedValue;
-            var tog = EditorGUILayout.Toggle(label, toggle.floatValue==1, clickArea)?1:0;
-            if (EditorGUI.EndChangeCheck())
-                toggle.floatValue = tog;
-            EditorGUI.showMixedValue = false;
-
-            EditorGUIUtility.labelWidth = 13f;
-            EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
-
-            EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = vec.hasMixedValue;
-
-                // X Field
-                r.width = fieldWidth-2f;
-                newVec.x = EditorGUI.FloatField(r, "X", newVec.x);
-                r.width = fieldWidth-4;
-
-                // Y Field
-                r.x += fieldWidth+2f;
-                newVec.y = EditorGUI.FloatField(r, "Y", newVec.y);
-
-                // Z Field
-                r.x += fieldWidth+2f;
-                newVec.z = EditorGUI.FloatField(r, "Z", newVec.z);
-
-            if (EditorGUI.EndChangeCheck())
-                vec.vectorValue = newVec;
-            EditorGUI.showMixedValue = false;
-            EditorGUIUtility.labelWidth = labelWidth;
-
-            EditorGUI.EndDisabledGroup();
-            Space1();
+            Vector3FieldToggle(new GUIContent(label), toggle, vec);
         }
 
         public static void Vector3FieldToggle(GUIContent label, MaterialProperty toggle, MaterialProperty vec){
-            SpaceN2();
-            Vector4 newVec = vec.vectorValue;
-            float labelWidth = EditorGUIUtility.labelWidth;
-            float fieldWidth = (GetPropertyWidth()/3)-6f;
+            float origLabelWidth = EditorGUIUtility.labelWidth;
+            float toggleWidth = origLabelWidth + 18f;
 
-            Rect r = EditorGUILayout.GetControlRect();
-            r.x += labelWidth+18f;
+            Rect totalRect = EditorGUILayout.GetControlRect();
+            Rect toggleRect = new Rect(totalRect.x, totalRect.y, toggleWidth, totalRect.height);
+            Rect vecRect = new Rect(totalRect.x + toggleWidth, totalRect.y, totalRect.width - toggleWidth, totalRect.height);
 
-            SpaceN20();
-            GUILayoutOption clickArea = GUILayout.MaxWidth(labelWidth+14f);
+            bool isCheckbox = Event.current.mousePosition.x > (totalRect.x + origLabelWidth) && Event.current.mousePosition.x <= (totalRect.x + toggleWidth);
+            MaterialProperty copyProp = isCheckbox ? toggle : vec;
+            DoCompoundContextMenu(totalRect, copyProp, toggle, vec);
+
+            Rect propRect = (Event.current.type == EventType.ContextClick || Event.current.rawType == EventType.ContextClick) ? Rect.zero : totalRect;
+            if (toggle != null) MaterialEditor.BeginProperty(propRect, toggle);
+            if (vec != null) MaterialEditor.BeginProperty(propRect, vec);
 
             EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = toggle.hasMixedValue;
-            var tog = EditorGUILayout.Toggle(label, toggle.floatValue==1, clickArea)?1:0;
-            if (EditorGUI.EndChangeCheck())
+            var tog = EditorGUI.Toggle(toggleRect, label, (toggle != null && toggle.floatValue == 1)) ? 1f : 0f;
+            if (EditorGUI.EndChangeCheck() && toggle != null)
                 toggle.floatValue = tog;
-            EditorGUI.showMixedValue = false;
 
+            Vector4 newVec = vec != null ? vec.vectorValue : Vector4.zero;
+            float fieldWidth = (vecRect.width / 3f) - 2f;
             EditorGUIUtility.labelWidth = 13f;
-            EditorGUI.BeginDisabledGroup(toggle.floatValue == 0);
+            EditorGUI.BeginDisabledGroup(toggle != null && toggle.floatValue == 0);
 
             EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = vec.hasMixedValue;
 
-                // X Field
-                r.width = fieldWidth-2f;
-                newVec.x = EditorGUI.FloatField(r, "X", newVec.x);
-                r.width = fieldWidth-4;
+            // X Field
+            Rect fieldRect = new Rect(vecRect.x, vecRect.y, fieldWidth, vecRect.height);
+            newVec.x = EditorGUI.FloatField(fieldRect, "X", newVec.x);
 
-                // Y Field
-                r.x += fieldWidth+2f;
-                newVec.y = EditorGUI.FloatField(r, "Y", newVec.y);
+            // Y Field
+            fieldRect.x += fieldWidth + 2f;
+            newVec.y = EditorGUI.FloatField(fieldRect, "Y", newVec.y);
 
-                // Z Field
-                r.x += fieldWidth+2f;
-                newVec.z = EditorGUI.FloatField(r, "Z", newVec.z);
+            // Z Field
+            fieldRect.x += fieldWidth + 2f;
+            newVec.z = EditorGUI.FloatField(fieldRect, "Z", newVec.z);
 
-            if (EditorGUI.EndChangeCheck())
+            if (EditorGUI.EndChangeCheck() && vec != null)
                 vec.vectorValue = newVec;
-            EditorGUI.showMixedValue = false;
-            EditorGUIUtility.labelWidth = labelWidth;
 
             EditorGUI.EndDisabledGroup();
+            EditorGUIUtility.labelWidth = origLabelWidth;
+
+            if (vec != null) MaterialEditor.EndProperty();
+            if (toggle != null) MaterialEditor.EndProperty();
             Space1();
         }
 
         public static void Vector3FieldToggleW(string label, int toggle, MaterialProperty vec){
-            SpaceN2();
-            Vector4 newVec = vec.vectorValue;
-            float labelWidth = EditorGUIUtility.labelWidth;
-            float fieldWidth = (GetPropertyWidth()/3)-6f;
+            Vector3FieldToggleW(new GUIContent(label), toggle, vec);
+        }
 
-            Rect r = EditorGUILayout.GetControlRect();
-            r.x += labelWidth+18f;
+        public static void Vector3FieldToggleW(GUIContent label, int toggle, MaterialProperty vec){
+            float origLabelWidth = EditorGUIUtility.labelWidth;
+            float toggleWidth = origLabelWidth + 18f;
 
-            SpaceN20();
-            GUILayoutOption clickArea = GUILayout.MaxWidth(labelWidth+14f);
+            Rect totalRect = EditorGUILayout.GetControlRect();
+            if (vec != null) MaterialEditor.BeginProperty(totalRect, vec);
+
+            Rect toggleRect = new Rect(totalRect.x, totalRect.y, toggleWidth, totalRect.height);
+            Rect vecRect = new Rect(totalRect.x + toggleWidth, totalRect.y, totalRect.width - toggleWidth, totalRect.height);
 
             EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = vec.hasMixedValue;
-            var tog = EditorGUILayout.Toggle(label, toggle == 1, clickArea)?1:0;
-            if (EditorGUI.EndChangeCheck())
+            var tog = EditorGUI.Toggle(toggleRect, label, toggle == 1) ? 1 : 0;
+            if (EditorGUI.EndChangeCheck() && vec != null)
                 vec.vectorValue = new Vector4(vec.vectorValue.x, vec.vectorValue.y, vec.vectorValue.z, tog);
-            EditorGUI.showMixedValue = false;
 
+            Vector4 newVec = vec != null ? vec.vectorValue : Vector4.zero;
+            float fieldWidth = (vecRect.width / 3f) - 2f;
             EditorGUIUtility.labelWidth = 13f;
             EditorGUI.BeginDisabledGroup(toggle == 0);
 
             EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = vec.hasMixedValue;
 
-                // X Field
-                r.width = fieldWidth-2f;
-                newVec.x = EditorGUI.FloatField(r, "X", newVec.x);
-                
-                // Y Field
-                r.x += fieldWidth+2;
-                newVec.y = EditorGUI.FloatField(r, "Y", newVec.y);
+            // X Field
+            Rect fieldRect = new Rect(vecRect.x, vecRect.y, fieldWidth, vecRect.height);
+            newVec.x = EditorGUI.FloatField(fieldRect, "X", newVec.x);
 
-                // Z Field
-                r.x += fieldWidth;
-                newVec.z = EditorGUI.FloatField(r, "Z", newVec.z);
+            // Y Field
+            fieldRect.x += fieldWidth + 2f;
+            newVec.y = EditorGUI.FloatField(fieldRect, "Y", newVec.y);
 
-            if (EditorGUI.EndChangeCheck())
+            // Z Field
+            fieldRect.x += fieldWidth + 2f;
+            newVec.z = EditorGUI.FloatField(fieldRect, "Z", newVec.z);
+
+            if (EditorGUI.EndChangeCheck() && vec != null)
                 vec.vectorValue = new Vector4(newVec.x, newVec.y, newVec.z, tog);
-            EditorGUI.showMixedValue = false;
-            EditorGUIUtility.labelWidth = labelWidth;
 
             EditorGUI.EndDisabledGroup();
+            EditorGUIUtility.labelWidth = origLabelWidth;
+
+            if (vec != null) MaterialEditor.EndProperty();
             Space1();
         }
 
         // Vector3 property with corrected width scaling
         public static void Vector3Field(MaterialProperty vec, string label, bool needsIndent){
-            SpaceN2();
-            Vector4 newVec = vec.vectorValue;
-            float labelWidth = EditorGUIUtility.labelWidth;
-            float fieldWidth = GetPropertyWidth()/3;
-            if (needsIndent) label = "        "+ label;
-            EditorGUILayout.LabelField(label);
-            SpaceN20();
-            Rect r = EditorGUILayout.GetControlRect();
-            r.x += labelWidth;
+            Vector3Field(vec, new GUIContent(label), needsIndent);
+        }
+
+        public static void Vector3Field(MaterialProperty vec, GUIContent label, bool needsIndent){
+            Rect totalRect = EditorGUILayout.GetControlRect();
+            if (vec != null) MaterialEditor.BeginProperty(totalRect, vec);
+
+            float origLabelWidth = EditorGUIUtility.labelWidth;
+            float fieldWidth = (totalRect.width - origLabelWidth) / 3f;
+
+            Rect labelRect = new Rect(totalRect.x, totalRect.y, origLabelWidth, totalRect.height);
+            if (needsIndent) {
+                label = new GUIContent("        " + label.text, label.tooltip);
+            }
+            EditorGUI.LabelField(labelRect, label);
+
+            Vector4 newVec = vec != null ? vec.vectorValue : Vector4.zero;
+            Rect fieldRect = new Rect(totalRect.x + origLabelWidth, totalRect.y, fieldWidth - 2f, totalRect.height);
             EditorGUIUtility.labelWidth = 13f;
 
             EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = vec.hasMixedValue;
 
-                // R Field
-                r.width = fieldWidth-2;
-                newVec.x = EditorGUI.FloatField(r, "X", newVec.x);
-                r.width = fieldWidth-4;
+            // X Field
+            newVec.x = EditorGUI.FloatField(fieldRect, "X", newVec.x);
 
-                // G Field
-                r.x += fieldWidth+2;
-                newVec.y = EditorGUI.FloatField(r, "Y", newVec.y);
-                r.width = fieldWidth-2;
-                
-                // B Field
-                r.x += fieldWidth;
-                newVec.z = EditorGUI.FloatField(r, "Z", newVec.z);
+            // Y Field
+            fieldRect.x += fieldWidth + 2f;
+            newVec.y = EditorGUI.FloatField(fieldRect, "Y", newVec.y);
 
-            if (EditorGUI.EndChangeCheck())
+            // Z Field
+            fieldRect.x += fieldWidth + 2f;
+            newVec.z = EditorGUI.FloatField(fieldRect, "Z", newVec.z);
+
+            if (EditorGUI.EndChangeCheck() && vec != null)
                 vec.vectorValue = newVec;
-            EditorGUI.showMixedValue = false;
-            EditorGUIUtility.labelWidth = labelWidth;
-        }
 
+            EditorGUIUtility.labelWidth = origLabelWidth;
+
+            if (vec != null) MaterialEditor.EndProperty();
+        }
 
         // Vector3 property with corrected width scaling
         public static void Vector3FieldRGB(MaterialProperty vec, string label){
-            SpaceN2();
-            Vector4 newVec = vec.vectorValue;
-            float labelWidth = EditorGUIUtility.labelWidth;
-            float fieldWidth = GetPropertyWidth()/3;
+            Vector3FieldRGB(vec, new GUIContent(label));
+        }
 
-            EditorGUILayout.LabelField(label);
-            SpaceN20();
-            Rect r = EditorGUILayout.GetControlRect();
-            r.x += labelWidth;
+        public static void Vector3FieldRGB(MaterialProperty vec, GUIContent label){
+            Rect totalRect = EditorGUILayout.GetControlRect();
+            if (vec != null) MaterialEditor.BeginProperty(totalRect, vec);
+
+            float origLabelWidth = EditorGUIUtility.labelWidth;
+            float fieldWidth = (totalRect.width - origLabelWidth) / 3f;
+
+            Rect labelRect = new Rect(totalRect.x, totalRect.y, origLabelWidth, totalRect.height);
+            EditorGUI.LabelField(labelRect, label);
+
+            Vector4 newVec = vec != null ? vec.vectorValue : Vector4.zero;
+            Rect fieldRect = new Rect(totalRect.x + origLabelWidth, totalRect.y, fieldWidth - 2f, totalRect.height);
             EditorGUIUtility.labelWidth = 13f;
 
             EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = vec.hasMixedValue;
 
-                // R Field
-                r.width = fieldWidth-2;
-                newVec.x = EditorGUI.FloatField(r, "R", newVec.x);
-                r.width = fieldWidth-4;
+            // R Field
+            newVec.x = EditorGUI.FloatField(fieldRect, "R", newVec.x);
 
-                // G Field
-                r.x += fieldWidth+2;
-                newVec.y = EditorGUI.FloatField(r, "G", newVec.y);
-                r.width = fieldWidth-2;
+            // G Field
+            fieldRect.x += fieldWidth + 2f;
+            newVec.y = EditorGUI.FloatField(fieldRect, "G", newVec.y);
 
-                // B Field
-                r.x += fieldWidth;
-                newVec.z = EditorGUI.FloatField(r, "B", newVec.z);
+            // B Field
+            fieldRect.x += fieldWidth + 2f;
+            newVec.z = EditorGUI.FloatField(fieldRect, "B", newVec.z);
 
-            if (EditorGUI.EndChangeCheck())
+            if (EditorGUI.EndChangeCheck() && vec != null)
                 vec.vectorValue = newVec;
-            EditorGUI.showMixedValue = false;
-            EditorGUIUtility.labelWidth = labelWidth;
+
+            EditorGUIUtility.labelWidth = origLabelWidth;
+
+            if (vec != null) MaterialEditor.EndProperty();
         }
 
         // Vector2 property with corrected width scaling
         public static void Vector2Field(MaterialProperty vec, string label){
-            SpaceN2();
-            Vector4 newVec = vec.vectorValue;
-            float labelWidth = EditorGUIUtility.labelWidth;
-            float fieldWidth = GetPropertyWidth()/2;
+            Vector2Field(vec, new GUIContent(label));
+        }
 
-            EditorGUILayout.LabelField(label);
-            SpaceN20();
-            Rect r = EditorGUILayout.GetControlRect();
-            r.x += labelWidth;
+        public static void Vector2Field(MaterialProperty vec, GUIContent label){
+            Rect totalRect = EditorGUILayout.GetControlRect();
+            if (vec != null) MaterialEditor.BeginProperty(totalRect, vec);
+
+            float origLabelWidth = EditorGUIUtility.labelWidth;
+            float fieldWidth = (totalRect.width - origLabelWidth) / 2f;
+
+            Rect labelRect = new Rect(totalRect.x, totalRect.y, origLabelWidth, totalRect.height);
+            EditorGUI.LabelField(labelRect, label);
+
+            Vector4 newVec = vec != null ? vec.vectorValue : Vector4.zero;
+            Rect fieldRect = new Rect(totalRect.x + origLabelWidth, totalRect.y, fieldWidth - 2f, totalRect.height);
             EditorGUIUtility.labelWidth = 13f;
 
             EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = vec.hasMixedValue;
 
-                // X Field
-                r.width = fieldWidth-2f;
-                newVec.x = EditorGUI.FloatField(r, "X", newVec.x);
-                
-                // Y Field
-                r.x += fieldWidth+2f;
-                newVec.y = EditorGUI.FloatField(r, "Y", newVec.y);
+            // X Field
+            newVec.x = EditorGUI.FloatField(fieldRect, "X", newVec.x);
 
-            if (EditorGUI.EndChangeCheck())
+            // Y Field
+            fieldRect.x += fieldWidth + 2f;
+            newVec.y = EditorGUI.FloatField(fieldRect, "Y", newVec.y);
+
+            if (EditorGUI.EndChangeCheck() && vec != null)
                 vec.vectorValue = newVec;
-            EditorGUI.showMixedValue = false;
-            EditorGUIUtility.labelWidth = labelWidth;
+
+            EditorGUIUtility.labelWidth = origLabelWidth;
+
+            if (vec != null) MaterialEditor.EndProperty();
         }
 
         public static void SliderMinMax(MaterialProperty minRange, MaterialProperty maxRange, float minLimit, float maxLimit, string label, int groupLayers){
+            DoMinMaxSlider(minRange, maxRange, minLimit, maxLimit, new GUIContent(label), groupLayers);
+        }
+
+        public static void SliderMinMax(MaterialProperty minRange, MaterialProperty maxRange, float minLimit, float maxLimit, GUIContent label, int groupLayers){
             DoMinMaxSlider(minRange, maxRange, minLimit, maxLimit, label, groupLayers);
         }
 
         public static void SliderMinMax01(MaterialProperty minRange, MaterialProperty maxRange, string label, int groupLayers){
+            DoMinMaxSlider(minRange, maxRange, 0f, 1f, new GUIContent(label), groupLayers);
+        }
+
+        public static void SliderMinMax01(MaterialProperty minRange, MaterialProperty maxRange, GUIContent label, int groupLayers){
             DoMinMaxSlider(minRange, maxRange, 0f, 1f, label, groupLayers);
         }
         
-        private static void DoMinMaxSlider(MaterialProperty minRange, MaterialProperty maxRange, float minLimit, float maxLimit, string label, int groupLayers){
-            SpaceN2();
+        private static void DoMinMaxSlider(MaterialProperty minRange, MaterialProperty maxRange, float minLimit, float maxLimit, GUIContent label, int groupLayers){
             float offset0 = 0f;
             switch (groupLayers){
                 case 1: offset0 = 16f; break;
@@ -737,31 +950,43 @@ namespace Mochie {
                 default: break;
             }
             string numFormat = "F";
-            float minR = minRange.floatValue;
-            float maxR = maxRange.floatValue;
-            float propWidth = GetPropertyWidth();
+            float minR = minRange != null ? minRange.floatValue : 0f;
+            float maxR = maxRange != null ? maxRange.floatValue : 1f;
 
-            GUILayout.BeginHorizontal();
-                Rect r = EditorGUILayout.GetControlRect();
-                GUI.Label(r, label);
+            Rect totalRect = EditorGUILayout.GetControlRect();
+            float sliderMidX = totalRect.x + EditorGUIUtility.labelWidth + (totalRect.width - EditorGUIUtility.labelWidth) * 0.5f;
 
-                r.x += EditorGUIUtility.labelWidth;
-                GUI.Label(r, minR.ToString(numFormat));
+            MaterialProperty copyProp = (Event.current.mousePosition.x > sliderMidX) ? maxRange : minRange;
+            DoCompoundContextMenu(totalRect, copyProp, minRange, maxRange);
 
-                Rect prevRect = GUILayoutUtility.GetLastRect();
-                r.x += prevRect.x+offset0;
-                r.width = propWidth-97f;
+            Rect propRect = (Event.current.type == EventType.ContextClick || Event.current.rawType == EventType.ContextClick) ? Rect.zero : totalRect;
+            if (minRange != null) MaterialEditor.BeginProperty(propRect, minRange);
+            if (maxRange != null) MaterialEditor.BeginProperty(propRect, maxRange);
 
-                EditorGUI.BeginChangeCheck();
-                EditorGUI.MinMaxSlider(r, ref minR, ref maxR, minLimit, maxLimit);
-                prevRect = GUILayoutUtility.GetLastRect();
-                if (EditorGUI.EndChangeCheck()){
-                    minRange.floatValue = Mathf.Floor(minR*100f)/100f;
-                    maxRange.floatValue = Mathf.Clamp(Mathf.Floor(maxR*100f)/100f, minRange.floatValue+0.01f, 2f);
-                }
-                r.x += propWidth-87f;
-                GUI.Label(r, maxR.ToString(numFormat));
-            GUILayout.EndHorizontal();
+            float lw = EditorGUIUtility.labelWidth;
+            Rect labelRect = new Rect(totalRect.x, totalRect.y, lw, totalRect.height);
+            GUI.Label(labelRect, label);
+
+            float propWidth = totalRect.width - lw;
+            Rect minValRect = new Rect(totalRect.x + lw, totalRect.y, 45f, totalRect.height);
+            GUI.Label(minValRect, minR.ToString(numFormat));
+
+            float sliderX = minValRect.xMax + offset0;
+            float sliderWidth = propWidth - 97f;
+            Rect sliderRect = new Rect(sliderX, totalRect.y, sliderWidth, totalRect.height);
+
+            EditorGUI.BeginChangeCheck();
+            EditorGUI.MinMaxSlider(sliderRect, ref minR, ref maxR, minLimit, maxLimit);
+            if (EditorGUI.EndChangeCheck()){
+                if (minRange != null) minRange.floatValue = Mathf.Floor(minR * 100f) / 100f;
+                if (maxRange != null) maxRange.floatValue = Mathf.Clamp(Mathf.Floor(maxR * 100f) / 100f, (minRange != null ? minRange.floatValue : 0f) + 0.01f, 2f);
+            }
+
+            Rect maxValRect = new Rect(totalRect.x + lw + propWidth - 45f, totalRect.y, 45f, totalRect.height);
+            GUI.Label(maxValRect, maxR.ToString(numFormat));
+
+            if (maxRange != null) MaterialEditor.EndProperty();
+            if (minRange != null) MaterialEditor.EndProperty();
         }
 
         public static void CenteredTexture(Texture2D tex1, Texture2D tex2, float spacing, float upperMargin, float lowerMargin){
@@ -1031,9 +1256,18 @@ namespace Mochie {
         /// </summary>
         /// <param name="prop">The material property to read and write</param>
         /// <typeparam name="T">The enum type to use</typeparam>
+        public static void EnumDropdown<T>(MaterialProperty prop, string label) where T : Enum
+        {
+            EnumDropdown<T>(prop, new GUIContent(label));
+        }
+
         public static void EnumDropdown<T>(MaterialProperty prop, GUIContent label) where T : Enum
         {
-            int intValue = prop.intValue;
+            Rect r = EditorGUILayout.GetControlRect();
+            if (prop != null) MaterialEditor.BeginProperty(r, prop);
+            EditorGUI.BeginChangeCheck();
+
+            int intValue = prop != null ? prop.intValue : 0;
             
             // a generic enum parameter can't be directly casted to an int,
             // so this is the most performant option (rather than casting
@@ -1041,9 +1275,15 @@ namespace Mochie {
             
             T enumValue = (T)Enum.ToObject(typeof(T), intValue);
             
-            enumValue = EnumDropdown(enumValue, label);
+            if (typeof(T).GetCustomAttribute<FlagsAttribute>() != null)
+                enumValue = (T)EditorGUI.EnumFlagsField(r, label, enumValue);
+            else
+                enumValue = (T)EditorGUI.EnumPopup(r, label, enumValue);
 
-            prop.intValue = Convert.ToInt32(enumValue);
+            if (EditorGUI.EndChangeCheck() && prop != null)
+                prop.intValue = Convert.ToInt32(enumValue);
+
+            if (prop != null) MaterialEditor.EndProperty();
         }
 
         /// <summary>
@@ -1056,6 +1296,11 @@ namespace Mochie {
         /// <param name="currentValue"></param>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
+        public static T EnumDropdown<T>(T currentValue, string label) where T : Enum
+        {
+            return EnumDropdown(currentValue, new GUIContent(label));
+        }
+
         public static T EnumDropdown<T>(T currentValue, GUIContent label) where T : Enum
         {
             if (typeof(T).GetCustomAttribute<FlagsAttribute>() != null)
@@ -1107,7 +1352,8 @@ namespace Mochie {
             "Purriku",
             "BooneDoggy",
             "Danimals",
-            "RealRewriteOfficial"
+            "RealRewriteOfficial",
+            "The_Jokester"
         };
     }
 }

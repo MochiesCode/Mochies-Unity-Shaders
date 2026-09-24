@@ -17,7 +17,6 @@ Material:
   - _DEPTH_EFFECTS_ON
   - _EDGEFADE_ON
   - _FLOW_ON
-  - _FOAM_ON
   - _NORMALMAP_1_ON
   - _NORMALMAP_FLIPBOOK_ON
   - _REFLECTIONS_ON
@@ -73,6 +72,10 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _FlowMap:
         m_Texture: {fileID: 2800000, guid: 923a20e8c8f439648bdf7025c790db42, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _FoamMap:
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _FoamNoiseTex:
@@ -177,6 +180,8 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _AdditiveLightVolumeStrength: 1
+    - _AdditiveLightVolumesToggle: 1
     - _AreaLitRoughnessMult: 1
     - _AreaLitStrength: 1
     - _AreaLitToggle: 0
@@ -185,6 +190,7 @@ Material:
     - _AudioLinkStrength: 1
     - _BAKERY_LMSPEC: 0
     - _BAKERY_SHNONLINEAR: 0
+    - _BackfaceFadeStrength: 3
     - _BackfaceReflections: 1
     - _BakeryLMSpecStrength: 1
     - _BakeryMode: 0
@@ -198,10 +204,11 @@ Material:
     - _CausticsDistortionScale: 0.2
     - _CausticsFade: 5
     - _CausticsFlipbookBlend: 1
-    - _CausticsFlipbookDisp: 0.15
+    - _CausticsFlipbookDisp: 0.5
     - _CausticsFlipbookSpeed: 16
     - _CausticsOpacity: 1
     - _CausticsPower: 1
+    - _CausticsRotateWithLight: 0
     - _CausticsScale: 1
     - _CausticsShadowStrength: 1
     - _CausticsSpeed: 1
@@ -230,6 +237,8 @@ Material:
     - _FoamCrestThreshold: 0.5
     - _FoamDistortionStrength: 0.1
     - _FoamEdgeStrength: 1.5
+    - _FoamMapUVSet: 0
+    - _FoamMode: 0
     - _FoamNoiseTexCrestStrength: 1.1
     - _FoamNoiseTexStrength: 0
     - _FoamNormalStrength: 4
@@ -238,7 +247,9 @@ Material:
     - _FoamPower: 200
     - _FoamRoughness: 0.5
     - _FoamStochasticToggle: 0
-    - _FoamToggle: 1
+    - _FoamStrength: 1
+    - _FoamToggle: 0
+    - _FoamVertexColorChannel: 0
     - _FogBrightness: 1
     - _FogBrightness2: 1
     - _FogContribution: 1
@@ -249,6 +260,8 @@ Material:
     - _GlobalTexCoordScaleWorld: 0.1
     - _HorizonAdjustment: 0
     - _HorizonAdjustmentDistance: 0.7
+    - _HorizonTintDistance: 0.7
+    - _HorizonTintStrength: 1
     - _IgnoreRealtimeGI: 0
     - _IndirectSaturation: 1
     - _IndirectStrength: 1
@@ -256,6 +269,11 @@ Material:
     - _LTCGI: 0
     - _LTCGIRoughness: 1
     - _LTCGIStrength: 1
+    - _LightVolumeBias: 0
+    - _LightVolumeSpecularity: 0
+    - _LightVolumeSpecularityStrength: 1
+    - _LightVolumeStrength: 1
+    - _LightVolumesToggle: 0
     - _LightmapDistortion: 0.1
     - _MaterialResetCheck: 1
     - _Metallic: 0
@@ -342,6 +360,7 @@ Material:
     - _ZeroProp: 0
     m_Colors:
     - _AngleTint: {r: 1, g: 1, b: 1, a: 1}
+    - _BackfaceFadeColor: {r: 0.10999996, g: 0.25999996, b: 0.25999996, a: 1}
     - _BackfaceTint: {r: 1, g: 1, b: 1, a: 1}
     - _BlendNoiseScale: {r: 2, g: 2, b: 0, a: 0}
     - _CausticsColor: {r: 1, g: 1, b: 1, a: 1}
@@ -360,6 +379,7 @@ Material:
     - _FoamTexScroll: {r: 0.1, g: -0.1, b: 0, a: 0}
     - _FogTint: {r: 0.10999996, g: 0.25999996, b: 0.25999996, a: 1}
     - _FogTint2: {r: 0.054999977, g: 0.12999997, b: 0.12999997, a: 1}
+    - _HorizonTint: {r: 1, g: 1, b: 1, a: 1}
     - _LTCGI_DiffuseColor: {r: 1, g: 1, b: 1, a: 1}
     - _LTCGI_SpecularColor: {r: 1, g: 1, b: 1, a: 1}
     - _LightDir: {r: 0, g: 0.75, b: 1, a: 0}
@@ -375,6 +395,8 @@ Material:
     - _NormalMapScroll1: {r: -0.1, g: 0.1, b: 0, a: 0}
     - _Offset: {r: 0, g: 1, b: 0, a: 0}
     - _OpacityMaskScroll: {r: 0, g: 0, b: 0, a: 0}
+    - _OpaqueAngleTint: {r: 0, g: 0, b: 0, a: 1}
+    - _OpaqueHorizonTint: {r: 0, g: 0, b: 0, a: 1}
     - _ReflCubeRotation: {r: 0, g: 0, b: 0, a: 0}
     - _ReflTint: {r: 1, g: 1, b: 1, a: 1}
     - _SpecTint: {r: 1, g: 1, b: 1, a: 1}

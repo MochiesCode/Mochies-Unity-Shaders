@@ -18,16 +18,16 @@ v2f vert (appdata v){
     o.objPos = GetObjPos();
     o.objDist = distance(o.cameraPos, o.objPos);
 
-    float gf = smoothstep(_MaxRange, clamp(_MinRange, 0, _MaxRange-0.001),  o.objDist);
+    float gf = GetGlobalFalloff(o.cameraPos, o.objPos, o.objDist);
     o.globalF = gf;
-    o.colorF = GetFalloff(_ColorUseGlobal, gf, _ColorMinRange, _ColorMaxRange, o.objDist);
-    o.shakeF = GetFalloff(_ShakeUseGlobal, gf, _ShakeMinRange, _ShakeMaxRange, o.objDist);
-    o.distortionF = GetFalloff(_DistortionUseGlobal, gf, _DistortionMinRange, _DistortionMaxRange, o.objDist);
-    o.blurF = GetFalloff(_BlurUseGlobal, gf, _BlurMinRange, _BlurMaxRange, o.objDist);
-    o.noiseF = GetFalloff(_NoiseUseGlobal, gf, _NoiseMinRange, _NoiseMaxRange, o.objDist);
+    o.colorF = GetFalloff(_ColorUseGlobal, gf, _ColorFalloffMode, _ColorMinRange, _ColorMaxRange, _ColorBoxSize.xyz, _ColorBoxOffset.xyz, _ColorBlendDistance, o.cameraPos, o.objPos, o.objDist);
+    o.shakeF = GetFalloff(_ShakeUseGlobal, gf, _ShakeFalloffMode, _ShakeMinRange, _ShakeMaxRange, _ShakeBoxSize.xyz, _ShakeBoxOffset.xyz, _ShakeBlendDistance, o.cameraPos, o.objPos, o.objDist);
+    o.distortionF = GetFalloff(_DistortionUseGlobal, gf, _DistortionFalloffMode, _DistortionMinRange, _DistortionMaxRange, _DistortionBoxSize.xyz, _DistortionBoxOffset.xyz, _DistortionBlendDistance, o.cameraPos, o.objPos, o.objDist);
+    o.blurF = GetFalloff(_BlurUseGlobal, gf, _BlurFalloffMode, _BlurMinRange, _BlurMaxRange, _BlurBoxSize.xyz, _BlurBoxOffset.xyz, _BlurBlendDistance, o.cameraPos, o.objPos, o.objDist);
+    o.noiseF = GetFalloff(_NoiseUseGlobal, gf, _NoiseFalloffMode, _NoiseMinRange, _NoiseMaxRange, _NoiseBoxSize.xyz, _NoiseBoxOffset.xyz, _NoiseBlendDistance, o.cameraPos, o.objPos, o.objDist);
     #if X_FEATURES
-        o.sstF = GetFalloff(_SSTUseGlobal, gf, _SSTMinRange, _SSTMaxRange, o.objDist);
-        o.olF = GetFalloff(_OLUseGlobal, gf, _OLMinRange, _OLMaxRange, o.objDist);
+        o.sstF = GetFalloff(_SSTUseGlobal, gf, _SSTFalloffMode, _SSTMinRange, _SSTMaxRange, _SSTBoxSize.xyz, _SSTBoxOffset.xyz, _SSTBlendDistance, o.cameraPos, o.objPos, o.objDist);
+        o.olF = GetFalloff(_OLUseGlobal, gf, _OLFalloffMode, _OLMinRange, _OLMaxRange, _OLBoxSize.xyz, _OLBoxOffset.xyz, _OLBlendDistance, o.cameraPos, o.objPos, o.objDist);
     #endif
 
     if (unity_OrthoParams.w == 1){

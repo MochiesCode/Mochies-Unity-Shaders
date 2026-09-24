@@ -488,36 +488,38 @@ float3 GetMochieBRDF(g2f i, lighting l, masks m, float4 diffuse, float4 albedo, 
     float3 subsurfCol = GetSubsurfaceLight(i, l, m, atten, albedo.rgb);
 
     // have to redo the indirect logic here since the LV function now requires brdf stuff for the specularity
-    [branch]
-    if (_UdonLightVolumeEnabled == 1 && _LightVolumesToggle == 1){
-        LightVolumeSHSpecular(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, lvSpec, albedo, smoothness, metallic, l.normal, l.viewDir, i.normal*_LightVolumeBias, 1);
-        unity_SHAr = float4(lightVolumeL1r, lightVolumeL0.r);
-        unity_SHAg = float4(lightVolumeL1g, lightVolumeL0.g);
-        unity_SHAb = float4(lightVolumeL1b, lightVolumeL0.b);
-        unity_SHBr = 0;
-        unity_SHBg = 0;
-        unity_SHBb = 0;
-        unity_SHC = 0;
-        float3 lvIndirectCol = float3(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w);
+    #if defined(UNITY_PASS_FORWARDBASE)
+        [branch]
+        if (_UdonLightVolumeEnabled == 1 && _LightVolumesToggle == 1){
+            LightVolumeSHSpecular(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, lvSpec, albedo, smoothness, metallic, l.normal, l.viewDir, i.normal*_LightVolumeBias, 1);
+            unity_SHAr = float4(lightVolumeL1r, lightVolumeL0.r);
+            unity_SHAg = float4(lightVolumeL1g, lightVolumeL0.g);
+            unity_SHAb = float4(lightVolumeL1b, lightVolumeL0.b);
+            unity_SHBr = 0;
+            unity_SHBg = 0;
+            unity_SHBb = 0;
+            unity_SHC = 0;
+            float3 lvIndirectCol = float3(unity_SHAr.w, unity_SHAg.w, unity_SHAb.w);
 
-        float3 lvDirectCol = lerp(
-            lvIndirectCol * _DirectCont,		// No realtime light
-            _LightColor0 * _RTDirectCont,		// Realtime light
-            l.lightEnv
-        );
+            float3 lvDirectCol = lerp(
+                lvIndirectCol * _DirectCont,		// No realtime light
+                _LightColor0 * _RTDirectCont,		// Realtime light
+                l.lightEnv
+            );
 
-        lvIndirectCol = lerp(
-            lvIndirectCol * _IndirectCont,		// No realtime light
-            lvIndirectCol * _RTIndirectCont,	// Realtime light
-            l.lightEnv
-        );
+            lvIndirectCol = lerp(
+                lvIndirectCol * _IndirectCont,		// No realtime light
+                lvIndirectCol * _RTIndirectCont,	// Realtime light
+                l.lightEnv
+            );
 
-        l.directCol = lerp(l.directCol, lvDirectCol, _LightVolumeStrength);
-        l.indirectCol = lerp(l.indirectCol, lvIndirectCol, _LightVolumeStrength);
-    }
-    else {
-        lvSpec = 0;
-    }
+            l.directCol = lerp(l.directCol, lvDirectCol, _LightVolumeStrength);
+            l.indirectCol = lerp(l.indirectCol, lvIndirectCol, _LightVolumeStrength);
+        }
+        else {
+            lvSpec = 0;
+        }
+    #endif
 
     l.directCol *= atten;
     l.directCol += l.vLightCol;

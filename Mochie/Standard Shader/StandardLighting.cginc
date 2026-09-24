@@ -170,7 +170,11 @@ float3 GetUnitySH(float3 normal){
 float3 GetSH(v2f i, InputData id, float3 viewDir){
     [branch]
     if (_UdonLightVolumeEnabled == 1 && _LightVolumesToggle == 1){
-        LightVolumeSHSpecular(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, lvSpec, id.baseColor, 1-id.roughness, id.metallic, id.normal, viewDir, i.normal*_LightVolumeBias, 1);
+        #if defined(_WORKFLOW_SPECULAR_ON)
+            LightVolumeSHSpecular(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, lvSpec, id.specular.rgb, 1-id.roughness, id.normal, viewDir, i.normal*_LightVolumeBias, 1);
+        #else
+            LightVolumeSHSpecular(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, lvSpec, id.baseColor, 1-id.roughness, id.metallic, id.normal, viewDir, i.normal*_LightVolumeBias, 1);
+        #endif
         [branch]
         if (_LightVolumeStrength < 1){
             float3 lvSH = LightVolumeEvaluate(id.normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
@@ -259,7 +263,11 @@ void GetIndirectLighting(v2f i, InputData id, float3 viewDir, inout float3 indir
             
             [branch]
             if (_UdonLightVolumeEnabled == 1 && _AdditiveLightVolumesToggle == 1 && _LightVolumesToggle == 1){
-                LightVolumeAdditiveSHSpecular(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, lvSpec, id.baseColor, 1-id.roughness, id.metallic, id.normal, viewDir, i.normal*_LightVolumeBias, 1);
+                #if defined(_WORKFLOW_SPECULAR_ON)
+                    LightVolumeAdditiveSHSpecular(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, lvSpec, id.specular.rgb, 1-id.roughness, id.normal, viewDir, i.normal*_LightVolumeBias, 1);
+                #else
+                    LightVolumeAdditiveSHSpecular(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b, lvSpec, id.baseColor, 1-id.roughness, id.metallic, id.normal, viewDir, i.normal*_LightVolumeBias, 1);
+                #endif
                 indirectCol += LightVolumeEvaluate(id.normal, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b) * _AdditiveLightVolumeStrength;
             }
 
@@ -323,11 +331,19 @@ float3 GetVertexLightColor(v2f i, InputData id){
 
 void InitializeLightingData(v2f i, inout InputData id, inout LightingData ld, float3 viewDir, float3 tangentViewDir, float atten){
 
-    float omr = unity_ColorSpaceDielectricSpec.a - id.metallic * unity_ColorSpaceDielectricSpec.a;
-    float3 lightDir = Unity_SafeNormalize(UnityWorldSpaceLightDir(i.worldPos));
-    float NdotL = saturate(dot(id.normal, lightDir));
-    float VNdotL = saturate(dot(id.vNormal, lightDir));
-    ld.specularTint = lerp(unity_ColorSpaceDielectricSpec.rgb, id.baseColor, id.metallic);
+    #if defined(_WORKFLOW_SPECULAR_ON)
+        float omr = 1.0 - max(max(id.specular.r, id.specular.g), id.specular.b);
+        float3 lightDir = Unity_SafeNormalize(UnityWorldSpaceLightDir(i.worldPos));
+        float NdotL = saturate(dot(id.normal, lightDir));
+        float VNdotL = saturate(dot(id.vNormal, lightDir));
+        ld.specularTint = id.specular.rgb;
+    #else
+        float omr = unity_ColorSpaceDielectricSpec.a - id.metallic * unity_ColorSpaceDielectricSpec.a;
+        float3 lightDir = Unity_SafeNormalize(UnityWorldSpaceLightDir(i.worldPos));
+        float NdotL = saturate(dot(id.normal, lightDir));
+        float VNdotL = saturate(dot(id.vNormal, lightDir));
+        ld.specularTint = lerp(unity_ColorSpaceDielectricSpec.rgb, id.baseColor, id.metallic);
+    #endif
     ld.isRealtime = any(_WorldSpaceLightPos0.xyz);
     if (ld.isRealtime)
         VNdotL = 1;

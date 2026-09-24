@@ -1,4 +1,4 @@
-﻿static const float2 kernel16[16] = {
+static const float2 kernel16[16] = {
     float2(0,0),
     float2(0.54545456,0),
     float2(0.16855472,0.5187581),

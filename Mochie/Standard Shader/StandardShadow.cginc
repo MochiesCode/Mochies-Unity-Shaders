@@ -8,6 +8,9 @@ float ShadowGetOneMinusReflectivity(v2f i){
     float metallicity = _MetallicStrength;
     #if defined(_WORKFLOW_PACKED_ON)
         metallicity = SamplePackedMap(i.uv0.xy)[_MetallicChannel] * _MetallicStrength;
+    #elif defined(_WORKFLOW_SPECULAR_ON)
+        float4 spec = SampleSpecularMap(i.uv0.xy);
+        return 1.0 - max(max(spec.r, spec.g), spec.b);
     #else
         metallicity = SampleMetallicMap(i.uv0.xy);
     #endif

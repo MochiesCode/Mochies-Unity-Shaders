@@ -142,8 +142,12 @@ void CalculateBRDF(v2f i, InputData id, inout LightingData ld){
     [branch]
     if (_ShadingModel == 1){
         float2 dfg;
-        float reflectance = 0.5;
-        float3 f0 = 0.16 * reflectance * reflectance * ld.omr + id.baseColor * id.metallic;
+        #if defined(_WORKFLOW_SPECULAR_ON)
+            float3 f0 = ld.specularTint;
+        #else
+            float reflectance = 0.5;
+            float3 f0 = 0.16 * reflectance * reflectance * ld.omr + id.baseColor * id.metallic;
+        #endif
         diffuseTerm = GetFilamentEnergyConservation(NdotV, id.roughness, f0, dfg);
         CalculateFilamentModel(id, ld, dfg, NdotV, roughSq, f0, horizon);
         #if defined(_REFLECTIONS_ON)
@@ -176,7 +180,11 @@ void CalculateBRDF(v2f i, InputData id, inout LightingData ld){
         float4 ssr = 0;
         [branch]
         if (((_VRSSR == 0 && IsNotVR()) || _VRSSR == 1) && _SSRStrength > 0){
+        #if defined(_WORKFLOW_SPECULAR_ON)
+            ssr = GetSSR(i.worldPos, ld.viewDir, reflDir, id.normal, 1-id.roughness, id.baseColor, max(max(id.specular.r, id.specular.g), id.specular.b), ComputeGrabScreenPos(i.pos));
+        #else
             ssr = GetSSR(i.worldPos, ld.viewDir, reflDir, id.normal, 1-id.roughness, id.baseColor, id.metallic, ComputeGrabScreenPos(i.pos));
+        #endif
             if (_SSREdgeFade == 0)
                 ssr.a = ssr.a > 0 ? 1 : 0;
             ssr.rgb *= ld.reflAdjust * ld.specularOcclusion * id.occlusion;

@@ -1,4 +1,4 @@
-﻿using UnityEditor;
+using UnityEditor;
 using UnityEngine;
 using System;
 using System.Reflection;
@@ -55,7 +55,7 @@ namespace Mochie {
                 "Sobel Filter",
         }, 0);
 
-        string versionLabel = "v1.21";
+        string versionLabel = "v1.22";
         
         // Commonly used strings
         string strengthLabel = "Strength";
@@ -74,8 +74,12 @@ namespace Mochie {
         // MaterialProperty _MirrorRenderMode = null;
         MaterialProperty _CameraRenderMode = null;
         MaterialProperty _BlendMode = null;
+        MaterialProperty _FalloffMode = null;
         MaterialProperty _MinRange = null;
         MaterialProperty _MaxRange = null;
+        MaterialProperty _BoxSize = null;
+        MaterialProperty _BoxOffset = null;
+        MaterialProperty _BlendDistance = null;
         MaterialProperty _Opacity = null;
 
         // Color Filtering
@@ -84,6 +88,10 @@ namespace Mochie {
         MaterialProperty _ColorUseGlobal = null;
         MaterialProperty _ColorMinRange = null;
         MaterialProperty _ColorMaxRange = null;
+        MaterialProperty _ColorFalloffMode = null;
+        MaterialProperty _ColorBoxSize = null;
+        MaterialProperty _ColorBoxOffset = null;
+        MaterialProperty _ColorBlendDistance = null;
         MaterialProperty _Color = null;
         MaterialProperty _RGB = null;
         MaterialProperty _Contrast = null;
@@ -110,6 +118,10 @@ namespace Mochie {
         MaterialProperty _ShakeUseGlobal = null;
         MaterialProperty _ShakeMinRange = null;
         MaterialProperty _ShakeMaxRange = null;
+        MaterialProperty _ShakeFalloffMode = null;
+        MaterialProperty _ShakeBoxSize = null;
+        MaterialProperty _ShakeBoxOffset = null;
+        MaterialProperty _ShakeBlendDistance = null;
         MaterialProperty _ShakeNoiseTex = null;
         MaterialProperty _Amplitude = null;
         MaterialProperty _ShakeSpeedX = null;
@@ -121,6 +133,10 @@ namespace Mochie {
         MaterialProperty _DistortionUseGlobal = null;
         MaterialProperty _DistortionMinRange = null;
         MaterialProperty _DistortionMaxRange = null;
+        MaterialProperty _DistortionFalloffMode = null;
+        MaterialProperty _DistortionBoxSize = null;
+        MaterialProperty _DistortionBoxOffset = null;
+        MaterialProperty _DistortionBlendDistance = null;
         MaterialProperty _NormalMap = null;
         MaterialProperty _DistortionStr = null;
         MaterialProperty _DistortionSpeed = null;
@@ -133,6 +149,10 @@ namespace Mochie {
         MaterialProperty _BlurUseGlobal = null;
         MaterialProperty _BlurMinRange = null;
         MaterialProperty _BlurMaxRange = null;
+        MaterialProperty _BlurFalloffMode = null;
+        MaterialProperty _BlurBoxSize = null;
+        MaterialProperty _BlurBoxOffset = null;
+        MaterialProperty _BlurBlendDistance = null;
         MaterialProperty _RGBSplit = null;
         MaterialProperty _DoF = null;
         MaterialProperty _BlurOpacity = null;
@@ -163,6 +183,10 @@ namespace Mochie {
         MaterialProperty _FogUseGlobal = null;
         MaterialProperty _FogMinRange = null;
         MaterialProperty _FogMaxRange = null;
+        MaterialProperty _FogFalloffMode = null;
+        MaterialProperty _FogBoxSize = null;
+        MaterialProperty _FogBoxOffset = null;
+        MaterialProperty _FogBlendDistance = null;
         MaterialProperty _FogColor = null;
         MaterialProperty _FogRadius = null;
         MaterialProperty _FogSafeZone = null;
@@ -180,6 +204,10 @@ namespace Mochie {
         MaterialProperty _ZoomUseGlobal = null;
         MaterialProperty _ZoomMinRange = null;
         MaterialProperty _ZoomMaxRange = null;
+        MaterialProperty _ZoomFalloffMode = null;
+        MaterialProperty _ZoomBoxSize = null;
+        MaterialProperty _ZoomBoxOffset = null;
+        MaterialProperty _ZoomBlendDistance = null;
         MaterialProperty _ZoomStr = null;
         MaterialProperty _ZoomStrR = null;
         MaterialProperty _ZoomStrG = null;
@@ -190,6 +218,10 @@ namespace Mochie {
         MaterialProperty _SSTUseGlobal = null;
         MaterialProperty _SSTMinRange = null;
         MaterialProperty _SSTMaxRange = null;
+        MaterialProperty _SSTFalloffMode = null;
+        MaterialProperty _SSTBoxSize = null;
+        MaterialProperty _SSTBoxOffset = null;
+        MaterialProperty _SSTBlendDistance = null;
         MaterialProperty _SSTBlend = null;
         MaterialProperty _ScreenTex = null;
         MaterialProperty _SSTColor = null;
@@ -210,6 +242,10 @@ namespace Mochie {
         MaterialProperty _TPUseGlobal = null;
         MaterialProperty _TPMinRange = null;
         MaterialProperty _TPMaxRange = null;
+        MaterialProperty _TPFalloffMode = null;
+        MaterialProperty _TPBoxSize = null;
+        MaterialProperty _TPBoxOffset = null;
+        MaterialProperty _TPBlendDistance = null;
         MaterialProperty _TPRadius = null;
         MaterialProperty _TPFade = null;
         MaterialProperty _TPP2O = null;
@@ -310,6 +346,10 @@ namespace Mochie {
         MaterialProperty _OLUseGlobal = null;
         MaterialProperty _OLMinRange = null;
         MaterialProperty _OLMaxRange = null;
+        MaterialProperty _OLFalloffMode = null;
+        MaterialProperty _OLBoxSize = null;
+        MaterialProperty _OLBoxOffset = null;
+        MaterialProperty _OLBlendDistance = null;
         MaterialProperty _OutlineCube = null;
         MaterialProperty _OutlineCubeAlt = null;
         MaterialProperty _OutlineBackgroundCube = null;
@@ -339,6 +379,10 @@ namespace Mochie {
         MaterialProperty _NoiseUseGlobal = null;
         MaterialProperty _NoiseMinRange = null;
         MaterialProperty _NoiseMaxRange = null;
+        MaterialProperty _NoiseFalloffMode = null;
+        MaterialProperty _NoiseBoxSize = null;
+        MaterialProperty _NoiseBoxOffset = null;
+        MaterialProperty _NoiseBlendDistance = null;
         MaterialProperty _DisplayGlobalGizmo = null;
         MaterialProperty _SobelFilterToggle = null;
         MaterialProperty _SobelFilterColor = null;
@@ -347,104 +391,149 @@ namespace Mochie {
 
         BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
 
+        static void DrawFeatureGizmo(MeshRenderer meshRenderer, Material material, string modeProp, string minProp, string maxProp, string boxSizeProp, string boxOffsetProp, string blendDistProp, Color innerCol, Color outerCol){
+            Vector3 position = meshRenderer.transform.position;
+            if (material.GetInt(modeProp) == 1){
+                Matrix4x4 oldMatrix = Gizmos.matrix;
+                Transform t = meshRenderer.transform;
+                Vector3 boxOffset = material.GetVector(boxOffsetProp);
+                Vector3 boxSize = material.GetVector(boxSizeProp);
+                float blendDist = material.GetFloat(blendDistProp);
+                Vector3 center = position + t.rotation * boxOffset;
+                Gizmos.matrix = Matrix4x4.TRS(center, t.rotation, Vector3.one);
+
+                Gizmos.color = outerCol;
+                Gizmos.DrawWireCube(Vector3.zero, boxSize);
+
+                Vector3 innerBoxSize = Vector3.Max(Vector3.zero, boxSize - Vector3.one * (blendDist * 2f));
+                Gizmos.color = innerCol;
+                Gizmos.DrawWireCube(Vector3.zero, innerBoxSize);
+
+                Gizmos.matrix = oldMatrix;
+            }
+            else {
+                Gizmos.color = innerCol;
+                Gizmos.DrawWireSphere(position, material.GetFloat(minProp));
+                Gizmos.color = outerCol;
+                Gizmos.DrawWireSphere(position, material.GetFloat(maxProp));
+            }
+        }
+
         [DrawGizmo(GizmoType.Selected | GizmoType.Active)]
         static void DrawGizmo(MeshRenderer meshRenderer, GizmoType gizmoType){
             if (meshRenderer.sharedMaterial != null){
                 Material material = meshRenderer.sharedMaterial;
                 if (!material.shader.name.Contains("Mochie/Screen FX")) return;
                 if (!foldouts.ContainsKey(material)) return;
-                if (material.GetFloat("_DisplayGlobalGizmo") > 0){
-                    Vector3 position = meshRenderer.transform.position;
-                    Toggles toggles = foldouts[material];
+                if (material.GetFloat("_DisplayGlobalGizmo") == 0) return;
+                Vector3 position = meshRenderer.transform.position;
+                Toggles toggles = foldouts[material];
+                bool drewGlobal = false;
 
-                    if (toggles.GetState("General")){
-                        Gizmos.color = Color.yellow;
-                        Gizmos.DrawWireSphere(position, material.GetFloat("_MinRange"));
-                        Gizmos.color = new Color(0.9f, 0.9f, 0.3f, 1f);
-                        Gizmos.DrawWireSphere(position, material.GetFloat("_MaxRange"));
+                if (toggles.GetState("General")){
+                    DrawFeatureGizmo(meshRenderer, material, "_FalloffMode", "_MinRange", "_MaxRange", "_BoxSize", "_BoxOffset", "_BlendDistance", Color.yellow, new Color(0.9f, 0.9f, 0.3f, 1f));
+                    drewGlobal = true;
+                }
+                if (toggles.GetState("Filtering")){
+                    if (material.GetFloat("_ColorUseGlobal") == 0)
+                        DrawFeatureGizmo(meshRenderer, material, "_ColorFalloffMode", "_ColorMinRange", "_ColorMaxRange", "_ColorBoxSize", "_ColorBoxOffset", "_ColorBlendDistance", Color.white, new Color(0.5f, 0.5f, 0.5f, 1f));
+                    else if (!drewGlobal){
+                        DrawFeatureGizmo(meshRenderer, material, "_FalloffMode", "_MinRange", "_MaxRange", "_BoxSize", "_BoxOffset", "_BlendDistance", Color.yellow, new Color(0.9f, 0.9f, 0.3f, 1f));
+                        drewGlobal = true;
                     }
-                    if (toggles.GetState("Filtering")){
-                        if (material.GetFloat("_FilterModel") > 0 && material.GetFloat("_ColorUseGlobal") == 0) {
-                            Gizmos.color = Color.white;
-                            Gizmos.DrawWireSphere(position, material.GetFloat("_ColorMinRange"));
-                            Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
-                            Gizmos.DrawWireSphere(position, material.GetFloat("_ColorMaxRange"));
-                        }
+                }
+                if (toggles.GetState("Shake")){
+                    if (material.GetFloat("_ShakeUseGlobal") == 0)
+                        DrawFeatureGizmo(meshRenderer, material, "_ShakeFalloffMode", "_ShakeMinRange", "_ShakeMaxRange", "_ShakeBoxSize", "_ShakeBoxOffset", "_ShakeBlendDistance", Color.white, new Color(0.5f, 0.5f, 0.5f, 1f));
+                    else if (!drewGlobal){
+                        DrawFeatureGizmo(meshRenderer, material, "_FalloffMode", "_MinRange", "_MaxRange", "_BoxSize", "_BoxOffset", "_BlendDistance", Color.yellow, new Color(0.9f, 0.9f, 0.3f, 1f));
+                        drewGlobal = true;
                     }
-                    if (toggles.GetState("Shake")){
-                        if (material.GetFloat("_ShakeModel") > 0 && material.GetFloat("_ShakeUseGlobal") == 0) {
-                            Gizmos.color = Color.white;
-                            Gizmos.DrawWireSphere(position, material.GetFloat("_ShakeMinRange"));
-                            Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
-                            Gizmos.DrawWireSphere(position, material.GetFloat("_ShakeMaxRange"));
-                        }
+                }
+                if (toggles.GetState("Distortion")){
+                    if (material.GetFloat("_DistortionUseGlobal") == 0)
+                        DrawFeatureGizmo(meshRenderer, material, "_DistortionFalloffMode", "_DistortionMinRange", "_DistortionMaxRange", "_DistortionBoxSize", "_DistortionBoxOffset", "_DistortionBlendDistance", Color.white, new Color(0.5f, 0.5f, 0.5f, 1f));
+                    else if (!drewGlobal){
+                        DrawFeatureGizmo(meshRenderer, material, "_FalloffMode", "_MinRange", "_MaxRange", "_BoxSize", "_BoxOffset", "_BlendDistance", Color.yellow, new Color(0.9f, 0.9f, 0.3f, 1f));
+                        drewGlobal = true;
                     }
-                    if (toggles.GetState("Distortion")){
-                        if (material.GetFloat("_DistortionModel") > 0 && material.GetFloat("_DistortionUseGlobal") == 0) {
-                            Gizmos.color = Color.white;
-                            Gizmos.DrawWireSphere(position, material.GetFloat("_DistortionMinRange"));
-                            Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
-                            Gizmos.DrawWireSphere(position, material.GetFloat("_DistortionMaxRange"));
-                        }
+                }
+                if (toggles.GetState("Blur")){
+                    if (material.GetFloat("_BlurUseGlobal") == 0)
+                        DrawFeatureGizmo(meshRenderer, material, "_BlurFalloffMode", "_BlurMinRange", "_BlurMaxRange", "_BlurBoxSize", "_BlurBoxOffset", "_BlurBlendDistance", Color.white, new Color(0.5f, 0.5f, 0.5f, 1f));
+                    else if (!drewGlobal){
+                        DrawFeatureGizmo(meshRenderer, material, "_FalloffMode", "_MinRange", "_MaxRange", "_BoxSize", "_BoxOffset", "_BlendDistance", Color.yellow, new Color(0.9f, 0.9f, 0.3f, 1f));
+                        drewGlobal = true;
                     }
-                    if (toggles.GetState("Blur")){
-                        if (material.GetFloat("_BlurModel") > 0 && material.GetFloat("_BlurUseGlobal") == 0) {
-                            Gizmos.color = Color.white;
-                            Gizmos.DrawWireSphere(position, material.GetFloat("_BlurMinRange"));
-                            Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
-                            Gizmos.DrawWireSphere(position, material.GetFloat("_BlurMaxRange"));
-                        }
+                }
+                if (toggles.GetState("Noise")){
+                    if (material.GetFloat("_NoiseUseGlobal") == 0)
+                        DrawFeatureGizmo(meshRenderer, material, "_NoiseFalloffMode", "_NoiseMinRange", "_NoiseMaxRange", "_NoiseBoxSize", "_NoiseBoxOffset", "_NoiseBlendDistance", Color.white, new Color(0.5f, 0.5f, 0.5f, 1f));
+                    else if (!drewGlobal){
+                        DrawFeatureGizmo(meshRenderer, material, "_FalloffMode", "_MinRange", "_MaxRange", "_BoxSize", "_BoxOffset", "_BlendDistance", Color.yellow, new Color(0.9f, 0.9f, 0.3f, 1f));
+                        drewGlobal = true;
                     }
-                    if (toggles.GetState("Noise")){
-                        if (material.GetFloat("_NoiseMode") > 0 && material.GetFloat("_NoiseUseGlobal") == 0) {
-                            Gizmos.color = Color.white;
-                            Gizmos.DrawWireSphere(position, material.GetFloat("_NoiseMinRange"));
-                            Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
-                            Gizmos.DrawWireSphere(position, material.GetFloat("_NoiseMaxRange"));
-                        }
+                }
+                if (toggles.GetState("Zoom")){
+                    if (material.GetFloat("_ZoomUseGlobal") == 0)
+                        DrawFeatureGizmo(meshRenderer, material, "_ZoomFalloffMode", "_ZoomMinRange", "_ZoomMaxRange", "_ZoomBoxSize", "_ZoomBoxOffset", "_ZoomBlendDistance", Color.white, new Color(0.5f, 0.5f, 0.5f, 1f));
+                    else if (!drewGlobal){
+                        DrawFeatureGizmo(meshRenderer, material, "_FalloffMode", "_MinRange", "_MaxRange", "_BoxSize", "_BoxOffset", "_BlendDistance", Color.yellow, new Color(0.9f, 0.9f, 0.3f, 1f));
+                        drewGlobal = true;
                     }
-                    if (toggles.GetState("Zoom")){
-                        if (material.GetFloat("_Zoom") > 0 && material.GetFloat("_ZoomUseGlobal") == 0) {
-                            Gizmos.color = Color.white;
-                            Gizmos.DrawWireSphere(position, material.GetFloat("_ZoomMinRange"));
-                            Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
-                            Gizmos.DrawWireSphere(position, material.GetFloat("_ZoomMaxRange"));
-                        }
+                }
+                if (toggles.GetState("Image Overlay")){
+                    if (material.GetFloat("_SSTUseGlobal") == 0)
+                        DrawFeatureGizmo(meshRenderer, material, "_SSTFalloffMode", "_SSTMinRange", "_SSTMaxRange", "_SSTBoxSize", "_SSTBoxOffset", "_SSTBlendDistance", Color.white, new Color(0.5f, 0.5f, 0.5f, 1f));
+                    else if (!drewGlobal){
+                        DrawFeatureGizmo(meshRenderer, material, "_FalloffMode", "_MinRange", "_MaxRange", "_BoxSize", "_BoxOffset", "_BlendDistance", Color.yellow, new Color(0.9f, 0.9f, 0.3f, 1f));
+                        drewGlobal = true;
                     }
-                    if (toggles.GetState("Image Overlay")){
-                        if (material.GetFloat("_SST") > 0 && material.GetFloat("_SSTUseGlobal") == 0) {
-                            Gizmos.color = Color.white;
-                            Gizmos.DrawWireSphere(position, material.GetFloat("_SSTMinRange"));
-                            Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
-                            Gizmos.DrawWireSphere(position, material.GetFloat("_SSTMaxRange"));
-                        }
+                }
+                if (toggles.GetState("Fog")){
+                    if (material.GetFloat("_FogUseGlobal") == 0)
+                        DrawFeatureGizmo(meshRenderer, material, "_FogFalloffMode", "_FogMinRange", "_FogMaxRange", "_FogBoxSize", "_FogBoxOffset", "_FogBlendDistance", Color.white, new Color(0.5f, 0.5f, 0.5f, 1f));
+                    else if (!drewGlobal){
+                        DrawFeatureGizmo(meshRenderer, material, "_FalloffMode", "_MinRange", "_MaxRange", "_BoxSize", "_BoxOffset", "_BlendDistance", Color.yellow, new Color(0.9f, 0.9f, 0.3f, 1f));
+                        drewGlobal = true;
                     }
-                    if (toggles.GetState("Fog")){
-                        if (material.GetFloat("_Fog") > 0 && material.GetFloat("_FogUseGlobal") == 0) {
-                            Gizmos.color = Color.white;
-                            Gizmos.DrawWireSphere(position, material.GetFloat("_FogMinRange"));
-                            Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
-                            Gizmos.DrawWireSphere(position, material.GetFloat("_FogMaxRange"));
-                        }
+                }
+                if (toggles.GetState("Triplanar")){
+                    if (material.GetFloat("_TPUseGlobal") == 0)
+                        DrawFeatureGizmo(meshRenderer, material, "_TPFalloffMode", "_TPMinRange", "_TPMaxRange", "_TPBoxSize", "_TPBoxOffset", "_TPBlendDistance", Color.white, new Color(0.5f, 0.5f, 0.5f, 1f));
+                    else if (!drewGlobal){
+                        DrawFeatureGizmo(meshRenderer, material, "_FalloffMode", "_MinRange", "_MaxRange", "_BoxSize", "_BoxOffset", "_BlendDistance", Color.yellow, new Color(0.9f, 0.9f, 0.3f, 1f));
+                        drewGlobal = true;
                     }
-                    if (toggles.GetState("Triplanar")){
-                        if (material.GetFloat("_Triplanar") > 0 && material.GetFloat("_TPUseGlobal") == 0) {
-                            Gizmos.color = Color.white;
-                            Gizmos.DrawWireSphere(position, material.GetFloat("_TPMinRange"));
-                            Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 1f);
-                            Gizmos.DrawWireSphere(position, material.GetFloat("_TPMaxRange"));
-                        }
-                    }
-                    if (toggles.GetState("Outline")){
-                        if (material.GetFloat("_OutlineType") > 0 && material.GetFloat("_OLUseGlobal") == 0) {
-                            Gizmos.color = new Color(1f, 0.647f, 0f, 1f);
-                            Gizmos.DrawWireSphere(position, material.GetFloat("_OLMinRange"));
-                            Gizmos.color = new Color(1f, 0.847f, 0.2f, 1f);
-                            Gizmos.DrawWireSphere(position, material.GetFloat("_OLMaxRange"));
-                        }
+                }
+                if (toggles.GetState("Outline")){
+                    if (material.GetFloat("_OLUseGlobal") == 0)
+                        DrawFeatureGizmo(meshRenderer, material, "_OLFalloffMode", "_OLMinRange", "_OLMaxRange", "_OLBoxSize", "_OLBoxOffset", "_OLBlendDistance", new Color(1f, 0.647f, 0f, 1f), new Color(1f, 0.847f, 0.2f, 1f));
+                    else if (!drewGlobal){
+                        DrawFeatureGizmo(meshRenderer, material, "_FalloffMode", "_MinRange", "_MaxRange", "_BoxSize", "_BoxOffset", "_BlendDistance", Color.yellow, new Color(0.9f, 0.9f, 0.3f, 1f));
+                        drewGlobal = true;
                     }
                 }
             }
+        }
+
+        void DoFalloffSettings(MaterialEditor me, MaterialProperty useGlobal, MaterialProperty falloffMode, MaterialProperty minRange, MaterialProperty maxRange, MaterialProperty boxSize, MaterialProperty boxOffset, MaterialProperty blendDistance){
+            me.ShaderProperty(useGlobal, ugfLabel);
+            if (useGlobal.floatValue == 0){
+                MGUI.PropertyGroup(()=>{
+                    me.ShaderProperty(falloffMode, "Shape");
+                    if (falloffMode.floatValue == 0){
+                        me.ShaderProperty(minRange, minLabel);
+                        me.ShaderProperty(maxRange, maxLabel);
+                    }
+                    else {
+                        MGUI.Vector3Field(boxSize, "Box Size", false);
+                        MGUI.Vector3Field(boxOffset, "Box Offset", false);
+                        me.ShaderProperty(blendDistance, "Blend Distance");
+                    }
+                });
+            }
+            else MGUI.Space6();
         }
 
         public override void OnGUI(MaterialEditor me, MaterialProperty[] props) {
@@ -493,8 +582,16 @@ namespace Mochie {
                             MGUI.DisplayInfo("Blend modes other than opaque and alpha use the global falloff to fade out the entire material. This is because these blend modes change screen values by default and need to falloff based on something, even when no effects are enabled.");
                         GUILayout.Label("Global Falloff", EditorStyles.boldLabel);
                         MGUI.SpaceN2();
-                        me.ShaderProperty(_MinRange, minLabel);
-                        me.ShaderProperty(_MaxRange, maxLabel);
+                        me.ShaderProperty(_FalloffMode, "Shape");
+                        if (_FalloffMode.floatValue == 0){
+                            me.ShaderProperty(_MinRange, minLabel);
+                            me.ShaderProperty(_MaxRange, maxLabel);
+                        }
+                        else {
+                            MGUI.Vector3Field(_BoxSize, "Box Size", false);
+                            MGUI.Vector3Field(_BoxOffset, "Box Offset", false);
+                            me.ShaderProperty(_BlendDistance, "Blend Distance");
+                        }
                         });
                     });
                 }
@@ -504,14 +601,7 @@ namespace Mochie {
                     MGUI.PropertyGroupParent(()=>{
                         MGUI.ToggleGroup(_FilterModel.floatValue == 0);
                         me.ShaderProperty(_FilterStrength, "Opacity");
-                        me.ShaderProperty(_ColorUseGlobal, ugfLabel);
-                        if (_ColorUseGlobal.floatValue == 0){
-                            MGUI.PropertyGroup(()=>{
-                                me.ShaderProperty(_ColorMinRange, minLabel);
-                                me.ShaderProperty(_ColorMaxRange, maxLabel);
-                            });
-                        }
-                        else MGUI.Space6();
+                        DoFalloffSettings(me, _ColorUseGlobal, _ColorFalloffMode, _ColorMinRange, _ColorMaxRange, _ColorBoxSize, _ColorBoxOffset, _ColorBlendDistance);
                         MGUI.PropertyGroup(()=>{
                             me.ShaderProperty(_Color, "Tint");
                             if (_AutoShift.floatValue == 0)
@@ -549,13 +639,7 @@ namespace Mochie {
                 if (Foldouts.DoFoldout(foldouts, mat, me, _ShakeModel, "Shake", Foldouts.Style.StandardToggle)) {
                     MGUI.PropertyGroupParent(()=>{
                         MGUI.ToggleGroup(_ShakeModel.floatValue == 0);
-                        me.ShaderProperty(_ShakeUseGlobal, ugfLabel);
-                        if (_ShakeUseGlobal.floatValue == 0){
-                            MGUI.PropertyGroup(()=>{
-                                me.ShaderProperty(_ShakeMinRange, minLabel);
-                                me.ShaderProperty(_ShakeMaxRange, maxLabel);
-                            });
-                        }
+                        DoFalloffSettings(me, _ShakeUseGlobal, _ShakeFalloffMode, _ShakeMinRange, _ShakeMaxRange, _ShakeBoxSize, _ShakeBoxOffset, _ShakeBlendDistance);
                         MGUI.PropertyGroup(()=>{
                             if (_ShakeModel.floatValue < 3){
                                 me.ShaderProperty(_Amplitude, "Amplitude");
@@ -576,13 +660,7 @@ namespace Mochie {
                 if (Foldouts.DoFoldout(foldouts, mat, me, _DistortionModel, "Distortion", Foldouts.Style.StandardToggle)) {
                     MGUI.PropertyGroupParent(()=>{
                         MGUI.ToggleGroup(_DistortionModel.floatValue == 0);
-                        me.ShaderProperty(_DistortionUseGlobal, ugfLabel);
-                        if (_DistortionUseGlobal.floatValue == 0){
-                            MGUI.PropertyGroup(()=>{
-                                me.ShaderProperty(_DistortionMinRange, minLabel);
-                                me.ShaderProperty(_DistortionMaxRange, maxLabel);
-                            });
-                        }
+                        DoFalloffSettings(me, _DistortionUseGlobal, _DistortionFalloffMode, _DistortionMinRange, _DistortionMaxRange, _DistortionBoxSize, _DistortionBoxOffset, _DistortionBlendDistance);
                         MGUI.PropertyGroup(()=>{
                             me.TexturePropertySingleLine(normalMapLabel, _NormalMap);
                             me.TextureScaleOffsetProperty(_NormalMap);
@@ -612,13 +690,7 @@ namespace Mochie {
                                 MGUI.DisplayWarning("High sample counts can be very laggy! If your strength value is low please consider staying at or below 43 samples.");
                             }
                         }
-                        me.ShaderProperty(_BlurUseGlobal, ugfLabel);
-                        if (_BlurUseGlobal.floatValue == 0){
-                            MGUI.PropertyGroup(()=>{
-                                me.ShaderProperty(_BlurMinRange, minLabel);
-                                me.ShaderProperty(_BlurMaxRange, maxLabel);
-                            });
-                        }
+                        DoFalloffSettings(me, _BlurUseGlobal, _BlurFalloffMode, _BlurMinRange, _BlurMaxRange, _BlurBoxSize, _BlurBoxOffset, _BlurBlendDistance);
                         MGUI.PropertyGroup(()=>{
                             me.ShaderProperty(_BlurOpacity, "Opacity");
                             me.ShaderProperty(_BlurStr, strengthLabel);
@@ -667,14 +739,7 @@ namespace Mochie {
                         MGUI.ToggleGroup(_NoiseMode.floatValue == 0);
                         me.ShaderProperty(_NoiseStrength, "Opacity");
                         MGUI.Space6();
-                        me.ShaderProperty(_NoiseUseGlobal, ugfLabel);
-                        if (_NoiseUseGlobal.floatValue == 0){
-                            MGUI.PropertyGroup(()=>{
-                                me.ShaderProperty(_NoiseMinRange, minLabel);
-                                me.ShaderProperty(_NoiseMaxRange, maxLabel);
-                            });
-                        }
-                        else MGUI.Space6();
+                        DoFalloffSettings(me, _NoiseUseGlobal, _NoiseFalloffMode, _NoiseMinRange, _NoiseMaxRange, _NoiseBoxSize, _NoiseBoxOffset, _NoiseBlendDistance);
                         MGUI.PropertyGroup(()=>{
                             me.ShaderProperty(_Noise, "Noise (Grayscale)");
                             MGUI.Vector3FieldRGB(_NoiseRGB, "Noise (RGB)");
@@ -692,13 +757,7 @@ namespace Mochie {
                     if (Foldouts.DoFoldout(foldouts, mat, me, _Zoom, "Zoom", Foldouts.Style.StandardToggle)) {
                         MGUI.PropertyGroupParent(()=>{
                             MGUI.ToggleGroup(_Zoom.floatValue == 0);
-                            me.ShaderProperty(_ZoomUseGlobal, ugfLabel);
-                            if (_ZoomUseGlobal.floatValue == 0){
-                                MGUI.PropertyGroup(()=>{
-                                    me.ShaderProperty(_ZoomMinRange, minLabel);
-                                    me.ShaderProperty(_ZoomMaxRange, maxLabel);
-                                });
-                            }
+                            DoFalloffSettings(me, _ZoomUseGlobal, _ZoomFalloffMode, _ZoomMinRange, _ZoomMaxRange, _ZoomBoxSize, _ZoomBoxOffset, _ZoomBlendDistance);
                             MGUI.PropertyGroup(()=>{
                                 if (_Zoom.floatValue == 2){
                                     me.ShaderProperty(_ZoomStrR, "Red");
@@ -715,14 +774,7 @@ namespace Mochie {
                     if (Foldouts.DoFoldout(foldouts, mat, me, _SST, "Image Overlay", Foldouts.Style.StandardToggle)) {
                         MGUI.PropertyGroupParent(()=>{
                             MGUI.ToggleGroup(_SST.floatValue == 0);
-                            me.ShaderProperty(_SSTUseGlobal, ugfLabel);
-                            if (_SSTUseGlobal.floatValue == 0){
-                                MGUI.PropertyGroup(()=>{
-                                    me.ShaderProperty(_SSTMinRange, minLabel);
-                                    me.ShaderProperty(_SSTMaxRange, maxLabel);
-                                });
-                            }
-                            else MGUI.Space6();
+                            DoFalloffSettings(me, _SSTUseGlobal, _SSTFalloffMode, _SSTMinRange, _SSTMaxRange, _SSTBoxSize, _SSTBoxOffset, _SSTBlendDistance);
                             MGUI.PropertyGroup(()=>{
                                 if (_SST.floatValue != 3){
                                     me.TexturePropertySingleLine(screenTexLabel, _ScreenTex, _SSTColor, _SSTBlend);
@@ -755,13 +807,7 @@ namespace Mochie {
                     if (Foldouts.DoFoldout(foldouts, mat, me, _Triplanar, "Triplanar", Foldouts.Style.StandardToggle)) {
                         MGUI.PropertyGroupParent(()=>{
                             MGUI.ToggleGroup(_Triplanar.floatValue == 0);
-                            me.ShaderProperty(_TPUseGlobal, ugfLabel);
-                            if (_TPUseGlobal.floatValue == 0){
-                                MGUI.PropertyGroup(()=>{
-                                    me.ShaderProperty(_TPMinRange, minLabel);
-                                    me.ShaderProperty(_TPMaxRange, maxLabel);
-                                });
-                            }
+                            DoFalloffSettings(me, _TPUseGlobal, _TPFalloffMode, _TPMinRange, _TPMaxRange, _TPBoxSize, _TPBoxOffset, _TPBlendDistance);
                             MGUI.PropertyGroup(()=>{
                                 MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
                                 me.TexturePropertySingleLine(tpTexLabel, _TPTexture, _TPColor);
@@ -797,13 +843,7 @@ namespace Mochie {
                         MGUI.PropertyGroupParent(()=>{
                             MGUI.ToggleGroup(_OutlineType.floatValue == 0);
                                 me.ShaderProperty(_OutlineCubeToggle, "Color Source");
-                                me.ShaderProperty(_OLUseGlobal, ugfLabel);
-                                if (_OLUseGlobal.floatValue == 0){
-                                    MGUI.PropertyGroup(()=>{
-                                        me.ShaderProperty(_OLMinRange, minLabel);
-                                        me.ShaderProperty(_OLMaxRange, maxLabel);
-                                    });
-                                }
+                                DoFalloffSettings(me, _OLUseGlobal, _OLFalloffMode, _OLMinRange, _OLMaxRange, _OLBoxSize, _OLBoxOffset, _OLBlendDistance);
                                 MGUI.DisplayInfo("This feature requires a \"Depth Light\" prefab be present in the scene.\n(Found in: Assets/Mochie/Unity/Prefabs)");
                                 if (_OutlineType.floatValue == 1){
                                     MGUI.PropertyGroup(()=>{
@@ -892,13 +932,7 @@ namespace Mochie {
                     if (Foldouts.DoFoldout(foldouts, mat, me, _Fog, "Fog", Foldouts.Style.StandardToggle)) {
                         MGUI.PropertyGroupParent(()=>{
                             MGUI.ToggleGroup(_Fog.floatValue == 0);
-                            me.ShaderProperty(_FogUseGlobal, ugfLabel);
-                            if (_FogUseGlobal.floatValue == 0){
-                                MGUI.PropertyGroup(()=>{
-                                    me.ShaderProperty(_FogMinRange, minLabel);
-                                    me.ShaderProperty(_FogMaxRange, maxLabel);
-                                });
-                            }
+                            DoFalloffSettings(me, _FogUseGlobal, _FogFalloffMode, _FogMinRange, _FogMaxRange, _FogBoxSize, _FogBoxOffset, _FogBlendDistance);
                             MGUI.PropertyGroup(()=>{
                                 MGUI.DisplayInfo("This feature requires the \"Depth Light\" prefab found in: Assets/Mochie/Unity/Prefabs");
                                 me.ShaderProperty(_FogColor, colorLabel);

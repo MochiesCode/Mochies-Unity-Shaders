@@ -22,7 +22,11 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
     id.baseColor.r += defaultSampler.r;
     id.baseColor.r += defaultDetailSampler.r;
 
-    float3 specularColor = lerp(unity_ColorSpaceDielectricSpec.rgb, id.baseColor, id.metallic);
+    #if defined(_WORKFLOW_SPECULAR_ON)
+        float3 specularColor = id.specular.rgb;
+    #else
+        float3 specularColor = lerp(unity_ColorSpaceDielectricSpec.rgb, id.baseColor, id.metallic);
+    #endif
 
     UnityMetaInput o = (UnityMetaInput)0;
     #ifdef EDITOR_VISUALIZATION

@@ -32,15 +32,48 @@ void callback_specular(inout accumulator_struct acc, in ltcgi_output output) {
     acc.specular += output.intensity * output.color * _LTCGI_SpecularColor;
 }
 
-float3 GetLTCGISpecularity(v2f i, float3 normal, float3 viewDir, float roughness){
+#if !defined(META_PASS)
+float3 GetLTCGISpecularity(v2f i, InputData id, LightingData ld){
     if (_LTCGIStrength > 0){
         accumulator_struct acc = (accumulator_struct)0;
-        LTCGI_Contribution(acc, i.worldPos, normal, viewDir, roughness * _LTCGIRoughness, 0);
+        LTCGI_Contribution(acc, i.worldPos, id.normal, ld.viewDir, id.roughness * _LTCGIRoughness, 0);
         return acc.specular * _LTCGIStrength;
     }
     return 0;
 }
 
+void CalculateLTCGI(v2f i, InputData id, inout LightingData ld){
+    ld.ltcgiSpecularity = GetLTCGISpecularity(i, id, ld);
+    ld.reflectionCol += ld.ltcgiSpecularity * ld.reflAdjust;
+}
+#endif
+
+#endif
+
+#if AREALIT_ENABLED
+#include "../../AreaLit/Shader/Lighting.hlsl"
+
+#if !defined(META_PASS)
+void CalculateAreaLit(v2f i, InputData id, inout LightingData ld){
+    AreaLightFragInput ai;
+    ai.pos = i.worldPos;
+    ai.normal = id.normal;
+    ai.view = -ld.viewDir;
+    ai.roughness = id.roughBRDF * _AreaLitRoughnessMult;
+    ai.occlusion = 1;
+    ai.screenPos = i.pos.xy;
+    half4 diffTerm, specTerm;
+    if (_AreaLitStrength > 0){
+        ShadeAreaLights(ai, diffTerm, specTerm, true, !IsSpecularOff(), IsStereo());
+    }
+    else {
+        diffTerm = 0;
+        specTerm = 0;
+    }
+    ld.areaLitColor = id.diffuse.rgb * diffTerm + ld.specularTint * specTerm;
+    ld.areaLitColor *= _AreaLitStrength * MOCHIE_SAMPLE_TEX2D_SAMPLER(_AreaLitMask, sampler_FlowMap, TRANSFORM_TEX(i.uv, _AreaLitMask)).r;
+}
+#endif
 #endif
 
 #include "../Common/AudioLink.cginc"

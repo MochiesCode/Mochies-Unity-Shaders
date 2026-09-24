@@ -14,12 +14,15 @@ Shader "Mochie/Standard Lite" {
         [Enum(Local,0, World,1)]_TriplanarCoordSpace("Triplanar Coordinate Space", Int) = 0
 
         // Primary Textures
-        [Enum(Separate,0, Packed,1)]_PrimaryWorkflow("Primary Workflow", Int) = 0
+        [Enum(Metallic,0, Packed Metallic,1, Specular,2)]_PrimaryWorkflow("Primary Workflow", Int) = 0
         [Enum(Default,0, Stochastic,1, Supersampling,2, Triplanar,3)]_PrimarySampleMode("Primary Sampling Mode", Int) = 0
         _MainTex("Base Color", 2D) = "white" {}
         _Color("Color", Color) = (1,1,1,1)
         _NormalMap("Normal Map", 2D) = "bump" {}
         _NormalStrength("Normal Strength", Range(0,1)) = 1
+        _SampleSpecular("Sample Specular Map", Int) = 0
+        _SpecGlossMap("Specular Map", 2D) = "white" {}
+        _SpecCol("Specular Color", Color) = (1,1,1,1)
         _SampleMetallic("Sample Metallic Map", Int) = 0
         _MetallicMap("Metallic Map", 2D) = "white" {}
         _MetallicStrength("Metallic Strength", Range(0,1)) = 0
@@ -41,6 +44,7 @@ Shader "Mochie/Standard Lite" {
         
         _PackedMap("Packed Map", 2D) = "white" {}
         [Enum(Off,0, On,1)]_PackedHeight("Packed Height", Int) = 0
+        [Enum(Roughness Map,0, Specular Alpha,1)]_SmoothnessSource("Smoothness Source", Int) = 0
         _PackedRoughnessStrength("Packed Roughness Strength", Range(0,1)) = 1
         _PackedMetallicStrength("Packed Metallic Strength", Range(0,1)) = 1
         _PackedOcclusionStrength("Packed Occlusion Strength", Range(0,1)) = 1
@@ -383,7 +387,7 @@ Shader "Mochie/Standard Lite" {
             #pragma shader_feature_local _ _RAIN_DROPLETS_ON _RAIN_RIPPLES_ON _RAIN_AUTO_ON
             #pragma shader_feature_local _REFLECTIONS_ON
             #pragma shader_feature_local _SPECULAR_HIGHLIGHTS_ON
-            #pragma shader_feature_local _WORKFLOW_PACKED_ON
+            #pragma shader_feature_local _ _WORKFLOW_PACKED_ON _WORKFLOW_SPECULAR_ON
             #pragma shader_feature_local _EMISSION_ON
             #pragma shader_feature_local _PARALLAX_ON
             #pragma shader_feature_local _NORMALMAP_ON
@@ -422,7 +426,7 @@ Shader "Mochie/Standard Lite" {
             #pragma shader_feature_local _ _STOCHASTIC_ON _TRIPLANAR_ON _SUPERSAMPLING_ON
             #pragma shader_feature_local _ _RAIN_DROPLETS_ON _RAIN_RIPPLES_ON _RAIN_AUTO_ON
             #pragma shader_feature_local _SPECULAR_HIGHLIGHTS_ON
-            #pragma shader_feature_local _WORKFLOW_PACKED_ON
+            #pragma shader_feature_local _ _WORKFLOW_PACKED_ON _WORKFLOW_SPECULAR_ON
             #pragma shader_feature_local _PARALLAX_ON
             #pragma shader_feature_local _NORMALMAP_ON
             #pragma shader_feature_local _DETAIL_MAINTEX_ON
@@ -445,7 +449,7 @@ Shader "Mochie/Standard Lite" {
             #pragma fragment frag
             #pragma shader_feature_local _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
             #pragma shader_feature_local _ _STOCHASTIC_ON _TRIPLANAR_ON _SUPERSAMPLING_ON
-            #pragma shader_feature_local _WORKFLOW_PACKED_ON
+            #pragma shader_feature_local _ _WORKFLOW_PACKED_ON _WORKFLOW_SPECULAR_ON
             // #pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma multi_compile_instancing
             #pragma multi_compile_shadowcaster
@@ -467,7 +471,7 @@ Shader "Mochie/Standard Lite" {
             #pragma fragment frag
             #pragma shader_feature_local _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
             #pragma shader_feature_local _ _STOCHASTIC_ON _TRIPLANAR_ON _SUPERSAMPLING_ON
-            #pragma shader_feature_local _WORKFLOW_PACKED_ON
+            #pragma shader_feature_local _ _WORKFLOW_PACKED_ON _WORKFLOW_SPECULAR_ON
             #pragma shader_feature_local _EMISSION_ON
             #pragma shader_feature_local _NORMALMAP_ON
             #pragma shader_feature_local _DETAIL_MAINTEX_ON

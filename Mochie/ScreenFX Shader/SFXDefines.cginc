@@ -14,9 +14,12 @@ float SampleDepthTex(float2 uv){
     return MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_CameraDepthTexture, uv);
 }
 
-int _BlendMode;
+int _BlendMode, _FalloffMode;
 float _MinRange, _MaxRange;
 float _Opacity;
+float4 _BoxSize;
+float4 _BoxOffset;
+float _BlendDistance;
 
 // Color Filtering
 int _FilterModel, _AutoShift, _ColorUseGlobal, _NoiseUseGlobal, _RoundingToggle, _ClampToggle, _HueMode;
@@ -24,12 +27,18 @@ float4 _Color;
 float3 _RGB, _NoiseRGB;
 float _FilterStrength, _Noise, _NoiseStrength;
 float _ColorMinRange, _ColorMaxRange, _Rounding, _RoundingOpacity;
+int _ColorFalloffMode;
+float4 _ColorBoxSize, _ColorBoxOffset;
+float _ColorBlendDistance;
 float _Contrast, _HDR;
 float _Invert, _InvertR, _InvertG, _InvertB, _Saturation;
 float _Hue, _AutoShiftSpeed, _Brightness;
 float _SaturationR, _SaturationG, _SaturationB;
 float _ScanLine, _ScanLineThick, _ScanLineSpeed;
 float _NoiseMinRange, _NoiseMaxRange;
+int _NoiseFalloffMode;
+float4 _NoiseBoxSize, _NoiseBoxOffset;
+float _NoiseBlendDistance;
 float _ClampMax;
 float _MonoTint;
 
@@ -37,6 +46,9 @@ float _MonoTint;
 int _ShakeModel, _ShakeUseGlobal;
 sampler2D _ShakeNoiseTex;
 float _ShakeMinRange, _ShakeMaxRange;
+int _ShakeFalloffMode;
+float4 _ShakeBoxSize, _ShakeBoxOffset;
+float _ShakeBlendDistance;
 float _Amplitude, _AmplitudeMult;
 float _ShakeSpeedX, _ShakeSpeedY, _ShakeSpeedXY;
 
@@ -44,6 +56,9 @@ float _ShakeSpeedX, _ShakeSpeedY, _ShakeSpeedXY;
 int _DistortionModel, _DistortionUseGlobal;
 sampler2D _NormalMap; float4 _NormalMap_ST;
 float _DistortionMinRange, _DistortionMaxRange;
+int _DistortionFalloffMode;
+float4 _DistortionBoxSize, _DistortionBoxOffset;
+float _DistortionBlendDistance;
 float _DistortionStr, _DistortionSpeed;
 float _DistortionRadius, _DistortionP2O, _DistortionFade;
 
@@ -51,6 +66,9 @@ float _DistortionRadius, _DistortionP2O, _DistortionFade;
 int _FocusPlayer, _BlurUseGlobal, _BlurY, _BlurSamples, _CrushBlur;
 int _BlurModel, _RGBSplit, _DoF, _PixelBlurSamples;
 float _BlurMinRange, _BlurMaxRange;
+int _BlurFalloffMode;
+float4 _BlurBoxSize, _BlurBoxOffset;
+float _BlurBlendDistance;
 float _BlurOpacity, _BlurStr;
 float _DoFP2O, _DoFRadius, _DoFFade;
 float _PixelationStr, _RippleGridStr;
@@ -130,6 +148,9 @@ float _VRChatMirrorMode;
     int _Fog, _FogSafeZone, _FogUseGlobal, _HeightFalloff;
     float4 _FogColor;
     float _FogMinRange, _FogMaxRange;
+    int _FogFalloffMode;
+    float4 _FogBoxSize, _FogBoxOffset;
+    float _FogBlendDistance;
     float _FogRadius, _FogFade;
     float _FogSafeRadius, _FogSafeMaxRange;
     float _FogP2O, _FogSafeOpacity;
@@ -141,6 +162,9 @@ float _VRChatMirrorMode;
     float4 _ScreenTex_ST;
     float4 _SSTColor;
     float _SSTMinRange, _SSTMaxRange;
+    int _SSTFalloffMode;
+    float4 _SSTBoxSize, _SSTBoxOffset;
+    float _SSTBlendDistance;
     float _SSTWidth, _SSTHeight, _SSTScale;
     float _SSTLR, _SSTUD;
     float _SSTColumnsX, _SSTRowsY, _SSTAnimationSpeed, _SSTAnimatedDist;
@@ -152,6 +176,9 @@ float _VRChatMirrorMode;
     float4 _TPTexture_ST, _TPNoiseTex_ST, _TPColor;
     float3 _TPScroll, _TPNoiseScroll;
     float _TPRadius, _TPFade, _TPMinRange, _TPMaxRange, _TPP2O, _TPThickness, _TPNoise, _TPScanFade;
+    int _TPFalloffMode;
+    float4 _TPBoxSize, _TPBoxOffset;
+    float _TPBlendDistance;
 
     // Letterbox
     int _UseZoomFalloff, _Letterbox;
@@ -161,6 +188,9 @@ float _VRChatMirrorMode;
     MOCHIE_DECLARE_TEX2D_SCREENSPACE(_ZoomGrab);
     int _Zoom, _ZoomUseGlobal, _NeedsZoomPass;
     float _ZoomMinRange, _ZoomMaxRange;
+    int _ZoomFalloffMode;
+    float4 _ZoomBoxSize, _ZoomBoxOffset;
+    float _ZoomBlendDistance;
     float _ZoomStr, _ZoomStrR, _ZoomStrG, _ZoomStrB;
 
     // Extras
@@ -175,6 +205,9 @@ float _VRChatMirrorMode;
     int _AutoRotate, _AutoRotateAlt, _AutoRotateBG;
     int _AuraSampleCount;
     float _OLMinRange, _OLMaxRange, _AuraFade, _AuraStr;
+    int _OLFalloffMode;
+    float4 _OLBoxSize, _OLBoxOffset;
+    float _OLBlendDistance;
     float4 _OutlineCol, _BackgroundCol;
     float3 _DBColor;
     float3 _CubeRotate, _CubeRotateAlt, _CubeRotateBG;

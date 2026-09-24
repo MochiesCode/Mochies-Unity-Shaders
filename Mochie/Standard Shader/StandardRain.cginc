@@ -125,7 +125,11 @@ void CalculatePuddleMask(v2f i, inout InputData id){
 void ApplyPuddles(v2f i, inout InputData id){
     if (_PuddleToggle == 1){
         id.roughness = saturate(id.roughness - id.puddleMask);
-        id.metallic = lerp(id.metallic, _PuddleMetallic, id.puddleMask);
+        #if defined(_WORKFLOW_SPECULAR_ON)
+            id.specular.rgb = lerp(id.specular.rgb, unity_ColorSpaceDielectricSpec.rgb, id.puddleMask);
+        #else
+            id.metallic = lerp(id.metallic, _PuddleMetallic, id.puddleMask);
+        #endif
         id.occlusion = lerp(id.occlusion, 1, id.puddleMask * (1-_PuddleOcclusionStrength));
         #if defined(BASE_PASS)
             float tintStrength = id.puddleMask * _PuddleTint.a;

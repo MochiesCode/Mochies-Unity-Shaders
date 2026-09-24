@@ -283,8 +283,47 @@ float RoundTo(float x, float y){
     return ceil(x*y)/y;
 }
 
+float3 GetObjPos(){
+    return mul(unity_ObjectToWorld, float4(0,0,0,1));
+}
+
+float3 GetCameraPos(){
+    float3 cameraPos = _WorldSpaceCameraPos;
+    #if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
+        cameraPos = (unity_StereoWorldSpaceCameraPos[0] + unity_StereoWorldSpaceCameraPos[1]) * 0.5;
+    #endif
+    return cameraPos;
+}
+
 float SmoothFalloff(float minRange, float maxRange, float distance){
     return smoothstep(maxRange, clamp(minRange, 0, maxRange-0.001), distance);
+}
+
+float GetBoxFalloff(float3 cameraPos, float3 objPos, float3 boxSize, float3 boxOffset, float blendDistance){
+    float3 axisX = normalize(mul((float3x3)unity_ObjectToWorld, float3(1,0,0)));
+    float3 axisY = normalize(mul((float3x3)unity_ObjectToWorld, float3(0,1,0)));
+    float3 axisZ = normalize(mul((float3x3)unity_ObjectToWorld, float3(0,0,1)));
+    float3 delta = cameraPos - objPos;
+    float3 localPos = float3(dot(delta, axisX), dot(delta, axisY), dot(delta, axisZ)) - boxOffset;
+    float3 extents = max(0.001, boxSize * 0.5);
+    if (blendDistance <= 0.0)
+        return all(abs(localPos) <= extents) ? 1.0 : 0.0;
+    float3 distToEdge = extents - abs(localPos);
+    float dist = min(distToEdge.x, min(distToEdge.y, distToEdge.z));
+    float blend = clamp(blendDistance, 0.001, min(extents.x, min(extents.y, extents.z)));
+    return smoothstep(0, blend, dist);
+}
+
+float GetBoxFalloff(float3 cameraPos, float3 objPos, float3 boxSize, float3 boxOffset){
+    return GetBoxFalloff(cameraPos, objPos, boxSize, boxOffset, 0.0);
+}
+
+float GetBoxFalloff(float3 boxSize, float3 boxOffset, float blendDistance){
+    return GetBoxFalloff(GetCameraPos(), GetObjPos(), boxSize, boxOffset, blendDistance);
+}
+
+float GetBoxFalloff(float3 boxSize, float3 boxOffset){
+    return GetBoxFalloff(GetCameraPos(), GetObjPos(), boxSize, boxOffset, 0.0);
 }
 
 float Safe_DotClamped(float3 a, float3 b){
@@ -375,18 +414,6 @@ float4 GetScreenspaceVertexPos(float4 vertex){
     return UnityObjectToClipPos(oPos);
 }
 
-float3 GetObjPos(){
-    return mul(unity_ObjectToWorld, float4(0,0,0,1));
-}
-
-float3 GetCameraPos(){
-    float3 cameraPos = _WorldSpaceCameraPos;
-    #if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
-        cameraPos = (unity_StereoWorldSpaceCameraPos[0] + unity_StereoWorldSpaceCameraPos[1]) * 0.5;
-    #endif
-    return cameraPos;
-}
-
 float3 GetForwardVector(){
     #if UNITY_SINGLE_PASS_STEREO || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
         float3 p1 = mul(unity_StereoCameraToWorld[0], float4(0, 0, 1, 1));
@@ -450,6 +477,16 @@ void Rotate3D3(inout float3 coords0, inout float3 coords1, inout float3 coords2,
         coords2.xz = mul(rotMatY, coords2.xz);
         coords2.yz = mul(rotMatZ, coords2.yz);
     }
+}
+
+float3 RotateToLight(float3 coords, float3 lightDir){
+    float3 L = normalize(lightDir);
+    L.y = max(L.y, 0.001);
+    L = normalize(L);
+    float3 A = float3(-L.z, 0.0, L.x);
+    float3 crossAV = cross(A, coords);
+    float dotAV = dot(A, coords);
+    return coords * L.y + crossAV + A * (dotAV / (1.0 + L.y));
 }
 
 float3 GetNoiseRGB(float2 p, float3 str) {

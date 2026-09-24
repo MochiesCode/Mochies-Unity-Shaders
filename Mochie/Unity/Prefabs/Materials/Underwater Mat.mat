@@ -16,7 +16,7 @@ Material:
   - DEPTH_ENABLED
   - DOF_ENABLED
   - FOG_ENABLED
-  - _CAUSTICS_VORONOI_ON
+  - _CAUSTICS_FLIPBOOK_ON
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
@@ -46,16 +46,20 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _AutoShift: 0
+    - _AutoShiftSpeed: 0.25
     - _BlurStr: 1.3
     - _CausticsDisp: 0.25
     - _CausticsDistortion: 0.1
     - _CausticsDistortionScale: 1
-    - _CausticsFade: 5
-    - _CausticsFlipbookDisp: 0.6
+    - _CausticsFade: 50
+    - _CausticsFlipbookDisp: 0.5
     - _CausticsFlipbookSpeed: 16
-    - _CausticsMode: 0
+    - _CausticsMode: 2
     - _CausticsOpacity: 0.5
     - _CausticsPower: 1
+    - _CausticsRange: 50
+    - _CausticsRotateWithLight: 0
     - _CausticsScale: 10
     - _CausticsSpeed: 3
     - _CausticsSurfaceFade: 100
@@ -64,17 +68,23 @@ Material:
     - _DepthToggle: 1
     - _DoFToggle: 1
     - _Fade: 1.25
+    - _Falloff: 0
     - _FogFade: 3
     - _FogOpacity: 0.8
     - _FogRadius: 1.7
     - _FogToggle: 1
     - _HQBlur: 0
+    - _Hue: 0
+    - _HueMode: 0
     - _MaterialResetCheck: 1
+    - _MonoTint: 0
     - _NaNLmao: 0
     - _Radius: 1
     - _RenderMode: 0
     - _StencilRef: 65
     m_Colors:
+    - _BoxOffset: {r: 0, g: 0, b: 0, a: 0}
+    - _BoxSize: {r: 10, g: 10, b: 10, a: 0}
     - _CausticsColor: {r: 1, g: 1, b: 1, a: 1}
     - _CausticsDistortionSpeed: {r: -0.1, g: -0.1, b: 0, a: 0}
     - _CausticsRotation: {r: -20, g: 0, b: 20, a: 0}

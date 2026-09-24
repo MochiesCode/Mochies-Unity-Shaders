@@ -16,54 +16,6 @@ void CalculateTangentViewDir(inout v2f i){
     i.tangentViewDir.xy /= (i.tangentViewDir.z + 0.42);
 }
 
-float3 BoxProjection(float3 dir, float3 pos, float4 cubePos, float3 boxMin, float3 boxMax){
-    #if UNITY_SPECCUBE_BOX_PROJECTION
-        UNITY_BRANCH
-        if (cubePos.w > 0){
-            float3 factors = ((dir > 0 ? boxMax : boxMin) - pos) / dir;
-            float scalar = min(min(factors.x, factors.y), factors.z);
-            dir = dir * scalar + (pos - cubePos);
-        }
-    #endif
-    return dir;
-}
-
-float3 GetMirrorReflections(float4 reflUV, float3 normal, float roughness){
-    float perceptualRoughness = roughness;
-    perceptualRoughness = perceptualRoughness*(1.7 - 0.7*perceptualRoughness);
-    float mip = perceptualRoughnessToMipmapLevel(perceptualRoughness);
-    float2 normalSwizzle[3] = {normal.xy, normal.xz, normal.yz}; 
-    reflUV.xy -= normalSwizzle[_MirrorNormalOffsetSwizzle];
-    float2 uv = reflUV.xy / (reflUV.w + 0.00000001);
-    float4 uvMip = float4(uv, 0, mip * 6);
-    float3 refl = unity_StereoEyeIndex == 0 ? tex2Dlod(_ReflectionTex0, uvMip) : tex2Dlod(_ReflectionTex1, uvMip);
-    return refl;
-}
-
-float3 GetWorldReflections(float3 reflDir, float3 worldPos, float roughness){
-    float3 baseReflDir = reflDir;
-    roughness *= 1.7-0.7*roughness;
-    reflDir = BoxProjection(reflDir, worldPos, unity_SpecCube0_ProbePosition, unity_SpecCube0_BoxMin, unity_SpecCube0_BoxMax);
-    float4 envSample0 = UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, reflDir, roughness * UNITY_SPECCUBE_LOD_STEPS);
-    float3 p0 = DecodeHDR(envSample0, unity_SpecCube0_HDR);
-    float interpolator = unity_SpecCube0_BoxMin.w;
-    UNITY_BRANCH
-    if (interpolator < 0.99999){
-        float3 refDirBlend = BoxProjection(baseReflDir, worldPos, unity_SpecCube1_ProbePosition, unity_SpecCube1_BoxMin, unity_SpecCube1_BoxMax);
-        float4 envSample1 = UNITY_SAMPLE_TEXCUBE_SAMPLER_LOD(unity_SpecCube1, unity_SpecCube0, refDirBlend, roughness * UNITY_SPECCUBE_LOD_STEPS);
-        float3 p1 = DecodeHDR(envSample1, unity_SpecCube1_HDR);
-        p0 = lerp(p1, p0, interpolator);
-    }
-    return p0;
-}
-
-float3 GetManualReflections(float3 reflDir, float roughness){
-    roughness *= 1.7-0.7*roughness;
-    reflDir = Rotate3D(reflDir, _ReflCubeRotation);
-    float4 envSample0 = texCUBElod(_ReflCube, float4(reflDir, roughness * UNITY_SPECCUBE_LOD_STEPS));
-    return DecodeHDR(envSample0, _ReflCube_HDR);
-}
-
 float4 GetScreenPosition(float4 positionCS){
     float4 ndc = positionCS * 0.5f;
     ndc.xy = float2(ndc.x, ndc.y * _ProjectionParams.x) + ndc.w;
@@ -146,12 +98,18 @@ float3 GerstnerWave(float4 wave, float3 vertex, float speed, float rotation, ino
 // _UVRimMaskScroll("Scrolling", Vector) = (0,0,0,0)
 // _UVRimMaskRotate("Rotation", Float) = 0
 
-float GetHorizonAdjustment(float3 worldPos, float3 normal, float3 cameraPos, float distance){
-    float3 viewDir = normalize(cameraPos - worldPos);
+#if !defined(META_PASS)
+float GetHorizonAdjustment(v2f i, float3 normal, float distance){
+    float3 viewDir = normalize(i.cameraPos - i.worldPos);
     float vdn = abs(dot(viewDir, normal));
     float rim = saturate(1-pow(1-vdn, 5));
     rim = smoothstep(0, 1-distance, rim);
     return rim;
 }
+
+float GetHorizonAdjustment(v2f i, float distance){
+    return GetHorizonAdjustment(i, i.normal, distance);
+}
+#endif
 
 #endif // WATER_FUNCTIONS_INCLUDED

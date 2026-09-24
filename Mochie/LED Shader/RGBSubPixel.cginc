@@ -1,4 +1,4 @@
-﻿
+
 float4 RGBSubPixelConvert(sampler2D mainTex, sampler2D rgbTex, float2 uv0, float2 uv1, float3 viewDir, float3 worldNormal, inout float alpha)
 {
     //our emission map

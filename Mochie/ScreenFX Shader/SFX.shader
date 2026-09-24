@@ -1,4 +1,4 @@
-﻿// BY MOCHIE
+// BY MOCHIE
 
 Shader "Mochie/Screen FX" {
     Properties {
@@ -10,16 +10,24 @@ Shader "Mochie/Screen FX" {
         _SrcBlend("", Int) = 1
         _DstBlend("", Int) = 0
         _Opacity("", Range(-1,1)) = 1
-        [ToggleUI]_DisplayGlobalGizmo("", Int) = 0
+        [ToggleUI]_DisplayGlobalGizmo("", Int) = 1
+        [Enum(Sphere,0, Box,1)]_FalloffMode("", Int) = 0
         _MinRange("", Float) = 8
         _MaxRange("", Float) = 15
+        _BoxSize("", Vector) = (10, 10, 10, 0)
+        _BoxOffset("", Vector) = (0, 0, 0, 0)
+        _BlendDistance("", Float) = 2
 
         // Filtering
         [Enum(Off,0, On,1)]_FilterModel("", Int) = 0
         [ToggleUI]_ColorUseGlobal("", Int) = 1
         _FilterStrength("", Range(0,1)) = 1
+        [Enum(Sphere,0, Box,1)]_ColorFalloffMode("", Int) = 0
         _ColorMinRange("", Float) = 8
         _ColorMaxRange("", Float) = 15
+        _ColorBoxSize("", Vector) = (10, 10, 10, 0)
+        _ColorBoxOffset("", Vector) = (0, 0, 0, 0)
+        _ColorBlendDistance("", Float) = 2
         [ToggleUI]_AutoShift("", Int) = 0
         [HDR]_Color("", Color) = (1,1,1,1)
         _RGB("", Vector) = (1,1,1,0)
@@ -45,8 +53,12 @@ Shader "Mochie/Screen FX" {
         // Shake
         [Enum(Off,0, Smooth,1, Coarse,2, Noise,3)]_ShakeModel("", Int) = 0
         [ToggleUI]_ShakeUseGlobal("", Int) = 1
+        [Enum(Sphere,0, Box,1)]_ShakeFalloffMode("", Int) = 0
         _ShakeMinRange("", Float) = 8
         _ShakeMaxRange("", Float) = 15
+        _ShakeBoxSize("", Vector) = (10, 10, 10, 0)
+        _ShakeBoxOffset("", Vector) = (0, 0, 0, 0)
+        _ShakeBlendDistance("", Float) = 2
         _Amplitude("",Range(0,1)) = 0
         _ShakeSpeedX("", Range(0,1)) = 0.5234375
         _ShakeSpeedY("", Range(0,1)) =  0.78125
@@ -56,8 +68,12 @@ Shader "Mochie/Screen FX" {
         // Distortion
         [Enum(Off,0, Screenspace,1, Triplanar,2)]_DistortionModel("", Int) = 0
         [ToggleUI]_DistortionUseGlobal("", Int) = 1
+        [Enum(Sphere,0, Box,1)]_DistortionFalloffMode("", Int) = 0
         _DistortionMinRange("", Float) = 8
         _DistortionMaxRange("", Float) = 15
+        _DistortionBoxSize("", Vector) = (10, 10, 10, 0)
+        _DistortionBoxOffset("", Vector) = (0, 0, 0, 0)
+        _DistortionBlendDistance("", Float) = 2
         _NormalMap("", 2D) = "bump" {}
         _DistortionStr("", Float) = 0.5
         _DistortionSpeed("", Float) = 0
@@ -69,8 +85,12 @@ Shader "Mochie/Screen FX" {
         [Enum(Off,0, Pixel,1, Dither,2, Radial,3)]_BlurModel("", Int) = 0
         [Enum(Sample16,16, Sample22,22, Sample43,43, Sample71,71, Sample136,136)]_PixelBlurSamples("", Int) = 43
         [ToggleUI]_BlurUseGlobal("", Int) = 1
+        [Enum(Sphere,0, Box,1)]_BlurFalloffMode("", Int) = 0
         _BlurMinRange("", Float) = 8
         _BlurMaxRange("", Float) = 15
+        _BlurBoxSize("", Vector) = (10, 10, 10, 0)
+        _BlurBoxOffset("", Vector) = (0, 0, 0, 0)
+        _BlurBlendDistance("", Float) = 2
         [ToggleUI]_BlurY("", Int) = 0
         [ToggleUI]_RGBSplit("", Int) = 0
         [ToggleUI]_DoF("", Int) = 0
@@ -88,8 +108,12 @@ Shader "Mochie/Screen FX" {
         // Noise
         [Enum(Off,0, On,1)]_NoiseMode("", Int) = 0
         [ToggleUI]_NoiseUseGlobal("", Int) = 0
+        [Enum(Sphere,0, Box,1)]_NoiseFalloffMode("", Int) = 0
         _NoiseMinRange("", Float) = 8
         _NoiseMaxRange("", Float) = 15
+        _NoiseBoxSize("", Vector) = (10, 10, 10, 0)
+        _NoiseBoxOffset("", Vector) = (0, 0, 0, 0)
+        _NoiseBlendDistance("", Float) = 2
         _NoiseStrength("", Range(0,1)) = 1
         _NoiseRGB("", Vector) = (0,0,0,0)
         _Noise("", Float) = 0
@@ -100,8 +124,12 @@ Shader "Mochie/Screen FX" {
         // Fog
         [Enum(Off,0, On,1)]_Fog("", Int) = 0
         [ToggleUI]_FogUseGlobal("", Int) = 0
+        [Enum(Sphere,0, Box,1)]_FogFalloffMode("", Int) = 0
         _FogMinRange("", Float) = 15
         _FogMaxRange("", Float) = 20
+        _FogBoxSize("", Vector) = (10, 10, 10, 0)
+        _FogBoxOffset("", Vector) = (0, 0, 0, 0)
+        _FogBlendDistance("", Float) = 2
         _FogColor("", Color) = (0.75,0.75,0.75,1)
         _FogRadius("", Float) = 2
         _FogFade("", Float) = 1
@@ -121,15 +149,23 @@ Shader "Mochie/Screen FX" {
         _ZoomStrG("", Range(0,1)) = 0
         _ZoomStrB("", Range(0,1)) = 0
         [ToggleUI]_ZoomUseGlobal("", Int) = 0
+        [Enum(Sphere,0, Box,1)]_ZoomFalloffMode("", Int) = 0
         _ZoomMinRange("", Float) = 3
         _ZoomMaxRange("", Float) = 4.5
+        _ZoomBoxSize("", Vector) = (10, 10, 10, 0)
+        _ZoomBoxOffset("", Vector) = (0, 0, 0, 0)
+        _ZoomBlendDistance("", Float) = 2
 
         // Screenspace Texture
         [Enum(Off,0, Static,1, Animated,2, Distortion,3)]_SST("", Int) = 0
         [Enum(Alpha,0, Add,1, Multiply,2)]_SSTBlend("", Int) = 0
         [ToggleUI]_SSTUseGlobal("", Int) = 1
+        [Enum(Sphere,0, Box,1)]_SSTFalloffMode("", Int) = 0
         _SSTMinRange("", Float) = 8
         _SSTMaxRange("", Float) = 15
+        _SSTBoxSize("", Vector) = (10, 10, 10, 0)
+        _SSTBoxOffset("", Vector) = (0, 0, 0, 0)
+        _SSTBlendDistance("", Float) = 2
         _ScreenTex("", 2D) = "white" {}
         _SSTColor("", Color) = (1,1,1,1)
         _SSTScale("", Float) = 2
@@ -154,8 +190,12 @@ Shader "Mochie/Screen FX" {
         _TPColor("", Color) = (1,1,1,1)
         _TPTexture("", 2D) = "white" {}
         _TPNoiseTex("", 2D) = "white" {}
+        [Enum(Sphere,0, Box,1)]_TPFalloffMode("", Int) = 0
         _TPMinRange("", Float) = 8
         _TPMaxRange("", Float) = 15
+        _TPBoxSize("", Vector) = (10, 10, 10, 0)
+        _TPBoxOffset("", Vector) = (0, 0, 0, 0)
+        _TPBlendDistance("", Float) = 2
         _TPRadius("", Float) = 2
         _TPFade("", Float) = 0.5
         _TPP2O("", Range(0,1)) = 1
@@ -169,8 +209,12 @@ Shader "Mochie/Screen FX" {
         [Enum(Off,0, Sobel,1, Aura,2)]_OutlineType("", Int) = 0
         [Enum(Sample16,16, Sample22,22, Sample43,43)]_AuraSampleCount("", Int) = 43
         [ToggleUI]_OLUseGlobal("", Int) = 1
+        [Enum(Sphere,0, Box,1)]_OLFalloffMode("", Int) = 0
         _OLMinRange("", Float) = 8
         _OLMaxRange("", Float) = 15
+        _OLBoxSize("", Vector) = (10, 10, 10, 0)
+        _OLBoxOffset("", Vector) = (0, 0, 0, 0)
+        _OLBlendDistance("", Float) = 2
         [HDR]_OutlineCol("", Color) = (0,0,0,1)
         _BackgroundCol("", Color) = (1,1,1,0)
         _OutlineThresh("", Float) = 100

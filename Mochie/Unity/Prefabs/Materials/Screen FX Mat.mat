@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Screen FX Mat
-  m_Shader: {fileID: 4800000, guid: 59e95fd81cd9e734f838e83e6faf1482, type: 3}
+  m_Shader: {fileID: 4800000, guid: 0d1d977ca72938b4bb8f3ed06b9a8645, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -57,7 +57,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _TPNoiseTex:
-        m_Texture: {fileID: 2800000, guid: dfbb7eeed695dc14d82b08d887041406, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _TPTexture:
@@ -133,7 +133,10 @@ Material:
     - _AutoRotateBG: 0
     - _AutoShift: 0
     - _AutoShiftSpeed: 0.25
+    - _BlendDistance: 2
     - _BlendMode: 0
+    - _BlurBlendDistance: 2
+    - _BlurFalloffMode: 0
     - _BlurMaxRange: 15
     - _BlurMinRange: 8
     - _BlurModel: 0
@@ -147,6 +150,8 @@ Material:
     - _CameraRenderMode: 0
     - _ClampMax: 1
     - _ClampToggle: 0
+    - _ColorBlendDistance: 2
+    - _ColorFalloffMode: 0
     - _ColorMaxRange: 15
     - _ColorMinRange: 8
     - _ColorUseGlobal: 1
@@ -155,8 +160,10 @@ Material:
     - _DBOpacity: 1
     - _DeepFry: 0
     - _DepthBufferToggle: 0
-    - _DisplayGlobalGizmo: 0
+    - _DisplayGlobalGizmo: 1
+    - _DistortionBlendDistance: 2
     - _DistortionFade: 1
+    - _DistortionFalloffMode: 0
     - _DistortionMaxRange: 15
     - _DistortionMinRange: 8
     - _DistortionModel: 0
@@ -170,11 +177,14 @@ Material:
     - _DoFP2O: 1
     - _DoFRadius: 2
     - _DstBlend: 0
+    - _FalloffMode: 0
     - _FilterModel: 0
     - _FilterStrength: 1
     - _Flavor: 0
     - _Fog: 0
+    - _FogBlendDistance: 2
     - _FogFade: 1
+    - _FogFalloffMode: 0
     - _FogHeightMax: 4
     - _FogHeightMin: 2
     - _FogMaxRange: 20
@@ -208,12 +218,16 @@ Material:
     - _NMFOpacity: 1
     - _NMFToggle: 0
     - _Noise: 0
+    - _NoiseBlendDistance: 2
+    - _NoiseFalloffMode: 0
     - _NoiseMaxRange: 15
     - _NoiseMinRange: 8
     - _NoiseMode: 0
     - _NoiseStrength: 1
     - _NoiseUseGlobal: 0
     - _NormalMapFilter: 0.75
+    - _OLBlendDistance: 2
+    - _OLFalloffMode: 0
     - _OLMaxRange: 15
     - _OLMinRange: 8
     - _OLUseGlobal: 1
@@ -242,7 +256,9 @@ Material:
     - _SSTAnimatedDist: 0
     - _SSTAnimationSpeed: 60
     - _SSTBlend: 0
+    - _SSTBlendDistance: 2
     - _SSTColumnsX: 2
+    - _SSTFalloffMode: 0
     - _SSTFrameSizeXN: 0
     - _SSTFrameSizeXP: 1
     - _SSTFrameSizeYN: 0
@@ -264,6 +280,8 @@ Material:
     - _ScanLineSpeed: 1
     - _ScanLineThick: 1
     - _ScrubPos: 0
+    - _ShakeBlendDistance: 2
+    - _ShakeFalloffMode: 0
     - _ShakeMaxRange: 15
     - _ShakeMinRange: 8
     - _ShakeModel: 0
@@ -279,7 +297,9 @@ Material:
     - _SobelFilterOpacity: 1
     - _SobelFilterToggle: 0
     - _SrcBlend: 1
+    - _TPBlendDistance: 2
     - _TPFade: 0.5
+    - _TPFalloffMode: 0
     - _TPMaxRange: 15
     - _TPMinRange: 8
     - _TPNoise: 0
@@ -293,6 +313,8 @@ Material:
     - _Value: 0
     - _WaveForm: 0
     - _Zoom: 0
+    - _ZoomBlendDistance: 2
+    - _ZoomFalloffMode: 0
     - _ZoomMaxRange: 4.5
     - _ZoomMinRange: 3
     - _ZoomStr: 0
@@ -302,22 +324,44 @@ Material:
     - _ZoomUseGlobal: 0
     m_Colors:
     - _BackgroundCol: {r: 1, g: 1, b: 1, a: 0}
+    - _BlurBoxOffset: {r: 0, g: 0, b: 0, a: 0}
+    - _BlurBoxSize: {r: 10, g: 10, b: 10, a: 0}
+    - _BoxOffset: {r: 0, g: 0, b: 0, a: 0}
+    - _BoxSize: {r: 10, g: 10, b: 10, a: 0}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _ColorBoxOffset: {r: 0, g: 0, b: 0, a: 0}
+    - _ColorBoxSize: {r: 10, g: 10, b: 10, a: 0}
     - _CubeRotate: {r: 180, g: 0, b: 0, a: 0}
     - _CubeRotateAlt: {r: 180, g: 0, b: 0, a: 0}
     - _CubeRotateBG: {r: 180, g: 0, b: 0, a: 0}
     - _DBColor: {r: 1, g: 1, b: 1, a: 1}
+    - _DistortionBoxOffset: {r: 0, g: 0, b: 0, a: 0}
+    - _DistortionBoxSize: {r: 10, g: 10, b: 10, a: 0}
+    - _FogBoxOffset: {r: 0, g: 0, b: 0, a: 0}
+    - _FogBoxSize: {r: 10, g: 10, b: 10, a: 0}
     - _FogColor: {r: 0.75, g: 0.75, b: 0.75, a: 1}
+    - _NoiseBoxOffset: {r: 0, g: 0, b: 0, a: 0}
+    - _NoiseBoxSize: {r: 10, g: 10, b: 10, a: 0}
     - _NoiseRGB: {r: 0, g: 0, b: 0, a: 0}
+    - _OLBoxOffset: {r: 0, g: 0, b: 0, a: 0}
+    - _OLBoxSize: {r: 10, g: 10, b: 10, a: 0}
     - _OutlineCol: {r: 0, g: 0, b: 0, a: 1}
     - _OutlineColAlt: {r: 1, g: 1, b: 1, a: 1}
     - _OutlineTexCoord: {r: 0.5, g: 0.5, b: 0, a: 0}
     - _OutlineTexCoordAlt: {r: 0.5, g: 0.5, b: 0, a: 0}
     - _RGB: {r: 1, g: 1, b: 1, a: 0}
+    - _SSTBoxOffset: {r: 0, g: 0, b: 0, a: 0}
+    - _SSTBoxSize: {r: 10, g: 10, b: 10, a: 0}
     - _SSTColor: {r: 1, g: 1, b: 1, a: 1}
+    - _ShakeBoxOffset: {r: 0, g: 0, b: 0, a: 0}
+    - _ShakeBoxSize: {r: 10, g: 10, b: 10, a: 0}
     - _SobelFilterBackgroundColor: {r: 0, g: 0, b: 0, a: 1}
     - _SobelFilterColor: {r: 1, g: 1, b: 1, a: 1}
+    - _TPBoxOffset: {r: 0, g: 0, b: 0, a: 0}
+    - _TPBoxSize: {r: 10, g: 10, b: 10, a: 0}
     - _TPColor: {r: 1, g: 1, b: 1, a: 1}
     - _TPNoiseScroll: {r: 0, g: 0, b: 0, a: 0}
     - _TPScroll: {r: 0, g: 0, b: 0, a: 0}
+    - _ZoomBoxOffset: {r: 0, g: 0, b: 0, a: 0}
+    - _ZoomBoxSize: {r: 10, g: 10, b: 10, a: 0}
   m_BuildTextureStacks: []

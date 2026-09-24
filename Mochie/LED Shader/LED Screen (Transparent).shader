@@ -1,4 +1,4 @@
-﻿// Original by Xiexe - https://github.com/Xiexe/RGBSubPixelDisplay-Shader
+// Original by Xiexe - https://github.com/Xiexe/RGBSubPixelDisplay-Shader
 
 Shader "Mochie/LED Screen (Transparent)" {
     Properties {

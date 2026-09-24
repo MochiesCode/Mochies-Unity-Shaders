@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 using UnityEditor;
 
@@ -26,7 +26,7 @@ namespace Mochie {
         public static GUIContent smoothnessModeText = new GUIContent("Smoothness Mode", "Use smoothness maps/values instead of roughness.");
         public static GUIContent swizzleText = new GUIContent("Swizzle", "Which two axis should be used as UVs for sampling textures");
         public static GUIContent texCoordSpaceText = new GUIContent("Texture Coordinate Space", "UV:\nUses the regular UVs baked into the mesh data.\n\nWorld:\nUses the world space coordinates of the mesh as UVs");
-        public static GUIContent workflowText = new GUIContent("Workflow", "Separated:\nAll textures are separate and sampled individually. Samples occlusion from the red channel, roughness from the green channel, metallic from the blue channel, and height from the alpha channel.\n\nPacked:\nPBR textures are packed into a single texture sample to improve performance and file size.");
+        public static GUIContent workflowText = new GUIContent("Workflow", "Separated:\nAll textures are separate and sampled individually. Samples occlusion from the red channel, roughness from the green channel, metallic from the blue channel, and height from the alpha channel.\n\nPacked:\nPBR textures are packed into a single texture sample to improve performance and file size.\n\nSpecular:\nUses a specular map workflow to define specular reflection color/tint and smoothness/roughness instead of metallic.");
         public static GUIContent packedHeightText = new GUIContent("Packed Height", "Enable height mapping utilizing whichever channel is selected from the packed texture.");
         public static GUIContent defaultSamplerText = new GUIContent("Primary Wrap/Filter Settings", "The import settings of this texture will determine the wrap mode and filtering settings used across all textures other than those in the detail textures section.");
         public static GUIContent defaultDetailSamplerText = new GUIContent("Detail Wrap/Filter Settings", "The import settings of this texture will determine the wrap mode and filtering settings used for the textures in the detail textures section.");
@@ -120,6 +120,7 @@ namespace Mochie {
         public static GUIContent mirrorNormalSwizzleText = new GUIContent("Normal Swizzle", "Determines the axis of offset when applying the normal maps to mirror based reflections. If reflections look broken or incorrect, try each of these options to see which matches the orientation of your surface.");
         public static GUIContent ignoreRealtimeGIText = new GUIContent("Ignore Realtime GI", "When enabled this material will ignore Enlighten realtime GI.");
         public static GUIContent monoTintText = new GUIContent("Mono Tint", "Forces all colors to be a similar shade, varying only in brightness and saturation");
+        public static GUIContent shadingModelText = new GUIContent("Shading Model", "Unity Standard:\nDefault unity standard shading style.\n\nGoogle Filament:\nA shading model developed by Google, primarily characterized by its handling of specular occlusion, and the less intense fresnel in its specular reflections.");
         
         // Uber
         public static GUIContent renderModeLabel = new GUIContent("Shading", "Enables or disables shading. If you aren't using any shading features, disabling this can provide a huge performance boost");
@@ -230,6 +231,8 @@ namespace Mochie {
         public static GUIContent foamNoiseTexStrength = new GUIContent("Edge Noise", "How strongly the noise texture should affect edge foam.");
         public static GUIContent causticsFade = new GUIContent("Depth Fade", "Determines how strongly caustics will fade out at greater depths.");
         public static GUIContent causticsSurfaceFade = new GUIContent("Surface Fade", "Determines how strongly caustics will fade out close to the surface.");
+        public static GUIContent causticsRotation = new GUIContent("Rotation", "Rotates the caustics projection in 3D space.");
+        public static GUIContent causticsRotateWithLight = new GUIContent("Rotate With Light", "Rotates the caustics projection to align with the directional light vector in the scene. If no directional light is present, falls back to the manual rotation setting.");
         public static GUIContent turbulence = new GUIContent("Strength", "Adds variation to the height of waves.");
         public static GUIContent blendNoise = new GUIContent("Blend Noise", "Each normal map (and some other textures) are sampled twice with different uvs. This texture will determine the pattern for blending between the two samples.");
         public static GUIContent detailMode = new GUIContent("Decal Mode", "Uses the alpha and UVs of the decal base color for blending and sampling these textures.");

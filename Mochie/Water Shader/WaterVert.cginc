@@ -156,13 +156,13 @@ v2f vert (
         #else
             o.wave = tex2DflipbookSmoothLOD(_VertOffsetFlipbook, sampler_VertOffsetFlipbook, flipbookUV, _VertOffsetFlipbookSpeed, 0);
         #endif
-        o.wave *= vertOffsetMask;
+        float3 waveOffset = (o.wave - 0.5) * vertOffsetMask;
         #ifdef TESSELLATION_VARIANT
-            o.wave *= o.offsetMask;
+            waveOffset *= o.offsetMask;
         #endif
         float3 bitangent = cross(v.normal, v.tangent.xyz) * v.tangent.w;
-        v.vertex.xyz += (o.wave.z - 0.5) * v.normal * _VertOffsetFlipbookStrength;
-        v.vertex.xyz -= (o.wave.x * normalize(v.tangent.xyz) / _VertOffsetFlipbookScale.x + o.wave.y * normalize(o.binormal) / _VertOffsetFlipbookScale.y) * _VertOffsetFlipbookStrength;
+        v.vertex.xyz += waveOffset.z * v.normal * _VertOffsetFlipbookStrength;
+        v.vertex.xyz -= (waveOffset.x * normalize(v.tangent.xyz) / _NormalMapFlipbookScale.x + waveOffset.y * normalize(bitangent) / _NormalMapFlipbookScale.y) * _VertOffsetFlipbookStrength;
         o.wave.y = 0;
     #endif
     

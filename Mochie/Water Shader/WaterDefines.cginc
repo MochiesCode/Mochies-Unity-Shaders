@@ -185,10 +185,12 @@ float _CausticsDisp;
 float _CausticsDistortion;
 float _CausticsDistortionScale;
 float2 _CausticsDistortionSpeed;
+float _CausticsRotateWithLight;
 float3 _CausticsRotation;
 float _CausticsSurfaceFade;
 float3 _CausticsColor;
 float4 _AngleTint;
+float4 _OpaqueAngleTint;
 float _TessMin;
 float _TessMax;
 float _TessDistMin;
@@ -243,13 +245,15 @@ int _WireframeVisualization;
 float4 _WireframeColor;
 int _CausticsFlipbookBlend;
 float4 _HorizonTint;
+float4 _OpaqueHorizonTint;
 float _HorizonTintDistance;
 float _HorizonTintStrength;
 int _FoamMapUVSet;
 int _FoamMode;
 int _FoamVertexColorChannel;
 float _FoamStrength;
-
+float4 _BackfaceFadeColor;
+float _BackfaceFadeStrength;
 float _Test1, _Test2;
 float _ZeroProp;
 const static float2 jump = float2(0.1, 0.25);
@@ -319,12 +323,65 @@ struct v2f {
     UNITY_VERTEX_OUTPUT_STEREO
 };
 
-#include "WaterSSR.cginc"
-#include "WaterIndirect.cginc"
+struct LightingData {
+    float3 reflectionCol;
+    float3 specHighlightCol;
+    float3 directCol;
+    float3 indirectCol;
+    float3 lightCol;
+    float3 lightDir;
+    float3 viewDir;
+    float3 reflDir;
+    float3 halfVector;
+    float3 specularTint;
+    float3 reflAdjust;
+    float2 screenUV;
+    float atten;
+    float NdotL;
+    float NdotV;
+    float omr;
+    float3 lmSpec;
+    float3 areaLitColor;
+    float3 ltcgiSpecularity;
+    float3 lightVolumeSpecularity;
+    bool isRealtime;
+};
+
+struct InputData {
+    float4 baseColor;
+    float4 diffuse;
+    float4 baseCol;
+    float4 emission;
+    float4 detailBC;
+    float4 surfaceTint;
+    float4 flowMap;
+    float3 normal;
+    float3 normalTS;
+    float3 vNormal;
+    float3 tangent;
+    float3 binormal;
+    float roughness;
+    float roughBRDF;
+    float metallic;
+    float alpha;
+    float depth;
+    float rawDepth;
+    float edgeFadeDepth;
+    float foam;
+    float crestFoam;
+    float2 screenUV;
+    float2 baseUV;
+    float2 uvOffset;
+    bool isFrontFace;
+};
+
 #include "WaterFunctions.cginc"
+#include "WaterSSR.cginc"
 #include "WaterThirdParty.cginc"
-#if AREALIT_ENABLED
-    #include "../../AreaLit/Shader/Lighting.hlsl"
+#if !defined(META_PASS)
+    #include "WaterInput.cginc"
+    #include "WaterBRDF.cginc"
+    #include "WaterLighting.cginc"
 #endif
 
 #endif // WATER_DEFINES_INCLUDED
