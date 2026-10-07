@@ -97,6 +97,7 @@ float _LTCGIRoughness;
 
 float _AreaLitStrength;
 float _AreaLitRoughnessMult;
+sampler2D _AreaLitMask;
 float4 _AreaLitMask_ST;
 
 float rainStrength;

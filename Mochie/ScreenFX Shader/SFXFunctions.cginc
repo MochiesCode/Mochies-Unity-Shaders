@@ -183,7 +183,10 @@ void ApplyColor(v2f i, inout float3 col, audioLinkData ald){
     }
     float3 filteredCol = hsv*_RGB;
     ApplyGeneralFilters(filteredCol);
-    float interpolator = _FilterStrength * i.colorF * i.pulseSpeed;
+    float interpolator = _FilterStrength * i.colorF;
+    #if X_FEATURES
+        interpolator *= lerp(1, i.pulseSpeed, _PulseColor);
+    #endif
     #if AUDIOLINK_ENABLED
         interpolator *= GetAudioLinkBand(ald, _AudioLinkFilteringStrength, _AudioLinkFilteringBand, _AudioLinkFilteringMin, _AudioLinkFilteringMax);
     #endif

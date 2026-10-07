@@ -23,7 +23,7 @@ namespace Mochie {
             "Render Settings"
         }, 1);
 
-        string versionLabel = "v1.15";
+        string versionLabel = "v1.15.1";
 
         // Surface
         MaterialProperty _Workflow = null;

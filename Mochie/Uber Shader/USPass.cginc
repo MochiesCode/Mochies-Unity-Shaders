@@ -477,7 +477,7 @@ float4 frag(g2f i) : SV_Target {
     #if EMISSION_ENABLED
         float3 emiss = lerp(_EmissionColor.rgb, GetEmission(i, m, al), _ApplyAlbedoTint);
         #if PULSE_ENABLED
-            emiss *= GetPulse(i);
+            emiss *= GetPulse(m);
         #endif
         #if AUDIOLINK_ENABLED
             float emissValueAL = GetAudioLinkBand(al, _AudioLinkEmissionBand, _AudioLinkRemapEmissionMin, _AudioLinkRemapEmissionMax);

@@ -7,7 +7,7 @@ float ShadowGetOneMinusReflectivity(v2f i){
 
     float metallicity = _MetallicStrength;
     #if defined(_WORKFLOW_PACKED_ON)
-        metallicity = SamplePackedMap(i.uv0.xy)[_MetallicChannel] * _MetallicStrength;
+        metallicity = SamplePackedMap(i.uv0.xy)[_MetallicChannel] * _PackedMetallicStrength;
     #elif defined(_WORKFLOW_SPECULAR_ON)
         float4 spec = SampleSpecularMap(i.uv0.xy);
         return 1.0 - max(max(spec.r, spec.g), spec.b);
@@ -15,13 +15,15 @@ float ShadowGetOneMinusReflectivity(v2f i){
         metallicity = SampleMetallicMap(i.uv0.xy);
     #endif
 
-    #if defined(_DETAIL_METALLIC_ON) || defined(_DETAIL_WORKFLOW_PACKED_ON)
+    #if defined(_DETAIL_METALLIC_ON) || defined(_WORKFLOW_DETAIL_PACKED_ON)
         float detailMask = detailMask = _DetailMask.Sample(sampler_DefaultSampler, i.uv1.xy)[_DetailMaskChannel];
-        #if defined(_DETAIL_METALLIC_ON)
+        // Same precedence and blending as InitializeInputData: the packed detail workflow wins over separate maps
+        #if defined(_WORKFLOW_DETAIL_PACKED_ON)
+            float detailMetallic = SampleDetailPackedMap(i.uv0.zw)[_DetailMetallicChannel];
+            float blendedMetallic = _DetailMaskMode == 1 ? detailMetallic : BlendScalars(metallicity, detailMetallic, _DetailMetallicBlend);
+            metallicity = lerp(metallicity, saturate(blendedMetallic), _DetailMetallicStrength * detailMask);
+        #elif defined(_DETAIL_METALLIC_ON)
             float4 detailMetallic = SampleDetailMetallicMap(i.uv0.zw);
-            metallicity = lerp(metallicity, saturate(BlendScalarsAlpha(metallicity, detailMetallic, _DetailMetallicBlend, detailMetallic.a)), _DetailMetallicStrength * detailMask);
-        #elif defined(_DETAIL_WORKFLOW_PACKED_ON)
-            float detailMetallic = SampleDetailPackedMap(i.uv0.xy)[_DetailMetallicChannel];
             metallicity = lerp(metallicity, saturate(BlendScalarsAlpha(metallicity, detailMetallic, _DetailMetallicBlend, detailMetallic.a)), _DetailMetallicStrength * detailMask);
         #endif
     #endif

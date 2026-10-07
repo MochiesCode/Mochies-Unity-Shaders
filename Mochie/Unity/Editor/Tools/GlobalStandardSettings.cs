@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Linq;
 using UnityEngine.SceneManagement;
+using UnityEngine.Rendering;
 using System.IO;
 
 namespace Mochie {
@@ -14,7 +15,7 @@ namespace Mochie {
         enum ToggleOffOn {Off, On}
         enum BakeryMode {None, SH, RNM, MonoSH}
         enum SpecularityShadingModel {Unity_Standard, Google_Filament}
-        enum AreaLitOcclusionUVSet {UV0, UV1, UV2, UV3, UV4, LightmapUV, UV5}
+        enum AreaLitOcclusionUVSet {UV0, UV1, UV2, UV3, UV4, LightmapUV}
         enum SrcShaderSelection {Unity_Standard, Filamented, M_Standard, M_Standard_Lite, M_Standard_Mobile}
         enum DestShaderSelection {M_Standard, M_Standard_Lite, M_Standard_Mobile}
         bool applyToScene = true;
@@ -80,12 +81,12 @@ namespace Mochie {
         ToggleOffOn areaLitSpecularOcclusion = ToggleOffOn.Off;
         float areaLitStrength = 1f;
         float areaLitRoughnessMultiplier = 1f;
-        RenderTexture lightMesh;
-        RenderTexture lightTex0;
-        RenderTexture lightTex1;
-        RenderTexture lightTex2;
-        RenderTexture lightTex3;
-        Texture2D areaLitOcclusion;
+        Texture lightMesh;
+        Texture lightTex0;
+        Texture lightTex1;
+        Texture lightTex2;
+        Texture lightTex3;
+        Texture areaLitOcclusion;
         AreaLitOcclusionUVSet areaLitOcclusionUVSet = AreaLitOcclusionUVSet.UV0;
 
         bool applyAreaLitToggle = false;
@@ -131,6 +132,16 @@ namespace Mochie {
             EditorGUIUtility.labelWidth = oldLabelWidth;
             EditorGUILayout.EndHorizontal();
             return newToggleState;
+        }
+
+        // Accepts any texture class (Texture2D, RenderTexture, etc.) as long as its dimension matches the shader property
+        Texture DrawTextureField(string label, Texture tex, TextureDimension dimension){
+            Texture newTex = (Texture)EditorGUILayout.ObjectField(label, tex, typeof(Texture), true, GUILayout.Height(EditorGUIUtility.singleLineHeight));
+            if (newTex != null && newTex.dimension != dimension){
+                Debug.LogWarning(label + " only accepts " + (dimension == TextureDimension.Tex2DArray ? "texture arrays" : "2D textures") + ", but " + newTex.name + " is " + newTex.dimension + ".");
+                return tex;
+            }
+            return newTex;
         }
 
         void OnGUI(){
@@ -269,22 +280,22 @@ namespace Mochie {
                     areaLitRoughnessMultiplier = EditorGUILayout.FloatField("Roughness Multiplier", areaLitRoughnessMultiplier);
                 });
                 applyLightMesh = DrawToggleProperty(applyLightMesh, () => {
-                    lightMesh = (RenderTexture)EditorGUILayout.ObjectField("Light Mesh", lightMesh, typeof(RenderTexture), true, GUILayout.Height(EditorGUIUtility.singleLineHeight));
+                    lightMesh = DrawTextureField("Light Mesh", lightMesh, TextureDimension.Tex2D);
                 });
                 applyLightTex0 = DrawToggleProperty(applyLightTex0, () => {
-                    lightTex0 = (RenderTexture)EditorGUILayout.ObjectField("Light Texture 0", lightTex0, typeof(RenderTexture), true, GUILayout.Height(EditorGUIUtility.singleLineHeight));
+                    lightTex0 = DrawTextureField("Light Texture 0", lightTex0, TextureDimension.Tex2D);
                 });
                 applyLightTex1 = DrawToggleProperty(applyLightTex1, () => {
-                    lightTex1 = (RenderTexture)EditorGUILayout.ObjectField("Light Texture 1", lightTex1, typeof(RenderTexture), true, GUILayout.Height(EditorGUIUtility.singleLineHeight));
+                    lightTex1 = DrawTextureField("Light Texture 1", lightTex1, TextureDimension.Tex2D);
                 });
                 applyLightTex2 = DrawToggleProperty(applyLightTex2, () => {
-                    lightTex2 = (RenderTexture)EditorGUILayout.ObjectField("Light Texture 2", lightTex2, typeof(RenderTexture), true, GUILayout.Height(EditorGUIUtility.singleLineHeight));
+                    lightTex2 = DrawTextureField("Light Texture 2", lightTex2, TextureDimension.Tex2D);
                 });
                 applyLightTex3 = DrawToggleProperty(applyLightTex3, () => {
-                    lightTex3 = (RenderTexture)EditorGUILayout.ObjectField("Light Texture 3", lightTex3, typeof(RenderTexture), true, GUILayout.Height(EditorGUIUtility.singleLineHeight));
+                    lightTex3 = DrawTextureField("Light Texture 3", lightTex3, TextureDimension.Tex2DArray);
                 });
                 applyAreaLitOcclusion = DrawToggleProperty(applyAreaLitOcclusion, () => {
-                    areaLitOcclusion = (Texture2D)EditorGUILayout.ObjectField("Occlusion", areaLitOcclusion, typeof(Texture2D), true, GUILayout.Height(EditorGUIUtility.singleLineHeight));
+                    areaLitOcclusion = DrawTextureField("Occlusion", areaLitOcclusion, TextureDimension.Tex2D);
                 });
                 applyAreaLitOcclusionUVSet = DrawToggleProperty(applyAreaLitOcclusionUVSet, () => {
                     areaLitOcclusionUVSet = (AreaLitOcclusionUVSet)EditorGUILayout.EnumPopup("Occlusion UV Set", areaLitOcclusionUVSet);
@@ -321,7 +332,7 @@ namespace Mochie {
                 }
                 if (applySpecToggle){
                     m.SetInt("_SpecularHighlightsToggle", (int)specToggle);
-                    MGUI.SetKeyword(m, "_SPECULARHIGHLIGHTS_ON", (int)specToggle == 1);
+                    MGUI.SetKeyword(m, "_SPECULAR_HIGHLIGHTS_ON", (int)specToggle == 1);
                 }
 
                 // Bakery Settings

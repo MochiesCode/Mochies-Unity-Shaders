@@ -50,7 +50,7 @@ Shader "Mochie/Glass (Two Pass)" {
         _RainThreshold("Threshold", Range(0,1)) = 0.01
         _RainThresholdSize("Threshold Size", Range(0,1)) = 0.01
         _RainMask("Mask", 2D) = "white" {}
-        [Enum(Red,0, Green,1, Blue,2, Alpha,0)]_RainMaskChannel("Channel", Int) = 0
+        [Enum(Red,0, Green,1, Blue,2, Alpha,3)]_RainMaskChannel("Channel", Int) = 0
         _DropletMask("Rain Droplet Mask", 2D) = "white" {}
         _DynamicDroplets("Droplet Strength", Range(0,1)) = 0.5
         _RainBias("Rain Bias", Float) = -1

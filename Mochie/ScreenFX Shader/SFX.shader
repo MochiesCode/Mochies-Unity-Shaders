@@ -363,7 +363,7 @@ Shader "Mochie/Screen FX" {
             #pragma fragment frag
             #pragma shader_feature_local _COLOR_ON
             #pragma shader_feature_local _SHAKE_ON
-            #pragma shader_feature_local _ _DISTORTION_ON _DISTORITON_WORLD_ON
+            #pragma shader_feature_local _ _DISTORTION_ON _DISTORTION_WORLD_ON
             #pragma shader_feature_local _ _BLUR_PIXEL_ON _BLUR_DITHER_ON _BLUR_RADIAL_ON
             #pragma shader_feature_local _BLUR_Y_ON
             #pragma shader_feature_local _CHROMATIC_ABBERATION_ON

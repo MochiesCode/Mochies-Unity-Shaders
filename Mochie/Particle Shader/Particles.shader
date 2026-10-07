@@ -28,7 +28,6 @@ Shader "Mochie/Particles" {
         _AlphaMaskPolarRadius("Radius", Float) = 1
         [Enum(Red,0, Green,1, Blue,2, Alpha,3)]_AlphaMaskChannel("Alpha Mask Channel", Int) = 0
         [HDR]_Color("", Color) = (1,1,1,1)
-        [ToggleUI]_Layering("", Int) = 0
         [Enum(Lerp,0, Add,1, Sub,2, Mult,3)]_TexBlendMode("", Int) = 0
         _SecondTex("", 2D) = "white" {}
         [Enum(Default,0, Polar,1, Panosphere,2)]_SecondTexUVMode("UV Mode", Int) = 0

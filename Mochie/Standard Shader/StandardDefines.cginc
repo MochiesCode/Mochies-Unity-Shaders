@@ -207,7 +207,7 @@ MOCHIE_DECLARE_TEX2D_SCREENSPACE(_CameraDepthTexture);
 MOCHIE_DECLARE_TEX2D_SCREENSPACE(_StandardGrab);
 MOCHIE_DECLARE_TEX2D(_NoiseTexSSR);
 float4 _CameraDepthTexture_TexelSize;
-float4 _GrabTexture_TexelSize;
+float4 _StandardGrab_TexelSize;
 float4 _NoiseTexSSR_TexelSize;
 float _SSRStrength;
 float _SSRHeight;

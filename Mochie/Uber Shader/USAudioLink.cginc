@@ -5,15 +5,15 @@ float GetAudioLinkBand(audioLinkData al, int band, float remapMin, float remapMa
     return Remap(bands[band], _AudioLinkRemapMin, _AudioLinkRemapMax, remapMin, remapMax);
 }
 
+// time (0-1) reads back through the band's history, so effects can travel outward over time
 void InitializeAudioLink(inout audioLinkData al, float time){
-    float versionBand = 1;
-    float versionTime = 1;
     al.textureExists = AudioLinkIsAvailable();
     if (al.textureExists){
-        al.bass = AudioLinkData(ALPASS_AUDIOBASS);
-        al.lowMid = AudioLinkData(ALPASS_AUDIOLOWMIDS);
-        al.upperMid = AudioLinkData(ALPASS_AUDIOHIGHMIDS);
-        al.treble = AudioLinkData(ALPASS_AUDIOTREBLE);
+        float2 delay = float2(saturate(time) * 127, 0);
+        al.bass = AudioLinkLerp(ALPASS_AUDIOBASS + delay).r;
+        al.lowMid = AudioLinkLerp(ALPASS_AUDIOLOWMIDS + delay).r;
+        al.upperMid = AudioLinkLerp(ALPASS_AUDIOHIGHMIDS + delay).r;
+        al.treble = AudioLinkLerp(ALPASS_AUDIOTREBLE + delay).r;
     }
 }
 

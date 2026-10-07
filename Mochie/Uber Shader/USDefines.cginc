@@ -372,7 +372,7 @@ float _SpritesheetRot, _FPS;
 float _SpritesheetRot1, _FPS1;
 float _SpritesheetBrightness, _SpritesheetBrightness1;
 
-int _OutlineToggle, _ApplyOutlineLighting, _ApplyOutlineEmiss, _ApplyAlbedoTint, _UseVertexColor;
+int _ApplyOutlineLighting, _ApplyOutlineEmiss, _ApplyAlbedoTint, _UseVertexColor;
 float4 _OutlineCol;
 float _OutlineThicc, _OutlineRange, _OutlineMult;
 float4 _EmissionColor;

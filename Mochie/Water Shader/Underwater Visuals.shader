@@ -24,7 +24,6 @@ Shader "Mochie/Underwater Visuals" {
 
         // Caustics
         [Toggle(CAUSTICS_ENABLED)]_CausticsToggle("Enable", Int) = 1
-        [HideInInspector]_NormalMap("Normal Map", 2D) = "bump" {}
         [Enum(Voronoi,0, Texture,1, Flipbook,2)]_CausticsMode("Caustics Style", Int) = 2
         _CausticsTex("Caustics Texture", 2D) = "black" {}
         _CausticsTexArray("Texture Array", 2DArray) = "black" {}
@@ -118,7 +117,6 @@ Shader "Mochie/Underwater Visuals" {
             float _CausticsOpacity;
             float _CausticsFlipbookDisp;
 
-            sampler2D _NormalMap;
             float _RenderMode;
             float _NaNLmao;
 
@@ -232,7 +230,7 @@ Shader "Mochie/Underwater Visuals" {
                         depthUV = Rotate3D(wPos, _CausticsRotation).xz;
                     }
                     #if defined(_CAUSTICS_VORONOI_ON)
-                        float3 causticsOffset = UnpackNormal(tex2D(_NormalMap, (depthUV*_CausticsDistortionScale*0.1)+_Time.y*_CausticsDistortionSpeed*0.05));
+                        float3 causticsOffset = UnpackNormal(MOCHIE_SAMPLE_TEX2D(_CausticsDistortionTex, (depthUV*_CausticsDistortionScale*0.1)+_Time.y*_CausticsDistortionSpeed*0.05));
                         float2 causticsUV = (depthUV + (causticsOffset.xy * _CausticsDistortion)) * _CausticsScale;
                         float voronoi0 = Voronoi2D(causticsUV, _Time.y*_CausticsSpeed);
                         float voronoi1 = Voronoi2D(causticsUV, (_Time.y*_CausticsSpeed)+_CausticsDisp);
@@ -242,7 +240,7 @@ Shader "Mochie/Underwater Visuals" {
                         float3 caustics = smootherstep(0, 1, voronoi) * _CausticsOpacity * _CausticsColor;
                         col.rgb += caustics;
                     #elif defined(_CAUSTICS_TEXTURE_ON)
-                        float3 causticsOffset = UnpackNormal(tex2D(_NormalMap, (depthUV*_CausticsDistortionScale*0.1)+_Time.y*_CausticsDistortionSpeed*0.05));
+                        float3 causticsOffset = UnpackNormal(MOCHIE_SAMPLE_TEX2D(_CausticsDistortionTex, (depthUV*_CausticsDistortionScale*0.1)+_Time.y*_CausticsDistortionSpeed*0.05));
                         float2 causticsUV = (depthUV + (causticsOffset.xy * _CausticsDistortion)) * _CausticsScale / 5.0;
                         causticsUV *= 0.2;
                         _CausticsSpeed *= 0.05;
@@ -253,7 +251,7 @@ Shader "Mochie/Underwater Visuals" {
                         float3 tex1 = MOCHIE_SAMPLE_TEX2D(_CausticsTex, uvTex1);
                         float3 caustics = min(tex0, tex1);
                         caustics = clamp(caustics, 0, 0.1);
-                        col.rgb += caustics * _CausticsOpacity;
+                        col.rgb += caustics * _CausticsOpacity * _CausticsColor;
                     #elif defined(_CAUSTICS_FLIPBOOK_ON)
                         float2 causticsUV = depthUV * _CausticsScale / 7.0;
                         _CausticsFlipbookSpeed *= 0.8;
@@ -262,7 +260,7 @@ Shader "Mochie/Underwater Visuals" {
                         float causticsB = tex2DflipbookSmoothOffset(_CausticsTexArray, sampler_CausticsTexArray, causticsUV * 0.35, _CausticsFlipbookSpeed, _CausticsFlipbookDisp*2).b;
                         float3 caustics = float3(causticsR, causticsG, causticsB);
                         caustics = smootherstep(0.15, 1, caustics);
-                        col.rgb += caustics;
+                        col.rgb += caustics * _CausticsOpacity * 2 * _CausticsColor;
                     #endif
                     col.rgb *= caustFade;
                 #else
@@ -536,14 +534,14 @@ Shader "Mochie/Underwater Visuals" {
                     #ifdef HIGH_QUALITY_BLUR
                         blurStr *= 1.25;
                         [unroll(136)]
-                        for (uint k = 0; k < 137; ++k){
+                        for (uint k = 0; k < 136; ++k){
                             uvb.xy = uv.xy + (blurKernel[k] * blurStr);
                             blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_DoFGrab, uvb);
                         }
-                        blurCol /= 137;
+                        blurCol /= 136;
                     #else
                         [unroll(43)]
-                        for (uint k = 0; k < 44; ++k){
+                        for (uint k = 0; k < 43; ++k){
                             uvb.xy = uv.xy + (blurKernel[k] * blurStr);
                             blurCol += MOCHIE_SAMPLE_TEX2D_SCREENSPACE(_DoFGrab, uvb);
                         }

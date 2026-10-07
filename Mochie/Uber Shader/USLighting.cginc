@@ -74,6 +74,10 @@ float3 GetNormalDir(g2f i, lighting l, masks m){
             
         return normalize(normalMap.x * l.tangent + normalMap.y * l.binormal + normalMap.z * i.normal);
     #else
+        #if !OUTLINE_PASS
+            if (_HardenNormals == 1)
+                return normalize(cross(ddy(i.worldPos), ddx(i.worldPos)));
+        #endif
         return normalize(i.normal);
     #endif
 }

@@ -89,7 +89,7 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
         normalMap = UnpackScaleNormal(SampleTexture(_NormalMap, TRANSFORM_TEX(i.uv, _NormalMap)), _NormalStrength);
     #endif
     #if defined(_RAIN_ON)
-        float rainMask = tex2D(_RainMask, maskUV);
+        float rainMask = tex2D(_RainMask, maskUV)[(int)_RainMaskChannel];
         float3 rainNormal = normalDir;
         #if defined(_RAINMODE_RIPPLE)
             rainNormal = GetRipplesNormal(i.uv, _RippleScale, _RippleStrength*rainMask, _RippleSpeed, _RippleSize, _RippleDensity);
@@ -148,8 +148,8 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
         float3 specularTint = lerp(unity_ColorSpaceDielectricSpec.rgb, 1, metallic);
         indirectRough = roughSq;
 
-        float3 halfVector = normalize(lightDir + viewDir);
-        float NdotL = dot(normalDir, lightDir);
+        float3 halfVector = Unity_SafeNormalize(lightDir + viewDir);
+        float NdotL = saturate(dot(normalDir, lightDir));
         float NdotH = Safe_DotClamped(normalDir, halfVector);
         float LdotH = Safe_DotClamped(lightDir, halfVector);
         float NdotV = abs(dot(normalDir, viewDir));
@@ -171,7 +171,7 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
 
         #if defined(_SSR_ON)
             float4 ssrCol = GetSSR(i.worldPos, viewDir, reflDir, normalDir, 1-roughness, baseColorTex, metallic, ComputeGrabScreenPos(i.pos));
-            reflCol = lerp(reflCol, ssrCol.rgb, ssrCol.a);
+            reflCol = lerp(reflCol, ssrCol.rgb, ssrCol.a * saturate(_SSRStrength));
         #endif
 
         #if defined(_SPECULAR_HIGHLIGHTS_ON)
@@ -191,6 +191,9 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
             half4 diffTerm, specTerm;
             if (_AreaLitStrength > 0){
                 ShadeAreaLights(ai, diffTerm, specTerm, true, !IsSpecularOff(), IsStereo());
+                float areaLitMask = tex2D(_AreaLitMask, TRANSFORM_TEX(i.uv, _AreaLitMask)).r;
+                diffTerm *= _AreaLitStrength * areaLitMask;
+                specTerm *= _AreaLitStrength * areaLitMask;
             }
             else {
                 diffTerm = 0;
@@ -250,15 +253,18 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
         grabCol *= _GrabpassTint;
     #endif
 
-    #if defined(_AREALIT_ON) && defined(_LITBASECOLOR_ON)
-        baseColorTex.rgb += diffTerm;
-    #endif
     float3 baseColor = baseColorTex.rgb * baseColorTex.a;
+    #if AREALIT_ENABLED && defined(_LIT_BASECOLOR_ON) && defined(UNITY_PASS_FORWARDBASE)
+        float3 areaLitDiffuse = baseColor * diffTerm.rgb;
+    #endif
     #if defined(_LIT_BASECOLOR_ON) || defined(UNITY_PASS_FORWARDADD)
         #if defined(UNITY_PASS_FORWARDBASE)
         if (any(_WorldSpaceLightPos0.xyz))
         #endif
-        baseColor *= _LightColor0 * atten;   
+        baseColor *= _LightColor0 * atten;
+    #endif
+    #if AREALIT_ENABLED && defined(_LIT_BASECOLOR_ON) && defined(UNITY_PASS_FORWARDBASE)
+        baseColor += areaLitDiffuse;
     #endif
     float3 specularity = specCol + reflCol + lmSpec + lvSpec;
     #if defined(_AREALIT_ON)

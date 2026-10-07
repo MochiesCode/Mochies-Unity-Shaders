@@ -242,7 +242,7 @@ float3 GetMatcapNormal(g2f i, lighting l, Texture2D tex, float strength, float2 
     if (useNormalMap){
         float2 uv = ApplyScaleOffset(i.rawUV, scaleOffset);
         uv += _Time.y*scroll;
-        float3 normalMap = UnpackScaleNormal(MOCHIE_SAMPLE_TEX2D_SAMPLER(_MatcapNormal0, sampler_MainTex, uv), strength); 
+        float3 normalMap = UnpackScaleNormal(MOCHIE_SAMPLE_TEX2D_SAMPLER(tex, sampler_MainTex, uv), strength); 
         matcapNormal = normalize(normalMap.x * l.tangent + normalMap.y * l.binormal + normalMap.z * i.normal);
         if (mixNormals){
             matcapNormal = BlendNormals(matcapNormal, l.normal);

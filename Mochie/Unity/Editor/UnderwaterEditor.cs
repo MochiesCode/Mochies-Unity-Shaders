@@ -22,7 +22,7 @@ namespace Mochie {
             "Fog"
         }, 0);
 
-        string versionLabel = "v1.2";
+        string versionLabel = "v1.3";
 
         // Base
         MaterialProperty _StencilRef = null;

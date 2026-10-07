@@ -252,7 +252,7 @@ float4 GetAlbedo(g2f i, lighting l, masks m, audioLinkData al){
 //----------------------------
 // Emission/Rim
 //----------------------------
-float GetPulse(g2f i){
+float GetPulse(masks m){
     float pulse = 1;
     [flatten]
     switch (_PulseWaveform){
@@ -263,8 +263,8 @@ float GetPulse(g2f i){
         case 4: pulse = 1-frac(_Time.y * (_PulseSpeed * 0.2)); break; 		// Reverse Saw
         default: break;
     }
-    float mask = MOCHIE_SAMPLE_TEX2D_SAMPLER(_PulseMask, sampler_MainTex, i.uv.xy);
-    pulse = lerp(1, pulse, _PulseStr*mask);
+    // Comes from _PulseMask (Separate masking) or _PackedMask3.g (Packed masking), and is 1 with masking off
+    pulse = lerp(1, pulse, _PulseStr*m.emissPulseMask);
     return pulse;
 }
 
@@ -276,7 +276,7 @@ float3 GetEmission(g2f i, masks m, audioLinkData al){
     emiss *= m.emissMask;
     #if !OUTLINE_PASS
         #if PULSE_ENABLED
-            emiss *= GetPulse(i);
+            emiss *= GetPulse(m);
         #endif
         #if AUDIOLINK_ENABLED
             float emissValueAL = GetAudioLinkBand(al, _AudioLinkEmissionBand, _AudioLinkRemapEmissionMin, _AudioLinkRemapEmissionMax);

@@ -16,7 +16,7 @@ float3 GetVertexManipulation(appdata v, inout v2f o){
     float3 worldOrigin = mul(unity_ObjectToWorld, float4(0, 0, 0, 1));
     worldPos -= worldOrigin;
     float2 vertexMaskUV = ScaleOffsetRotateScrollUV(v.uv0, _VertexMask_ST.xy, _VertexMask_ST.zw, _UVVertexMaskRotation, _UVVertexMaskScroll);
-    float4 vertexMask = MOCHIE_SAMPLE_TEX2D_LOD(_VertexMask, vertexMaskUV, 0);
+    float3 vertexMask = MOCHIE_SAMPLE_TEX2D_LOD(_VertexMask, vertexMaskUV, 0)[_VertexMaskChannel];
     float3 animatedRotation = _VertexRotationAnimated * _Time.y * 10 * vertexMask;
     float3 staticRotation = _VertexRotationStatic * vertexMask;
     float3 staticOffset = _VertexOffset * vertexMask;
@@ -26,7 +26,7 @@ float3 GetVertexManipulation(appdata v, inout v2f o){
     [branch]
     if (_WindToggle == 1 && _WindStrength != 0){
         if (_WindMaskingMode == 1)
-            vertexMask = v.color;
+            vertexMask = v.color.rgb;
         
         float3 noise0 = 0;
         float3 noise1 = 0;

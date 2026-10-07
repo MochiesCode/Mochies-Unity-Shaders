@@ -28,7 +28,7 @@ namespace Mochie {
             "Debug"
         }, 3);
         
-        string versionLabel = "v2.14";
+        string versionLabel = "v2.14.1";
 
         // Variant Settings
         MaterialProperty _BlendMode = null;
@@ -105,17 +105,14 @@ namespace Mochie {
         MaterialProperty _DetailMetallicMap = null;
         MaterialProperty _DetailMetallicStrength = null;
         MaterialProperty _DetailMetallicBlend = null;
-        MaterialProperty _DetailMetallicMultiplier = null;
         MaterialProperty _DetailMetallicChannel = null;
         MaterialProperty _DetailRoughnessMap = null;
         MaterialProperty _DetailRoughnessStrength = null;
         MaterialProperty _DetailRoughnessBlend = null;
-        MaterialProperty _DetailRoughnessMultiplier = null;
         MaterialProperty _DetailRoughnessChannel = null;
         MaterialProperty _DetailOcclusionMap = null;
         MaterialProperty _DetailOcclusionStrength = null;
         MaterialProperty _DetailOcclusionBlend = null;
-        MaterialProperty _DetailOcclusionMultiplier = null;
         MaterialProperty _DetailOcclusionChannel = null;
         MaterialProperty _UVDetailSet = null;
         MaterialProperty _UVDetailSwizzle = null;
@@ -535,7 +532,7 @@ namespace Mochie {
                             bool hasAnyTexture = _OcclusionMap.textureValue != null || _RoughnessMap.textureValue != null || _MetallicMap.textureValue != null || _HeightMap.textureValue != null;
                             MGUI.ToggleGroup(!hasAnyTexture);
                             if (MGUI.PropertyButton("Pack Textures")){
-                                TexturePacker.PackTextures(mat, _OcclusionMap, _OcclusionStrength, _RoughnessMap, _RoughnessStrength, _MetallicMap, _MetallicStrength, _HeightMap, _HeightStrength, _PackedMap);
+                                TexturePacker.PackTextures(mat, _OcclusionMap, _OcclusionStrength, _RoughnessMap, _RoughnessStrength, _MetallicMap, _MetallicStrength, _HeightMap, null, _PackedMap);
                                 _PrimaryWorkflow.floatValue = 1f;
                                 mat.SetInt("_PrimaryWorkflow", 1);
                                 _OcclusionChannel.floatValue = 0f;
@@ -736,9 +733,9 @@ namespace Mochie {
                             });
                         }
                         MGUI.PropertyGroup(()=>{
-                            MGUI.ToggleSlider(me, Tips.metallicPackedText, _DetailMetallicMultiplier, _DetailMetallicStrength);
-                            MGUI.ToggleSlider(me, _SmoothnessToggle.floatValue == 0 ? Tips.roughnessPackedText : Tips.smoothnessPackedText, _DetailRoughnessMultiplier, _DetailRoughnessStrength);
-                            MGUI.ToggleSlider(me, Tips.occlusionPackedText, _DetailOcclusionMultiplier, _DetailOcclusionStrength);
+                            me.ShaderProperty(_DetailMetallicStrength, Tips.metallicPackedText);
+                            me.ShaderProperty(_DetailRoughnessStrength, _SmoothnessToggle.floatValue == 0 ? Tips.roughnessPackedText : Tips.smoothnessPackedText);
+                            me.ShaderProperty(_DetailOcclusionStrength, Tips.occlusionPackedText);
                         });
                     }
                     if (_DetailMainTex.textureValue || _DetailNormalMap.textureValue || (_DetailWorkflow.floatValue == 0 && (_DetailMetallicMap.textureValue || _DetailRoughnessMap.textureValue || _DetailOcclusionMap.textureValue)) || (_DetailWorkflow.floatValue == 1 && _DetailPackedMap.textureValue)){

@@ -247,7 +247,7 @@ namespace Mochie {
         // Taken
         public static GUIContent gradientRestriction = new GUIContent("Gradient Masking", "Masks the rim effect inside the gradient, so it will only be visible where the gradient is.");
         public static GUIContent emissionGradRestrict = new GUIContent("Gradient Masking", "Masks the emission inside the gradient, so it will only be visible where the gradient is.");
-        public static GUIContent restrictionMask = new GUIContent("Gradient Exemption Mask", "White areas will be exempt from the gradient masking.");
+        public static GUIContent restrictionMask = new GUIContent("Gradient Exemption Mask", "Black areas will be exempt from the gradient masking.");
         public static GUIContent gradientAxis = new GUIContent("Axis", "The direction the gradient will be applied. Y will come from below, Z will come from the front or behind, and X will come from the left or right. These directions are based on the mesh root position.");
         public static GUIContent endPos = new GUIContent("End Position", "How far from the start position the gradient will reach.");
         public static GUIContent startPos = new GUIContent("Start Position", "The position on the chosen axis that the gradient will start, measured by the distance from the mesh origin.");

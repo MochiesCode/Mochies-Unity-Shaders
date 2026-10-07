@@ -202,7 +202,6 @@ Shader "Mochie/Uber" {
         // REFLECTIONS
         [Enum(Off,0, Environment,1, Cubemap,2)]_Reflections("en3", Int) = 0
         _ReflCube("tex", CUBE) = "white" {}
-        [ToggleUI]_ReflCubeFallback("tog", Int) = 0
         _ReflCol("col", Color) = (1,1,1,1)
         _ReflectionStr("fl", Float) = 1
         [ToggleUI]_ReflUseRough("tog", Int) = 0
@@ -466,7 +465,6 @@ Shader "Mochie/Uber" {
         //----------------------------
         // OUTLINE
         //----------------------------
-        [ToggleUI]_OutlineToggle("tog", Int) = 0
         [ToggleUI]_StencilToggle("tog", Int) = 0
         [ToggleUI]_ApplyOutlineLighting("tog", Int) = 0
         [ToggleUI]_ApplyOutlineEmiss("tog", Int) = 0
@@ -744,7 +742,7 @@ Shader "Mochie/Uber" {
             #pragma fragment frag
             #pragma shader_feature_local _SHADING_ON
             #pragma shader_feature_local _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
-            #pragma shader_feature_local _ _CUBEMAP_ON _COMBINED_CUBEMAP_ON
+            #pragma shader_feature_local _ _CUBEMAP_ON _CUBEMAP_COMBINED_ON
             #pragma shader_feature_local _ _PACKED_WORKFLOW_ON _SPECULAR_WORKFLOW_ON
             #pragma shader_feature_local _ _SPECULAR_ANISO_ON _SPECULAR_COMBINED_ON
             #pragma shader_feature_local _CUBEMAP_REFLECTIONS_ON
@@ -809,7 +807,7 @@ Shader "Mochie/Uber" {
             #pragma fragment frag
             #pragma shader_feature_local _SHADING_ON
             #pragma shader_feature_local _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
-            #pragma shader_feature_local _ _CUBEMAP_ON _COMBINED_CUBEMAP_ON
+            #pragma shader_feature_local _ _CUBEMAP_ON _CUBEMAP_COMBINED_ON
             #pragma shader_feature_local _ _PACKED_WORKFLOW_ON _SPECULAR_WORKFLOW_ON
             #pragma shader_feature_local _ _SPECULAR_ANISO_ON _SPECULAR_COMBINED_ON
             #pragma shader_feature_local _REFLECTIONS_ON

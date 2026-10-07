@@ -564,7 +564,7 @@ void InitializeInputData(inout v2f i, inout InputData id, bool isFrontFace){
             audioLinkData al = (audioLinkData)0;
             InitializeAudioLink(al);
             float audiolink = GetAudioLinkBand(al, _AudioLinkBand);
-            emissCol *= audiolink;
+            emissCol *= lerp(1, audiolink, _AudioLinkStrength);
         #endif
         id.emission = float4(emissCol, 1);
     #else

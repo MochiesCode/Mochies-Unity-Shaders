@@ -92,7 +92,7 @@ float4 GetSSR(const float3 wPos, const float3 viewDir, float3 rayDir, const half
         return 0;
     }
     else {
-        float2 noiseUV = (screenPos.xy * _GrabTexture_TexelSize.zw) / (_NoiseTexSSR_TexelSize.zw * screenPos.w);	
+        float2 noiseUV = (screenPos.xy * _StandardGrab_TexelSize.zw) / (_NoiseTexSSR_TexelSize.zw * screenPos.w);	
         float noise = _NoiseTexSSR.SampleLevel(sampler_NoiseTexSSR, noiseUV.xy, 0).r;
         
         float3 reflectedRay = wPos + (_SSRHeight*_SSRHeight/FdotR + noise*_SSRHeight)*rayDir;
@@ -119,7 +119,7 @@ float4 GetSSR(const float3 wPos, const float3 viewDir, float3 rayDir, const half
         float4 reflection = 0;
         if (reflectionAlpha > 0){
             float blurFac = max(1,min(12, 12 * (-2)*(smoothness-1)));
-            reflection.rgb = GetBlurredGrabPass(_GrabTexture_TexelSize.zw, uvs.xy, blurFac);
+            reflection.rgb = GetBlurredGrabPass(_StandardGrab_TexelSize.zw, uvs.xy, blurFac);
             reflection.rgb = lerp(reflection.rgb, reflection.rgb*albedo.rgb,smoothstep(0, 1.75, metallic));
             reflection.a = reflectionAlpha;
         }

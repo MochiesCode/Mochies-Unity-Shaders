@@ -118,7 +118,7 @@ float4 frag_meta (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
             audioLinkData al = (audioLinkData)0;
             InitializeAudioLink(al);
             float audiolink = GetAudioLinkBand(al, _AudioLinkBand);
-            emissCol *= audiolink;
+            emissCol *= lerp(1, audiolink, _AudioLinkStrength);
         #endif
     #endif
     #if DEPTH_EFFECTS_ENABLED

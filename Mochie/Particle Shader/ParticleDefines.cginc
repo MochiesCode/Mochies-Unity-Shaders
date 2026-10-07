@@ -166,7 +166,6 @@ int _IsCutout;
 int _Softening;
 int _FlipbookBlending;
 int _AlphaSource;
-int _Layering;
 int _TexBlendMode;
 int _Filtering;
 
