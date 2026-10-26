@@ -1,11 +1,12 @@
 Shader "Mochie/Glass (Two Pass)" {
     Properties {
+        [HideInInspector]_MochieMaterialVersion("Material Version", Int) = 17800
 
         _GrabpassTint("Grabpass Tint", Color) = (1,1,1,1)
         _SpecularityTint("Specularity Tint", Color) = (1,1,1,1)
         _BaseColorTint("Base Color Tint", Color) = (0,0,0,1)
 
-        [Enum(Separate,0, Packed,1)]_Workflow("Workflow", Int) = 0
+        [Enum(Metallic,0, Packed Metallic,1)]_Workflow("Workflow", Int) = 0
         _MainTex("Base Color", 2D) = "white" {}
         _RoughnessMap("Roughness Map", 2D) = "white" {}
         _MetallicMap("Metallic Map", 2D) = "white" {}

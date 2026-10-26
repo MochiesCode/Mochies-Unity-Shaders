@@ -23,7 +23,9 @@ namespace Mochie {
         public static Texture2D cheeseIconTex = (Texture2D)Resources.Load("Cheese_Icon", typeof(Texture2D));
         public static GUIContent collapseLabel = new GUIContent(collapseIcon, "Collapse all foldout tabs.");
         public static GUIContent resetLabel = new GUIContent(resetIcon, "Reset all properties in this tab to their default values.");
-        
+        public static GUIContent docsLabel = new GUIContent("Documentation", "Open this shader's documentation in your browser.");
+        public const string docsURL = "https://github.com/MochiesCode/Mochies-Unity-Shaders/wiki";
+
         public static List<T> FindAssetsByType<T>() where T : UnityEngine.Object {
             List<T> assets = new List<T>();
             string[] guids = AssetDatabase.FindAssets(string.Format("t:{0}", typeof (T).ToString().Replace("UnityEngine.", "")));
@@ -139,11 +141,12 @@ namespace Mochie {
             GUILayout.Space(16);
         }
 
-        public static void DoFooter(string versionLabel){
+        public static void DoFooter(string versionLabel, string docsPage = ""){
             GUILayout.Space(40);
             float buttonSize = 35f;
             float centerOffset = MGUI.GetInspectorWidth()/2f;
             Rect buttonRect = EditorGUILayout.GetControlRect();
+            float centerX = buttonRect.x + centerOffset;
             buttonRect.x += centerOffset-buttonSize*3f*0.5f;
             buttonRect.width = buttonSize;
             buttonRect.height = buttonSize;
@@ -151,7 +154,6 @@ namespace Mochie {
                 Application.OpenURL("https://www.patreon.com/mochieshaders");
             buttonRect.x += buttonSize;
             GUI.Label(buttonRect, MGUI.mochieLogoSquare);
-            buttonRect.y -= 20f;
             GUIStyle formatting = new GUIStyle();
             formatting.fontSize = 15;
             formatting.fontStyle = FontStyle.Bold;
@@ -160,8 +162,10 @@ namespace Mochie {
                 formatting.normal.textColor = proCol;
                 formatting.hover.textColor = proCol;
             }
-            GUI.Label(buttonRect, versionLabel, formatting);
-            buttonRect.y += 20f;
+            // Centered on the logo regardless of how long the version string is
+            Vector2 versionSize = formatting.CalcSize(new GUIContent(versionLabel));
+            Rect versionRect = new Rect(centerX-versionSize.x*0.5f, buttonRect.y-20f, versionSize.x, versionSize.y);
+            GUI.Label(versionRect, versionLabel, formatting);
             buttonRect.x += buttonSize;
             if (GUI.Button(buttonRect, MGUI.cheeseIconTex)){
                 string patrons = "Thank you for your support, past and present!\n";
@@ -171,6 +175,10 @@ namespace Mochie {
                 patrons += "\n\nPlease note that names are not removed from this list, so it does not reflect any individual user's current patreon subscription status.";
                 EditorUtility.DisplayDialog("Skyrim Cheese Wheel Hall of Fame", patrons, "Close");
             }
+            Vector2 docsSize = EditorStyles.linkLabel.CalcSize(docsLabel);
+            Rect docsRect = new Rect(centerX-docsSize.x*0.5f, buttonRect.y+buttonSize+8f, docsSize.x, docsSize.y);
+            if (EditorGUI.LinkButton(docsRect, docsLabel))
+                Application.OpenURL(string.IsNullOrEmpty(docsPage) ? docsURL : docsURL + "/" + docsPage);
             GUILayout.Space(90);
         }
 

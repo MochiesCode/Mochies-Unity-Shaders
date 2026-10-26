@@ -25,6 +25,12 @@ namespace Mochie {
                 "Specularity", 
                 "Flow Mapping", 
                 "Vertex Offset",
+                "Global",
+                "Wave 1",
+                "Wave 2",
+                "Wave 3",
+                "Wave 4",
+                "Subsurface Scattering",
                 "Caustics",
                 "Depth Fog",
                 "Foam",
@@ -39,7 +45,7 @@ namespace Mochie {
                 "Render Settings"
         }, 0);
 
-        string versionLabel = "v1.29.1";
+        string versionLabel = "v1.30";
 
         MaterialProperty _Color = null;
         MaterialProperty _NonGrabColor = null;
@@ -88,15 +94,26 @@ namespace Mochie {
         MaterialProperty _WaveSpeed0 = null;
         MaterialProperty _WaveSpeed1 = null;
         MaterialProperty _WaveSpeed2 = null;
+        MaterialProperty _WaveSpeed3 = null;
         MaterialProperty _WaveScale0 = null;
         MaterialProperty _WaveScale1 = null;
         MaterialProperty _WaveScale2 = null;
+        MaterialProperty _WaveScale3 = null;
         MaterialProperty _WaveStrength0 = null;
         MaterialProperty _WaveStrength1 = null;
         MaterialProperty _WaveStrength2 = null;
+        MaterialProperty _WaveStrength3 = null;
         MaterialProperty _WaveDirection0 = null;
         MaterialProperty _WaveDirection1 = null;
         MaterialProperty _WaveDirection2 = null;
+        MaterialProperty _WaveDirection3 = null;
+        MaterialProperty _WaveToggle0 = null;
+        MaterialProperty _WaveToggle1 = null;
+        MaterialProperty _WaveToggle2 = null;
+        MaterialProperty _WaveToggle3 = null;
+        MaterialProperty _WaveWarpStrength = null;
+        MaterialProperty _WaveWarpScale = null;
+        MaterialProperty _WaveWarpSpeed = null;
         // MaterialProperty _Turbulence = null;
         // MaterialProperty _TurbulenceSpeed = null;
         // MaterialProperty _TurbulenceScale = null;
@@ -230,6 +247,7 @@ namespace Mochie {
         MaterialProperty _SubsurfaceThreshold = null;
         MaterialProperty _SubsurfaceBrightness = null;
         MaterialProperty _SubsurfaceStrength = null;
+        MaterialProperty _SubsurfaceToggle = null;
         MaterialProperty _TexCoordSpace = null;
         MaterialProperty _TexCoordSpaceSwizzle = null;
         MaterialProperty _GlobalTexCoordScaleUV = null;
@@ -319,6 +337,14 @@ namespace Mochie {
             if (!foldouts.ContainsKey(mat))
                 foldouts.Add(mat, toggles);
 
+            // Shader .meta defaults only reach new materials, so existing ones need the wave warp noise assigned here
+            foreach (Material m in me.targets){
+                if (m.HasProperty("_TANoiseTex") && m.GetTexture("_TANoiseTex") == null){
+                    var tanoisePath = AssetDatabase.GUIDToAssetPath("c29b465ac9f3944508dfdf1555925ed5");
+                    m.SetTexture("_TANoiseTex", AssetDatabase.LoadAssetAtPath<Texture2D>(tanoisePath));
+                }
+            }
+
             if (mat.GetInt("_MaterialResetCheck") == 0){
                 mat.SetInt("_MaterialResetCheck", 1);
                 SetKeywords(mat);
@@ -334,9 +360,9 @@ namespace Mochie {
                 int transMode = mat.GetInt("_TransparencyMode");
 
                 // Base
-                bool baseToggle = Foldouts.DoFoldout(foldouts, mat, "Base", 1, Foldouts.Style.StandardButton);
+                Foldouts.DoFoldout(foldouts, mat, "Base", 1, Foldouts.Style.StandardButton);
                 if (Foldouts.DoFoldoutButton(MGUI.collapseLabel, 11)) Toggles.CollapseFoldouts(mat, foldouts, 1);
-                if (baseToggle) {
+                if (Foldouts.BeginFoldout(foldouts, mat, "Base")) {
                     MGUI.PropertyGroupParent(()=>{
                         MGUI.PropertyGroup(()=>{
                             me.TexturePropertySingleLine(texLabel, _MainTex, _BaseColorStochasticToggle);
@@ -390,6 +416,7 @@ namespace Mochie {
                         // });
                     });
                 }
+                Foldouts.EndFoldout();
 
                 // Normal Maps
                 if (Foldouts.DoFoldout(foldouts, mat, me, _NormalMapMode, "Normal Maps", Foldouts.Style.StandardToggle)) {
@@ -433,6 +460,7 @@ namespace Mochie {
                         }
                     });
                 }
+                Foldouts.EndFoldout();
 
                 // Specularity
                 if (Foldouts.DoFoldout(foldouts, mat, "Specularity", Foldouts.Style.Standard)) {
@@ -483,6 +511,7 @@ namespace Mochie {
                         });
                     });
                 }
+                Foldouts.EndFoldout();
 
                 // Emission
                 if (Foldouts.DoFoldout(foldouts, mat, "Emission", Foldouts.Style.Standard)) {
@@ -508,6 +537,7 @@ namespace Mochie {
                         MGUI.ToggleGroupEnd();
                     });
                 }
+                Foldouts.EndFoldout();
 
                 // Flow Mapping
                 if (Foldouts.DoFoldout(foldouts, mat, me, _FlowToggle, "Flow Mapping", Foldouts.Style.StandardToggle)) {
@@ -531,100 +561,111 @@ namespace Mochie {
                         });
                     });
                 }
+                Foldouts.EndFoldout();
 
                 // Vertex Offset
                 if (Foldouts.DoFoldout(foldouts, mat, me, _VertOffsetMode, "Vertex Offset", Foldouts.Style.StandardToggle)) {
-                    MGUI.PropertyGroupParent(()=>{
-                        MGUI.ToggleGroup(_VertOffsetMode.floatValue == 0);
-                        if (_VertOffsetMode.floatValue == 1 || _VertOffsetMode.floatValue == 0){
-                            MGUI.PropertyGroup(()=>{
-                                me.TexturePropertySingleLine(noiseLabel, _NoiseTex);
-                                me.ShaderProperty(_NoiseTexBlur, "Precision");
-                                MGUI.Vector2Field(_NoiseTexScale, "Scale");
-                                MGUI.Vector2Field(_NoiseTexScroll, "Scrolling");
-                            });
-                            MGUI.PropertyGroup(()=>{
-                                MGUI.Vector3Field(_Offset, "Strength", false);
-                                me.ShaderProperty(_WaveHeight, "Strength Multiplier");
-                                MGUI.SliderMinMax(_VertRemapMin, _VertRemapMax, -1f, 1f, "Remap", 1);
-                            });
-                        }
-                        else if (_VertOffsetMode.floatValue == 2){
-                            MGUI.DisplayInfo("For best results ensure your base mesh is a plane of approximately 10m x 10m (before scaling in the scene). Also don't be afraid to use extremely large or small values, these settings vary significantly depending on the scale you're working at.");
-                            MGUI.BoldLabel("Global");
-                            MGUI.PropertyGroup(() => {
-                                me.ShaderProperty(_WaveStrengthGlobal, "Strength");
-                                me.ShaderProperty(_WaveScaleGlobal, "Scale");
-                                me.ShaderProperty(_WaveSpeedGlobal, "Speed");
-                                me.ShaderProperty(_RecalculateNormals, "Recalculate Normals");
-                            });
-                            MGUI.PropertyGroup(()=>{
-                                me.TexturePropertySingleLine(Tips.maskText, _VertexOffsetMask, _VertexOffsetMaskStrength, _VertexOffsetMaskChannel);
-                                MGUI.TextureSO(me, _VertexOffsetMask);
-                            });
-                            MGUI.BoldLabel("Wave 1");
-                            MGUI.PropertyGroup(() => {
-                                me.ShaderProperty(_WaveStrength0, "Strength");
-                                me.ShaderProperty(_WaveScale0, "Scale");
-                                me.ShaderProperty(_WaveSpeed0, "Speed");
-                                me.ShaderProperty(_WaveDirection0, "Direction");
-                            });
-                            MGUI.BoldLabel("Wave 2");
-                            MGUI.PropertyGroup(() => {
-                                me.ShaderProperty(_WaveStrength1, "Strength");
-                                me.ShaderProperty(_WaveScale1, "Scale");
-                                me.ShaderProperty(_WaveSpeed1, "Speed");
-                                me.ShaderProperty(_WaveDirection1, "Direction");
-                            });
-                            MGUI.BoldLabel("Wave 3");
-                            MGUI.PropertyGroup(() => {
-                                me.ShaderProperty(_WaveStrength2, "Strength");
-                                me.ShaderProperty(_WaveScale2, "Scale");
-                                me.ShaderProperty(_WaveSpeed2, "Speed");
-                                me.ShaderProperty(_WaveDirection2, "Direction");
-                            });
-                            // MGUI.BoldLabel("Turbulence");
-                            // MGUI.PropertyGroup(() => {
-                            // 	me.ShaderProperty(_Turbulence, Tips.turbulence);
-                            // 	me.ShaderProperty(_TurbulenceSpeed, "Speed");
-                            // 	me.ShaderProperty(_TurbulenceScale, "Scale");
-                            // });
-                        }
-                        else if (_VertOffsetMode.floatValue == 3){
-                            MGUI.PropertyGroup(()=>{
-                                me.ShaderProperty(_VoronoiSpeed, "Speed");
-                                MGUI.Vector2Field(_VoronoiScale, "Scale");
-                                MGUI.Vector2Field(_VoronoiScroll, "Scrolling");
-                                MGUI.Vector3Field(_VoronoiOffset, "Strength", false);
-                                me.ShaderProperty(_VoronoiWaveHeight, "Strength Multiplier");
+                    MGUI.Space6();
+                    MGUI.ToggleGroup(_VertOffsetMode.floatValue == 0);
+                    if (_VertOffsetMode.floatValue == 2){
+                        
+                        // Global
+                        if (Foldouts.DoFoldout(foldouts, mat, "Global", Foldouts.Style.Thin)) {
+                            MGUI.PropertyGroupParent(()=>{
+                                MGUI.PropertyGroup(() => {
+                                    me.ShaderProperty(_WaveStrengthGlobal, "Strength");
+                                    me.ShaderProperty(_WaveScaleGlobal, "Scale");
+                                    me.ShaderProperty(_WaveSpeedGlobal, "Speed");
+                                    me.ShaderProperty(_RecalculateNormals, "Recalculate Normals");
+                                });
+                                MGUI.PropertyGroup(() => {
+                                    me.ShaderProperty(_WaveWarpStrength, Tips.waveWarpStrength);
+                                    me.ShaderProperty(_WaveWarpScale, "Warp Scale");
+                                    me.ShaderProperty(_WaveWarpSpeed, "Warp Speed");
+                                });
+                                MGUI.PropertyGroup(()=>{
+                                    me.TexturePropertySingleLine(Tips.maskText, _VertexOffsetMask, _VertexOffsetMaskStrength, _VertexOffsetMaskChannel);
+                                    MGUI.TextureSO(me, _VertexOffsetMask);
+                                });
                             });
                         }
-                        else if (_VertOffsetMode.floatValue == 4){
-                            MGUI.PropertyGroup(()=>{
-                                me.TexturePropertySingleLine(new GUIContent("Vertex Offset Flipbook"), _VertOffsetFlipbook);
-                                MGUI.Vector2Field(_NormalMapFlipbookScale, "Scale");
-                                me.ShaderProperty(_VertOffsetFlipbookStrength, "Strength");
-                                me.ShaderProperty(_VertOffsetFlipbookSpeed, "Speed");
+                        Foldouts.EndFoldout();
+
+                        // Waves
+                        DoWaveFoldout(mat, "Wave 1", _WaveToggle0, _WaveStrength0, _WaveScale0, _WaveSpeed0, _WaveDirection0);
+                        DoWaveFoldout(mat, "Wave 2", _WaveToggle1, _WaveStrength1, _WaveScale1, _WaveSpeed1, _WaveDirection1);
+                        DoWaveFoldout(mat, "Wave 3", _WaveToggle2, _WaveStrength2, _WaveScale2, _WaveSpeed2, _WaveDirection2);
+                        DoWaveFoldout(mat, "Wave 4", _WaveToggle3, _WaveStrength3, _WaveScale3, _WaveSpeed3, _WaveDirection3);
+
+                        // Turbulence
+                        // MGUI.BoldLabel("Turbulence");
+                        // MGUI.PropertyGroup(() => {
+                        // 	me.ShaderProperty(_Turbulence, Tips.turbulence);
+                        // 	me.ShaderProperty(_TurbulenceSpeed, "Speed");
+                        // 	me.ShaderProperty(_TurbulenceScale, "Scale");
+                        // });
+                    }
+                    else {
+                        MGUI.PropertyGroupParent(()=>{
+                            if (_VertOffsetMode.floatValue == 1 || _VertOffsetMode.floatValue == 0){
+                                MGUI.PropertyGroup(()=>{
+                                    me.TexturePropertySingleLine(noiseLabel, _NoiseTex);
+                                    me.ShaderProperty(_NoiseTexBlur, "Precision");
+                                    MGUI.Vector2Field(_NoiseTexScale, "Scale");
+                                    MGUI.Vector2Field(_NoiseTexScroll, "Scrolling");
+                                });
+                                MGUI.PropertyGroup(()=>{
+                                    MGUI.Vector3Field(_Offset, "Strength", false);
+                                    me.ShaderProperty(_WaveHeight, "Strength Multiplier");
+                                    MGUI.SliderMinMax(_VertRemapMin, _VertRemapMax, -1f, 1f, "Remap", 1);
+                                });
+                            }
+                            else if (_VertOffsetMode.floatValue == 3){
+                                MGUI.PropertyGroup(()=>{
+                                    me.ShaderProperty(_VoronoiSpeed, "Speed");
+                                    MGUI.Vector2Field(_VoronoiScale, "Scale");
+                                    MGUI.Vector2Field(_VoronoiScroll, "Scrolling");
+                                    MGUI.Vector3Field(_VoronoiOffset, "Strength", false);
+                                    me.ShaderProperty(_VoronoiWaveHeight, "Strength Multiplier");
+                                });
+                            }
+                            else if (_VertOffsetMode.floatValue == 4){
+                                MGUI.PropertyGroup(()=>{
+                                    me.TexturePropertySingleLine(new GUIContent("Vertex Offset Flipbook"), _VertOffsetFlipbook);
+                                    MGUI.Vector2Field(_NormalMapFlipbookScale, "Scale");
+                                    me.ShaderProperty(_VertOffsetFlipbookStrength, "Strength");
+                                    me.ShaderProperty(_VertOffsetFlipbookSpeed, "Speed");
+                                });
+                            }
+                            if (_VertOffsetMode.floatValue > 0){
+                                MGUI.PropertyGroup(()=>{
+                                    me.TexturePropertySingleLine(Tips.maskText, _VertexOffsetMask, _VertexOffsetMaskStrength, _VertexOffsetMaskChannel);
+                                    MGUI.TextureSO(me, _VertexOffsetMask);
+                                });
+                            }
+                        });
+                    }
+
+                    // Subsurface Scattering
+                    if (_VertOffsetMode.floatValue > 0){
+                        if (Foldouts.DoFoldout(foldouts, mat, me, _SubsurfaceToggle, "Subsurface Scattering", Foldouts.Style.ThinToggle)) {
+                            MGUI.PropertyGroupParent(()=>{
+                                MGUI.ToggleGroup(_SubsurfaceToggle.floatValue == 0);
+                                MGUI.PropertyGroup(()=>{
+                                    me.ShaderProperty(_SubsurfaceTint, "Tint");
+                                    me.ShaderProperty(_SubsurfaceStrength, "Strength");
+                                    me.ShaderProperty(_SubsurfaceBrightness, "Brightness");
+                                    me.ShaderProperty(_SubsurfaceThreshold, "Threshold");
+                                });
+                                MGUI.ToggleGroupEnd();
                             });
                         }
-                        if (_VertOffsetMode.floatValue > 0 && _VertOffsetMode.floatValue != 2){
-                            MGUI.PropertyGroup(()=>{
-                                me.TexturePropertySingleLine(Tips.maskText, _VertexOffsetMask, _VertexOffsetMaskStrength, _VertexOffsetMaskChannel);
-                                MGUI.TextureSO(me, _VertexOffsetMask);
-                            });
-                        }
-                        if (_VertOffsetMode.floatValue > 0){
-                            MGUI.BoldLabel("Subsurface Scattering");
-                            MGUI.PropertyGroup(()=>{
-                                me.ShaderProperty(_SubsurfaceTint, "Tint");
-                                me.ShaderProperty(_SubsurfaceStrength, "Strength");
-                                me.ShaderProperty(_SubsurfaceBrightness, "Brightness");
-                                me.ShaderProperty(_SubsurfaceThreshold, "Threshold");
-                            });
-                        }
-                        MGUI.ToggleGroupEnd();
-                    });
+                        Foldouts.EndFoldout();
+                    }
+                    MGUI.ToggleGroupEnd();
+                    MGUI.Space6();
                 }
+                Foldouts.EndFoldout();
 
                 // Caustics
                 if (_DepthEffects.floatValue == 1 && transMode == 2){
@@ -672,6 +713,7 @@ namespace Mochie {
                             MGUI.ToggleGroupEnd();
                         });
                     }
+                    Foldouts.EndFoldout();
                 }
 
                 // Foam
@@ -720,6 +762,7 @@ namespace Mochie {
                         MGUI.ToggleGroupEnd();
                     });
                 }
+                Foldouts.EndFoldout();
 
                 // Depth Fog
                 if (_DepthEffects.floatValue == 1 && transMode == 2){
@@ -741,6 +784,7 @@ namespace Mochie {
                             MGUI.ToggleGroupEnd();
                         });
                     }
+                    Foldouts.EndFoldout();
                 }
 
                 // Edge Fade
@@ -755,6 +799,7 @@ namespace Mochie {
                             });
                         });
                     }
+                    Foldouts.EndFoldout();
                 }
 
                 // Rain
@@ -775,6 +820,7 @@ namespace Mochie {
                         MGUI.ToggleGroupEnd();
                     });
                 }
+                Foldouts.EndFoldout();
 
                 // LTCGI
                 if (Shader.Find("LTCGI/Blur Prefilter") != null){
@@ -789,6 +835,7 @@ namespace Mochie {
                             MGUI.ToggleGroupEnd();
                         });
                     }
+                    Foldouts.EndFoldout();
                 }
                 else {
                     _LTCGI.floatValue = 0;
@@ -832,6 +879,7 @@ namespace Mochie {
                             MGUI.Space2();
                         });
                     }
+                    Foldouts.EndFoldout();
                 }
                 else {
                     _AreaLitToggle.floatValue = 0f;
@@ -857,6 +905,7 @@ namespace Mochie {
                             MGUI.DisplayInfo("Use the 'Wireframe' scene view for easy visualization.");
                         });
                     }
+                    Foldouts.EndFoldout();
                 }
 
                 // Light Volumes
@@ -872,6 +921,7 @@ namespace Mochie {
                     });
                     MGUI.ToggleGroupEnd();
                 }
+                Foldouts.EndFoldout();
 
                 // Lightmap Settings
                 if (Foldouts.DoFoldout(foldouts, mat, "Lightmap Settings", Foldouts.Style.Standard)) {
@@ -892,6 +942,7 @@ namespace Mochie {
                         });
                     });
                 }
+                Foldouts.EndFoldout();
 
                 // Render Settings
                 if (Foldouts.DoFoldout(foldouts, mat, "Render Settings", Foldouts.Style.Standard)) {
@@ -920,9 +971,9 @@ namespace Mochie {
                             }
                         });
                         MGUI.PropertyGroup(()=>{
-                            me.ShaderProperty(_TexCoordSpace, "Texture Coordinate Space");
+                            me.ShaderProperty(_TexCoordSpace, Tips.waterTexCoordSpaceText);
                             if (_TexCoordSpace.floatValue == 1f){
-                                me.ShaderProperty(_TexCoordSpaceSwizzle, "Swizzle");
+                                me.ShaderProperty(_TexCoordSpaceSwizzle, Tips.waterSwizzleText);
                                 me.ShaderProperty(_GlobalTexCoordScaleWorld, "Texture Coordinate Scale");
                             }
                             else {
@@ -935,13 +986,30 @@ namespace Mochie {
                         }
                     });
                 }
+                Foldouts.EndFoldout();
 
             }
             if (EditorGUI.EndChangeCheck()){
                 SetKeywords(mat);
             }
             
-            MGUI.DoFooter(versionLabel);
+            MGUI.DoFooter(versionLabel, "Water-Shader");
+        }
+
+        void DoWaveFoldout(Material mat, string header, MaterialProperty toggle, MaterialProperty strength, MaterialProperty scale, MaterialProperty speed, MaterialProperty direction){
+            if (Foldouts.DoFoldout(foldouts, mat, me, toggle, header, Foldouts.Style.ThinToggle)) {
+                MGUI.PropertyGroupParent(()=>{
+                    MGUI.ToggleGroup(toggle.floatValue == 0);
+                    MGUI.PropertyGroup(() => {
+                        me.ShaderProperty(strength, "Strength");
+                        me.ShaderProperty(scale, "Scale");
+                        me.ShaderProperty(speed, "Speed");
+                        me.ShaderProperty(direction, "Direction");
+                    });
+                    MGUI.ToggleGroupEnd();
+                });
+            }
+            Foldouts.EndFoldout();
         }
 
         public override void AssignNewShaderToMaterial(Material mat, Shader oldShader, Shader newShader) {
@@ -953,6 +1021,9 @@ namespace Mochie {
 
         void SetBlendMode(Material mat){
             int transMode = mat.GetInt("_TransparencyMode");
+            // The shadow caster can't do transparency and would cast a solid shadow, so only opaque water casts shadows. The built-in
+            // renderer casts them even with the pass disabled, so the shader collapses the shadow caster in the other modes (WaterVert.cginc)
+            mat.SetShaderPassEnabled("ShadowCaster", transMode == 0);
             switch (transMode){
                 
                 // Opaque
@@ -1021,9 +1092,9 @@ namespace Mochie {
             MGUI.SetKeyword(mat, "_DEPTH_EFFECTS_ON", depthFXToggle == 1 && transMode == 2);
             MGUI.SetKeyword(mat, "_DETAIL_BASECOLOR_ON", mat.GetTexture("_DetailBaseColor"));
             MGUI.SetKeyword(mat, "_DETAIL_NORMAL_ON", mat.GetTexture("_DetailNormal"));
-            MGUI.SetKeyword(mat, "_CAUSTICS_VORONOI_ON", causticsMode == 1 && depthFXToggle == 1);
-            MGUI.SetKeyword(mat, "_CAUSTICS_TEXTURE_ON", causticsMode == 2 && depthFXToggle == 1);
-            MGUI.SetKeyword(mat, "_CAUSTICS_FLIPBOOK_ON", causticsMode == 3 && depthFXToggle == 1);
+            MGUI.SetKeyword(mat, "_CAUSTICS_VORONOI_ON", causticsMode == 1 && depthFXToggle == 1 && transMode != 0);
+            MGUI.SetKeyword(mat, "_CAUSTICS_TEXTURE_ON", causticsMode == 2 && depthFXToggle == 1 && transMode != 0);
+            MGUI.SetKeyword(mat, "_CAUSTICS_FLIPBOOK_ON", causticsMode == 3 && depthFXToggle == 1 && transMode != 0);
             MGUI.SetKeyword(mat, "_NORMALMAP_FLIPBOOK_ON", normalMapMode == 1);
             MGUI.SetKeyword(mat, "_SCREENSPACE_REFLECTIONS_ON", ssrEnabled);
             MGUI.SetKeyword(mat, "_BICUBIC_LIGHTMAPPING_ON", bicubic == 1);

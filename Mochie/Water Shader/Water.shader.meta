@@ -40,6 +40,7 @@ ShaderImporter:
   - _RNM1: {instanceID: 0}
   - _RNM2: {instanceID: 0}
   - _NoiseTexSSR: {fileID: 2800000, guid: b7359cc7e3e84444b88656ff6c166220, type: 3}
+  - _TANoiseTex: {fileID: 2800000, guid: c29b465ac9f3944508dfdf1555925ed5, type: 3}
   nonModifiableTextures: []
   userData: 
   assetBundleName: 

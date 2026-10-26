@@ -36,7 +36,7 @@ namespace Mochie {
                 "Render Settings"
         }, 0);
 
-        string versionLabel = "v3.3.1";
+        string versionLabel = "v3.3.2";
 
         // Render Settings
         MaterialProperty _BlendMode = null;
@@ -368,9 +368,9 @@ namespace Mochie {
                 }
 
                 // Base
-                bool baseToggle = Foldouts.DoFoldout(foldouts, mat, "Base", 1, Foldouts.Style.StandardButton);
+                Foldouts.DoFoldout(foldouts, mat, "Base", 1, Foldouts.Style.StandardButton);
                 if (Foldouts.DoFoldoutButton(MGUI.collapseLabel, 11)) Toggles.CollapseFoldouts(mat, foldouts, 1);
-                if (baseToggle) {
+                if (Foldouts.BeginFoldout(foldouts, mat, "Base")) {
                     MGUI.PropertyGroupParent(()=>{
                         MGUI.PropertyGroup(() =>{
                             me.ShaderProperty(_BlendMode, "Blending Mode");
@@ -406,6 +406,7 @@ namespace Mochie {
                         });
                     });
                 }
+                Foldouts.EndFoldout();
 
                 // Lighting
                 if (Foldouts.DoFoldout(foldouts, mat, me, _LightingToggle, "Lighting", Foldouts.Style.StandardToggle)){
@@ -423,26 +424,24 @@ namespace Mochie {
                                 me.TexturePropertySingleLine(Tips.occlusionText, _OcclusionMap, _OcclusionMap.textureValue ? _Occlusion : null);
                                 DrawUVBlock(mat, me, _OcclusionMap, _OcclusionMapUVMode, _OcclusionMapSpeed, _OcclusionMapPolarRadius, _OcclusionMapPolarRotation, _OcclusionMapPolarSpeed);
                                 bool hasAnyTexture = _OcclusionMap.textureValue != null || _RoughnessMap.textureValue != null || _MetallicMap.textureValue != null;
-                                MGUI.ToggleGroup(!hasAnyTexture);
-                                if (MGUI.PropertyButton("Pack Textures")){
-                                    TexturePacker.PackTextures(mat, _OcclusionMap, _Occlusion, _RoughnessMap, _Roughness, _MetallicMap, _Metallic, null, null, _PackedMap);
-                                    _Workflow.floatValue = 1f;
-                                    mat.SetInt("_Workflow", 1);
-                                    _OcclusionChannel.floatValue = 0f;
-                                    mat.SetInt("_OcclusionChannel", 0);
-                                    _RoughnessChannel.floatValue = 1f;
-                                    mat.SetInt("_RoughnessChannel", 1);
-                                    _MetallicChannel.floatValue = 2f;
-                                    mat.SetInt("_MetallicChannel", 2);
-                                    _PackedMetallicStrength.floatValue = 1f;
-                                    mat.SetFloat("_PackedMetallicStrength", 1f);
-                                    _PackedRoughnessStrength.floatValue = 1f;
-                                    mat.SetFloat("_PackedRoughnessStrength", 1f);
-                                    _PackedOcclusionStrength.floatValue = 1f;
-                                    mat.SetFloat("_PackedOcclusionStrength", 1f);
-                                    ApplyMaterialSettings(mat);
+                                if (hasAnyTexture && MGUI.PropertyButton("Pack Textures")){
+                                    Undo.RecordObjects(me.targets, "Pack Textures");
+                                    bool allPacked = true;
+                                    foreach (Material target in me.targets)
+                                        allPacked &= PackPBRTextures(target);
+                                    // Only switch workflows once every selected material has its packed map
+                                    if (allPacked){
+                                        _Workflow.floatValue = 1f;
+                                        _OcclusionChannel.floatValue = 0f;
+                                        _RoughnessChannel.floatValue = 1f;
+                                        _MetallicChannel.floatValue = 2f;
+                                        _PackedMetallicStrength.floatValue = 1f;
+                                        _PackedRoughnessStrength.floatValue = 1f;
+                                        _PackedOcclusionStrength.floatValue = 1f;
+                                        foreach (Material target in me.targets)
+                                            ApplyMaterialSettings(target);
+                                    }
                                 }
-                                MGUI.ToggleGroupEnd();
                             }
                             else {
                                 me.TexturePropertySingleLine(Tips.packedMapText, _PackedMap);
@@ -480,6 +479,7 @@ namespace Mochie {
                         MGUI.SpaceN1();
                     });
                 }
+                Foldouts.EndFoldout();
 
                 // Filtering
                 if (Foldouts.DoFoldout(foldouts, mat, me, _Filtering, "Filtering", Foldouts.Style.StandardToggle)) {
@@ -501,6 +501,7 @@ namespace Mochie {
                         MGUI.ToggleGroupEnd();
                     });
                 }
+                Foldouts.EndFoldout();
 
                 // Distortion
                 if (Foldouts.DoFoldout(foldouts, mat, me, _Distortion, "Distortion", Foldouts.Style.StandardToggle)) {
@@ -520,6 +521,7 @@ namespace Mochie {
                         MGUI.ToggleGroupEnd();
                     });
                 }
+                Foldouts.EndFoldout();
 
                 // Special Effects
                 if (isXVersion){
@@ -547,6 +549,7 @@ namespace Mochie {
                             MGUI.ToggleGroupEnd();
                         });
                     }
+                    Foldouts.EndFoldout();
 
                     // Randomn Hue
                     if (Foldouts.DoFoldout(foldouts, mat, me, _RandomHue, "Random Hue", Foldouts.Style.StandardToggle)){
@@ -561,6 +564,7 @@ namespace Mochie {
                             MGUI.ToggleGroupEnd();
                         });
                     }
+                    Foldouts.EndFoldout();
                     
                     // Rim Light
                     if (Foldouts.DoFoldout(foldouts, mat, me, _RimLight, "Rim Light", Foldouts.Style.StandardToggle)){
@@ -585,6 +589,7 @@ namespace Mochie {
                             MGUI.ToggleGroupEnd();
                         });
                     }
+                    Foldouts.EndFoldout();
 
                     // Outlines
                     if (Foldouts.DoFoldout(foldouts, mat, me, _Outlines, "Outlines", Foldouts.Style.StandardToggle)){
@@ -611,6 +616,7 @@ namespace Mochie {
                         });
                         MGUI.ToggleGroupEnd();
                     }
+                    Foldouts.EndFoldout();
                 }
 
                 // Pulse
@@ -625,6 +631,7 @@ namespace Mochie {
                         MGUI.ToggleGroupEnd();
                     });
                 }
+                Foldouts.EndFoldout();
 
                 // Falloff
                 if (notOpaque){
@@ -641,6 +648,7 @@ namespace Mochie {
                             MGUI.ToggleGroupEnd();
                         });
                     }
+                    Foldouts.EndFoldout();
                 }
 
                 // Audio Link
@@ -693,6 +701,7 @@ namespace Mochie {
                         MGUI.ToggleGroupEnd();
                     });
                 }
+                Foldouts.EndFoldout();
 
                 // Light Volumes
                 if (_LightingToggle.floatValue == 1){
@@ -707,6 +716,7 @@ namespace Mochie {
                         });
                         MGUI.ToggleGroupEnd();
                     }
+                    Foldouts.EndFoldout();
                 }
 
                 // Rendering
@@ -729,9 +739,10 @@ namespace Mochie {
                         });
                     });
                 }
+                Foldouts.EndFoldout();
             }
             
-            MGUI.DoFooter(versionLabel);
+            MGUI.DoFooter(versionLabel, "Particle-Shader");
         }
 
         // Set blending mode
@@ -930,6 +941,102 @@ namespace Mochie {
             base.AssignNewShaderToMaterial(mat, oldShader, newShader);
             MGUI.ClearKeywords(mat);
             ApplyMaterialSettings(mat);
+        }
+
+        // UV mode, tiling, scrolling and polar settings of one texture
+        struct UVSettings {
+            public int mode;
+            public Vector4 scaleOffset;
+            public Vector4 speed;
+            public float polarRadius;
+            public float polarRotation;
+            public float polarSpeed;
+
+            public static UVSettings Get(Material mat, string texName){
+                return new UVSettings {
+                    // Only the X version has UV modes, the regular version always scales and scrolls
+                    mode = MGUI.IsXVersion(mat) ? mat.GetInt(texName + "UVMode") : 0,
+                    scaleOffset = TexturePacker.GetScaleOffset(mat, texName),
+                    speed = mat.GetVector(texName + "Speed"),
+                    polarRadius = mat.GetFloat(texName + "PolarRadius"),
+                    polarRotation = mat.GetFloat(texName + "PolarRotation"),
+                    polarSpeed = mat.GetFloat(texName + "PolarSpeed")
+                };
+            }
+
+            public void Apply(Material mat, string texName){
+                mat.SetInt(texName + "UVMode", mode);
+                mat.SetTextureScale(texName, new Vector2(scaleOffset.x, scaleOffset.y));
+                mat.SetTextureOffset(texName, new Vector2(scaleOffset.z, scaleOffset.w));
+                mat.SetVector(texName + "Speed", speed);
+                mat.SetFloat(texName + "PolarRadius", polarRadius);
+                mat.SetFloat(texName + "PolarRotation", polarRotation);
+                mat.SetFloat(texName + "PolarSpeed", polarSpeed);
+            }
+
+            public bool IsStatic => mode == 0 && speed.x == 0f && speed.y == 0f;
+
+            // Only compares the settings the mode actually uses
+            public bool Matches(UVSettings other){
+                if (mode != other.mode)
+                    return false;
+                if (mode == 1)
+                    return polarRadius == other.polarRadius && polarRotation == other.polarRotation && polarSpeed == other.polarSpeed;
+                return scaleOffset == other.scaleOffset && speed == other.speed;
+            }
+        }
+
+        // Separate maps are sampled from their green channel, and the strengths are baked in because the editor
+        // resets the packed strengths to 1 afterwards. Maps sharing one UV setup pass it on to the packed map;
+        // otherwise only static tiling can be baked in, so scrolling and polar UVs would be lost.
+        static bool PackPBRTextures(Material mat){
+            string[] maps = { "_OcclusionMap", "_RoughnessMap", "_MetallicMap" };
+            UVSettings[] uvs = new UVSettings[maps.Length];
+            UVSettings? sharedUV = null;
+            bool allMatch = true;
+            bool allStatic = true;
+            for (int i = 0; i < maps.Length; i++){
+                uvs[i] = UVSettings.Get(mat, maps[i]);
+                if (!mat.GetTexture(maps[i]))
+                    continue;
+                if (sharedUV == null)
+                    sharedUV = uvs[i];
+                else if (!uvs[i].Matches(sharedUV.Value))
+                    allMatch = false;
+                allStatic &= uvs[i].IsStatic;
+            }
+
+            if (!allMatch && !allStatic){
+                string message = $"The maps on {mat.name} use different scrolling or polar UV settings, which can't be combined into one packed map. "
+                    + "Packing bakes in their tiling and drops the UV animation.";
+                if (!EditorUtility.DisplayDialog("Pack Textures", message, "Pack Anyway", "Cancel"))
+                    return false;
+            }
+
+            float metallic = mat.GetFloat("_Metallic");
+            float roughness = mat.GetFloat("_Roughness");
+            TexturePacker.Channel[] channels = {
+                new TexturePacker.Channel(mat.GetTexture(maps[0]), 1, mat.GetFloat("_Occlusion"), 1f, true),
+                new TexturePacker.Channel(mat.GetTexture(maps[1]), 1, roughness, roughness),
+                new TexturePacker.Channel(mat.GetTexture(maps[2]), 1, metallic, metallic)
+            };
+            if (!allMatch){
+                for (int i = 0; i < channels.Length; i++)
+                    channels[i].scaleOffset = uvs[i].scaleOffset;
+            }
+
+            if (TexturePacker.PackTextures(mat, "_PackedMap", channels[0], channels[1], channels[2]) == null)
+                return false;
+
+            if (allMatch){
+                sharedUV.Value.Apply(mat, "_PackedMap");
+            }
+            else {
+                // The packed map already has identity tiling from the packer
+                mat.SetInt("_PackedMapUVMode", 0);
+                mat.SetVector("_PackedMapSpeed", Vector4.zero);
+            }
+            return true;
         }
 
         void DrawUVBlock(

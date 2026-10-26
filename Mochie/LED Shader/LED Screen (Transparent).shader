@@ -2,6 +2,7 @@
 
 Shader "Mochie/LED Screen (Transparent)" {
     Properties {
+        [HideInInspector]_MochieMaterialVersion("Material Version", Int) = 17800
         [ToggleUI]_FlipbookMode("Flipbook Mode", Int) = 0
         _FPS("FPS", Float) = 24
         _MainTex("Emission", 2D) = "black" {}

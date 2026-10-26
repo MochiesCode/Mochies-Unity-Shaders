@@ -4,6 +4,6 @@ namespace Mochie
 {
     public interface IPostMaterialUpgradeCallback
     {
-        public void OnAfterMaterialUpgraded(Material mat);
+        void OnAfterMaterialUpgraded(Material mat);
     }
 }

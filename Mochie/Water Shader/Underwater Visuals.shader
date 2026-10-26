@@ -1,5 +1,6 @@
 Shader "Mochie/Underwater Visuals" {
     Properties {
+        [HideInInspector]_MochieMaterialVersion("Material Version", Int) = 17800
         
         // Base
         [Enum(Screen Space,0, World Space,1)]_RenderMode("Render Mode", Int) = 0

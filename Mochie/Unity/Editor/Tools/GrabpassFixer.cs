@@ -8,7 +8,7 @@ namespace Mochie {
     // so their grabpass keeps running with SSR/distortion off until the material is opened in the inspector.
     public static class GrabpassFixer {
 
-        [MenuItem("Tools/Mochie/Fix Old Grabpass Settings")]
+        [MenuItem("Tools/Mochie/Fix Old Grabpass Settings", priority = 1022)]
         public static void FixAllMaterials(){
             if (!EditorUtility.DisplayDialog("Fix Old Grabpass Settings",
                 "Scans every material in the project that uses Mochie Standard, Splat Mapping, Glass, Water or Particles, and turns off grabpasses that are left running by settings from older versions.\n\nThis can take a while on large projects.",

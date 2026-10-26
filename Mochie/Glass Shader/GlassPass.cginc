@@ -49,30 +49,12 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
     UNITY_LIGHT_ATTENUATION(atten, i, i.worldPos);
     atten = FadeShadows(i.worldPos, atten);
 
-    #if defined(UNITY_PASS_FORWARDBASE)
-        UNITY_BRANCH
-        if (_UdonLightVolumeEnabled == 1){
-            LightVolumeSH(i.worldPos, lightVolumeL0, lightVolumeL1r, lightVolumeL1g, lightVolumeL1b);
-            unity_SHAr = float4(lightVolumeL1r, lightVolumeL0.r);
-            unity_SHAg = float4(lightVolumeL1g, lightVolumeL0.g);
-            unity_SHAb = float4(lightVolumeL1b, lightVolumeL0.b);
-            unity_SHBr = 0;
-            unity_SHBg = 0;
-            unity_SHBb = 0;
-            unity_SHC = 0;
-        }
-    #endif
-
     #if defined(_RAIN_ON)
         float2 maskUV = TRANSFORM_TEX(i.uv, _RainMask);
     #endif
 
-    if (_TexCoordSpace == 1){
-        float2 worldYZ = Rotate2D(i.worldPos.yz, -90);
-        float2 worldCoordSelect[3] = {i.worldPos.xy, -i.worldPos.xz, worldYZ}; 
-        float2 worldCoords = worldCoordSelect[_TexCoordSpaceSwizzle];
-        i.uv.xy = worldCoords;
-    }
+    if (_TexCoordSpace == 1)
+        i.uv.xy = GetWorldCoords(i.worldPos);
     i.uv.xy *= abs(_GlobalTexCoordScale);
 
     float4 baseColorTex = SampleTexture(_MainTex, TRANSFORM_TEX(i.uv, _MainTex)) * _BaseColorTint;
@@ -279,7 +261,7 @@ float4 frag (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
 
     // float3x3 tangentToWorld = ConstructTBNMatrix(i, isFrontFace);
     // float3 tangentViewDir = CalculateTangentViewDirection(i, tangentToWorld, viewDir);
-    col += GetEmission(i, i.tangentViewDir, normalMap, float2(blurStr.x / 0.5625, blurStr.y));
+    col += GetEmission(i, GetEmissionViewDir(i, viewDir), normalMap, float2(blurStr.x / 0.5625, blurStr.y));
 
     #if GRABPASS_ENABLED
         float4 finalCol = float4(col, 1);

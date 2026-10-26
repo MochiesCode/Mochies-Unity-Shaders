@@ -85,8 +85,10 @@ namespace Mochie.ShaderUpgrader
                 
                 new SetPropertyValueAction("_RainSheet", true, new GUID("df89a63673a32f4438fba4fb13f0f640")),
                 new SetPropertyValueAction("_DropletMask", true, new GUID("76ae1285472e6ce48a2f01ef7905b8fd")),
-                new SetPropertyValueAction("_DFG", true, new GUID("f8ddbd1e1d2a4415a10b4d48daeba743")),
-                new SetPropertyValueAction("_DefaultSampler", true, new GUID("b5f34bbf55503c942821a982c6756e38"))
+                new SetPropertyValueAction("_DFG", true, new GUID("a10c95bc318a7a444b0ea3229dd64b50")),
+                new SetPropertyValueAction("_DefaultSampler", true, new GUID("b5f34bbf55503c942821a982c6756e38")),
+                new SetPropertyValueAction("_DefaultDetailSampler", true, new GUID("5996709f09a27974bb452a386c4c635e")),
+                new SetPropertyValueAction("_NoiseTexSSR", true, new GUID("b7359cc7e3e84444b88656ff6c166220"))
             };
         }
     }

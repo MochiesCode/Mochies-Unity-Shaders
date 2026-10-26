@@ -2,6 +2,7 @@
 
 Shader "Mochie/Particles" {
     Properties {
+        [HideInInspector]_MochieMaterialVersion("Material Version", Int) = 17800
         
         [Enum(Alpha,0, Premultiplied,1, Additive,2, Soft Additive,3, Multiply,4, Multiply x2,5, Opaque,6)]_BlendMode("", Int) = 1.0
         [HideInInspector]_SrcBlend("__src", Int) = 1
@@ -43,7 +44,7 @@ Shader "Mochie/Particles" {
         [HDR]_CutoutRimColor("Cutout Rim Color", Color) = (1,1,1,1)
         [Enum(Add,0, Multiply,1)]_CutoutRimBlend("Cutout Rim Blending", Int) = 0
 
-        [Enum(Separate,0, Packed,1)]_Workflow("Workflow", Int) = 0
+        [Enum(Metallic,0, Packed Metallic,1)]_Workflow("Workflow", Int) = 0
         _NormalMapLighting("Normal Map", 2D) = "bump" {}
         [Enum(Default,0, Polar,1, Panosphere,2)]_NormalMapLightingUVMode("UV Mode", Int) = 0
         _NormalMapLightingSpeed("Speed", Vector) = (0,0,0,0)
@@ -94,11 +95,6 @@ Shader "Mochie/Particles" {
         [ToggleUI]_SharpHighlights("Sharp Highlights", Int) = 0
         [IntRange]_SharpHighlightSteps("Sharp Highlight Steps", Range(1,15)) = 1
         [ToggleUI]_SphericalHarmonics("Spherical Harmonics", Int) = 1
-
-        [ToggleUI]_LightVolumes("Light Volumes", Int) = 1
-        _LightVolumeSpecularity("Light Volumes Specularity", Int) = 0
-        _LightVolumeSpecularityStrength("Light Volumes Specularity Strength", Float) = 1
-        _LightVolumeStrength("Light Volumes Strength", Float) = 1
 
         [ToggleUI]_Emission("Emission", Int) = 0
         _EmissionMap("Emission Map", 2D) = "white" {}

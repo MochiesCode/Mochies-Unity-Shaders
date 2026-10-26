@@ -13,15 +13,14 @@ Material:
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - _BICUBIC_LIGHTMAPPING_ON
-  - _CAUSTICS_VORONOI_ON
   - _DEPTHFOG_ON
   - _EDGEFADE_ON
+  - _EMISSIONMAP_STOCHASTIC_ON
   - _EMISSION_FLOW_ON
   - _EMISSION_ON
   - _FLOW_ON
   - _FOAM_NORMALS_ON
   - _NORMALMAP_1_ON
-  - _NORMALMAP_FLIPBOOK_ON
   - _OPAQUE_MODE_ON
   m_InvalidKeywords: []
   m_LightmapFlags: 2
@@ -172,6 +171,10 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _TANoiseTex:
+        m_Texture: {fileID: 2800000, guid: c29b465ac9f3944508dfdf1555925ed5, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     - _VertOffsetFlipbook:
         m_Texture: {fileID: 18700000, guid: f9e27b340e9c5194199078a54772ec10, type: 2}
         m_Scale: {x: 1, y: 1}
@@ -184,7 +187,6 @@ Material:
     m_Floats:
     - _AdditiveLightVolumeStrength: 1
     - _AdditiveLightVolumesToggle: 1
-    - _ApplyHeightOffset: 0
     - _AreaLitRoughnessMult: 1
     - _AreaLitStrength: 1
     - _AreaLitToggle: 0
@@ -200,7 +202,6 @@ Material:
     - _BaseColorDistortionStrength: 0.1
     - _BaseColorOffset: 0
     - _BaseColorStochasticToggle: 0
-    - _BicubicLightmapping: 1
     - _BicubicSampling: 1
     - _BlendNoiseSource: 0
     - _CausticsDisp: 0.15
@@ -231,8 +232,7 @@ Material:
     - _EdgeFadeToggle: 1
     - _EmissionDistortionStrength: 0
     - _EmissionFlowToggle: 1
-    - _EmissionMapStochasticToggle: 0
-    - _EmissionToggle: 1
+    - _EmissionMapStochasticToggle: 1
     - _FlowMapUV: 0
     - _FlowSpeed: 0.15
     - _FlowStrength: 2
@@ -249,7 +249,6 @@ Material:
     - _FoamNormalStrength: 4
     - _FoamNormalToggle: 1
     - _FoamOffset: 0
-    - _FoamOpacity: 3
     - _FoamPower: 200
     - _FoamRoughness: 0.6
     - _FoamStochasticToggle: 0
@@ -288,10 +287,9 @@ Material:
     - _Normal0StochasticToggle: 0
     - _Normal1StochasticToggle: 0
     - _Normal1Toggle: 1
-    - _NormalFlipbookStochasticToggle: 0
     - _NormalMapFlipbookSpeed: 8
     - _NormalMapFlipbookStrength: 0.2
-    - _NormalMapMode: 1
+    - _NormalMapMode: 0
     - _NormalMapOffset0: 0
     - _NormalMapOffset1: 0
     - _NormalStr0: 0.2
@@ -322,15 +320,15 @@ Material:
     - _SubsurfaceBrightness: 10
     - _SubsurfaceStrength: 0
     - _SubsurfaceThreshold: 0.5
+    - _SubsurfaceToggle: 1
     - _TessDistMax: 25
     - _TessDistMin: 15
     - _TessMax: 9
     - _TessMin: 1
     - _TessellationOffsetMask: 1
-    - _Test: 10
     - _Test1: 0
     - _Test2: 1
-    - _TexCoordSpace: 0
+    - _TexCoordSpace: 1
     - _TexCoordSpaceSwizzle: 1
     - _TransparencyMode: 0
     - _Turbulence: 1
@@ -338,7 +336,7 @@ Material:
     - _TurbulenceSpeed: 0.3
     - _VRSSR: 1
     - _VertOffsetFlipbookSpeed: 5
-    - _VertOffsetFlipbookStrength: 0.1
+    - _VertOffsetFlipbookStrength: 0.2
     - _VertOffsetMode: 0
     - _VertRemapMax: 1
     - _VertRemapMin: -1
@@ -350,19 +348,30 @@ Material:
     - _WaveDirection0: 0
     - _WaveDirection1: 335
     - _WaveDirection2: 13
+    - _WaveDirection3: 350
     - _WaveHeight: 1
     - _WaveScale0: 4
     - _WaveScale1: 2
     - _WaveScale2: 1
+    - _WaveScale3: 2
     - _WaveScaleGlobal: 1
     - _WaveSpeed0: 1
     - _WaveSpeed1: 1.1
     - _WaveSpeed2: 1.2
+    - _WaveSpeed3: 0.5
     - _WaveSpeedGlobal: 2
     - _WaveStrength0: 0.1
     - _WaveStrength1: 0.1
     - _WaveStrength2: 0.1
+    - _WaveStrength3: 0.1
     - _WaveStrengthGlobal: 1.5
+    - _WaveToggle0: 1
+    - _WaveToggle1: 1
+    - _WaveToggle2: 1
+    - _WaveToggle3: 1
+    - _WaveWarpScale: 0.1
+    - _WaveWarpSpeed: 0.1
+    - _WaveWarpStrength: 1.5
     - _WireframeVisualization: 0
     - _ZWrite: 1
     - _ZeroProp: 0
@@ -394,8 +403,8 @@ Material:
     - _MainTexScroll: {r: 0, g: 0.1, b: 0, a: 0}
     - _NoiseTexScale: {r: 3, g: 3, b: 0, a: 0}
     - _NoiseTexScroll: {r: 0, g: 0.1, b: 0, a: 0}
-    - _NonGrabBackfaceTint: {r: 0, g: 0, b: 0, a: 0}
-    - _NonGrabColor: {r: 0, g: 0, b: 0, a: 0}
+    - _NonGrabBackfaceTint: {r: 0, g: 0, b: 0, a: 1}
+    - _NonGrabColor: {r: 0, g: 0, b: 0, a: 1}
     - _NormalMapFlipbookScale: {r: 3, g: 3, b: 0, a: 0}
     - _NormalMapScale0: {r: 3, g: 3, b: 0, a: 0}
     - _NormalMapScale1: {r: 4, g: 4, b: 0, a: 0}

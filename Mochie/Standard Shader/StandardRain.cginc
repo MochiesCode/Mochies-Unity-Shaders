@@ -27,7 +27,7 @@ float3 GetFlipbookNormals(float2 uv, inout float flipbookBase, float mask){
     float2 origUV = baseUV.xy / float2(_RainColumns, _RainRows);
     float4 uvdd = float4(ddx(origUV), ddy(origUV));
 
-    flipbookBase = tex2Dgrad(_RainSheet, flipUV, uvdd.xw, uvdd.zw).g * mask;
+    flipbookBase = tex2Dgrad(_RainSheet, flipUV, uvdd.xy, uvdd.zw).g * mask;
     rainStrength = _RainStrength * mask;
     return tex2DnormalSmooth(_RainSheet, flipUV, uvdd, rainStrength);
 }
@@ -85,7 +85,7 @@ void ApplyRainNormal(v2f i, inout InputData id){
             float horizonAdjustment = lerp(1, GetHorizonAdjustment(i.worldPos, id.vNormal), _RippleHorizonAdjustment);
             horizonAdj = horizonAdjustment;
             float threshAngle = _RainThresholdSize * 0.5;
-            float rainThreshold = smoothstep(_RainThreshold - threshAngle, _RainThreshold + threshAngle, 1-id.facingAngle);
+            rainThreshold = smoothstep(_RainThreshold - threshAngle, _RainThreshold + threshAngle, 1-id.facingAngle);
             float3 rainNormal0 = GetRippleNormal(i, id, rainMask, horizonAdjustment);
             float3 rainNormal1 = GetFlipbookNormals(i.uv2.xy, id.rainFlipbook, rainMask);
             ApplyExtraDroplets(i.uv2.xy, rainNormal1, id.rainFlipbook, rainMask);

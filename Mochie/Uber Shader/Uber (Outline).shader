@@ -2,6 +2,7 @@
 
 Shader "Mochie/Uber (Outline)" {
     Properties {
+        [HideInInspector]_MochieMaterialVersion("Material Version", Int) = 17800
         //----------------------------
         // BASE
         //----------------------------
@@ -46,7 +47,7 @@ Shader "Mochie/Uber (Outline)" {
         // TEXTURE MAPPING
         //----------------------------
         //PRIMARY MAPS
-        [Enum(Metallic,0, Specular,1, Specular (Alpha Smoothness),2, Packed,3)]_PBRWorkflow("en4", Int) = 0
+        [Enum(Metallic,0, Specular,1, Specular (Alpha Smoothness),2, Packed Metallic,3)]_PBRWorkflow("en4", Int) = 0
         _MetallicGlossMap("tex", 2D) = "white" {}
         _Metallic("ra", Range(0,1)) = 0
         _SpecGlossMap("tex", 2D) = "white" {}

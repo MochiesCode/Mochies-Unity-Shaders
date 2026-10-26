@@ -15,7 +15,8 @@ void ApplyGeneralFilters(inout float3 albedo){
 
 void ApplyHSVFilter(inout float3 albedo){
     _Hue += lerp(0, frac(_Time.y*_AutoShiftSpeed), _AutoShift);
-    if ((_Hue > 0 && _Hue < 1) || _MonoTint == 1){
+    // Whole turns don't shift anything, auto shift can push it past 1
+    if (frac(_Hue) != 0 || _MonoTint == 1){
         if (_HueMode == 0)
             albedo = HueShift(albedo, _Hue, _MonoTint);
         else
@@ -743,7 +744,7 @@ masks GetMasks(g2f i){
                 m.rimMask = mask2.r;
                 m.eRimMask = mask2.g;
                 m.refractMask = mask2.b;
-                m.anisoMask = mask2.a;
+                m.anisoMask = 1-mask2.a;
             #endif
             float4 mask1 = MOCHIE_SAMPLE_TEX2D_SAMPLER(_PackedMask1, sampler_MainTex, i.uv.xy);
             m.shadowMask = mask1.r;

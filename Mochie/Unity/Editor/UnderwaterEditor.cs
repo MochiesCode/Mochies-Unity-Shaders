@@ -100,9 +100,9 @@ namespace Mochie {
             EditorGUI.BeginChangeCheck(); {
 
                 // Base
-                bool baseToggle = Foldouts.DoFoldout(foldouts, mat, "Base", 1, Foldouts.Style.StandardButton);
+                Foldouts.DoFoldout(foldouts, mat, "Base", 1, Foldouts.Style.StandardButton);
                 if (Foldouts.DoFoldoutButton(MGUI.collapseLabel, 11)) Toggles.CollapseFoldouts(mat, foldouts, 1);
-                if (baseToggle) {
+                if (Foldouts.BeginFoldout(foldouts, mat, "Base")) {
                     MGUI.PropertyGroupParent(()=>{
                         MGUI.PropertyGroup(()=>{
                             me.RenderQueueField();
@@ -116,6 +116,7 @@ namespace Mochie {
                         MGUI.DisplayInfo("   This shader requires a \"Depth Light\" prefab be present in the scene.\n   (Found in: Assets/Mochie/Unity/Prefabs)");
                     });
                 }
+                Foldouts.EndFoldout();
 
                 // Blur
                 if (Foldouts.DoFoldout(foldouts, mat, me, _DoFToggle, "Blur", Foldouts.Style.StandardToggle)) {
@@ -143,6 +144,7 @@ namespace Mochie {
                         MGUI.ToggleGroupEnd();
                     });
                 }
+                Foldouts.EndFoldout();
 
                 // Caustics
                 if (Foldouts.DoFoldout(foldouts, mat, me, _CausticsToggle, "Caustics", Foldouts.Style.StandardToggle)) {
@@ -191,6 +193,7 @@ namespace Mochie {
                         MGUI.ToggleGroupEnd();
                     });
                 }
+                Foldouts.EndFoldout();
 
                 // Fog
                 if (Foldouts.DoFoldout(foldouts, mat, me, _FogToggle, "Fog", Foldouts.Style.StandardToggle)) {
@@ -205,10 +208,11 @@ namespace Mochie {
                         MGUI.ToggleGroupEnd();
                     });
                 }
+                Foldouts.EndFoldout();
 
             }
             ApplyMaterialSettings(mat);
-            MGUI.DoFooter(versionLabel);
+            MGUI.DoFooter(versionLabel, "Underwater-Visuals");
         }
 
         public override void AssignNewShaderToMaterial(Material mat, Shader oldShader, Shader newShader) {

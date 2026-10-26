@@ -19,8 +19,9 @@ float ShadowGetOneMinusReflectivity(v2f i){
         float detailMask = detailMask = _DetailMask.Sample(sampler_DefaultSampler, i.uv1.xy)[_DetailMaskChannel];
         // Same precedence and blending as InitializeInputData: the packed detail workflow wins over separate maps
         #if defined(_WORKFLOW_DETAIL_PACKED_ON)
-            float detailMetallic = SampleDetailPackedMap(i.uv0.zw)[_DetailMetallicChannel];
-            float blendedMetallic = _DetailMaskMode == 1 ? detailMetallic : BlendScalars(metallicity, detailMetallic, _DetailMetallicBlend);
+            float4 detailPackedMap = SampleDetailPackedMap(i.uv0.zw);
+            float detailMetallic = detailPackedMap[_DetailMetallicChannel];
+            float blendedMetallic = _DetailMaskMode == 1 ? detailMetallic : BlendScalarsAlpha(metallicity, detailMetallic, _DetailMetallicBlend, detailPackedMap.a);
             metallicity = lerp(metallicity, saturate(blendedMetallic), _DetailMetallicStrength * detailMask);
         #elif defined(_DETAIL_METALLIC_ON)
             float4 detailMetallic = SampleDetailMetallicMap(i.uv0.zw);
@@ -49,7 +50,8 @@ float4 frag (v2f i, UNITY_POSITION(vpos), bool isFrontFace : SV_IsFrontFace) : S
 
     float alpha = SampleBaseColor(i.uv0.xy, i.uv4.zw, i.color.a).a;
     #if defined(_ALPHATEST_ON)
-        clip(alpha - _Cutoff);
+        // CutoutAlpha already remaps _Cutoff to 0.5, same edge the main pass gets from alpha to coverage
+        clip(alpha - 0.5);
     #endif
     #if defined(_ALPHABLEND_ON) || defined(_ALPHAPREMULTIPLY_ON)
         #if defined(_ALPHAPREMULTIPLY_ON)

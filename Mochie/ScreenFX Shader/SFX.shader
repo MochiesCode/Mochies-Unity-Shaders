@@ -2,6 +2,7 @@
 
 Shader "Mochie/Screen FX" {
     Properties {
+        [HideInInspector]_MochieMaterialVersion("Material Version", Int) = 17800
 
         //Global Settings
         [Enum(Hide in Mirror,0, Mirror Only,1)]_MirrorRenderMode("", Int) = 0

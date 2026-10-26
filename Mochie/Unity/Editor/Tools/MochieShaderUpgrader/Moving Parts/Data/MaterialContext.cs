@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -7,27 +8,119 @@ namespace Mochie.ShaderUpgrader
     public class MaterialContext
     {
         public Material Material { get; private set; }
-        
-        SerializedProperty textureProperties;
-        SerializedProperty intProperties;
-        SerializedProperty floatProperties;
-        SerializedProperty colorProperties;
+
+        readonly Dictionary<string, float> _floats = new Dictionary<string, float>(StringComparer.Ordinal);
+        readonly Dictionary<string, int> _ints = new Dictionary<string, int>(StringComparer.Ordinal);
+        readonly Dictionary<string, Color> _colors = new Dictionary<string, Color>(StringComparer.Ordinal);
+        readonly Dictionary<string, TextureContainer> _textures = new Dictionary<string, TextureContainer>(StringComparer.Ordinal);
 
         private MaterialContext() {}
         
         public MaterialContext(Material material)
         {
             if(material == null)
-                throw new NullReferenceException("Material can't be null");
+                throw new ArgumentNullException(nameof(material), "Material can't be null");
             
             Material = material;
                     
             var serializedMaterial = new SerializedObject(Material);
-            var savedProps = serializedMaterial.FindProperty("m_SavedProperties"); 
-            textureProperties = savedProps.FindPropertyRelative("m_TexEnvs");
-            intProperties = savedProps.FindPropertyRelative("m_Ints");
-            floatProperties = savedProps.FindPropertyRelative("m_Floats");
-            colorProperties = savedProps.FindPropertyRelative("m_Colors");
+            var savedProps = serializedMaterial.FindProperty("m_SavedProperties");
+            if(savedProps == null)
+                return;
+
+            ExtractFloats(savedProps.FindPropertyRelative("m_Floats"));
+            ExtractInts(savedProps.FindPropertyRelative("m_Ints"));
+            ExtractColors(savedProps.FindPropertyRelative("m_Colors"));
+            ExtractTextures(savedProps.FindPropertyRelative("m_TexEnvs"));
+        }
+
+        void ExtractFloats(SerializedProperty floatProperties)
+        {
+            if(floatProperties == null || !floatProperties.isArray)
+                return;
+
+            for(int i = 0; i < floatProperties.arraySize; i++)
+            {
+                var child = floatProperties.GetArrayElementAtIndex(i);
+                string key = GetPropertyKey(child);
+                if(string.IsNullOrEmpty(key))
+                    continue;
+
+                float val = child.type == "pair" ? child.FindPropertyRelative("second").floatValue : child.floatValue;
+                _floats[key] = val;
+            }
+        }
+
+        void ExtractInts(SerializedProperty intProperties)
+        {
+            if(intProperties == null || !intProperties.isArray)
+                return;
+
+            for(int i = 0; i < intProperties.arraySize; i++)
+            {
+                var child = intProperties.GetArrayElementAtIndex(i);
+                string key = GetPropertyKey(child);
+                if(string.IsNullOrEmpty(key))
+                    continue;
+
+                int val = child.type == "pair" ? child.FindPropertyRelative("second").intValue : child.intValue;
+                _ints[key] = val;
+            }
+        }
+
+        void ExtractColors(SerializedProperty colorProperties)
+        {
+            if(colorProperties == null || !colorProperties.isArray)
+                return;
+
+            for(int i = 0; i < colorProperties.arraySize; i++)
+            {
+                var child = colorProperties.GetArrayElementAtIndex(i);
+                string key = GetPropertyKey(child);
+                if(string.IsNullOrEmpty(key))
+                    continue;
+
+                Color val = child.type == "pair" ? child.FindPropertyRelative("second").colorValue : child.colorValue;
+                _colors[key] = val;
+            }
+        }
+
+        void ExtractTextures(SerializedProperty textureProperties)
+        {
+            if(textureProperties == null || !textureProperties.isArray)
+                return;
+
+            for(int i = 0; i < textureProperties.arraySize; i++)
+            {
+                var child = textureProperties.GetArrayElementAtIndex(i);
+                string key = GetPropertyKey(child);
+                if(string.IsNullOrEmpty(key))
+                    continue;
+
+                var valueContainer = child.FindPropertyRelative("second");
+                if(valueContainer != null)
+                {
+                    var texProp = valueContainer.FindPropertyRelative("m_Texture");
+                    var offsetProp = valueContainer.FindPropertyRelative("m_Offset");
+                    var scaleProp = valueContainer.FindPropertyRelative("m_Scale");
+
+                    _textures[key] = new TextureContainer
+                    {
+                        texture = texProp?.objectReferenceValue as Texture,
+                        offset = offsetProp != null ? offsetProp.vector2Value : Vector2.zero,
+                        scale = scaleProp != null ? scaleProp.vector2Value : Vector2.one
+                    };
+                }
+            }
+        }
+
+        static string GetPropertyKey(SerializedProperty element)
+        {
+            var keyProp = element.FindPropertyRelative("first");
+            if(keyProp != null && !string.IsNullOrEmpty(keyProp.stringValue))
+                return keyProp.stringValue;
+
+            return element.displayName;
         }
 
         /// <summary>
@@ -38,15 +131,17 @@ namespace Mochie.ShaderUpgrader
         /// <returns>True if value was found</returns>
         public bool TryGetFloat(string propertyName, out float value)
         {
-            value = default;
-            foreach(SerializedProperty child in floatProperties)
+            if(_floats.TryGetValue(propertyName, out value))
+                return true;
+
+            // Fallback: Check if serialized as integer
+            if(_ints.TryGetValue(propertyName, out int intVal))
             {
-                if(child.displayName != propertyName)
-                    continue;
-                
-                value = child.type == "pair" ? child.FindPropertyRelative("second").floatValue : child.floatValue;
+                value = intVal;
                 return true;
             }
+
+            value = default;
             return false;
         }
 
@@ -58,22 +153,7 @@ namespace Mochie.ShaderUpgrader
         /// <returns>True if value was found</returns>
         public bool TryGetTexture(string propertyName, out TextureContainer value)
         {
-            value = default;
-            foreach(SerializedProperty child in textureProperties)
-            {
-                if(child.displayName != propertyName)
-                    continue;
-                
-                var valueContainer = child.FindPropertyRelative("second");
-                value = new TextureContainer
-                {
-                    texture = valueContainer.FindPropertyRelative("m_Texture").objectReferenceValue as Texture,
-                    offset = valueContainer.FindPropertyRelative("m_Offset").vector2Value,
-                    scale = valueContainer.FindPropertyRelative("m_Scale").vector2Value
-                };
-                return true;
-            }
-            return false;
+            return _textures.TryGetValue(propertyName, out value);
         }
         
         /// <summary>
@@ -84,15 +164,17 @@ namespace Mochie.ShaderUpgrader
         /// <returns>True if value was found</returns>
         public bool TryGetInt(string propertyName, out int value)
         {
-            value = default;
-            foreach(SerializedProperty child in intProperties)
+            if(_ints.TryGetValue(propertyName, out value))
+                return true;
+
+            // Fallback: Check if serialized as float (common in Unity ShaderLab)
+            if(_floats.TryGetValue(propertyName, out float floatVal))
             {
-                if(child.displayName != propertyName)
-                    continue;
-                
-                value = child.type == "pair" ? child.FindPropertyRelative("second").intValue : child.intValue;
+                value = Mathf.RoundToInt(floatVal);
                 return true;
             }
+
+            value = default;
             return false;
         }
         
@@ -104,16 +186,7 @@ namespace Mochie.ShaderUpgrader
         /// <returns>True if value was found</returns>
         public bool TryGetColorOrVector(string propertyName, out Color value)
         {
-            value = default;
-            foreach(SerializedProperty child in colorProperties)
-            {
-                if(child.displayName != propertyName)
-                    continue;
-                
-                value = child.type == "pair" ? child.FindPropertyRelative("second").colorValue : child.colorValue;
-                return true;
-            }
-            return false;
+            return _colors.TryGetValue(propertyName, out value);
         }
     }
 }

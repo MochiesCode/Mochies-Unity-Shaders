@@ -32,18 +32,20 @@ float3 GetVertexManipulation(appdata v, inout v2f o){
         float3 noise1 = 0;
         float3 noise2 = 0;
 
-        float2 noiseUV0 = worldPos.xz * _WindScale0 + _Time.y * _WindSpeed0; 
+        // worldPos is relative to the pivot here, so the noise needs the origin added back or every copy of a mesh sways in unison
+        float3 noisePos = worldPos + worldOrigin;
+        float2 noiseUV0 = noisePos.xz * _WindScale0 + _Time.y * _WindSpeed0; 
         noise0 = MOCHIE_SAMPLE_TEX2D_LOD(_WindNoiseTex, noiseUV0, _WindSmoothness0) * _WindContribution0;
         noise0 = Remap(noise0, 0, 1, -1, 1);
 
         if (_WindLayers > 1){
-            float2 noiseUV1 = worldPos.yz * _WindScale1 + _Time.y * _WindSpeed1;
+            float2 noiseUV1 = noisePos.yz * _WindScale1 + _Time.y * _WindSpeed1;
             noise1 = MOCHIE_SAMPLE_TEX2D_LOD(_WindNoiseTex, noiseUV1, _WindSmoothness1) * _WindContribution1;
             noise1 = Remap(noise1, 0, 1, -1, 1);
         }
 
         if (_WindLayers > 2){
-            float2 noiseUV2 = worldPos.xy * _WindScale2 + _Time.y * _WindSpeed2;
+            float2 noiseUV2 = noisePos.xy * _WindScale2 + _Time.y * _WindSpeed2;
             noise2 = MOCHIE_SAMPLE_TEX2D_LOD(_WindNoiseTex, noiseUV2, _WindSmoothness2) * _WindContribution2;
             noise2 = Remap(noise2, 0, 1, -1, 1);
         }

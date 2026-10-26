@@ -280,12 +280,6 @@ void InitializeInputData(inout v2f i, inout InputData id, bool isFrontFace){
             surfaceTint *= lerp(_AngleTint, 1, earlyNdotV);
         #endif
     }
-    
-    #if VERT_OFFSET_ENABLED
-        float3 waveTint = _SubsurfaceTint.rgb * _SubsurfaceBrightness;
-        float subsurfaceThreshold = smoothstep(_SubsurfaceThreshold, 1, i.wave.y);
-        surfaceTint.rgb = lerp(surfaceTint.rgb, waveTint, subsurfaceThreshold * _SubsurfaceStrength);
-    #endif
 
     #if BASECOLOR_STOCHASTIC_ENABLED
         float4 mainTex = tex2Dstoch(_MainTex, sampler_FlowMap, mainTexUV) * surfaceTint;
@@ -347,7 +341,7 @@ void InitializeInputData(inout v2f i, inout InputData id, bool isFrontFace){
                         caustics = min(tex0, tex1);
                         caustics = clamp(caustics, 0, 0.1);
                         float3 causticsShadow0 = MOCHIE_SAMPLE_TEX2D_SAMPLER(_CausticsShadow, sampler_FlowMap, uvTex0);
-                        float3 causticsShadow1 = MOCHIE_SAMPLE_TEX2D_SAMPLER(_CausticsShadow, sampler_FlowMap, uvTex0);
+                        float3 causticsShadow1 = MOCHIE_SAMPLE_TEX2D_SAMPLER(_CausticsShadow, sampler_FlowMap, uvTex1);
                         causticsShadow = min(causticsShadow0, causticsShadow1);
                         causticsShadow = clamp(causticsShadow, 0.7, 0.8);
                         causticsShadow = lerp(1, causticsShadow, caustFade);
@@ -384,6 +378,13 @@ void InitializeInputData(inout v2f i, inout InputData id, bool isFrontFace){
                 float fogDepth0 = saturate(pow(fogDepth, _FogPower*0.5));
                 _FogTint.rgb *= _FogBrightness;
                 _FogTint.rgb *= surfaceTint.rgb;
+                #if VERT_OFFSET_ENABLED
+                    if (_SubsurfaceToggle == 1){
+                        float3 waveTint = _SubsurfaceTint.rgb * _SubsurfaceBrightness;
+                        float subsurfaceThreshold = smoothstep(_SubsurfaceThreshold, 1, i.wave.y);
+                        _FogTint.rgb *= lerp(1, waveTint, subsurfaceThreshold * _SubsurfaceStrength);
+                    }
+                #endif
                 col.rgb = lerp(col.rgb, lerp(_FogTint.rgb, col.rgb, fogDepth0), _FogTint.a);
             }
         #endif

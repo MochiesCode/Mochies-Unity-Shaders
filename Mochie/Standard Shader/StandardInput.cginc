@@ -635,9 +635,10 @@ void InitializeInputData(v2f i, inout InputData id, float3x3 tangentToWorld, boo
             blendedOcclusion = detailPackedMap[_DetailOcclusionChannel];
         }
         else {
-            blendedMetallic = BlendScalars(id.metallic, detailPackedMap[_DetailMetallicChannel], _DetailMetallicBlend);
-            blendedRoughness = BlendScalars(id.roughness, detailPackedMap[_DetailRoughnessChannel], _DetailRoughnessBlend);
-            blendedOcclusion = BlendScalars(id.occlusion, detailPackedMap[_DetailOcclusionChannel], _DetailOcclusionBlend);
+            // The Alpha blend mode uses the packed map's alpha for every channel
+            blendedMetallic = BlendScalarsAlpha(id.metallic, detailPackedMap[_DetailMetallicChannel], _DetailMetallicBlend, detailPackedMap.a);
+            blendedRoughness = BlendScalarsAlpha(id.roughness, detailPackedMap[_DetailRoughnessChannel], _DetailRoughnessBlend, detailPackedMap.a);
+            blendedOcclusion = BlendScalarsAlpha(id.occlusion, detailPackedMap[_DetailOcclusionChannel], _DetailOcclusionBlend, detailPackedMap.a);
         }
         id.metallic = lerp(id.metallic, saturate(blendedMetallic), _DetailMetallicStrength * detailMask);
         id.roughness = lerp(id.roughness, blendedRoughness, _DetailRoughnessStrength * detailMask);

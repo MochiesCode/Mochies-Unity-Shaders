@@ -36,12 +36,8 @@ v2f vert_meta (appdata v) {
 
 float4 frag_meta (v2f i, bool isFrontFace : SV_IsFrontFace) : SV_Target {
 
-    if (_TexCoordSpace == 1){
-        float2 worldYZ = Rotate2D(i.worldPos.yz, -90);
-        float2 worldCoordSelect[3] = {i.worldPos.xy, -i.worldPos.xz, worldYZ}; 
-        float2 worldCoords = worldCoordSelect[_TexCoordSpaceSwizzle];
-        i.uv.xy = worldCoords;
-    }
+    if (_TexCoordSpace == 1)
+        i.uv.xy = GetWorldCoords(i.worldPos);
     i.uv.xy *= abs(_GlobalTexCoordScale);
 
     float4 baseColor = SampleTexture(_MainTex, TRANSFORM_TEX(i.uv, _MainTex)) * _BaseColorTint;

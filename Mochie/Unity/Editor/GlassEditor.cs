@@ -23,7 +23,7 @@ namespace Mochie {
             "Render Settings"
         }, 1);
 
-        string versionLabel = "v1.15.1";
+        string versionLabel = "v1.15.2";
 
         // Surface
         MaterialProperty _Workflow = null;
@@ -161,7 +161,9 @@ namespace Mochie {
             EditorGUI.BeginChangeCheck(); {
                 
                 // Surface
-                if (Foldouts.DoFoldout(foldouts, mat, "Surface", Foldouts.Style.Standard)) {
+                Foldouts.DoFoldout(foldouts, mat, "Surface", 1, Foldouts.Style.StandardButton);
+                if (Foldouts.DoFoldoutButton(MGUI.collapseLabel, 11)) Toggles.CollapseFoldouts(mat, foldouts, 1);
+                if (Foldouts.BeginFoldout(foldouts, mat, "Surface")) {
                     MGUI.PropertyGroupParent(()=>{
                         MGUI.PropertyGroup(()=>{
                             me.ShaderProperty(_Workflow, Tips.workflowText);
@@ -188,27 +190,26 @@ namespace Mochie {
                                 MGUI.sRGBWarning(_OcclusionMap);
                                 MGUI.TextureSO(me, _OcclusionMap, _OcclusionMap.textureValue);
                                 bool hasAnyTexture = _OcclusionMap.textureValue != null || _RoughnessMap.textureValue != null || _MetallicMap.textureValue != null;
-                                MGUI.ToggleGroup(!hasAnyTexture);
-                                if (MGUI.PropertyButton("Pack Textures")){
-                                    TexturePacker.PackTextures(mat, _OcclusionMap, _Occlusion, _RoughnessMap, _Roughness, _MetallicMap, _Metallic, null, null, _PackedMap);
-                                    _Workflow.floatValue = 1f;
-                                    mat.SetInt("_Workflow", 1);
-                                    _OcclusionChannel.floatValue = 0f;
-                                    mat.SetInt("_OcclusionChannel", 0);
-                                    _RoughnessChannel.floatValue = 1f;
-                                    mat.SetInt("_RoughnessChannel", 1);
-                                    _MetallicChannel.floatValue = 2f;
-                                    mat.SetInt("_MetallicChannel", 2);
-                                    _PackedMetallicStrength.floatValue = 1f;
-                                    mat.SetFloat("_PackedMetallicStrength", 1f);
-                                    _PackedRoughnessStrength.floatValue = 1f;
-                                    mat.SetFloat("_PackedRoughnessStrength", 1f);
-                                    _PackedOcclusionStrength.floatValue = 1f;
-                                    mat.SetFloat("_PackedOcclusionStrength", 1f);
-                                    SetKeywords(mat);
-                                    SetBlendMode(mat);
+                                if (hasAnyTexture && MGUI.PropertyButton("Pack Textures")){
+                                    Undo.RecordObjects(me.targets, "Pack Textures");
+                                    bool allPacked = true;
+                                    foreach (Material target in me.targets)
+                                        allPacked &= PackPBRTextures(target);
+                                    // Only switch workflows once every selected material has its packed map
+                                    if (allPacked){
+                                        _Workflow.floatValue = 1f;
+                                        _OcclusionChannel.floatValue = 0f;
+                                        _RoughnessChannel.floatValue = 1f;
+                                        _MetallicChannel.floatValue = 2f;
+                                        _PackedMetallicStrength.floatValue = 1f;
+                                        _PackedRoughnessStrength.floatValue = 1f;
+                                        _PackedOcclusionStrength.floatValue = 1f;
+                                        foreach (Material target in me.targets){
+                                            SetKeywords(target);
+                                            SetBlendMode(target);
+                                        }
+                                    }
                                 }
-                                MGUI.ToggleGroupEnd();
                             }
                             else {
                                 me.TexturePropertySingleLine(Tips.packedMapText, _PackedMap);
@@ -239,6 +240,7 @@ namespace Mochie {
                         }
                     });
                 }
+                Foldouts.EndFoldout();
 
                 // Specularity
                 if (Foldouts.DoFoldout(foldouts, mat, "Specularity", Foldouts.Style.Standard)) {
@@ -257,6 +259,7 @@ namespace Mochie {
                         });
                     });
                 }
+                Foldouts.EndFoldout();
                 
                 // Emission
                 if (Foldouts.DoFoldout(foldouts, mat, "Emission", Foldouts.Style.Standard)) {
@@ -280,6 +283,7 @@ namespace Mochie {
                          MGUI.ToggleGroupEnd();
                     });
                 }
+                Foldouts.EndFoldout();
 
                 // Rain
                 if (Foldouts.DoFoldout(foldouts, mat, me, _RainMode, "Rain", Foldouts.Style.StandardToggle)) {
@@ -300,6 +304,7 @@ namespace Mochie {
                         }
                     });
                 }
+                Foldouts.EndFoldout();
 
                 // Lightmap Settings
                 if (Foldouts.DoFoldout(foldouts, mat, "Lightmap Settings", Foldouts.Style.Standard)) {
@@ -320,6 +325,7 @@ namespace Mochie {
                         });
                     });
                 }
+                Foldouts.EndFoldout();
                 
                 // Light Volumes
                 if (Foldouts.DoFoldout(foldouts, mat, me, _LightVolumesToggle, "Light Volumes", Foldouts.Style.StandardToggle)) {
@@ -334,6 +340,7 @@ namespace Mochie {
                     });
                     MGUI.ToggleGroupEnd();
                 }
+                Foldouts.EndFoldout();
 
                 // LTCGI
                 if (Shader.Find("LTCGI/Blur Prefilter") != null){
@@ -348,6 +355,7 @@ namespace Mochie {
                             MGUI.ToggleGroupEnd();
                         });
                     }
+                    Foldouts.EndFoldout();
                 }
                 else {
                     _LTCGI.floatValue = 0;
@@ -385,6 +393,7 @@ namespace Mochie {
                             MGUI.ToggleGroupEnd();
                         });
                     }
+                    Foldouts.EndFoldout();
                 }
                 else {
                     _AreaLitToggle.floatValue = 0f;
@@ -413,13 +422,14 @@ namespace Mochie {
                         });
                     });
                 }
+                Foldouts.EndFoldout();
             }
             if (EditorGUI.EndChangeCheck()){
                 SetKeywords(mat);
             }
             SetBlendMode(mat);
             MGUI.Space10();
-            MGUI.DoFooter(versionLabel);
+            MGUI.DoFooter(versionLabel, "Glass-Shader");
         }
 
         void RainDroplets(MaterialEditor me){
@@ -459,6 +469,31 @@ namespace Mochie {
                 me.ShaderProperty(_RainThreshold, "Angle Threshold");
                 me.ShaderProperty(_RainThresholdSize, "Threshold Blend");
             });
+        }
+
+        // Strengths are baked in because the editor resets the packed strengths to 1 afterwards.
+        // Each map has its own tiling: if they all match it moves to the packed map, otherwise it's baked in.
+        static bool PackPBRTextures(Material mat){
+            float metallic = mat.GetFloat("_Metallic");
+            float roughness = mat.GetFloat("_Roughness");
+            TexturePacker.Channel occlusionChannel = new TexturePacker.Channel(mat.GetTexture("_OcclusionMap"), 0, mat.GetFloat("_Occlusion"), 1f, true);
+            TexturePacker.Channel roughnessChannel = new TexturePacker.Channel(mat.GetTexture("_RoughnessMap"), 0, roughness, roughness);
+            TexturePacker.Channel metallicChannel = new TexturePacker.Channel(mat.GetTexture("_MetallicMap"), 0, metallic, metallic);
+
+            bool shared = TexturePacker.TryGetSharedScaleOffset(mat, out Vector4 sharedST, "_OcclusionMap", "_RoughnessMap", "_MetallicMap");
+            if (!shared){
+                occlusionChannel.scaleOffset = TexturePacker.GetScaleOffset(mat, "_OcclusionMap");
+                roughnessChannel.scaleOffset = TexturePacker.GetScaleOffset(mat, "_RoughnessMap");
+                metallicChannel.scaleOffset = TexturePacker.GetScaleOffset(mat, "_MetallicMap");
+            }
+
+            if (TexturePacker.PackTextures(mat, "_PackedMap", occlusionChannel, roughnessChannel, metallicChannel) == null)
+                return false;
+            if (shared){
+                mat.SetTextureScale("_PackedMap", new Vector2(sharedST.x, sharedST.y));
+                mat.SetTextureOffset("_PackedMap", new Vector2(sharedST.z, sharedST.w));
+            }
+            return true;
         }
 
         void SetKeywords(Material mat){

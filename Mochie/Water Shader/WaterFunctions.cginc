@@ -63,12 +63,12 @@ float3 FlowUV (float2 uv, float2 flowVector, float time, float phase) {
     return uvw;
 }
 
-float3 GerstnerWave(float4 wave, float3 vertex, float speed, float rotation, inout float3 tangent, inout float3 binormal, float offsetMask){
+float3 GerstnerWave(float4 wave, float3 vertex, float speed, float rotation, float phase, inout float3 tangent, inout float3 binormal, float offsetMask){
     float k = 2 * UNITY_PI / wave.w;
     float c = sqrt(9.8/k);
     float2 dir = normalize(wave.xy);
     dir = Rotate2D(dir, rotation);
-    float f = k * (dot(dir,vertex.xz) - c * _Time.y*0.2*speed);
+    float f = k * (dot(dir,vertex.xz) - c * _Time.y*0.2*speed) + phase;
     float steepness = wave.z;
     float a = steepness / k;
 
@@ -86,6 +86,32 @@ float3 GerstnerWave(float4 wave, float3 vertex, float speed, float rotation, ino
     }
     
     return float3(dir.x * (a*cos(f)), a * sin(f), dir.y * (a*cos(f)));
+}
+
+// Frame for world space texture coordinates, rows are (u axis, up axis, v axis)
+// XZ is the identity so vertex offsets behave the same as object space on an unrotated/unscaled mesh
+// World coords are negated positions, so texture coordinates increase along -u and -v
+float3x3 GetWorldTexCoordFrame(int swizzle){
+    float3x3 frames[3] = {
+        float3x3(1,0,0, 0,0,1, 0,1,0), // XY
+        float3x3(1,0,0, 0,1,0, 0,0,1), // XZ
+        float3x3(0,1,0, 1,0,0, 0,0,1)  // YZ
+    };
+    return frames[swizzle];
+}
+
+// Aligns the tangent frame with world space texture coordinates so normal maps don't rotate with the mesh
+void GetWorldTexCoordTangents(float3 normal, out float3 tangent, out float3 binormal){
+    float3x3 frame = GetWorldTexCoordFrame(_TexCoordSpaceSwizzle);
+    tangent = -frame[0];
+    binormal = -frame[2];
+    tangent = Unity_SafeNormalize(tangent - normal * dot(normal, tangent));
+    binormal = Unity_SafeNormalize(binormal - normal * dot(normal, binormal));
+}
+
+// Converts a world space offset to object space, cancelling out object scale/rotation
+float3 WorldOffsetToObject(float3 offset){
+    return mul((float3x3)unity_WorldToObject, offset);
 }
 
 // [ToggleUI]_RimToggle("Enable", Int) = 0

@@ -59,7 +59,7 @@ Material:
     - _CausticsOpacity: 0.5
     - _CausticsPower: 1
     - _CausticsRange: 50
-    - _CausticsRotateWithLight: 0
+    - _CausticsRotateWithLight: 1
     - _CausticsScale: 10
     - _CausticsSpeed: 3
     - _CausticsSurfaceFade: 100

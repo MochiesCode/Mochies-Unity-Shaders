@@ -115,7 +115,7 @@ namespace Mochie {
         static readonly int blendingLabelPos = 111;
 
         static readonly string unityFolderPath = "Assets/Mochie/Unity";
-        string versionLabel = "v1.35.1";
+        string versionLabel = "v1.35.2";
         // β
         
         MaterialProperty _RenderMode = null; 
@@ -754,10 +754,10 @@ namespace Mochie {
             // -----------------
             // Base Settings
             // -----------------
-            bool baseToggle = Foldouts.DoFoldout(foldouts, mat, "Base", 2, Foldouts.Style.StandardButton);
+            Foldouts.DoFoldout(foldouts, mat, "Base", 2, Foldouts.Style.StandardButton);
             if (Foldouts.DoFoldoutButton(MGUI.collapseLabel, 11)) Toggles.CollapseFoldouts(mat, foldouts, 1);
             if (Foldouts.DoFoldoutButton(standardButtonContent, -13)) DoStandardLighting(mat);
-            if (baseToggle) {
+            if (Foldouts.BeginFoldout(foldouts, mat, "Base")) {
                 MGUI.PropertyGroupParent(()=>{
                     MGUI.PropertyGroup(()=>{
                         me.ShaderProperty(_RenderMode, Tips.renderModeLabel);
@@ -823,6 +823,7 @@ namespace Mochie {
                     });
                 });
             }
+            Foldouts.EndFoldout();
 
             // -----------------
             // Textures
@@ -885,28 +886,24 @@ namespace Mochie {
                             }
                             if (workflow == 0){
                                 bool hasAnyTexture = _OcclusionMap.textureValue != null || _SpecGlossMap.textureValue != null || _MetallicGlossMap.textureValue != null || _ParallaxMap.textureValue != null;
-                                MGUI.ToggleGroup(!hasAnyTexture);
-                                if (MGUI.PropertyButton("Pack Textures")){
-                                    float roughStrength = _SpecGlossMap.textureValue != null ? 1f : _Glossiness.floatValue;
-                                    float metalStrength = _MetallicGlossMap.textureValue != null ? 1f : _Metallic.floatValue;
-                                    float occStrength = _OcclusionStrength.floatValue;
-                                    TexturePacker.PackTextures(mat, _OcclusionMap, occStrength, _SpecGlossMap, roughStrength, _MetallicGlossMap, metalStrength, _ParallaxMap, 1f, _PackedMap);
-                                    _PBRWorkflow.floatValue = 3f;
-                                    mat.SetInt("_PBRWorkflow", 3);
-                                    _OcclusionChannel.floatValue = 0f;
-                                    mat.SetInt("_OcclusionChannel", 0);
-                                    _RoughnessChannel.floatValue = 1f;
-                                    mat.SetInt("_RoughnessChannel", 1);
-                                    _MetallicChannel.floatValue = 2f;
-                                    mat.SetInt("_MetallicChannel", 2);
-                                    _HeightChannel.floatValue = 3f;
-                                    mat.SetInt("_HeightChannel", 3);
-                                    bool hasHeight = _ParallaxMap.textureValue != null;
-                                    _EnablePackedHeight.floatValue = hasHeight ? 1f : 0f;
-                                    mat.SetInt("_EnablePackedHeight", hasHeight ? 1 : 0);
-                                    ApplyMaterialSettings(mat);
+                                if (hasAnyTexture && MGUI.PropertyButton("Pack Textures")){
+                                    Undo.RecordObjects(me.targets, "Pack Textures");
+                                    bool allPacked = true;
+                                    foreach (Material target in me.targets)
+                                        allPacked &= PackPBRTextures(target);
+                                    // Only switch workflows once every selected material has its packed map
+                                    if (allPacked){
+                                        _PBRWorkflow.floatValue = 3f;
+                                        _OcclusionChannel.floatValue = 0f;
+                                        _RoughnessChannel.floatValue = 1f;
+                                        _MetallicChannel.floatValue = 2f;
+                                        _HeightChannel.floatValue = 3f;
+                                        foreach (Material target in me.targets){
+                                            target.SetInt("_EnablePackedHeight", target.GetTexture("_ParallaxMap") ? 1 : 0);
+                                            ApplyMaterialSettings(target);
+                                        }
+                                    }
                                 }
-                                MGUI.ToggleGroupEnd();
                             }
                         });
 
@@ -994,6 +991,7 @@ namespace Mochie {
                             MGUI.ToggleGroupEnd();
                         });
                     }
+                    Foldouts.EndFoldout();
                     
                     if (workflow == 0 || workflow >= 3){
 
@@ -1011,6 +1009,7 @@ namespace Mochie {
                                 MGUI.ToggleGroupEnd();
                             });
                         }
+                        Foldouts.EndFoldout();
 
                         // Roughness Filtering
                         if (Foldouts.DoFoldout(foldouts, mat, me, _RoughnessFiltering, "Roughness Filter", Foldouts.Style.ThinToggle)) {
@@ -1026,6 +1025,7 @@ namespace Mochie {
                                 MGUI.ToggleGroupEnd();
                             });
                         }
+                        Foldouts.EndFoldout();
                     }
 
                     // Smoothness Filtering (for specular)
@@ -1044,6 +1044,7 @@ namespace Mochie {
                                 MGUI.ToggleGroupEnd();
                             });
                         }
+                        Foldouts.EndFoldout();
                     }
 
                     
@@ -1062,6 +1063,7 @@ namespace Mochie {
                             MGUI.ToggleGroupEnd();
                         });
                     }
+                    Foldouts.EndFoldout();
 
                     // Height Filtering
                     if (Foldouts.DoFoldout(foldouts, mat, me, _HeightFiltering, "Height Filter", Foldouts.Style.ThinToggle)) {
@@ -1077,6 +1079,7 @@ namespace Mochie {
                             MGUI.ToggleGroupEnd();
                         });
                     }
+                    Foldouts.EndFoldout();
                     
                     // Base Color Dissolve
                     if (Foldouts.DoFoldout(foldouts, mat, me, _BCDissolveToggle, "Base Color Dissolve", Foldouts.Style.ThinToggle)) {
@@ -1093,8 +1096,10 @@ namespace Mochie {
                             MGUI.ToggleGroupEnd();
                         });
                     }
+                    Foldouts.EndFoldout();
                     MGUI.Space6();
                 }
+                Foldouts.EndFoldout();
 
                 // -----------------
                 // Shading
@@ -1146,6 +1151,7 @@ namespace Mochie {
                             });
                         });
                     }
+                    Foldouts.EndFoldout();
 
                     // Shadows
                     if (Foldouts.DoFoldout(foldouts, mat, me, _ShadowMode, "Shadows", Foldouts.Style.ThinToggle)) {
@@ -1200,6 +1206,7 @@ namespace Mochie {
                             MGUI.ToggleGroupEnd();
                         });
                     }
+                    Foldouts.EndFoldout();
 
                     // Reflections
                     if (Foldouts.DoFoldout(foldouts, mat, me, _Reflections, "Reflections", Foldouts.Style.ThinToggle)) {
@@ -1234,6 +1241,7 @@ namespace Mochie {
                             });
                         }
                     }
+                    Foldouts.EndFoldout();
 
                     // Specular Highlights
                     if (Foldouts.DoFoldout(foldouts, mat, me, _Specular, "Specular Highlights", Foldouts.Style.ThinToggle)) {
@@ -1295,6 +1303,7 @@ namespace Mochie {
                             });
                         });
                     }
+                    Foldouts.EndFoldout();
 
                     // Matcap
                     if (Foldouts.DoFoldout(foldouts, mat, me, _MatcapToggle, "Matcap", Foldouts.Style.ThinToggle)) {
@@ -1328,6 +1337,7 @@ namespace Mochie {
                                 });
                             });
                         }
+                        Foldouts.EndFoldout();
 
                         if (Foldouts.DoFoldout(foldouts, mat, "Secondary Matcap", Foldouts.Style.ThinShort)) {
                             MGUI.PropertyGroupParent(()=>{
@@ -1357,9 +1367,11 @@ namespace Mochie {
                                 });
                             });
                         }
+                        Foldouts.EndFoldout();
                         MGUI.ToggleGroupEnd();
                         MGUI.Space2();
                     }
+                    Foldouts.EndFoldout();
 
                     // Subsurface Scattering
                     if (Foldouts.DoFoldout(foldouts, mat, me, _Subsurface, "Subsurface Scattering", Foldouts.Style.ThinToggle)) {
@@ -1378,6 +1390,7 @@ namespace Mochie {
                             MGUI.ToggleGroupEnd();
                         });
                     }
+                    Foldouts.EndFoldout();
 
                     // Rim
                     if (Foldouts.DoFoldout(foldouts, mat, me, _RimLighting, "Basic Rim", Foldouts.Style.ThinToggle)) {
@@ -1395,6 +1408,7 @@ namespace Mochie {
                             MGUI.ToggleGroupEnd();
                         });
                     }
+                    Foldouts.EndFoldout();
 
                     // Environment Rim
                     if (Foldouts.DoFoldout(foldouts, mat, me, _EnvironmentRim, "Environment Rim", Foldouts.Style.ThinToggle)) {
@@ -1411,6 +1425,7 @@ namespace Mochie {
                             MGUI.ToggleGroupEnd();
                         });
                     }
+                    Foldouts.EndFoldout();
 
                     // Refraction
                     if (Foldouts.DoFoldout(foldouts, mat, me, _Refraction, "Refraction", Foldouts.Style.ThinToggle)) {
@@ -1436,6 +1451,7 @@ namespace Mochie {
                             MGUI.ToggleGroupEnd();
                         });
                     }
+                    Foldouts.EndFoldout();
 
                     // Iridescence
                     if (Foldouts.DoFoldout(foldouts, mat, me, _Iridescence, "Iridescence", Foldouts.Style.ThinToggle)) {
@@ -1476,6 +1492,7 @@ namespace Mochie {
                             MGUI.ToggleGroupEnd();
                         });
                     }
+                    Foldouts.EndFoldout();
 
                     // Normals
                     if (Foldouts.DoFoldout(foldouts, mat, "Normals", Foldouts.Style.Thin)) {
@@ -1486,7 +1503,8 @@ namespace Mochie {
                                 me.ShaderProperty(_GSAA, Tips.gsaa);
                             });
                         });
-                    };
+                    }
+                    Foldouts.EndFoldout();
 
                     // Light volumes
                     if (Foldouts.DoFoldout(foldouts, mat, me, _LightVolumesToggle, "Light Volumes", Foldouts.Style.ThinToggle)) {
@@ -1500,8 +1518,10 @@ namespace Mochie {
                         });
                         MGUI.ToggleGroupEnd();
                     }
+                    Foldouts.EndFoldout();
                     MGUI.Space6();
                 }
+                Foldouts.EndFoldout();
             }
             else {
                 if (Foldouts.DoFoldout(foldouts, mat, me, _MaskingMode, "Masks ", Foldouts.Style.StandardToggle)) {
@@ -1524,6 +1544,7 @@ namespace Mochie {
                         MGUI.ToggleGroupEnd();
                     });
                 }
+                Foldouts.EndFoldout();
             }
             
             // -----------------
@@ -1557,6 +1578,7 @@ namespace Mochie {
                         MGUI.ToggleGroupEnd();
                     });
                 }
+                Foldouts.EndFoldout();
 
                 if (Foldouts.DoFoldout(foldouts, mat, me, _PulseToggle, "Pulse", Foldouts.Style.ThinToggle)) {
                     MGUI.PropertyGroupParent(()=>{
@@ -1568,10 +1590,12 @@ namespace Mochie {
                         });
                         MGUI.ToggleGroupEnd();
                     });
-                };
+                }
+                Foldouts.EndFoldout();
                 MGUI.ToggleGroupEnd();
                 MGUI.Space6();
             }
+            Foldouts.EndFoldout();
                 
             // -----------------
             // Filters
@@ -1615,6 +1639,7 @@ namespace Mochie {
                     MGUI.ToggleGroupEnd();
                 });
             }
+            Foldouts.EndFoldout();
 
             // -----------------
             // Flipbook
@@ -1660,6 +1685,7 @@ namespace Mochie {
                         MGUI.ToggleGroupEnd();
                     });
                 }
+                Foldouts.EndFoldout();
 
                 if (Foldouts.DoFoldout(foldouts, mat, me, _EnableSpritesheet1, "Secondary Layer", Foldouts.Style.ThinToggle)) {
                     MGUI.PropertyGroupParent(()=>{
@@ -1702,8 +1728,10 @@ namespace Mochie {
                         MGUI.ToggleGroupEnd();
                     });
                 }
+                Foldouts.EndFoldout();
                 MGUI.Space6();
             }
+            Foldouts.EndFoldout();
 
             // -----------------
             // Outline
@@ -1747,6 +1775,7 @@ namespace Mochie {
                         MGUI.ToggleGroupEnd();
                     });
                 }
+                Foldouts.EndFoldout();
             }
 
             // -----------------
@@ -1782,6 +1811,7 @@ namespace Mochie {
                     MGUI.ToggleGroupEnd();
                 });
             }
+            Foldouts.EndFoldout();
 
             // -----------------
             // Vertex Manip
@@ -1806,6 +1836,7 @@ namespace Mochie {
                 MGUI.ToggleGroupEnd();
                 });
             }
+            Foldouts.EndFoldout();
 
             // -----------------
             // Audio Link
@@ -1832,6 +1863,7 @@ namespace Mochie {
                         });
                     });
                 }
+                Foldouts.EndFoldout();
 
                 if (Foldouts.DoFoldout(foldouts, mat, "Emission ", Foldouts.Style.Thin)) {
                     MGUI.PropertyGroupParent(() => {
@@ -1842,6 +1874,7 @@ namespace Mochie {
                         });
                     });
                 }
+                Foldouts.EndFoldout();
 
                 if (Foldouts.DoFoldout(foldouts, mat, "Rim", Foldouts.Style.Thin)) {
                     MGUI.PropertyGroupParent(() => {
@@ -1859,6 +1892,7 @@ namespace Mochie {
                         });
                     });
                 }
+                Foldouts.EndFoldout();
 
                 if (Foldouts.DoFoldout(foldouts, mat, "Base Color Dissolve ", Foldouts.Style.Thin)) {
                     MGUI.PropertyGroupParent(() => {
@@ -1869,6 +1903,7 @@ namespace Mochie {
                         });
                     });
                 }
+                Foldouts.EndFoldout();
                 
                 if (Foldouts.DoFoldout(foldouts, mat, "UV Distortion ", Foldouts.Style.Thin)) {
                     MGUI.PropertyGroupParent(() => {
@@ -1879,6 +1914,7 @@ namespace Mochie {
                         });
                     });
                 }
+                Foldouts.EndFoldout();
 
                 if (isOutline){
                     if (Foldouts.DoFoldout(foldouts, mat, "Outline ", Foldouts.Style.Thin)) {
@@ -1890,6 +1926,7 @@ namespace Mochie {
                             });
                         });
                     }
+                    Foldouts.EndFoldout();
                 }
 
                 if (isUberX){
@@ -1902,6 +1939,7 @@ namespace Mochie {
                             });
                         });
                     }
+                    Foldouts.EndFoldout();
 
                     
                     if (Foldouts.DoFoldout(foldouts, mat, "Dissolve ", Foldouts.Style.Thin)) {
@@ -1913,6 +1951,7 @@ namespace Mochie {
                             });
                         });
                     }
+                    Foldouts.EndFoldout();
 
                     if (Foldouts.DoFoldout(foldouts, mat, "Triangle Offset", Foldouts.Style.Thin)) {
                         MGUI.PropertyGroupParent(() => {
@@ -1932,6 +1971,7 @@ namespace Mochie {
                             });
                         });
                     }
+                    Foldouts.EndFoldout();
 
                     if (Foldouts.DoFoldout(foldouts, mat, "Wireframe ", Foldouts.Style.Thin)) {
                         MGUI.PropertyGroupParent(() => {
@@ -1952,10 +1992,12 @@ namespace Mochie {
                             });
                         });
                     }
+                    Foldouts.EndFoldout();
                     MGUI.Space6();
                 }
                 MGUI.ToggleGroupEnd();
             }
+            Foldouts.EndFoldout();
 
             // -----------------
             // X Features
@@ -1984,6 +2026,7 @@ namespace Mochie {
                             MGUI.ToggleGroupEnd();
                         });
                     }
+                    Foldouts.EndFoldout();
 
                     if (Foldouts.DoFoldout(foldouts, mat, me, _DissolveStyle, "Dissolve", Foldouts.Style.ThinToggle)) {
                         MGUI.PropertyGroupParent(()=>{
@@ -2035,6 +2078,7 @@ namespace Mochie {
                             MGUI.ToggleGroupEnd();
                         });
                     }
+                    Foldouts.EndFoldout();
                     
                     // Screenspace
                     if (Foldouts.DoFoldout(foldouts, mat, me, _Screenspace, "Screenspace", Foldouts.Style.ThinToggle)) {
@@ -2052,6 +2096,7 @@ namespace Mochie {
                             MGUI.ToggleGroupEnd();
                         });
                     }
+                    Foldouts.EndFoldout();
 
                     // Clones
                     if (Foldouts.DoFoldout(foldouts, mat, me, _CloneToggle, "Clones", Foldouts.Style.ThinToggle)) {
@@ -2083,6 +2128,7 @@ namespace Mochie {
                             MGUI.ToggleGroupEnd();
                         });
                     }
+                    Foldouts.EndFoldout();
 
                     // Glitch
                     if (Foldouts.DoFoldout(foldouts, mat, me, _GlitchToggle, "Glitch", Foldouts.Style.ThinToggle)) {
@@ -2099,6 +2145,7 @@ namespace Mochie {
                             });
                         });
                     }
+                    Foldouts.EndFoldout();
 
                     // Shatter Culling
                     if (Foldouts.DoFoldout(foldouts, mat, me, _ShatterToggle, "Shatter Culling", Foldouts.Style.ThinToggle)) {
@@ -2116,6 +2163,7 @@ namespace Mochie {
                             MGUI.ToggleGroupEnd();
                         });
                     }
+                    Foldouts.EndFoldout();
 
                     // Wireframe
                     if (Foldouts.DoFoldout(foldouts, mat, me, _WireframeToggle, "Wireframe", Foldouts.Style.ThinToggle)) {
@@ -2135,8 +2183,10 @@ namespace Mochie {
                             MGUI.ToggleGroupEnd();
                         });
                     }
+                    Foldouts.EndFoldout();
                     MGUI.Space6();
                 }
+                Foldouts.EndFoldout();
             }
 
             // -----------------
@@ -2187,12 +2237,13 @@ namespace Mochie {
                     });
                 });
             }
+            Foldouts.EndFoldout();
 
             if (isUberX){
                 MGUI.Space10();
                 MGUI.DisplayWarning("Please note that the X version of this shader is, by default, more expensive than the non X version. If you are not using anything from the Special Features tab it is HIGHLY recommended to use the normal Uber shader instead, as there is no visual difference between the two.");
             }
-            MGUI.DoFooter(versionLabel);
+            MGUI.DoFooter(versionLabel, "Uber-Shader");
         }
 
         private void GradientToTexture(ref Texture2D tex){
@@ -2216,6 +2267,18 @@ namespace Mochie {
                 m.EnableKeyword(keyword);
             else
                 m.DisableKeyword(keyword);
+        }
+
+        // The packed workflow applies occlusion and height strength itself and reads metallic and roughness
+        // unscaled, so maps are packed as-is and only the constants for missing maps are baked.
+        // Separate occlusion maps are sampled from green, everything else from red.
+        static bool PackPBRTextures(Material mat){
+            return TexturePacker.PackTextures(mat, "_PackedMap",
+                new TexturePacker.Channel(mat.GetTexture("_OcclusionMap"), 1),
+                new TexturePacker.Channel(mat.GetTexture("_SpecGlossMap"), 0, 1f, mat.GetFloat("_Glossiness")),
+                new TexturePacker.Channel(mat.GetTexture("_MetallicGlossMap"), 0, 1f, mat.GetFloat("_Metallic")),
+                new TexturePacker.Channel(mat.GetTexture("_ParallaxMap"), 0)
+            ) != null;
         }
 
         void ApplyMaterialSettings(Material mat){

@@ -19,43 +19,87 @@ namespace Mochie {
             ThinLongToggle
         };
 
+        // Foldout contents slide open and closed. Every DoFoldout/BeginFoldout block must be
+        // followed by EndFoldout(), whether the foldout is open or not, to close its fade group.
+        public static float animSpeed = 10f;
+
         public static bool DoFoldout(Dictionary<Material, Toggles> foldouts, Material mat, string header, Style style){
+            Toggles toggles = foldouts[mat];
+            int index = toggles.IndexOf(header);
             bool state = false;
             switch(style){
-                case Style.Standard: state = Foldout(header, foldouts[mat].GetState(header)); break;
-                case Style.Thin: state = FoldoutThin(header, foldouts[mat].GetState(header)); break;
-                case Style.ThinShort: state = FoldoutThinShort(header, foldouts[mat].GetState(header)); break;
-                case Style.ThinLong: state = FoldoutThinLong(header, foldouts[mat].GetState(header)); break;
+                case Style.Standard: state = Foldout(header, toggles.GetState(index)); break;
+                case Style.Thin: state = FoldoutThin(header, toggles.GetState(index)); break;
+                case Style.ThinShort: state = FoldoutThinShort(header, toggles.GetState(index)); break;
+                case Style.ThinLong: state = FoldoutThinLong(header, toggles.GetState(index)); break;
                 default: MGUI.DisplayError("INVALID STYLE SELECTION"); break;
             }
 
-            foldouts[mat].SetState(header, state);
-            return foldouts[mat].GetState(header);
+            toggles.SetState(index, state);
+            return BeginFoldout(toggles, index);
         }
 
         public static bool DoFoldout(Dictionary<Material, Toggles> foldouts, Material mat, MaterialEditor me, MaterialProperty toggleProp, string header, Style style){
+            Toggles toggles = foldouts[mat];
+            int index = toggles.IndexOf(header);
             bool state = false;
             switch(style){
-                case Style.StandardToggle: state = FoldoutToggle(header, foldouts[mat].GetState(header), me, toggleProp); break;
-                case Style.ThinToggle: state = FoldoutThinToggle(header, foldouts[mat].GetState(header), me, toggleProp); break;
-                case Style.ThinShortToggle: state = FoldoutThinShortToggle(header, foldouts[mat].GetState(header), me, toggleProp); break;
-                case Style.ThinLongToggle: state = FoldoutThinLongToggle(header, foldouts[mat].GetState(header), me, toggleProp); break;
+                case Style.StandardToggle: state = FoldoutToggle(header, toggles.GetState(index), me, toggleProp); break;
+                case Style.ThinToggle: state = FoldoutThinToggle(header, toggles.GetState(index), me, toggleProp); break;
+                case Style.ThinShortToggle: state = FoldoutThinShortToggle(header, toggles.GetState(index), me, toggleProp); break;
+                case Style.ThinLongToggle: state = FoldoutThinLongToggle(header, toggles.GetState(index), me, toggleProp); break;
                 default: MGUI.DisplayError("INVALID STYLE SELECTION"); break;
             }
 
-            foldouts[mat].SetState(header, state);
-            return foldouts[mat].GetState(header);
+            toggles.SetState(index, state);
+            return BeginFoldout(toggles, index);
         }
 
-        public static bool DoFoldout(Dictionary<Material, Toggles> foldouts, Material mat, string header, int buttonCount, Style style){
+        // Draws the header only, since its buttons have to be drawn before the contents start. Open the contents with BeginFoldout.
+        public static void DoFoldout(Dictionary<Material, Toggles> foldouts, Material mat, string header, int buttonCount, Style style){
+            Toggles toggles = foldouts[mat];
+            int index = toggles.IndexOf(header);
             bool state = false;
             switch(style){
-                case Style.StandardButton: state = FoldoutButton(header, foldouts[mat].GetState(header), buttonCount); break;
+                case Style.StandardButton: state = FoldoutButton(header, toggles.GetState(index), buttonCount); break;
                 default: MGUI.DisplayError("INVALID STYLE SELECTION"); break;
             }
 
-            foldouts[mat].SetState(header, state);
-            return foldouts[mat].GetState(header);
+            toggles.SetState(index, state);
+        }
+
+        public static bool BeginFoldout(Dictionary<Material, Toggles> foldouts, Material mat, string header){
+            Toggles toggles = foldouts[mat];
+            return BeginFoldout(toggles, toggles.IndexOf(header));
+        }
+
+        // While sliding, Unity's fade group clips its contents to its layout rect, cutting off the edges of nested
+        // tab headers since they're drawn wider than the layout. Swap that clip for a wider one in the same spot,
+        // offset so the contents stay put. Done with clips rather than layout so nothing around it moves.
+        const float slideBleed = 10f;
+        static Stack<bool> slidingGroups = new Stack<bool>();
+
+        static bool BeginFoldout(Toggles toggles, int index){
+            float fade = toggles.GetFade(index);
+            bool sliding = fade > 0f && fade < 1f;
+            slidingGroups.Push(sliding);
+            if (!sliding)
+                return EditorGUILayout.BeginFadeGroup(fade);
+
+            // A plain vertical group around a single child takes on its rect and margins, so this only reports the fade group's rect
+            Rect rect = EditorGUILayout.BeginVertical();
+            bool visible = EditorGUILayout.BeginFadeGroup(fade);
+            GUI.EndGroup();
+            Rect clipRect = new Rect(rect.x - slideBleed, rect.y, rect.width + slideBleed * 2f, rect.height);
+            GUI.BeginClip(clipRect, new Vector2(slideBleed, 0f), Vector2.zero, false);
+            return visible;
+        }
+
+        public static void EndFoldout(){
+            // Pops our wider clip in place of the fade group's own
+            EditorGUILayout.EndFadeGroup();
+            if (slidingGroups.Pop())
+                EditorGUILayout.EndVertical();
         }
 
         public static bool DoFoldoutButton(GUIContent content, float offset){

@@ -2,6 +2,7 @@
 
 Shader "Mochie/Water" {
     Properties {
+        [HideInInspector]_MochieMaterialVersion("Material Version", Int) = 17800
         
         _Color("Color", Color) = (1,1,1,1)
         _NonGrabColor("Non Grabpass Color", Color) = (0,0,0,1)
@@ -67,7 +68,7 @@ Shader "Mochie/Water" {
         _HorizonAdjustment("Horizon Adjustment", Range(0,1)) = 0
         _HorizonAdjustmentDistance("Horizon Adjustment Distance", Range(0.1, 1)) = 0.7
 
-        [Enum(Off,0, Environment,1, Manual,2, Mirror,3)]_Reflections("Probe Reflections", Int) = 1 // Add "Mirror,3" for vrchat mirror reflections
+        [Enum(Off,0, Environment,1, Cubemap,2, Mirror,3)]_Reflections("Probe Reflections", Int) = 1 // Add "Mirror,3" for vrchat mirror reflections
         _ReflStrength("Reflection Strength", Float) = 1
         _ReflTint("Reflection Tint", Color) = (1,1,1,1)
         [ToggleUI]_BackfaceReflections("Backface Reflections", Int) = 1
@@ -107,21 +108,32 @@ Shader "Mochie/Water" {
         _VoronoiWaveHeight("Strength", Float) = 1
         _VoronoiOffset("Offset", Vector) = (0,1,0,0)
         _VoronoiSpeed("Speed", Float) = 1.5
+        [ToggleUI]_WaveToggle0("Wave 1 Enable", Int) = 1
+        [ToggleUI]_WaveToggle1("Wave 2 Enable", Int) = 1
+        [ToggleUI]_WaveToggle2("Wave 3 Enable", Int) = 1
+        [ToggleUI]_WaveToggle3("Wave 4 Enable", Int) = 1
         _WaveSpeedGlobal("Wave Global Speed", Float) = 3
-        _WaveScaleGlobal("Wave Global Scale", Float) = 1
-        _WaveStrengthGlobal("Wave Global Strength", Float) = 1.5
+        _WaveScaleGlobal("Wave Global Scale", Float) = 1.5
+        _WaveStrengthGlobal("Wave Global Strength", Float) = 1
         _WaveSpeed0("Wave 1 Speed", Float) = 1
         _WaveSpeed1("Wave 2 Speed", Float) = 1.1
         _WaveSpeed2("Wave 3 Speed", Float) = 1.2
+        _WaveSpeed3("Wave 4 Speed", Float) = 0.5
         _WaveScale0("Wave 1 Scale", Float) = 4
         _WaveScale1("Wave 2 Scale", Float) = 2
-        _WaveScale2("Wave 3 Scale", Float) = 1
+        _WaveScale2("Wave 3 Scale", Float) = 1.5
+        _WaveScale3("Wave 4 Scale", Float) = 2
         _WaveStrength0("Wave 1 Strength", Float) = 0.1
         _WaveStrength1("Wave 2 Strength", Float) = 0.1
         _WaveStrength2("Wave 3 Strength", Float) = 0.1
+        _WaveStrength3("Wave 4 Strength", Float) = 0.1
         _WaveDirection0("Wave 1 Direction", Range(0,360)) = 0
         _WaveDirection1("Wave 2 Direction", Range(0,360)) = 335
         _WaveDirection2("Wave 3 Direction", Range(0,360)) = 13
+        _WaveDirection3("Wave 4 Direction", Range(0,360)) = 350
+        _WaveWarpStrength("Warp Strength", Float) = 1.5
+        _WaveWarpScale("Warp Scale", Float) = 0.1
+        _WaveWarpSpeed("Warp Speed", Float) = 0.1
         _Turbulence("Turbulence", Float) = 1
         _TurbulenceScale("Turbulence Scale", Float) = 3
         _TurbulenceSpeed("Turbulence Speed", Float) = 0.3
@@ -135,6 +147,7 @@ Shader "Mochie/Water" {
         _VertexOffsetMask("Vertex Offset Mask", 2D) = "white" {}
         [Enum(Red,0, Green,1, Blue,2, Alpha,3)]_VertexOffsetMaskChannel("Vertex Offset Mask Channel", Int) = 0
         _VertexOffsetMaskStrength("Vertex Offset Mask Strength", Range(0,1)) = 1
+        [ToggleUI]_SubsurfaceToggle("Subsurface Enable", Int) = 1
         _SubsurfaceTint("Subsurface Tint", Color) = (1,1,1,1)
         _SubsurfaceThreshold("Subsurface Threshold", Range(0,1)) = 0.4
         _SubsurfaceBrightness("Subsurface Brightness", Float) = 10
@@ -159,7 +172,7 @@ Shader "Mochie/Water" {
         _CausticsSpeed("Speed", Float) = 1
         _CausticsFade("Depth Fade", Float) = 5
         _CausticsRotation("Rotation", Vector) = (-20,0,20,0)
-        [ToggleUI]_CausticsRotateWithLight("Rotate With Light", Int) = 0
+        [ToggleUI]_CausticsRotateWithLight("Rotate With Light", Int) = 1
         _CausticsSurfaceFade("Surface Fade", Float) = 100
         _CausticsFlipbookSpeed("Flipbook Speed", Float) = 16
         [Enum(Add,0, Overlay,1)]_CausticsFlipbookBlend("Flipbook Blend", Int) = 1
@@ -227,8 +240,8 @@ Shader "Mochie/Water" {
         _WireframeColor("Wireframe Color", Color) = (1,1,1,1)
         _TessMin("Min Tessellation Factor", Float) = 1
         _TessMax("Max Tessellation Factor", Float) = 9
-        _TessDistMin("Min Tessellation Distance", Float) = 25
-        _TessDistMax("Max Tessellation Distance", Float) = 50
+        _TessDistMin("Min Tessellation Distance", Float) = 50
+        _TessDistMax("Max Tessellation Distance", Float) = 100
 
         [Toggle(_AUDIOLINK_ON)]_AudioLink("Audio Link", Int) = 0
         [Enum(Bass,0, Low Mids,1, Upper Mids,2, Highs,3)]_AudioLinkBand("Audio Link Band", Int) = 0
@@ -240,7 +253,7 @@ Shader "Mochie/Water" {
         _QueueOffset("Render Queue Offset", Int) = 0
         [Enum(Off,0, On,1)]_ZWrite("ZWrite", Int) = 0
         [Enum(Off,0, On,1)]_DepthEffects("Depth Effects", Int) = 1
-        [Enum(UV,0, World,1)]_TexCoordSpace("Texture Coordinate Space", Int) = 0
+        [Enum(UV,0, World,1)]_TexCoordSpace("Texture Coordinate Space", Int) = 1
         [Enum(XY,0, XZ,1, YZ,2)]_TexCoordSpaceSwizzle("Swizzle", Int) = 1
         _GlobalTexCoordScaleUV("Global Scale", Float) = 1
         _GlobalTexCoordScaleWorld("Global Scale", Float) = 0.1
@@ -279,6 +292,7 @@ Shader "Mochie/Water" {
         [HideInInspector]_SrcBlend("__src", Float) = 1.0
         [HideInInspector]_DstBlend("__dst", Float) = 0.0
         [HideInInspector]_NoiseTexSSR("SSR Noise Tex", 2D) = "black"
+        [HideInInspector]_TANoiseTex("TA Noise Tex", 2D) = "gray"
         [HideInInspector]_ZeroProp("", Float) = 0
         [HideInInspector]_MaterialResetCheck("Reset", Int) = 0
         

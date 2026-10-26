@@ -90,7 +90,7 @@ namespace Mochie {
                 MGUI.Space8();
             }
 
-            MGUI.DoFooter(versionLabel);
+            MGUI.DoFooter(versionLabel, "LED-Screen-Shader");
         }
         
         public override void AssignNewShaderToMaterial(Material mat, Shader oldShader, Shader newShader) {

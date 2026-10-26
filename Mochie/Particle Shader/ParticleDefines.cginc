@@ -17,7 +17,7 @@
 #endif
 
 #define IS_OPAQUE !defined(_ALPHABLEND_ON) && !defined(_ALPHAPREMULTIPLY_ON) && !defined(_ALPHA_ADD_ON) && !defined(_ALPHA_ADD_SOFT_ON) && !defined(_ALPHA_MUL_ON) && !defined(_ALPHA_MULX2_ON)
-#define PBR_ENABLED defined(_REFLECTIONS_ON) || defined(_SPECULAR_HIGHLIGHTS_ON)
+#define PBR_ENABLED (defined(_REFLECTIONS_ON) || defined(_SPECULAR_HIGHLIGHTS_ON))
 
 MOCHIE_DECLARE_TEX2D_SCREENSPACE(_CameraDepthTexture);
 MOCHIE_DECLARE_TEX2D_SCREENSPACE(_ParticleGrab); float4 _ParticleGrab_TexelSize;

@@ -5,12 +5,17 @@ namespace Mochie.ShaderUpgrader
 {
     public abstract class MochieMaterialUpgradeBase
     {
-        protected MochieMaterialUpgradeBase()
-        {
-            propertyActions.AddRange(AddUpgradeActions());
-        }
+        List<UpgradeActionBase> _propertyActions;
 
-        readonly List<UpgradeActionBase> propertyActions = new List<UpgradeActionBase>();
+        public List<UpgradeActionBase> PropertyActions
+        {
+            get
+            {
+                if(_propertyActions == null)
+                    _propertyActions = AddUpgradeActions() ?? new List<UpgradeActionBase>();
+                return _propertyActions;
+            }
+        }
 
         /// <summary>
         /// Can this material be upgraded? Returning false here will skip this material.
@@ -29,16 +34,33 @@ namespace Mochie.ShaderUpgrader
         /// Iterate through all properties in propertyActions and run their actions 
         /// </summary>
         /// <param name="material"></param>
-        public virtual void RunUpgrade(Material material)
+        public virtual bool RunUpgrade(Material material)
         {
             if(!CanUpgradeMaterial(material))
-                return;
-            
-            Debug.Log($"Running upgrade <b>{GetType().Name}</b> on Material <b>{material.name}</b>");
+                return false;
+
             var context = new MaterialContext(material);
+            return RunUpgrade(material, context);
+        }
+
+        /// <summary>
+        /// Iterate through all properties in propertyActions and run their actions with an existing context
+        /// </summary>
+        /// <param name="material"></param>
+        /// <param name="context"></param>
+        public virtual bool RunUpgrade(Material material, MaterialContext context)
+        {
+            if(!CanUpgradeMaterial(material))
+                return false;
             
-            foreach(var action in propertyActions)
+            #if MOCHIE_DEV
+            Debug.Log($"Running upgrade <b>{GetType().Name}</b> on Material <b>{material.name}</b>");
+            #endif
+
+            foreach(var action in PropertyActions)
                 action.RunAction(context);
+
+            return true;
         }
     }
 }

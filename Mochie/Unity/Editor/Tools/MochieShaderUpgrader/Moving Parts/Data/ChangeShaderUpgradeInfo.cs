@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Text.RegularExpressions;
 using UnityEditor;
@@ -20,7 +21,10 @@ namespace Mochie.ShaderUpgrader
 
         protected override bool IsValidUpgrade(Material material)
         {
-            string shaderGuid;
+            if(material == null || material.shader == null)
+                return false;
+
+            string shaderGuid = null;
             if(material.shader.name == ErrorShaderName)
             {
                 shaderGuid = GetErrorShaderGuid(material);
@@ -31,27 +35,69 @@ namespace Mochie.ShaderUpgrader
                 shaderGuid = AssetDatabase.AssetPathToGUID(shaderPath);
             }
 
-            return shaderGuid == OldShaderGuid;
+            // If it already has the new shader, do not upgrade again
+            if(!string.IsNullOrEmpty(NewShaderGuid) && shaderGuid == NewShaderGuid)
+                return false;
+
+            // Direct match with the old shader GUID
+            if(!string.IsNullOrEmpty(OldShaderGuid) && shaderGuid == OldShaderGuid)
+                return true;
+
+            return false;
         }
         
-        public override void RunUpgrade(Material material)
+        public override bool RunUpgrade(Material material)
         {
             if(!IsValidUpgrade(material))
-                return;
+                return false;
             
-            Shader newShader = AssetDatabase.LoadAssetAtPath<Shader>(AssetDatabase.GUIDToAssetPath(NewShaderGuid));
+            Shader newShader = null;
+            if(!string.IsNullOrEmpty(NewShaderGuid))
+            {
+                string path = AssetDatabase.GUIDToAssetPath(NewShaderGuid);
+                if(!string.IsNullOrEmpty(path))
+                    newShader = AssetDatabase.LoadAssetAtPath<Shader>(path);
+            }
+
+            if(newShader == null)
+                newShader = Shader.Find(ShaderName);
+
             if(newShader == null)
             {
                 Debug.LogError($"Couldn't upgrade material: Shader <b>{ShaderName}</b> with Guid <b>{NewShaderGuid}</b> not found.");
-                return;
+                return false;
             }
-            
+
+            Undo.RecordObject(material, "Upgrade Mochie Material");
+
+            // Extract context before switching shaders so legacy properties are fully preserved
+            var context = new MaterialContext(material);
+
             material.shader = newShader;
             foreach(var upgrade in Upgrades)
-                upgrade.RunUpgrade(material);
+                upgrade.RunUpgrade(material, context);
             
-            var editor = Editor.CreateEditor(material) as MaterialEditor;
-            editor?.SetShader(newShader, false); // Set shader here again so keywords get reset and applied
+            MaterialEditor editor = null;
+            try
+            {
+                editor = Editor.CreateEditor(material) as MaterialEditor;
+                editor?.SetShader(newShader, false); // Reset and apply keywords
+            }
+#if MOCHIE_DEV
+            catch(Exception ex)
+            {
+                Debug.LogWarning($"SetShader failed in MaterialEditor for '{material.name}': {ex.Message}");
+            }
+#else
+            catch(Exception) {}
+#endif
+            finally
+            {
+                if(editor != null)
+                    UnityEngine.Object.DestroyImmediate(editor);
+            }
+
+            return true;
         }
         
         static Regex YamlGuidExtractor
@@ -59,7 +105,7 @@ namespace Mochie.ShaderUpgrader
             get
             {
                 if(_yamlGuidExtractor == null)
-                    _yamlGuidExtractor = new Regex(@"m_Shader: {fileID: \d+, guid: ([\w\d]+), type: \d+}");
+                    _yamlGuidExtractor = new Regex(@"m_Shader:\s*\{fileID:\s*\d+,\s*guid:\s*([a-zA-Z0-9]+)");
                 return _yamlGuidExtractor;
             }
         }
@@ -69,25 +115,37 @@ namespace Mochie.ShaderUpgrader
         static string GetErrorShaderGuid(Material material)
         {
             string materialPath = AssetDatabase.GetAssetPath(material);
+            if(string.IsNullOrEmpty(materialPath))
+                return null;
+
             string fullMaterialPath = FileUtil.GetPhysicalPath(materialPath);
+            if(string.IsNullOrEmpty(fullMaterialPath) || !File.Exists(fullMaterialPath))
+                return null;
 
             // Open material as text and extract expected shader guid from it
-            string extractedGuid = null;
-            using(var reader = new StreamReader(fullMaterialPath))
+            try
             {
-                string line;
-                while((line = reader.ReadLine()) != null)
+                using(var reader = new StreamReader(fullMaterialPath))
                 {
-                    var match = YamlGuidExtractor.Match(line);
-                    if(match.Success)
+                    string line;
+                    while((line = reader.ReadLine()) != null)
                     {
-                        extractedGuid = match.Groups[1].Value;
-                        break;
+                        var match = YamlGuidExtractor.Match(line);
+                        if(match.Success)
+                            return match.Groups[1].Value;
                     }
                 }
             }
+#if MOCHIE_DEV
+            catch(Exception ex)
+            {
+                Debug.LogWarning($"Couldn't read material file '{fullMaterialPath}': {ex.Message}");
+            }
+#else
+            catch(Exception) {}
+#endif
 
-            return extractedGuid;
+            return null;
         }
     }
 }

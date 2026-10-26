@@ -104,7 +104,7 @@ namespace Mochie {
         DebugFlags globalDebugFlags;
         Vector2 scrollPos;
 
-        [MenuItem("Tools/Mochie/Global Standard Settings")]
+        [MenuItem("Tools/Mochie/Global Standard Settings", priority = 1000)]
         static void Init(){
             GlobalStandardSettings window = (GlobalStandardSettings)EditorWindow.GetWindow(typeof(GlobalStandardSettings));
             window.titleContent = new GUIContent("Standard Shader Settings");
@@ -401,12 +401,31 @@ namespace Mochie {
                     m.SetInt("_AreaLitOcclusionUVSet", (int)areaLitOcclusionUVSet);
             }
         }
-        
+
+        // Swap through a MaterialEditor so the new shader's AssignNewShaderToMaterial runs (texture transfer, keywords, blend mode)
+        void SwapShader(Material m, Shader newShader){
+            if (m == null || newShader == null || m.shader == newShader)
+                return;
+            MaterialEditor editor = null;
+            try {
+                editor = Editor.CreateEditor(m) as MaterialEditor;
+                if (editor != null)
+                    editor.SetShader(newShader, false);
+                else
+                    m.shader = newShader;
+            }
+            finally {
+                if (editor != null)
+                    DestroyImmediate(editor);
+            }
+            EditorUtility.SetDirty(m);
+        }
+
         void MigrateFromStandardToLite(){
             if (standardMaterials != null && standardMaterials.Count > 0){
                 Undo.RecordObjects(standardMaterials.ToArray(), "Swap Shaders");
                 foreach(Material m in standardMaterials){
-                    m.shader = standardLiteShader;
+                    SwapShader(m, standardLiteShader);
                 }
             }
             RefreshMaterials();
@@ -416,7 +435,7 @@ namespace Mochie {
             if (standardMaterials != null && standardMaterials.Count > 0){
                 Undo.RecordObjects(standardMaterials.ToArray(), "Swap Shaders");
                 foreach(Material m in standardMaterials){
-                    m.shader = standardMobileShader;
+                    SwapShader(m, standardMobileShader);
                 }
             }
             RefreshMaterials();
@@ -426,7 +445,7 @@ namespace Mochie {
             if (standardLiteMaterials != null && standardLiteMaterials.Count > 0){
                 Undo.RecordObjects(standardLiteMaterials.ToArray(), "Swap Shaders");
                 foreach(Material m in standardLiteMaterials){
-                    m.shader = standardShader;
+                    SwapShader(m, standardShader);
                 }
             }
             RefreshMaterials();
@@ -436,7 +455,7 @@ namespace Mochie {
             if (standardLiteMaterials != null && standardLiteMaterials.Count > 0){
                 Undo.RecordObjects(standardLiteMaterials.ToArray(), "Swap Shaders");
                 foreach(Material m in standardLiteMaterials){
-                    m.shader = standardMobileShader;
+                    SwapShader(m, standardMobileShader);
                 }
             }
             RefreshMaterials();
@@ -446,7 +465,7 @@ namespace Mochie {
             if (standardMobileMaterials != null && standardMobileMaterials.Count > 0){
                 Undo.RecordObjects(standardMobileMaterials.ToArray(), "Swap Shaders");
                 foreach(Material m in standardMobileMaterials){
-                    m.shader = standardShader;
+                    SwapShader(m, standardShader);
                 }
             }
             RefreshMaterials();
@@ -456,7 +475,7 @@ namespace Mochie {
             if (standardMobileMaterials != null && standardMobileMaterials.Count > 0){
                 Undo.RecordObjects(standardMobileMaterials.ToArray(), "Swap Shaders");
                 foreach(Material m in standardMobileMaterials){
-                    m.shader = standardLiteShader;
+                    SwapShader(m, standardLiteShader);
                 }
             }
             RefreshMaterials();
@@ -466,7 +485,7 @@ namespace Mochie {
             if (standardUnityMaterials != null && standardUnityMaterials.Count > 0){
                 Undo.RecordObjects(standardUnityMaterials.ToArray(), "Swap Shaders");
                 foreach (Material m in standardUnityMaterials){
-                    m.shader = standardShader;
+                    SwapShader(m, standardShader);
                 }
             }
             RefreshMaterials();
@@ -476,7 +495,7 @@ namespace Mochie {
             if (standardUnityMaterials != null && standardUnityMaterials.Count > 0){
                 Undo.RecordObjects(standardUnityMaterials.ToArray(), "Swap Shaders");
                 foreach (Material m in standardUnityMaterials){
-                    m.shader = standardLiteShader;
+                    SwapShader(m, standardLiteShader);
                 }
             }
             RefreshMaterials();
@@ -486,7 +505,7 @@ namespace Mochie {
             if (standardUnityMaterials != null && standardUnityMaterials.Count > 0){
                 Undo.RecordObjects(standardUnityMaterials.ToArray(), "Swap Shaders");
                 foreach (Material m in standardUnityMaterials){
-                    m.shader = standardMobileShader;
+                    SwapShader(m, standardMobileShader);
                 }
             }
             RefreshMaterials();
@@ -496,7 +515,7 @@ namespace Mochie {
             if (filamentedMaterials != null && filamentedMaterials.Count > 0){
                 Undo.RecordObjects(filamentedMaterials.ToArray(), "Swap Shaders");
                 foreach (Material m in filamentedMaterials){
-                    m.shader = standardShader;
+                    SwapShader(m, standardShader);
                 }
             }
             RefreshMaterials();
@@ -506,7 +525,7 @@ namespace Mochie {
             if (filamentedMaterials != null && filamentedMaterials.Count > 0){
                 Undo.RecordObjects(filamentedMaterials.ToArray(), "Swap Shaders");
                 foreach (Material m in filamentedMaterials){
-                    m.shader = standardLiteShader;
+                    SwapShader(m, standardLiteShader);
                 }
             }
             RefreshMaterials();
@@ -516,7 +535,7 @@ namespace Mochie {
             if (filamentedMaterials != null && filamentedMaterials.Count > 0){
                 Undo.RecordObjects(filamentedMaterials.ToArray(), "Swap Shaders");
                 foreach (Material m in filamentedMaterials){
-                    m.shader = standardMobileShader;
+                    SwapShader(m, standardMobileShader);
                 }
             }
             RefreshMaterials();
@@ -599,7 +618,7 @@ namespace Mochie {
                     else if (shaderName == "Mochie/Standard Mobile"){
                         standardMobileMaterials.Add(m);
                     }
-                    else if (shaderName == "Standard" || shaderName == "Autodesk Interactive"){
+                    else if (shaderName == "Standard" || shaderName == "Standard (Specular setup)" || shaderName == "Autodesk Interactive"){
                         standardUnityMaterials.Add(m);
                     }
                     else if (shaderName == "Silent/Filamented"){

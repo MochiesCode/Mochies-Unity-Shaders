@@ -6,6 +6,22 @@ void CalculateTangentViewDir(inout v2f i){
     i.tangentViewDir.xy /= (i.tangentViewDir.z + 0.42);
 }
 
+// World space texture coordinates. Linear, so it also maps world directions into uv space
+float2 GetWorldCoords(float3 worldPos){
+    float2 worldYZ = Rotate2D(worldPos.yz, -90);
+    float2 worldCoordSelect[3] = {worldPos.xy, -worldPos.xz, worldYZ};
+    return worldCoordSelect[_TexCoordSpaceSwizzle];
+}
+
+// View dir for the emission parallax, in the same space as the uvs. World uvs don't follow the mesh's
+// tangent frame, so map the view dir the same way as the uvs and measure depth along the surface normal
+float3 GetEmissionViewDir(v2f i, float3 viewDir){
+    float3 emissViewDir = i.tangentViewDir;
+    if (_TexCoordSpace == 1)
+        emissViewDir = float3(GetWorldCoords(viewDir), dot(viewDir, normalize(i.normal)));
+    return emissViewDir;
+}
+
 void ApplyGSAA(float3 normal, inout float roughness){
     if (_GSAAToggle == 1){
         float3 normalDDX = ddx(normal);
@@ -55,7 +71,7 @@ float3 GetFlipbookNormals(v2f i, inout float flipbookBase, float mask){
     float2 origUV = i.uv / float2(_Columns, _Rows) * float2(_XScale, _YScale);
     float4 uvdd = float4(ddx(origUV), ddy(origUV));
 
-    flipbookBase = tex2Dgrad(_RainSheet, flipUV, uvdd.xw, uvdd.zw).g * mask;
+    flipbookBase = tex2Dgrad(_RainSheet, flipUV, uvdd.xy, uvdd.zw).g * mask;
     rainStrength = _Strength * mask;
     return tex2DnormalSmooth(_RainSheet, flipUV, uvdd, rainStrength);
 }

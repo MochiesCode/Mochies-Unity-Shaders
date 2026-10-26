@@ -234,8 +234,11 @@ namespace Mochie {
         public static GUIContent causticsRotation = new GUIContent("Rotation", "Rotates the caustics projection in 3D space.");
         public static GUIContent causticsRotateWithLight = new GUIContent("Rotate With Light", "Rotates the caustics projection to align with the directional light vector in the scene. If no directional light is present, falls back to the manual rotation setting.");
         public static GUIContent turbulence = new GUIContent("Strength", "Adds variation to the height of waves.");
+        public static GUIContent waveWarpStrength = new GUIContent("Warp Strength", "Bends wave crests with low frequency noise to break up repeating patterns.");
         public static GUIContent blendNoise = new GUIContent("Blend Noise", "Each normal map (and some other textures) are sampled twice with different uvs. This texture will determine the pattern for blending between the two samples.");
         public static GUIContent detailMode = new GUIContent("Decal Mode", "Uses the alpha and UVs of the decal base color for blending and sampling these textures.");
+        public static GUIContent waterTexCoordSpaceText = new GUIContent("Texture Coordinate Space", "UV:\nUses the regular UVs baked into the mesh data. Vertex offsets are applied in object space and will scale with the mesh.\n\nWorld:\nUses the world space coordinates of the mesh as UVs. Vertex offsets are also calculated in world space, so they line up across separate meshes and aren't affected by the scale of the object. Scaled up meshes need more vertices to hold the same wave detail, which the tessellated shader adds automatically.");
+        public static GUIContent waterSwizzleText = new GUIContent("Swizzle", "Which two axis should be used as UVs for sampling textures. The remaining axis is the direction vertex offsets will push the surface in.");
         
         // Particles
         public static GUIContent softening = new GUIContent("Softening", "Fades out the edges of particles where they interesect with opaque geometry to hide harsh cutoffs.");

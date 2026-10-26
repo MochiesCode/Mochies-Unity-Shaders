@@ -1,403 +1,373 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Text.RegularExpressions;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEditor;
+using Object = UnityEngine.Object;
 
 namespace Mochie {
     public static class TexturePacker {
 
-        public static Texture2D PackTextures(Material mat, MaterialProperty redProp, MaterialProperty greenProp, MaterialProperty blueProp, MaterialProperty alphaProp, MaterialProperty packedMapProp){
-            return PackTextures(mat, redProp, 1f, greenProp, 1f, blueProp, 1f, alphaProp, 1f, packedMapProp);
-        }
+        // Describes how one channel of the packed texture is generated
+        public struct Channel {
+            public Texture texture;         // Source texture, or null to fill the channel with fallback
+            public int sourceChannel;       // Channel read from the source (0 = R, 1 = G, 2 = B, 3 = A)
+            public float strength;          // Multiplies the sampled value, or lerps it from 1 when isOcclusion is set
+            public float fallback;          // Value written when there is no source texture
+            public bool isOcclusion;
+            public bool invert;
+            public Vector4 scaleOffset;     // Tiling and offset baked into the packed texture
 
-        public static Texture2D PackTextures(
-            Material mat, 
-            MaterialProperty redProp, MaterialProperty redStrengthProp,
-            MaterialProperty greenProp, MaterialProperty greenStrengthProp,
-            MaterialProperty blueProp, MaterialProperty blueStrengthProp,
-            MaterialProperty alphaProp, MaterialProperty alphaStrengthProp,
-            MaterialProperty packedMapProp
-        ){
-            float redStrength = redStrengthProp != null ? redStrengthProp.floatValue : 1f;
-            float greenStrength = greenStrengthProp != null ? greenStrengthProp.floatValue : 1f;
-            float blueStrength = blueStrengthProp != null ? blueStrengthProp.floatValue : 1f;
-            float alphaStrength = alphaStrengthProp != null ? alphaStrengthProp.floatValue : 1f;
-
-            return PackTextures(
-                mat, 
-                redProp, redStrength, 
-                greenProp, greenStrength, 
-                blueProp, blueStrength, 
-                alphaProp, alphaStrength, 
-                packedMapProp
-            );
-        }
-
-        public static Texture2D PackTextures(
-            Material mat, 
-            MaterialProperty redProp, float redStrength,
-            MaterialProperty greenProp, float greenStrength,
-            MaterialProperty blueProp, float blueStrength,
-            MaterialProperty alphaProp, float alphaStrength,
-            MaterialProperty packedMapProp
-        ){
-            Texture2D redTex = redProp != null ? redProp.textureValue as Texture2D : null;
-            Texture2D greenTex = greenProp != null ? greenProp.textureValue as Texture2D : null;
-            Texture2D blueTex = blueProp != null ? blueProp.textureValue as Texture2D : null;
-            Texture2D alphaTex = alphaProp != null ? alphaProp.textureValue as Texture2D : null;
-
-            string redName = redProp != null ? redProp.name : "";
-            string greenName = greenProp != null ? greenProp.name : "";
-            string blueName = blueProp != null ? blueProp.name : "";
-            string alphaName = alphaProp != null ? alphaProp.name : "";
-
-            Vector4 redST = GetTextureScaleAndOffset(mat, redProp, redName);
-            Vector4 greenST = GetTextureScaleAndOffset(mat, greenProp, greenName);
-            Vector4 blueST = GetTextureScaleAndOffset(mat, blueProp, blueName);
-            Vector4 alphaST = GetTextureScaleAndOffset(mat, alphaProp, alphaName);
-
-            Texture2D result = PackTextures(
-                mat, 
-                redTex, redStrength, redST,
-                greenTex, greenStrength, greenST,
-                blueTex, blueStrength, blueST,
-                alphaTex, alphaStrength, alphaST,
-                redName, greenName, blueName, alphaName
-            );
-
-            if (result != null && mat != null && packedMapProp != null){
-                packedMapProp.textureValue = result;
-                mat.SetTexture(packedMapProp.name, result);
-                mat.SetTextureScale(packedMapProp.name, Vector2.one);
-                mat.SetTextureOffset(packedMapProp.name, Vector2.zero);
+            public Channel(Texture texture, int sourceChannel = 0, float strength = 1f, float fallback = 1f, bool isOcclusion = false){
+                this.texture = texture;
+                this.sourceChannel = sourceChannel;
+                this.strength = strength;
+                this.fallback = fallback;
+                this.isOcclusion = isOcclusion;
+                invert = false;
+                scaleOffset = new Vector4(1f, 1f, 0f, 0f);
             }
-
-            return result;
         }
 
-        public static Texture2D PackTextures(
-            Material mat, 
-            Texture2D redTex, float redStrength,
-            Texture2D greenTex, float greenStrength,
-            Texture2D blueTex, float blueStrength,
-            Texture2D alphaTex, float alphaStrength,
-            string redPropName, string greenPropName, string bluePropName, string alphaPropName
-        ){
-            Vector4 redST = GetTextureScaleAndOffset(mat, null, redPropName);
-            Vector4 greenST = GetTextureScaleAndOffset(mat, null, greenPropName);
-            Vector4 blueST = GetTextureScaleAndOffset(mat, null, bluePropName);
-            Vector4 alphaST = GetTextureScaleAndOffset(mat, null, alphaPropName);
-            return PackTextures(
-                mat, 
-                redTex, redStrength, redST,
-                greenTex, greenStrength, greenST,
-                blueTex, blueStrength, blueST,
-                alphaTex, alphaStrength, alphaST,
-                redPropName, greenPropName, bluePropName, alphaPropName
-            );
-        }
+        const string TempFolderName = "__MochieTexturePackerTemp";
+        const string TempFolder = "Assets/" + TempFolderName;
+        const string ImporterTag = "MochieTexturePacker";
 
-        public static Texture2D PackTextures(
-            Material mat, 
-            Texture2D redTex, float redStrength, Vector4 redST,
-            Texture2D greenTex, float greenStrength, Vector4 greenST,
-            Texture2D blueTex, float blueStrength, Vector4 blueST,
-            Texture2D alphaTex, float alphaStrength, Vector4 alphaST,
-            string redPropName, string greenPropName, string bluePropName, string alphaPropName
-        ){
-            if (mat == null)
+        // Packs the channels into a PNG saved next to the material and assigns it to packedMapName.
+        // The alpha channel is only written when it has a texture. Returns the saved texture, or null on failure.
+        public static Texture2D PackTextures(Material mat, string packedMapName, Channel red, Channel green, Channel blue, Channel alpha = default){
+            if (mat == null || string.IsNullOrEmpty(packedMapName))
                 return null;
 
-            // Ensure at least one texture slot is populated
-            bool hasAnyTexture = redTex != null || greenTex != null || blueTex != null || alphaTex != null;
+            Channel[] channels = { red, green, blue, alpha };
+            bool hasAnyTexture = false;
+            for (int i = 0; i < channels.Length; i++){
+                Texture tex = channels[i].texture;
+                if (tex != null && tex.dimension != UnityEngine.Rendering.TextureDimension.Tex2D){
+                    Debug.LogWarning($"[Mochie] Texture Packer: {tex.name} isn't a 2D texture and was skipped.", mat);
+                    channels[i].texture = null;
+                }
+                hasAnyTexture |= channels[i].texture != null;
+            }
             if (!hasAnyTexture)
                 return null;
 
-            bool hasAlpha = alphaTex != null;
-
-            bool createdRed = false;
-            bool createdGreen = false;
-            bool createdBlue = false;
-            bool createdAlpha = false;
-
-            bool isRedOcclusion = string.IsNullOrEmpty(redPropName) || redPropName.ToLowerInvariant().Contains("occlusion") || redPropName.ToLowerInvariant().Contains("ao");
-            bool isAlphaHeight = !string.IsNullOrEmpty(alphaPropName) && (alphaPropName.ToLowerInvariant().Contains("height") || alphaPropName.ToLowerInvariant().Contains("parallax"));
-
-            Texture2D redSource = GetSourceTexture(redTex, mat, redPropName, 1f, out createdRed);
-            Texture2D greenSource = GetSourceTexture(greenTex, mat, greenPropName, 1f, out createdGreen);
-            Texture2D blueSource = GetSourceTexture(blueTex, mat, bluePropName, 1f, out createdBlue);
-            Texture2D alphaSource = hasAlpha ? GetSourceTexture(alphaTex, mat, alphaPropName, isAlphaHeight ? 0f : 1f, out createdAlpha) : null;
-
-            Vector2Int res = GetMaxSizeFromTextures(redSource, greenSource, blueSource, alphaSource);
-            if (res.x <= 1 || res.y <= 1)
-                res = new Vector2Int(1024, 1024);
-
-            Texture2D packedResult = PackTexturesInternal(
-                res, 
-                redSource, redST, redStrength, isRedOcclusion,
-                greenSource, greenST, greenStrength,
-                blueSource, blueST, blueStrength,
-                alphaSource, alphaST, alphaStrength,
-                hasAlpha, false, false, false, false
-            );
-
-            if (createdRed && redSource) UnityEngine.Object.DestroyImmediate(redSource);
-            if (createdGreen && greenSource) UnityEngine.Object.DestroyImmediate(greenSource);
-            if (createdBlue && blueSource) UnityEngine.Object.DestroyImmediate(blueSource);
-            if (createdAlpha && alphaSource) UnityEngine.Object.DestroyImmediate(alphaSource);
-
-            if (packedResult != null){
-                string savePath = GetSavePath(mat);
-                SaveTextureAsset(packedResult, savePath, true);
-
-                TextureImporter importer = AssetImporter.GetAtPath(savePath) as TextureImporter;
-                if (importer != null){
-                    importer.sRGBTexture = false;
-                    importer.SaveAndReimport();
-                }
-
-                Texture2D savedTex = AssetDatabase.LoadAssetAtPath<Texture2D>(savePath);
-                return savedTex;
+            // Not "Hidden/Mochie/TexturePacker": v1.77 also shipped an old copy under that name (MochieTexturePackerNoAlpha.shader),
+            // which stays in projects updated over it and Shader.Find could pick instead
+            Shader packerShader = Shader.Find("Hidden/Mochie/ChannelPacker");
+            if (packerShader == null){
+                Debug.LogError("[Mochie] Texture Packer: shader Hidden/Mochie/ChannelPacker is missing.");
+                return null;
             }
 
-            return null;
-        }
+            List<Object> created = new List<Object>();
+            try {
+                Texture[] sources = new Texture[4];
+                bool[] encodeSRGB = new bool[4];
+                for (int i = 0; i < 4; i++){
+                    if (channels[i].texture != null)
+                        sources[i] = LoadSource(channels[i].texture, created, out encodeSRGB[i]);
+                }
+                bool hasAlpha = sources[3] != null;
+                Vector2Int resolution = GetOutputResolution(sources);
 
-        public static Texture2D PackTexturesInternal(Vector2Int resolution, Texture2D red, Texture2D green, Texture2D blue, Texture2D alpha, bool hasAlpha, bool invertRed, bool invertGreen, bool invertBlue, bool invertAlpha){
-            return PackTexturesInternal(resolution, red, new Vector4(1,1,0,0), 1f, true, green, new Vector4(1,1,0,0), 1f, blue, new Vector4(1,1,0,0), 1f, alpha, new Vector4(1,1,0,0), 1f, hasAlpha, invertRed, invertGreen, invertBlue, invertAlpha);
-        }
+                Material packer = new Material(packerShader);
+                created.Add(packer);
+                SetChannel(packer, "_Red", sources[0], channels[0], encodeSRGB[0]);
+                SetChannel(packer, "_Green", sources[1], channels[1], encodeSRGB[1]);
+                SetChannel(packer, "_Blue", sources[2], channels[2], encodeSRGB[2]);
+                SetChannel(packer, "_Alpha", sources[3], channels[3], encodeSRGB[3]);
 
-        public static Texture2D PackTexturesInternal(
-            Vector2Int resolution, 
-            Texture2D red, Vector4 redST, float redStrength, bool isRedOcclusion,
-            Texture2D green, Vector4 greenST, float greenStrength,
-            Texture2D blue, Vector4 blueST, float blueStrength,
-            Texture2D alpha, Vector4 alphaST, float alphaStrength,
-            bool hasAlpha, bool invertRed, bool invertGreen, bool invertBlue, bool invertAlpha
-        ){
-            Shader packerShader = Shader.Find("Hidden/Mochie/TexturePacker");
-            if (packerShader == null)
+                Texture2D packed = Bake(packer, resolution, hasAlpha);
+                created.Add(packed);
+
+                string path = SavePackedTexture(mat, packedMapName, packed, hasAlpha);
+                Texture2D saved = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+                if (saved == null){
+                    Debug.LogError($"[Mochie] Texture Packer: couldn't load the packed texture at {path}.", mat);
+                    return null;
+                }
+
+                Undo.RecordObject(mat, "Pack Textures");
+                mat.SetTexture(packedMapName, saved);
+                mat.SetTextureScale(packedMapName, Vector2.one);
+                mat.SetTextureOffset(packedMapName, Vector2.zero);
+                return saved;
+            }
+            catch (Exception e){
+                Debug.LogError($"[Mochie] Texture Packer: packing {mat.name} failed.", mat);
+                Debug.LogException(e);
                 return null;
+            }
+            finally {
+                foreach (Object obj in created){
+                    if (obj != null)
+                        Object.DestroyImmediate(obj);
+                }
+                DeleteTempFolder();
+            }
+        }
 
-            Material mat = new Material(packerShader);
-            mat.SetTexture("_Red", red);
-            mat.SetVector("_Red_ST", redST);
-            mat.SetTextureScale("_Red", new Vector2(redST.x, redST.y));
-            mat.SetTextureOffset("_Red", new Vector2(redST.z, redST.w));
-            mat.SetFloat("_Strength_Red", redStrength);
-            mat.SetFloat("_IsOcclusion_Red", isRedOcclusion ? 1f : 0f);
+        // Removes the uncompressed copies made by LoadSource
+        internal static void DeleteTempFolder(){
+            if (AssetDatabase.IsValidFolder(TempFolder))
+                AssetDatabase.DeleteAsset(TempFolder);
+        }
 
-            mat.SetTexture("_Green", green);
-            mat.SetVector("_Green_ST", greenST);
-            mat.SetTextureScale("_Green", new Vector2(greenST.x, greenST.y));
-            mat.SetTextureOffset("_Green", new Vector2(greenST.z, greenST.w));
-            mat.SetFloat("_Strength_Green", greenStrength);
+        public static Vector4 GetScaleOffset(Material mat, string texName){
+            Vector2 scale = mat.GetTextureScale(texName);
+            Vector2 offset = mat.GetTextureOffset(texName);
+            return new Vector4(scale.x, scale.y, offset.x, offset.y);
+        }
 
-            mat.SetTexture("_Blue", blue);
-            mat.SetVector("_Blue_ST", blueST);
-            mat.SetTextureScale("_Blue", new Vector2(blueST.x, blueST.y));
-            mat.SetTextureOffset("_Blue", new Vector2(blueST.z, blueST.w));
-            mat.SetFloat("_Strength_Blue", blueStrength);
+        // Finds the tiling and offset shared by every assigned texture in texNames.
+        // Returns false if the assigned textures don't all match.
+        public static bool TryGetSharedScaleOffset(Material mat, out Vector4 scaleOffset, params string[] texNames){
+            scaleOffset = new Vector4(1f, 1f, 0f, 0f);
+            bool found = false;
+            foreach (string texName in texNames){
+                if (!mat.GetTexture(texName))
+                    continue;
+                Vector4 st = GetScaleOffset(mat, texName);
+                if (found && st != scaleOffset)
+                    return false;
+                scaleOffset = st;
+                found = true;
+            }
+            return true;
+        }
 
-            mat.SetTexture("_Alpha", alpha);
-            mat.SetVector("_Alpha_ST", alphaST);
-            mat.SetTextureScale("_Alpha", new Vector2(alphaST.x, alphaST.y));
-            mat.SetTextureOffset("_Alpha", new Vector2(alphaST.z, alphaST.w));
-            mat.SetFloat("_Strength_Alpha", alphaStrength);
+        // Returns a texture that samples the source's stored values at full resolution.
+        // 8-bit PNG and JPG files are decoded directly; other image files are imported as an uncompressed linear copy.
+        // Call DeleteTempFolder once the returned texture is no longer needed.
+        internal static Texture LoadSource(Texture tex, List<Object> created, out bool encodeSRGB){
+            encodeSRGB = false;
+            string assetPath = AssetDatabase.GetAssetPath(tex);
+            if (!string.IsNullOrEmpty(assetPath) && AssetDatabase.IsMainAsset(tex)){
+                string physicalPath = FileUtil.GetPhysicalPath(assetPath);
+                if (File.Exists(physicalPath)){
+                    string ext = Path.GetExtension(physicalPath).ToLowerInvariant();
+                    if (ext == ".png" || ext == ".jpg" || ext == ".jpeg"){
+                        byte[] bytes = File.ReadAllBytes(physicalPath);
+                        // LoadImage truncates 16-bit PNGs to 8 bits where the importer rounds, so leave those to the importer
+                        bool is16BitPng = ext == ".png" && bytes.Length > 24 && bytes[24] == 16;
+                        if (!is16BitPng){
+                            Texture2D decoded = new Texture2D(2, 2, TextureFormat.RGBA32, false, true);
+                            created.Add(decoded);
+                            if (decoded.LoadImage(bytes, true)){
+                                decoded.wrapMode = TextureWrapMode.Repeat;
+                                decoded.filterMode = FilterMode.Bilinear;
+                                return decoded;
+                            }
+                        }
+                    }
+                    Texture2D copy = ImportUncompressedCopy(physicalPath, ext);
+                    if (copy != null)
+                        return copy;
+                }
+            }
 
-            mat.SetInt("_Invert_Red", Convert.ToByte(invertRed));
-            mat.SetInt("_Invert_Green", Convert.ToByte(invertGreen));
-            mat.SetInt("_Invert_Blue", Convert.ToByte(invertBlue));
-            mat.SetInt("_Invert_Alpha", Convert.ToByte(invertAlpha));
-
-            TextureFormat format = hasAlpha ? TextureFormat.RGBA32 : TextureFormat.RGB24;
-            Texture2D tex = new Texture2D(resolution.x, resolution.y, format, false, true);
-            BakeMaterialToTexture(tex, mat);
-
-            if (Application.isPlaying) UnityEngine.Object.Destroy(mat);
-            else UnityEngine.Object.DestroyImmediate(mat);
-
+            // No image file to read, so sample the imported texture and undo any sRGB decode
+            encodeSRGB = QualitySettings.activeColorSpace == ColorSpace.Linear && GraphicsFormatUtility.IsSRGBFormat(tex.graphicsFormat);
             return tex;
         }
 
-        public static Vector4 GetTextureScaleAndOffset(Material mat, MaterialProperty prop, string propName){
-            if (prop != null){
-                Vector4 st = prop.textureScaleAndOffset;
-                if (st.x != 0f || st.y != 0f)
-                    return st;
-            }
-            if (mat != null && !string.IsNullOrEmpty(propName) && mat.HasProperty(propName)){
-                Vector2 scale = mat.GetTextureScale(propName);
-                Vector2 offset = mat.GetTextureOffset(propName);
-                if (scale.x != 0f || scale.y != 0f)
-                    return new Vector4(scale.x, scale.y, offset.x, offset.y);
-            }
-            return new Vector4(1f, 1f, 0f, 0f);
+        // Imports a temporary copy of the file without compression, size limits or sRGB decoding.
+        // The copy is removed along with the temp folder once packing finishes.
+        static Texture2D ImportUncompressedCopy(string physicalPath, string ext){
+            if (!AssetDatabase.IsValidFolder(TempFolder))
+                AssetDatabase.CreateFolder("Assets", TempFolderName);
+            string tempPath = $"{TempFolder}/{Guid.NewGuid():N}{ext}";
+            File.Copy(physicalPath, FileUtil.GetPhysicalPath(tempPath));
+            AssetDatabase.ImportAsset(tempPath, ImportAssetOptions.ForceSynchronousImport);
+
+            TextureImporter importer = AssetImporter.GetAtPath(tempPath) as TextureImporter;
+            if (importer == null)
+                return null;
+            importer.textureType = TextureImporterType.Default;
+            importer.textureShape = TextureImporterShape.Texture2D;
+            importer.sRGBTexture = false;
+            importer.mipmapEnabled = false;
+            importer.npotScale = TextureImporterNPOTScale.None;
+            importer.alphaSource = TextureImporterAlphaSource.FromInput;
+            importer.textureCompression = TextureImporterCompression.Uncompressed;
+            importer.maxTextureSize = 16384;
+            importer.wrapMode = TextureWrapMode.Repeat;
+            importer.filterMode = FilterMode.Bilinear;
+            importer.SaveAndReimport();
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(tempPath);
         }
 
-        public static void BakeMaterialToTexture(Texture2D tex, Material materialToBake){
-            Vector2Int res = new Vector2Int(tex.width, tex.height);
-            RenderTexture renderTexture = RenderTexture.GetTemporary(res.x, res.y, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
-            Graphics.Blit(null, renderTexture, materialToBake);
-
-            RenderTexture activeRT = RenderTexture.active;
-            RenderTexture.active = renderTexture;
-            tex.ReadPixels(new Rect(Vector2.zero, res), 0, 0);
-            tex.Apply(false, false);
-
-            RenderTexture.active = activeRT;
-            RenderTexture.ReleaseTemporary(renderTexture);
+        // Alpha-only textures store their value in alpha, and single channel textures in red,
+        // whichever color channel is requested (their alpha still reads as 1)
+        static int ResolveSourceChannel(Texture tex, int requested){
+            return ResolveSourceChannel(tex.graphicsFormat, requested);
         }
 
-        public static Vector2Int GetMaxSizeFromTextures(params Texture2D[] textures){
-            int maxW = 0;
-            int maxH = 0;
-            if (textures != null){
-                foreach (var tex in textures){
-                    if (tex != null){
-                        if (tex.width > maxW) maxW = tex.width;
-                        if (tex.height > maxH) maxH = tex.height;
-                    }
+        internal static int ResolveSourceChannel(GraphicsFormat format, int requested){
+            requested = Mathf.Clamp(requested, 0, 3);
+            if (GraphicsFormatUtility.IsAlphaOnlyFormat(format))
+                return 3;
+            if (GraphicsFormatUtility.GetComponentCount(format) == 1 && requested < 3)
+                return 0;
+            return requested;
+        }
+
+        // Uses the size of the largest source, never higher, even when baked tiling loses detail as a result
+        static Vector2Int GetOutputResolution(Texture[] sources){
+            Vector2Int resolution = Vector2Int.one;
+            long largest = 0;
+            foreach (Texture source in sources){
+                if (source == null)
+                    continue;
+                long pixels = (long)source.width * source.height;
+                if (pixels > largest){
+                    largest = pixels;
+                    resolution = new Vector2Int(source.width, source.height);
                 }
             }
-            return new Vector2Int(maxW, maxH);
+            return resolution;
         }
 
-        public static Texture2D GetSourceTexture(Texture2D tex, Material mat, string propName, float strength, out bool created){
-            created = false;
-            if (tex != null){
-                string assetPath = AssetDatabase.GetAssetPath(tex);
-                if (!string.IsNullOrEmpty(assetPath)){
-                    string absolutePath = LocalAssetsPathToAbsolutePath(assetPath);
-                    if (File.Exists(absolutePath)){
-                        byte[] bytes = File.ReadAllBytes(absolutePath);
-                        Texture2D sourceTex = new Texture2D(2, 2, TextureFormat.RGBA32, false, true);
-                        if (ImageConversion.LoadImage(sourceTex, bytes)){
-                            sourceTex.wrapMode = TextureWrapMode.Repeat;
-                            created = true;
-                            return sourceTex;
-                        }
-                        UnityEngine.Object.DestroyImmediate(sourceTex);
-                    }
-                }
+        static void SetChannel(Material packer, string texName, Texture source, Channel channel, bool encodeSRGB){
+            bool hasTexture = source != null;
+            Vector4 mask = Vector4.zero;
+            if (hasTexture)
+                mask[ResolveSourceChannel(source, channel.sourceChannel)] = 1f;
+
+            packer.SetTexture(texName, source);
+            packer.SetTextureScale(texName, new Vector2(channel.scaleOffset.x, channel.scaleOffset.y));
+            packer.SetTextureOffset(texName, new Vector2(channel.scaleOffset.z, channel.scaleOffset.w));
+            packer.SetVector(texName + "Mask", mask);
+            packer.SetVector(texName + "Params", new Vector4(hasTexture ? 1f : 0f, channel.strength, channel.fallback, channel.invert ? 1f : 0f));
+            packer.SetVector(texName + "Flags", new Vector4(channel.isOcclusion ? 1f : 0f, encodeSRGB ? 1f : 0f, 0f, 0f));
+        }
+
+        // Output is 8 bits per channel: Unity can only encode 8-bit PNGs, and its importer reduces
+        // 16-bit PNGs to 8 bits unless an uncompressed 16-bit format is chosen
+        static Texture2D Bake(Material packer, Vector2Int resolution, bool hasAlpha){
+            TextureFormat texFormat = hasAlpha ? TextureFormat.RGBA32 : TextureFormat.RGB24;
+            RenderTexture rt = RenderTexture.GetTemporary(resolution.x, resolution.y, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+            RenderTexture previous = RenderTexture.active;
+            Texture2D tex = null;
+            try {
+                Graphics.Blit(null, rt, packer);
+                RenderTexture.active = rt;
+                tex = new Texture2D(resolution.x, resolution.y, texFormat, false, true);
+                tex.ReadPixels(new Rect(0, 0, resolution.x, resolution.y), 0, 0, false);
+                tex.Apply(false, false);
                 return tex;
             }
-
-            // Unpopulated texture slot: generate a solid color texture from 0.0 (black) to 1.0 (white) based on strength
-            created = true;
-            float val = Mathf.Clamp01(strength);
-            Texture2D solidTex = new Texture2D(1, 1, TextureFormat.RGBA32, false, true);
-            solidTex.SetPixel(0, 0, new Color(val, val, val, val));
-            solidTex.wrapMode = TextureWrapMode.Repeat;
-            solidTex.Apply();
-            return solidTex;
-        }
-
-        public static Texture2D GetDefaultTextureForProperty(Material mat, string propName, out bool created){
-            string defaultTexName = "white";
-            if (mat != null && mat.shader != null && !string.IsNullOrEmpty(propName)){
-                string shaderPath = AssetDatabase.GetAssetPath(mat.shader);
-                if (!string.IsNullOrEmpty(shaderPath) && File.Exists(shaderPath)){
-                    string shaderText = File.ReadAllText(shaderPath);
-                    string pattern = propName + @"\s*\([^)]*\)\s*=\s*""([^""]*)""";
-                    Match match = Regex.Match(shaderText, pattern);
-                    if (match.Success){
-                        defaultTexName = match.Groups[1].Value;
-                    }
-                }
+            catch {
+                if (tex != null)
+                    Object.DestroyImmediate(tex);
+                throw;
             }
-            return GetSolidColorTexture(defaultTexName, out created);
+            finally {
+                RenderTexture.active = previous;
+                RenderTexture.ReleaseTemporary(rt);
+            }
         }
 
-        public static Texture2D GetSolidColorTexture(string defaultTexName, out bool created){
-            created = false;
-            if (string.IsNullOrEmpty(defaultTexName))
-                return Texture2D.whiteTexture;
+        // Writes the packed texture to disk and returns its asset path. A texture this material and property
+        // packed before is overwritten in place, keeping its references, platform overrides and changed settings.
+        static string SavePackedTexture(Material mat, string packedMapName, Texture2D packed, bool hasAlpha){
+            string matGuid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(mat));
+            string tag = string.IsNullOrEmpty(matGuid) ? ImporterTag : $"{ImporterTag}:{matGuid}:{packedMapName}";
 
-            string lower = defaultTexName.ToLowerInvariant();
-            if (lower == "black")
-                return Texture2D.blackTexture;
-            if (lower == "white")
-                return Texture2D.whiteTexture;
-            if (lower == "gray" || lower == "grey")
-                return Texture2D.grayTexture;
-            if (lower == "red")
-                return Texture2D.redTexture;
+            string path = null;
+            Texture current = mat.GetTexture(packedMapName);
+            if (current != null && !string.IsNullOrEmpty(matGuid)){
+                string currentPath = AssetDatabase.GetAssetPath(current);
+                TextureImporter currentImporter = AssetImporter.GetAtPath(currentPath) as TextureImporter;
+                if (currentImporter != null && IsPackedBy(currentImporter, tag) && currentPath.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+                    path = currentPath;
+            }
+            bool isNew = path == null;
+            if (isNew)
+                path = GetSavePath(mat, packedMapName);
 
-            created = true;
-            Texture2D customTex = new Texture2D(1, 1, TextureFormat.RGBA32, false, true);
-            if (lower == "bump" || lower == "normal")
-                customTex.SetPixel(0, 0, new Color(0.5f, 0.5f, 1f, 1f));
+            File.WriteAllBytes(FileUtil.GetPhysicalPath(path), packed.EncodeToPNG());
+
+            // The importer only exists after the first import, so new textures are imported twice
+            if (isNew)
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
+            TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer != null && ApplyImportSettings(importer, packed, hasAlpha, tag))
+                importer.SaveAndReimport();
             else
-                customTex.SetPixel(0, 0, Color.white);
-            customTex.Apply();
-            return customTex;
-        }
-
-        public static string GetSavePath(Material mat){
-            string dir = "Assets";
-            string baseName = mat.name + "_Packed";
-            string matPath = AssetDatabase.GetAssetPath(mat);
-            if (!string.IsNullOrEmpty(matPath)){
-                dir = Path.GetDirectoryName(matPath);
-                baseName = Path.GetFileNameWithoutExtension(matPath) + "_Packed";
-            }
-            dir = dir.Replace(@"\", "/");
-
-            string candidate = $"{dir}/{baseName}.png";
-            string absPath = LocalAssetsPathToAbsolutePath(candidate);
-            if (!File.Exists(absPath) && !AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(candidate)){
-                return candidate;
-            }
-
-            int counter = 1;
-            while (true){
-                candidate = $"{dir}/{baseName} {counter}.png";
-                absPath = LocalAssetsPathToAbsolutePath(candidate);
-                if (!File.Exists(absPath) && !AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(candidate)){
-                    return candidate;
-                }
-                counter++;
-            }
-        }
-
-        public static string LocalAssetsPathToAbsolutePath(string localPath){
-            if (string.IsNullOrEmpty(localPath)) return localPath;
-            localPath = localPath.Replace(@"\", "/");
-            const string assets = "Assets/";
-            if (localPath.StartsWith(assets, StringComparison.OrdinalIgnoreCase)){
-                localPath = localPath.Substring(assets.Length);
-                localPath = $"{Application.dataPath}/{localPath}";
-            }
-            return localPath;
-        }
-
-        public static string AbsolutePathToLocalAssetsPath(string path){
-            if (string.IsNullOrEmpty(path)) return path;
-            path = path.Replace(@"\", "/");
-            if (path.StartsWith(Application.dataPath, StringComparison.OrdinalIgnoreCase))
-                path = "Assets" + path.Substring(Application.dataPath.Length);
+                AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
             return path;
         }
 
-        public static void SaveTextureAsset(Texture2D tex, string assetPath, bool overwrite){
-            byte[] bytes = tex.EncodeToPNG();
+        // Without alpha, normal quality compression (BC1 on PC) is half the size of high quality (BC7).
+        // With alpha, normal quality (BC3) is the same size as BC7, so high quality costs nothing extra.
+        // userData stores the tag and the settings the last pack wanted. A setting that no longer matches
+        // was changed by the user and is kept. sRGB and alpha must match the content, so they're always set.
+        // Returns true if anything changed.
+        internal static bool ApplyImportSettings(TextureImporter importer, Texture2D packed, bool hasAlpha, string tag, bool sRGB = false){
+            TextureImporterAlphaSource alphaSource = hasAlpha ? TextureImporterAlphaSource.FromInput : TextureImporterAlphaSource.None;
+            int[] wanted = {
+                (int)(hasAlpha ? TextureImporterCompression.CompressedHQ : TextureImporterCompression.Compressed),
+                Mathf.Clamp(Mathf.NextPowerOfTwo(Mathf.Max(packed.width, packed.height)), 32, 16384),
+                16,
+                (int)FilterMode.Trilinear
+            };
+            int[] current = { (int)importer.textureCompression, importer.maxTextureSize, importer.anisoLevel, (int)importer.filterMode };
+            int[] lastWanted = GetLastWanted(importer.userData, tag, wanted.Length);
 
-            if (!assetPath.StartsWith("Assets", StringComparison.OrdinalIgnoreCase)){
-                Directory.CreateDirectory(Path.GetDirectoryName(assetPath));
-                assetPath = AbsolutePathToLocalAssetsPath(assetPath);
+            int[] result = new int[wanted.Length];
+            bool changed = false;
+            for (int i = 0; i < wanted.Length; i++){
+                result[i] = lastWanted != null && current[i] != lastWanted[i] ? current[i] : wanted[i];
+                changed |= result[i] != current[i];
             }
-            else {
-                string absolutePath = LocalAssetsPathToAbsolutePath(assetPath);
-                Directory.CreateDirectory(Path.GetDirectoryName(absolutePath));
+            string userData = $"{tag}|{string.Join(",", wanted)}";
+
+            changed |= importer.sRGBTexture != sRGB || importer.alphaSource != alphaSource || importer.userData != userData;
+            if (changed){
+                importer.sRGBTexture = sRGB;
+                importer.alphaSource = alphaSource;
+                importer.textureCompression = (TextureImporterCompression)result[0];
+                importer.maxTextureSize = result[1];
+                importer.anisoLevel = result[2];
+                importer.filterMode = (FilterMode)result[3];
+                importer.userData = userData;
             }
+            return changed;
+        }
 
-            if (AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(assetPath) && !overwrite)
-                assetPath = AssetDatabase.GenerateUniqueAssetPath(assetPath);
+        static bool IsPackedBy(TextureImporter importer, string tag){
+            return importer.userData == tag || importer.userData.StartsWith(tag + "|", StringComparison.Ordinal);
+        }
 
-            File.WriteAllBytes(assetPath, bytes);
-            AssetDatabase.Refresh();
+        // Returns the settings stored by the last pack, or null if there are none (a new texture, or one packed before they were stored)
+        static int[] GetLastWanted(string userData, string tag, int count){
+            if (!userData.StartsWith(tag + "|", StringComparison.Ordinal))
+                return null;
+            string[] parts = userData.Substring(tag.Length + 1).Split(',');
+            if (parts.Length != count)
+                return null;
+            int[] values = new int[count];
+            for (int i = 0; i < count; i++){
+                if (!int.TryParse(parts[i], out values[i]))
+                    return null;
+            }
+            return values;
+        }
+
+        static string GetSavePath(Material mat, string packedMapName){
+            string matPath = AssetDatabase.GetAssetPath(mat);
+            // Unsaved materials and materials outside Assets (which may be read-only packages) save into Assets
+            bool inAssets = matPath.StartsWith("Assets/", StringComparison.Ordinal);
+            string dir = inAssets ? Path.GetDirectoryName(matPath).Replace('\\', '/') : "Assets";
+            string matName = string.IsNullOrEmpty(matPath) ? mat.name : Path.GetFileNameWithoutExtension(matPath);
+
+            string fileName = matName + packedMapName;
+            foreach (char c in Path.GetInvalidFileNameChars())
+                fileName = fileName.Replace(c, '_');
+            return AssetDatabase.GenerateUniqueAssetPath($"{dir}/{fileName}.png");
         }
     }
 }

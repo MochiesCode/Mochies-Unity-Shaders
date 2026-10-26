@@ -3,6 +3,7 @@
 
 Shader "Mochie/Standard Lite" {
     Properties {
+        [HideInInspector]_MochieMaterialVersion("Material Version", Int) = 17800
         
         // Variant
         [Enum(Opaque,0, Cutout,1, Fade,2, Transparent,3)]_BlendMode("Blending Mode", Int) = 0
@@ -72,7 +73,7 @@ Shader "Mochie/Standard Lite" {
         _AudioLinkMax("Audio Link Max", Float) = 1
 
         // Detail Textures
-        [Enum(Separate,0, Packed,1)]_DetailWorkflow("Detail Workflow", Int) = 0
+        [Enum(Metallic,0, Packed Metallic,1)]_DetailWorkflow("Detail Workflow", Int) = 0
         [Enum(Default,0, Stochastic,1, Supersampling,2, Triplanar,3)]_DetailSampleMode("Detail Sampling Mode", Int) = 0
         [Enum(Blend,0, Replace,1)]_DetailMaskMode("Detail Mask Mode", Int) = 0
         _DetailMainTex("Base Color", 2D) = "white" {}

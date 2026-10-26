@@ -68,7 +68,7 @@ namespace Mochie.ShaderUpgrader
             switch(PropertyType)
             {
                 case SerializedMaterialPropertyType.Float:
-                    if(!SkipIfNonDefault)
+                    if(SkipIfNonDefault)
                     {
                         if(materialContext.TryGetFloat(TargetPropertyName, out float currentFloatValue))
                         {
@@ -77,9 +77,7 @@ namespace Mochie.ShaderUpgrader
                         }
                         else
                         {
-                            #if MOCHIE_DEV
-                            Debug.LogWarning($"Failed to set <b>Float</b> property <b>{TargetPropertyName}</b> in action <b>{GetType().Name}</b>. Property not found");
-                            #endif
+                            materialContext.Material.SetFloat(TargetPropertyName, FloatValue);
                         }
                     }
                     else
@@ -88,7 +86,7 @@ namespace Mochie.ShaderUpgrader
                     }
                     break;
                 case SerializedMaterialPropertyType.Int:
-                    if(!SkipIfNonDefault) 
+                    if(SkipIfNonDefault) 
                     {
                         if(materialContext.TryGetInt(TargetPropertyName, out int currentIntValue))
                         {
@@ -97,9 +95,7 @@ namespace Mochie.ShaderUpgrader
                         }
                         else
                         {
-                            #if MOCHIE_DEV
-                            Debug.LogWarning($"Failed to set <b>Int</b> property <b>{TargetPropertyName}</b> in action <b>{GetType().Name}</b>. Property not found");
-                            #endif
+                            materialContext.Material.SetInt(TargetPropertyName, IntValue);
                         }
                     }
                     else
@@ -108,7 +104,7 @@ namespace Mochie.ShaderUpgrader
                     }
                     break;
                 case SerializedMaterialPropertyType.Vector:
-                    if(!SkipIfNonDefault)
+                    if(SkipIfNonDefault)
                     {
                         if(materialContext.TryGetColorOrVector(TargetPropertyName, out Color currentVectorValue))
                         {
@@ -117,9 +113,7 @@ namespace Mochie.ShaderUpgrader
                         }
                         else
                         {
-                            #if MOCHIE_DEV
-                            Debug.LogWarning($"Failed to set <b>Color/Vector</b> property <b>{TargetPropertyName}</b> in action <b>{GetType().Name}</b>. Property not found");
-                            #endif
+                            materialContext.Material.SetColor(TargetPropertyName, VectorValue);
                         }
                     }
                     else
@@ -128,7 +122,8 @@ namespace Mochie.ShaderUpgrader
                     }
                     break;
                 case SerializedMaterialPropertyType.Texture:
-                    if(GuidValue.Empty())
+                    string guidStr = GuidValue.ToString();
+                    if(string.IsNullOrEmpty(guidStr) || guidStr == "00000000000000000000000000000000")
                     {
                         #if MOCHIE_DEV
                         Debug.LogError($"Texture GUID is empty. Failed when running {GetType().Name} ({SourcePropertyName} -> {TargetPropertyName})");
@@ -154,7 +149,7 @@ namespace Mochie.ShaderUpgrader
                         break;
                     }
 
-                    if(!SkipIfNonDefault)
+                    if(SkipIfNonDefault)
                     {
                         if(materialContext.TryGetTexture(TargetPropertyName, out TextureContainer currentTextureContainerValue))
                         {
@@ -163,9 +158,7 @@ namespace Mochie.ShaderUpgrader
                         }
                         else
                         {
-                            #if MOCHIE_DEV
-                            Debug.LogWarning($"Failed to set <b>Texture</b> property <b>{TargetPropertyName}</b> in action <b>{GetType().Name}</b>. Property not found");
-                            #endif
+                            materialContext.Material.SetTexture(TargetPropertyName, newTexture);
                         }
                     }
                     else
